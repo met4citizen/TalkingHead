@@ -36,7 +36,7 @@ Option | Description
 `gttsRate` | Google text-to-speech rate. Default is `0.85`.
 `gttsPitch` | Google text-to-speech pitch. Default is `0`.
 `gttsSilenceStart` | Silence at the start of the Google text-to-speech audio file in milliseconds. Default is `200`.
-`gttsSilenceEnd`| Silence at the end of the Google text-to-speech audio file in milliseconds. Default is `500`.
+`gttsSilenceEnd`| Silence at the end of the Google text-to-speech audio file in milliseconds. Default is `350`.
 `avatarRootObject` | The name of the Ready Player Me avatar root object. Default is `'AvatarRoot'`.
 `avatarMeshObject` | The name of the Ready Player Me mesh object. Default is `'Wolf3D_Avatar'`.
 `avatarHeadObject` | The name of the Ready Player Me head object. Default is 'Head'.

@@ -41,7 +41,7 @@ class TalkingHead {
       gttsRate: 0.85,
       gttsPitch: 0,
       gttsSilenceStart: 200,
-      gttsSilenceEnd: 500,
+      gttsSilenceEnd: 350,
       avatarRootObject: 'AvatarRoot',
       avatarMeshObject: 'Wolf3D_Avatar',
       avatarHeadObject: 'Head',
