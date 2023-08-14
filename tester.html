@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Talking Head</title>
+
+  <meta charset="utf-8">
+  <meta content="width=device-width, height=device-height, minimum-scale=1.0, maximum-scale=1.0, initial-scale=1.0, user-scalable=no, interactive-widget=resizes-content" name="viewport">
+  <link rel="icon" type="image/png" href="favicon.png">
+
+  <style>
+html{ width:100%; height:100%; height: -webkit-fill-available; font-size: 14px; }
+body{ width: 100%; height: 100%; min-height: 100vh; min-height: -webkit-fill-available; margin: 0; padding: 0; background-color: darkgray; color: #505050; overflow: hidden; text-align: left; touch-action: manipulation; font-family: Arial; font-size: 1.3rem;  line-height: 1.8rem; scrollbar-color: #505050 transparent; scrollbar-width: 2vw; scrollbar-height: 2vw; }
+
+#container { display: flex; gap: 0.5rem; position: absolute; left:0; right:0; bottom:0; top:0; margin:0; padding:0; }
+
+.header { font-family: Arial; color: #505050; font-size: 1.4rem; font-weight: bold; height: 1.5rem; margin: 0.5rem 1rem;}
+
+#input { flex: 1; display: flex; flex-direction: column; }
+#text { flex: 2; display: flex; }
+#textemojis, #templateemojis { display: block; margin: 0.2rem 0.7rem; opacity: 0.7; }
+.emoji { display: inline-block; cursor: pointer; pointer-events: auto; padding: 0.1rem; font-size: 1.6rem; }
+#template { flex: 1; display: flex; }
+
+textarea { flex: 1 1; margin: 0.5rem; border: 0; border-radius: 10px; padding: 0.5rem 1rem; color: #505050; font-size: inherit; line-height: inherit; font-family: Arial; background-color: rgb(192, 192, 192); resize: none; overflow-y: auto; outline: none; }
+textarea::placeholder { color: #505050; opacity: 0.5; }
+select { color: #505050; text-align:left; font-family: Arial; font-size: 1.2rem; line-height: 1.7rem; border: 1px solid #505050; background-color: lightgray; width: 100px; }
+
+#morphs { flex: 1; display: flex; flex-direction: column; overflow-x: hidden; overflow-y: scroll; padding: 0 0.5rem; }
+.morph { flex: 1; display: flex; font-family: Arial; color: #505050; font-size: 1rem; font-weight: bold; }
+.morphtitle { flex:3; text-align: left; }
+.morphrange { flex:2; text-align: left; min-width: 0; }
+.morphvalue { flex:1; text-align: center; }
+
+#talkinghead {flex:1; position: relative; display: flex; flex-direction: column; background-color: gray; overflow: hidden; }
+#avatar { flex:1; overflow: hidden; }
+#bubble { flex-basis: 3.8rem; margin: 0.2rem 0.5rem 0.4rem 0.5rem; overflow-y: scroll; scrollbar-width: none; background-color: lightgray; border-radius: 10px; }
+#bubble::-webkit-scrollbar { width: 0; height: 0; }
+#bubble:before { content: ""; width: 0; height: 0; border-left: 0.6rem solid transparent; border-right: 0.6rem solid transparent; border-bottom: 0.7rem solid lightgray; position: absolute; bottom: 4.2rem; left: 2rem; }
+#subtitles { display: block; margin: 0.2rem 1rem; color: #505050; text-align:left; font-family: Arial; font-size: 1.2rem; line-height: 1.7rem; white-space: pre-line; }
+
+.emoji:active, .selected { background-color: #505050; color: #c0c0c0; }
+.noselect { -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; -webkit-user-select: none; }
+.nodrag { -webkit-user-drag: none; -khtml-user-drag: none; -moz-user-drag: none; -o-user-drag: none; -ms-user-drag: none; user-drag: none; }
+
+  </style>
+
+  <script nomodule>alert("You browser doesn't seem to support modules. Use a modern browser to run CliqueVM.");</script>
+  <script src="https://d3js.org/d3.v6.min.js"></script>
+  <script async src="https://cdn.jsdelivr.net/npm/es-module-shims@1.7.1/dist/es-module-shims.js"></script>
+  <script type="importmap">
+    { "imports":
+      {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.module.js/+esm",
+        "three/examples/": "https://cdn.jsdelivr.net/npm/three@0.149.0/examples/",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.149.0/examples/jsm/"
+      }
+    }
+  </script>
+
+<script type="module">
+  import { TalkingHead } from "./talkinghead.mjs";
+  let head;
+
+  function headLoaded() {
+
+    // Setup text input
+    d3.select("#text > textarea").on("keydown", async function(ev) {
+      if (ev.keyCode === 13 && !ev.shiftKey) {
+        ev.preventDefault();
+        const e = d3.select("#text > textarea");
+        let text = e.property("value");
+        if ( text.length ) {
+          head.speak(text);
+        }
+      }
+    });
+
+    // Setup emojis
+    const elTextEmojis = d3.select('#textemojis');
+    const elTemplateEmojis = d3.select('#templateemojis');
+    for( let [em,x] of Object.entries(head.animEmojis) ) {
+
+      elTemplateEmojis.append("div")
+        .classed("emoji", true)
+        .on('click', function(e) {
+
+          // Clear morphs
+          head.getMorphTargetNames().forEach( mt => {
+            const el = d3.select('#'+mt);
+            if ( !el.empty() ) {
+              el.property("value",getValue(mt,null)).dispatch("change");
+            }
+          });
+
+          const emoji = d3.select(this);
+          const name = emoji.text();
+          const selected = emoji.classed("selected");
+          d3.selectAll(".emoji").classed("selected",false);
+          if ( selected ) {
+            d3.selectAll(".emoji").classed("selected",false);
+          } else {
+            emoji.classed("selected",true);
+
+            // Animate
+            head.speak(name);
+
+            // Update morphs
+            const o = head.animEmojis[name];
+            if ( o ) {
+              head.getMorphTargetNames().forEach( mt => {
+                let val = null;
+                if ( o.vs &&  o.vs[mt] ) {
+                  val = o.vs[mt][o.vs[mt].length-1];
+                  if ( Array.isArray(val) ) val = lastv[0];
+                }
+                const el = d3.select('#'+mt);
+                if ( !el.empty() ) {
+                  el.property("value",getValue(mt,val)).dispatch("change");
+                }
+              });
+            }
+          }
+        })
+        .html(em);
+
+      if ( x.link ) continue; // Skip aliases for text
+
+      elTextEmojis.append("div")
+        .classed("emoji", true)
+        .on('click', function(e) {
+          const emoji = d3.select(this);
+          const name = emoji.text();
+          const input = d3.select("#text > textarea");
+          const text = input.property("value");
+          const el = input.node();
+          el.focus();
+          const [start, end] = [el.selectionStart, el.selectionEnd];
+          el.setRangeText(name, start, end, 'end');
+        })
+        .html(em);
+    }
+
+    // Setup morph targets
+    const elMorphs = d3.select('#morphs');
+    head.getMorphTargetNames().forEach( mt => {
+      let v = head.getFixedValue(mt);
+
+      const morph = elMorphs.append("div")
+        .classed("morph", true);
+
+      morph.append("div")
+        .classed("morphtitle", true)
+        .html(mt);
+
+      morph.append("input")
+        .property("id", mt)
+        .classed("morphrange", true)
+        .property("type", "range")
+        .property("min", getMin(mt))
+        .property("max", getMax(mt))
+        .property("step", getStep(mt))
+        .property("value", getValue(mt,v))
+        .on('input change keyup', function(event) {
+          const e = d3.select(this);
+          const mt = e.property("id");
+          let v = parseFloat(e.property("value"));
+          d3.select(e.node().nextElementSibling).html(getLabel(mt,v));
+          head.setFixedValue(mt,getFixedValue(mt,v));
+          updateTemplate();
+        });
+
+      morph.append("div")
+        .classed("morphvalue", true)
+        .html(getLabel(mt,v));
+    });
+
+    // Update template
+    updateTemplate();
+
+    d3.select("#url").on('change', function(e) {
+      d3.select("#subtitles").text('');
+      head.loadModel( document.getElementById("url").value, null, (e) => { alert(e); } );
+    });
+
+    // Moods
+    const elMood = d3.select("#mood");
+    head.getMoodNames().forEach( (x,i) => {
+      let m = elMood.append("option")
+        .property("value", x)
+        .text(x.charAt(0).toUpperCase() + x.slice(1));
+      if ( i === 0 ) {
+        m.property("selected",true);
+        head.setMood(x);
+      }
+    });
+
+    d3.select("#mood").on('change', function(e) {
+      head.setMood( document.getElementById("mood").value );
+    });
+  }
+
+  function updateTemplate() {
+    let s = '{';
+    for( let mt of head.getMorphTargetNames() ) {
+      const el = d3.select('#'+mt);
+      if ( !el.empty() ) {
+        const v = getFixedValue( mt, parseFloat(el.property("value")) );
+        if ( v !== null ) {
+          s += (s.length > 1 ? ',' : '') + ' ' + mt + ': [' + v + ']';
+        }
+      }
+    }
+    s += ' }';
+    d3.select('#template > textarea').html(s);
+  }
+
+  function typeInTextarea(newText, el) {
+    const [start, end] = [el.selectionStart, el.selectionEnd];
+    el.setRangeText(newText, start, end, 'select');
+  }
+
+  function getValue(mt,v) {
+    if ( mt === 'headRotateX' || mt === 'headRotateY' || mt === 'headRotateZ' ) {
+      return ( v === null || v === undefined ) ? 0 : v;
+    } else if ( mt === 'eyesRotateX' || mt === 'eyesRotateY' ) {
+      return ( v === null || v === undefined ) ? 0 : v;
+    } else {
+      return ( v === null || v === undefined ) ? -0.1 : v;
+    }
+  }
+
+  function getFixedValue(mt,v) {
+    if ( mt === 'headRotateX' || mt === 'headRotateY' || mt === 'headRotateZ' ) {
+      return ( v === 0 ? null : v);
+    } else if ( mt === 'eyesRotateX' || mt === 'eyesRotateY' ) {
+      return ( v === 0 ? null : v );
+    } else {
+      return ( v >= 0 ? v : null);
+    }
+  }
+
+  function getMin(mt) {
+    if ( mt === 'headRotateX' || mt === 'headRotateY' || mt === 'headRotateZ' ) {
+      return -0.5;
+    } else if ( mt === 'eyesRotateX' || mt === 'eyesRotateY' ) {
+      return -1;
+    } else {
+      return -0.1;
+    }
+  }
+
+  function getMax(mt) {
+    if ( mt === 'headRotateX' || mt === 'headRotateY' || mt === 'headRotateZ' ) {
+      return 0.5;
+    } else if ( mt === 'eyesRotateX' || mt === 'eyesRotateY' ) {
+      return 1;
+    } else {
+      return 1;
+    }
+  }
+
+  function getStep(mt) {
+    if ( mt === 'headRotateX' || mt === 'headRotateY' || mt === 'headRotateZ' ) {
+      return 0.05;
+    } else if ( mt === 'eyesRotateX' || mt === 'eyesRotateY' ) {
+      return 0.05;
+    } else {
+      return 0.1;
+    }
+  }
+
+  function getLabel(mt,v) {
+    if ( mt === 'headRotateX' || mt === 'headRotateY' || mt === 'headRotateZ' ) {
+      return (v ? v : '');
+    } else if ( mt === 'eyesRotateX' || mt === 'eyesRotateY' ) {
+      return (v ? v : '');
+    } else {
+      return ( v>=0 ? v : '');
+    }
+  }
+
+  // Page ready
+  document.addEventListener('DOMContentLoaded', function(e) {
+
+    const nodeAvatar = document.getElementById('avatar');
+    const nodeSubtitles = document.getElementById('subtitles');
+    const url = document.getElementById("url").value;
+    head = new TalkingHead( nodeAvatar, nodeSubtitles, url, {
+        gttsEndpoint: "https://eu-texttospeech.googleapis.com/v1/text:synthesize",
+        gttsApikey: null, // WARNING: Specify me for private testing only
+        avatarZoomEnable: true,
+        avatarPanEnable: true
+      }, headLoaded, function(error) { alert(error); } );
+    window.head = head;
+  });
+
+</script>
+</head>
+<body>
+  <div id="container">
+    <div id="input">
+      <div class="header">AVATAR:
+        <select id="url">
+          <option value="https://models.readyplayer.me/64da1f0bcfdd0f000df59582.glb" selected>Brunette</option>
+        </select>
+        <select id="mood">
+        </select>
+      </div>
+      <div id="text">
+        <textarea placeholder="Puhun suomea / I speak Finnish."></textarea>
+      </div>
+      <div id="textemojis" class="noselect nodrag"></div>
+      <div class="header"></div>
+      <div class="header">EMOJI TESTER:</div>
+      <div id="template">
+        <textarea></textarea>
+      </div>
+      <div id="templateemojis" class="noselect nodrag"></div>
+    </div>
+    <div id="talkinghead" class="noselect nodrag">
+      <div id="avatar"></div>
+      <div id="bubble">
+        <div id="subtitles"></div>
+      </div>
+    </div>
+    <div id="morphs" class="noselect nodrag">
+      <div class="header">BLEND SHAPES:</div>
+    </div>
+  </div>
+</body>
+</html>
