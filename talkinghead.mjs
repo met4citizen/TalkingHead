@@ -40,8 +40,8 @@ class TalkingHead {
       gttsVoice: "fi-FI-Standard-A",
       gttsRate: 0.85,
       gttsPitch: 0,
-      gttsSilenceStart: 200,
-      gttsSilenceEnd: 350,
+      gttsTrimStart: -100,
+      gttsTrimEnd: 300,
       avatarRootObject: 'AvatarRoot',
       avatarMeshObject: 'Wolf3D_Avatar',
       avatarHeadObject: 'Head',
@@ -778,7 +778,7 @@ class TalkingHead {
   */
   gttsOnCanPlayThrough(event) {
     let d = 1000 * this.gttsAudio.duration; // Duration in ms
-    if ( d > this.opt.gttsSilenceEnd ) d = d - this.opt.gttsSilenceStart - this.opt.gttsSilenceEnd;
+    if ( d > this.opt.gttsTrimEnd ) d = d - this.opt.gttsTrimEnd;
     let t = 0;
     const os = [];
     const letters = [...this.gttsAudio.text];
@@ -802,7 +802,7 @@ class TalkingHead {
     // Rescale
     os.forEach( x => {
       for(let i=0; i<x.ts.length; i++) {
-        x.ts[i] = performance.now() + (x.ts[i] * d/t) + this.opt.gttsSilenceStart;
+        x.ts[i] = performance.now() + (x.ts[i] * d/t) + this.opt.gttsTrimStart;
       }
       this.animQueue.push(x);
     });
