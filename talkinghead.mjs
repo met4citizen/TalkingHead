@@ -191,7 +191,7 @@ class TalkingHead {
 
       '😴': { mood: 'sleep', dt: [5000,5000], vs:{ eyesClosed: [1], eyeBlinkLeft: [1], eyeBlinkRight: [1], headRotateX: [0.2], headRotateZ: [0.1] } },
     };
-    
+
     // Baseline/fixed morph targets
     this.animBaseline = {};
     this.animFixed = {};
@@ -693,6 +693,17 @@ class TalkingHead {
   }
 
   /**
+  * Convert value from one range to another.
+  * @param {number} value Value
+  * @param {number[]} r1 Source range
+  * @param {number[]} r2 Target range
+  * @return {number} Scaled value
+  */
+  convertRange( value, r1, r2 ) {
+    return (value-r1[0]) * (r2[1]-r2[0]) / (r1[1]-r1[0]) + r2[0];
+  }
+
+  /**
   * Animate the avatar.
   * @param {number} t High precision timestamp in ms.
   */
@@ -1023,6 +1034,30 @@ class TalkingHead {
     if ( this.avatar ) {
       this.resetLips();
       this.render();
+    }
+  }
+
+  /**
+  * Turn head and eyes to look at the point (x,y).
+  * @param {number} x X-coordinate
+  * @param {number} y Y-coordinate
+  * @param {number} t Time in milliseconds
+  */
+  lookAt(x,y,t) {
+    const box = this.nodeAvatar.getBoundingClientRect();
+    x = Math.min(box.right,Math.max(x,box.left));
+    y = Math.min(box.bottom,Math.max(y,box.top));
+    if ( t ) {
+      const templateLookAt = {
+        dt: [1000,t],
+        vs: {
+          eyesRotateX: [ this.convertRange(x,[box.left,box.right],[-0.6,0.6]) ],
+          eyesRotateY: [ this.convertRange(y,[box.top,box.bottom],[-0.5,0.6]) ],
+          headRotateY: [ this.convertRange(x,[box.left,box.right],[-0.3,0.3]) ],
+          headRotateX: [ this.convertRange(y,[box.top,box.bottom],[-0.15,0.2]) ],
+        }
+      };
+      this.animQueue.push( this.animFactory( templateLookAt ) );
     }
   }
 

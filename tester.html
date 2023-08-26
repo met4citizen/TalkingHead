@@ -292,6 +292,12 @@ select { color: #505050; text-align:left; font-family: Arial; font-size: 1.2rem;
         avatarPanEnable: true
       }, headLoaded, function(error) { alert(error); } );
     window.head = head;
+
+    // Follow double clicks
+    document.body.addEventListener('dblclick', function(e) {
+      e = e || window.event;
+      head.lookAt(e.clientX,e.clientY,500);
+    });
   });
 
 </script>

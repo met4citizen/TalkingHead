@@ -24,7 +24,7 @@ Parameter | Description
 --- | ---
 `nodeAvatar` | DOM element for the talking head.
 `nodeSubtitles` | DOM element for subtitles. If the value is `null`, subtitles won't be displayed during speech.
-`urlAvatar3D` | URL for the Ready Player Me avatar GLB file.
+`urlAvatar3D` | URL for the Ready Player Me avatar GLB file. You can create your own avatar [here](https://vr.readyplayer.me).
 `opt` | Object for options. Refer to the next table for available options.
 `success` | Callback function triggered when the avatar has been successfully loaded.
 `error` | Callback function triggered if there's an initialization error. The first parameter is the error message string.
