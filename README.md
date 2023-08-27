@@ -6,13 +6,13 @@
 
 This is a small side-project featuring a 3D talking head capable of speaking and lip-syncing in Finnish. The implementation also knows a set of emojis, which it can convert into facial expressions of the 3D avatar.
 
-The current version uses [Ready Player Me](https://readyplayer.me/) 3D avatar, [Google Text-to-Speech](https://cloud.google.com/text-to-speech), and [ThreeJS](https://github.com/mrdoob/three.js/)/WebGL for 3D rendering.
+The current version uses [Ready Player Me](https://vr.readyplayer.me/) 3D half-body avatar, [Google Text-to-Speech](https://cloud.google.com/text-to-speech), and [ThreeJS](https://github.com/mrdoob/three.js/)/WebGL for 3D rendering.
 
 ### Introduction
 
 Everything is packaged in one JavaScript class called `TalkingHead`, which you can find in the module `talkinghead.mjs`.
 
-The file `tester.html` is intended for testing purposes, but it can also serve as an example of how to initialize and use the class. However, to make the avatar speak, you need to add the URL for your own text-to-speech backend that operates as a proxy to the Google Text-to-Speech API. Alternatively, it is possible to use Google's original endpoint and initialize the class with your own Google Text-to-Speech API key. However, it is NOT recommended to include your API key in any client-side code.
+The file `tester.html` is intended for testing purposes, but it also serves as an example of how to initialize and use the class. However, to make the avatar speak, you need to add the URL for your own text-to-speech backend that operates as a proxy to the Google Text-to-Speech API. Alternatively, it is possible to use Google's original endpoint and initialize the class with your own Google Text-to-Speech API key. However, it is NOT recommended to include your API key in any client-side code.
 
 Why only Finnish and not English? Well, the primary reason is that Finnish is my native language, and I had a use case for a Finnish-speaking avatar. Another reason was the fact that the Finnish language maintains a consistent one-to-one mapping between individual letters and phonemes/visemes. Achieving a similar level of lip-sync accuracy in English would likely demand an extensive English word database/vocabulary.
 
@@ -51,6 +51,17 @@ Option | Description
 `avatarRotateEnable` | True if the user is allowed to rotate the 3D model. Default is `true`.
 `avatarPanEnable` | True if the user is allowed to pan the 3D model. Default is `false`.
 `avatarZoomEnable` | True if the user is allowed to zoom the 3D model. Default is `false`.
+
+The key methods of the API:
+
+Method | Description
+--- | ---
+`loadModel(url,[success],[error])` | Load new GLB avatar `url` with callback functions `success` and `error`.
+`lookAt(x,y,t)` | Make the avatar's head turn to look at the screen position (`x`,`y`) for `t` milliseconds.
+`speak(text,[opt])` | Add the `text` string to the speech queue. The text can contain face emojis.
+`startAnimation` | Start/re-start the animation.
+`stopAnimation` | Stop the animation.
+`stopSpeaking` | Stop speaking and clear the speech queue.
 
 ### See also
 
