@@ -10,15 +10,15 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 class TalkingHead {
 
   /**
-	* Callback when the Avatar has been succesfully loaded
-	* @callback successfn
-	*/
+  * Callback when the Avatar has been succesfully loaded
+  * @callback successfn
+  */
 
   /**
-	* Callback when there was an error in loading the Avatar
-	* @callback errorfn
+  * Callback when there was an error in loading the Avatar
+  * @callback errorfn
   * @param {string} error Error message
-	*/
+  */
 
   /**
   * @constructor
@@ -52,8 +52,8 @@ class TalkingHead {
       avatarRotateEnable: true,
       avatarPanEnable: false,
       avatarZoomEnable: false
-		};
-		Object.assign( this.opt, opt );
+    };
+    Object.assign( this.opt, opt );
 
     // Animation templates for moods
     this.animMoods = {
@@ -284,9 +284,9 @@ class TalkingHead {
       //in case of map, bumpMap, normalMap, envMap ...
       Object.keys(obj.material).forEach(prop => {
         if(!obj.material[prop])
-          return;
+        return;
         if(obj.material[prop] !== null && typeof obj.material[prop].dispose === 'function')
-          obj.material[prop].dispose();
+        obj.material[prop].dispose();
       })
       obj.material.dispose();
     }
@@ -489,7 +489,7 @@ class TalkingHead {
   */
   getMorphTargetNames() {
     return [ 'headRotateX', 'headRotateY', 'headRotateZ', 'eyesRotateX', 'eyesRotateY',
-      ...Object.keys(this.mesh.morphTargetDictionary)].sort();
+    ...Object.keys(this.mesh.morphTargetDictionary)].sort();
   }
 
   /**
@@ -862,10 +862,10 @@ class TalkingHead {
   }
 
   /**
-	* Convert the number string into Finnish words.
-	* @param {string} x Number string
-	* @return {string} The number in words in Finnish
-	*/
+  * Convert the number string into Finnish words.
+  * @param {string} x Number string
+  * @return {string} The number in words in Finnish
+  */
   numberToWords(x) {
     const w = [];
     const dg = ['nolla', 'yksi', 'kaksi', 'kolme', 'neljä', 'viisi', 'kuusi',
@@ -908,16 +908,16 @@ class TalkingHead {
   */
   speechFilter(s) {
     return s.replace(/\s*\(.*?\)\s*/g, '') // remove brackets /w content
-      .replace(/\s*\[.*?\]\s*/g, '') // remove square brackets /w content
-      .replace('/[#_*\'\":;]/g','')
-      .replaceAll('%',' prosenttia ')
-      .replaceAll('€',' euroa ')
-      .replaceAll('&',' ja ')
-      .replaceAll('+',' plus ')
-      .replace(/(\D)\1\1+/g, "$1$1") // max 2 repeating chars
-      .replaceAll('  ',' ') // Only one repeating space
-      .replace(/(\d)\,(\d)/g, '$1 pilkku $2') // Number separator
-      .replace(/\d+/g, this.numberToWords.bind(this)); // Numbers to words
+    .replace(/\s*\[.*?\]\s*/g, '') // remove square brackets /w content
+    .replace('/[#_*\'\":;]/g','')
+    .replaceAll('%',' prosenttia ')
+    .replaceAll('€',' euroa ')
+    .replaceAll('&',' ja ')
+    .replaceAll('+',' plus ')
+    .replace(/(\D)\1\1+/g, "$1$1") // max 2 repeating chars
+    .replaceAll('  ',' ') // Only one repeating space
+    .replace(/(\d)\,(\d)/g, '$1 pilkku $2') // Number separator
+    .replace(/\d+/g, this.numberToWords.bind(this)); // Numbers to words
   }
 
   /**
@@ -956,7 +956,7 @@ class TalkingHead {
       if ( emoji ) {
         this.gttsQueue.push( { emoji: emoji } );
       }
-      this.gttsQueue.push( { break: 500 } );
+      this.gttsQueue.push( { break: 300 } );
     });
     this.startSpeaking();
   }
@@ -995,9 +995,9 @@ class TalkingHead {
               "name": line.voice || this.opt.gttsVoice
             },
             "audioConfig": {
-                "audioEncoding": this.gttsAudioEncoding,
-                "speakingRate": (line.rate || this.opt.gttsRate) + this.mood.speech.deltaRate,
-                "pitch": (line.pitch || this.opt.gttsPitch) + this.mood.speech.deltaPitch
+              "audioEncoding": this.gttsAudioEncoding,
+              "speakingRate": (line.rate || this.opt.gttsRate) + this.mood.speech.deltaRate,
+              "pitch": (line.pitch || this.opt.gttsPitch) + this.mood.speech.deltaPitch
             }
           })
         });
