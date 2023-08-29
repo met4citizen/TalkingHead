@@ -37,8 +37,9 @@ Option | Description
 `gttsApikey` | Google Text-to-Speech API key when using the Google TTS endpoint. **NOTE: Don't use this in client-side code in production**.
 `gttsLang` | Google text-to-speech language. Default is `"fi-FI"`.
 `gttsVoice` | Google text-to-speech voice. Default is `"fi-FI-Standard-A"`.
-`gttsRate` | Google text-to-speech rate. Default is `0.85`.
-`gttsPitch` | Google text-to-speech pitch. Default is `0`.
+`gttsRate` | Google text-to-speech rate in the range [0.25, 4.0]. Default is `0.95`.
+`gttsPitch` | Google text-to-speech pitch in the range [-20.0, 20.0]. Default is `0`.
+`gttsVolume` | Google text-to-speech volume gain (in dB) in the range [-96.0, 16.0]. Default is `0`.
 `gttsTrimStart` | Trim the viseme sequence start relative to the beginning of the audio (shift in milliseconds). Default is `-100`.
 `gttsTrimEnd`| Trim the viseme sequence end relative to the end of the audio (shift in milliseconds). Default is `300`.
 `avatarRootObject` | The name of the Ready Player Me avatar root object. Default is `'AvatarRoot'`.
@@ -58,10 +59,13 @@ Method | Description
 --- | ---
 `loadModel(url,[success],[error])` | Load new GLB avatar `url` with callback functions `success` and `error`.
 `lookAt(x,y,t)` | Make the avatar's head turn to look at the screen position (`x`,`y`) for `t` milliseconds.
-`speak(text,[opt])` | Add the `text` string to the speech queue. The text can contain face emojis.
-`startAnimation` | Start/re-start the animation.
-`stopAnimation` | Stop the animation.
-`stopSpeaking` | Stop speaking and clear the speech queue.
+`speak(text,[opt])` | Add the `text` string to the speech queue and starts speaking. The text can contain face emojis.
+`pauseSpeaking()` | Pause speaking.
+`startSpeaking()` | Start speaking.
+`stopSpeaking()` | Stop speaking and clear the speech queue.
+`startAnimation()` | Start/re-start the animation.
+`stopAnimation()` | Stop the animation.
+
 
 ### See also
 
