@@ -38,8 +38,9 @@ class TalkingHead {
       gttsApikey: null,
       gttsLang: "fi-FI",
       gttsVoice: "fi-FI-Standard-A",
-      gttsRate: 0.85,
+      gttsRate: 0.95,
       gttsPitch: 0,
+      gttsVolume: 0,
       gttsTrimStart: -100,
       gttsTrimEnd: 300,
       avatarRootObject: 'AvatarRoot',
@@ -59,7 +60,7 @@ class TalkingHead {
     this.animMoods = {
       'neutral' : {
         baseline: { eyesLookDown: 0.1 },
-        speech: { deltaRate: 0, deltaPitch: 0 },
+        speech: { deltaRate: 0, deltaPitch: 0, deltaVolume: 0 },
         anims: [
           { name: 'head', delay: [0,1000], dt: [ [200,5000] ], vs: { headRotateX: [[-0.04,0.10]], headRotateY: [[-0.3,0.3]], headRotateZ: [[-0.08,0.08]] } },
           { name: 'eyes', delay: [200,5000], dt: [ [100,500],[100,5000,2] ], vs: { eyesRotateX: [[-0.6,0.6]], eyesRotateY: [[-0.2,0.6]] } },
@@ -70,7 +71,7 @@ class TalkingHead {
       },
       'happy' : {
         baseline: { mouthSmile: 0.3, eyesLookDown: 0.1 },
-        speech: { deltaRate: 0, deltaPitch: 0.1 },
+        speech: { deltaRate: 0, deltaPitch: 0.1, deltaVolume: 0 },
         anims: [
           { name: 'head', dt: [ [1000,5000] ], vs: { headRotateX: [[-0.04,0.10]], headRotateY: [[-0.3,0.3]], headRotateZ: [[-0.08,0.08]] } },
           { name: 'eyes', delay: [100,5000], dt: [ [100,500],[100,5000,2] ], vs: { eyesRotateX: [[-0.6,0.6]], eyesRotateY: [[-0.2,0.6]] } },
@@ -81,7 +82,7 @@ class TalkingHead {
       },
       'angry' : {
         baseline: { eyesLookDown: 0.1, browDownLeft: 0.7, browDownRight: 0.7, jawForward: 0.3, mouthFrownLeft: 0.8, mouthFrownRight: 0.8, mouthRollLower: 0.3, mouthShrugLower: 0.4 },
-        speech: { deltaRate: -0.2, deltaPitch: 0.2 },
+        speech: { deltaRate: -0.2, deltaPitch: 0.2, deltaVolume: 0 },
         anims: [
           { name: 'head', delay: [100,500], dt: [ [200,5000] ], vs: { headRotateX: [[-0.04,0.10]], headRotateY: [[-0.2,0.2]], headRotateZ: [[-0.08,0.08]] } },
           { name: 'eyes', delay: [100,5000], dt: [ [100,500],[100,5000,2] ], vs: { eyesRotateX: [[-0.6,0.6]], eyesRotateY: [[-0.2,0.6]] } },
@@ -92,7 +93,7 @@ class TalkingHead {
       },
       'sad' : {
         baseline: { eyesLookDown: 0.2, browDownRight: 0.1, browInnerUp: 0.7, browOuterUpRight: 0.2, eyeSquintLeft: 0.8, eyeSquintRight: 0.8, mouthFrownLeft: 1, mouthFrownRight: 1, mouthLeft: 0.2, mouthPucker: 0.5, mouthRollLower: 0.2, mouthRollUpper: 0.2, mouthShrugLower: 0.2, mouthShrugUpper: 0.2, mouthStretchLeft: 0.5 },
-        speech: { deltaRate: -0.2, deltaPitch: -0.2 },
+        speech: { deltaRate: -0.2, deltaPitch: -0.2, deltaVolume: 0 },
         anims: [
           { name: 'head', delay: [100,500], dt: [ [200,5000] ], vs: { headRotateX: [[-0.04,0.10]], headRotateY: [[-0.2,0.2]], headRotateZ: [[-0.08,0.08]] } },
           { name: 'eyes', delay: [100,5000], dt: [ [100,500],[100,5000,2] ], vs: { eyesRotateX: [[-0.6,0.6]], eyesRotateY: [[-0.2,0.6]] } },
@@ -103,7 +104,7 @@ class TalkingHead {
       },
       'fear' : {
         baseline: { browInnerUp: 0.8, eyeSquintLeft: 0.5, eyeSquintRight: 0.5, eyeWideLeft: 0.7, eyeWideRight: 0.7, mouthClose: 0.1, mouthFunnel: 0.3, mouthShrugLower: 0.6, mouthShrugUpper: 0.6 },
-        speech: { deltaRate: -0.2, deltaPitch: 0 },
+        speech: { deltaRate: -0.2, deltaPitch: 0, deltaVolume: 0 },
         anims: [
           { name: 'head', delay: [100,500], dt: [ [200,5000] ], vs: { headRotateX: [[-0.06,0.12]], headRotateY: [[-0.5,0.5]], headRotateZ: [[-0.1,0.1]] } },
           { name: 'eyes', delay: [100,2000], dt: [ [100,500],[100,5000,2] ], vs: { eyesRotateX: [[-1,1]], eyesRotateY: [[-0.2,0.6]] } },
@@ -114,7 +115,7 @@ class TalkingHead {
       },
       'disgust' : {
         baseline: { browDownLeft: 0.9, browDownRight: 0.1, browInnerUp: 0.3, eyeSquintLeft: 1, eyeSquintRight: 1, eyeWideLeft: 0.5, eyeWideRight: 0.5, eyesRotateX: 0.05, mouthLeft: 0.4, mouthPressLeft: 0.3, mouthRollLower: 0.4, mouthShrugLower: 0.4, mouthShrugUpper: 1, mouthUpperUpLeft: 0.3, noseSneerLeft: 1, noseSneerRight: 0.7 },
-        speech: { deltaRate: -0.2, deltaPitch: 0 },
+        speech: { deltaRate: -0.2, deltaPitch: 0, deltaVolume: 0 },
         anims: [
           { name: 'head', delay: [100,500], dt: [ [200,5000] ], vs: { headRotateX: [[-0.04,0.10]], headRotateY: [[-0.2,0.2]], headRotateZ: [[-0.08,0.08]] } },
           { name: 'eyes', delay: [100,5000], dt: [ [100,500],[100,5000,2] ], vs: { eyesRotateX: [[-0.6,0.6]], eyesRotateY: [[-0.2,0.6]] } },
@@ -125,7 +126,7 @@ class TalkingHead {
       },
       'love' : {
         baseline: { browInnerUp: 0.5, browOuterUpLeft: 0.2, browOuterUpRight: 0.2, mouthSmile: 0.2, eyeBlinkLeft: 0.6, eyeBlinkRight: 0.6, eyeWideLeft: 0.8, eyeWideRight: 0.8, headRotateX: 0.1, mouthDimpleLeft: 0.1, mouthDimpleRight: 0.1, mouthPressLeft: 0.2, mouthShrugUpper: 0.2, mouthUpperUpLeft: 0.1, mouthUpperUpRight: 0.1 },
-        speech: { deltaRate: -0.1, deltaPitch: -0.7 },
+        speech: { deltaRate: -0.1, deltaPitch: -0.7, deltaVolume: 0 },
         anims: [
           { name: 'head', dt: [ [1000,5000] ], vs: { headRotateX: [[-0.04,0.10]], headRotateY: [[-0.3,0.3]], headRotateZ: [[-0.08,0.08]] } },
           { name: 'eyes', delay: [300,5000], dt: [ [100,500],[100,5000,2] ], vs: { eyesRotateX: [[-0.6,0.6]], eyesRotateY: [[-0.2,0.6]] } },
@@ -136,7 +137,7 @@ class TalkingHead {
       },
       'sleep' : {
         baseline: { eyesClosed: 1, eyeBlinkLeft: 1, eyeBlinkRight: 1 },
-        speech: { deltaRate: 0, deltaPitch: -0.2 },
+        speech: { deltaRate: 0, deltaPitch: -0.2, deltaVolume: 0 },
         anims: [
           { name: 'head', delay: [1000,5000], dt: [ [2000,10000] ], vs: { headRotateX: [[0,0.4]], headRotateY: [[-0.1,0.1]], headRotateZ: [[-0.04,0.04]] } },
         ]
@@ -677,8 +678,8 @@ class TalkingHead {
   */
   gaussianRandom(start,end,skew=1) {
     let r = 0;
-    for( let i=0; i<6; i++) r += Math.random();
-    return start + Math.pow(r/6,skew) * (end - start);
+    for( let i=0; i<5; i++) r += Math.random();
+    return start + Math.pow(r/5,skew) * (end - start);
   }
 
   /**
@@ -948,6 +949,7 @@ class TalkingHead {
         if ( opt.gttsVoice ) o.voice = opt.gttsVoice;
         if ( opt.gttsRate ) o.rate = opt.gttsRate;
         if ( opt.gttsVoice ) o.pitch = opt.gttsPitch;
+        if ( opt.gttsVolume ) o.volume = opt.gttsVolume;
         this.gttsQueue.push(o);
         firstSentence = false;
       }
@@ -997,7 +999,8 @@ class TalkingHead {
             "audioConfig": {
               "audioEncoding": this.gttsAudioEncoding,
               "speakingRate": (line.rate || this.opt.gttsRate) + this.mood.speech.deltaRate,
-              "pitch": (line.pitch || this.opt.gttsPitch) + this.mood.speech.deltaPitch
+              "pitch": (line.pitch || this.opt.gttsPitch) + this.mood.speech.deltaPitch,
+              "volumeGainDb": (line.volume || this.opt.gttsVolume) + this.mood.speech.deltaVolume
             }
           })
         });
@@ -1025,11 +1028,25 @@ class TalkingHead {
   }
 
   /**
+  * Pause speaking.
+  */
+  pauseSpeaking() {
+    if ( this.gttsAudio ) this.gttsAudio.pause();
+    this.gttsSpeaking = false;
+    this.animQueue = this.animQueue.filter( x  => x.template.name !== 'viseme' );
+    if ( this.avatar ) {
+      this.resetLips();
+      this.render();
+    }
+  }
+
+  /**
   * Stop speaking and clear the speech queue.
   */
   stopSpeaking() {
     if ( this.gttsAudio ) this.gttsAudio.pause();
     this.gttsQueue.length = 0;
+    this.animQueue = this.animQueue.filter( x  => x.template.name !== 'viseme' );
     this.gttsSpeaking = false;
     if ( this.avatar ) {
       this.resetLips();
