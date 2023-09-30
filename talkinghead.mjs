@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import dompurify from 'dompurify';
+import { marked } from 'marked';
 
 /**
 * @class Talking Head speaking Finnish
@@ -10,58 +12,67 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 class TalkingHead {
 
   /**
-  * Callback when the Avatar has been succesfully loaded
+  * Callback when the avatar was loaded succesfully.
   * @callback successfn
   */
 
   /**
-  * Callback when there was an error in loading the Avatar
+  * Callback if there was en error while loading the avatar.
   * @callback errorfn
   * @param {string} error Error message
   */
 
   /**
-  * @constructor
-  * @param {Object} nodeAvatar DOM element of the avatar
-  * @param {Object} nodeSubtitles DOM element of the subtitles
-  * @param {string} urlAvatar3D Avatar URL
-  * @param {Object} [opt=null] Options
-  * @param {successfn} [success=null] Callback when the Avatar has been succesfully loaded
-  * @param {errorfn} [error=null] Callback when there was an error in initialization
+  * Callback when new subtitles were written.
+  * @callback subtitlesfn
+  * @param {Object} node DOM node
   */
-  constructor(nodeAvatar, nodeSubtitles, urlAvatar3D, opt = null, success = null, error = null) {
-    this.nodeAvatar = nodeAvatar;
-    this.nodeSubtitles = nodeSubtitles;
+
+
+
+  /**
+  * @constructor
+  * @param {string} url Avatar URL
+  * @param {Object} node DOM element of the avatar
+  * @param {Object} [opt=null] Options
+  * @param {successfn} [onsuccess=null] Callback when the Avatar has been succesfully loaded
+  * @param {errorfn} [onerror=null] Callback when there was an error in initialization
+  */
+  constructor(url, node, opt = null, onsuccess = null, onerror = null ) {
+    this.nodeAvatar = node;
     opt = opt || {};
     this.opt = {
-      gttsEndpoint: null,
-      gttsApikey: null,
-      gttsLang: "fi-FI",
-      gttsVoice: "fi-FI-Standard-A",
-      gttsRate: 0.95,
-      gttsPitch: 0,
-      gttsVolume: 0,
-      gttsTrimStart: -100,
-      gttsTrimEnd: 300,
-      avatarRootObject: 'AvatarRoot',
-      avatarMeshObject: 'Wolf3D_Avatar',
-      avatarHeadObject: 'Head',
-      avatarHideObjects: ['LeftHand','RightHand'],
-      avatarOffset: 0.8,
+      ttsEndpoint: null,
+      ttsApikey: null,
+      ttsLang: "fi-FI",
+      ttsVoice: "fi-FI-Standard-A",
+      ttsRate: 0.95,
+      ttsPitch: 0,
+      ttsVolume: 0,
+      ttsTrimStart: 0,
+      ttsTrimEnd: 200,
+      modelPixelRatio: 1,
+      cameraView: 'closeup',
+      cameraX: 0,
+      cameraY: 0,
+      cameraZ: 0,
+      cameraRotateEnable: true,
+      cameraPanEnable: false,
+      cameraZoomEnable: false,
       avatarMood: "neutral",
-      avatarPixelRatio: 1,
-      avatarRotateEnable: true,
-      avatarPanEnable: false,
-      avatarZoomEnable: false
+      markedOptions: { mangle:false, headerIds:false, breaks: true }
     };
     Object.assign( this.opt, opt );
+
 
     // Animation templates for moods
     this.animMoods = {
       'neutral' : {
+        name: 'neutral',
         baseline: { eyesLookDown: 0.1 },
         speech: { deltaRate: 0, deltaPitch: 0, deltaVolume: 0 },
         anims: [
+          { name: 'breathing', delay: 1000, dt: [ 2000,4000 ], vs: { chest: [0.5,0] } },
           { name: 'head', delay: [0,1000], dt: [ [200,5000] ], vs: { headRotateX: [[-0.04,0.10]], headRotateY: [[-0.3,0.3]], headRotateZ: [[-0.08,0.08]] } },
           { name: 'eyes', delay: [200,5000], dt: [ [100,500],[100,5000,2] ], vs: { eyesRotateX: [[-0.6,0.6]], eyesRotateY: [[-0.2,0.6]] } },
           { name: 'blink', delay: [2000,10000], dt: [50,[100,300],100], vs: { eyeBlinkLeft: [1,1,0], eyeBlinkRight: [1,1,0] } },
@@ -70,9 +81,11 @@ class TalkingHead {
         ]
       },
       'happy' : {
+        name: 'happy',
         baseline: { mouthSmile: 0.3, eyesLookDown: 0.1 },
         speech: { deltaRate: 0, deltaPitch: 0.1, deltaVolume: 0 },
         anims: [
+          { name: 'breathing', delay: 500, dt: [ 2000,4000 ], vs: { chest: [0.5,0] } },
           { name: 'head', dt: [ [1000,5000] ], vs: { headRotateX: [[-0.04,0.10]], headRotateY: [[-0.3,0.3]], headRotateZ: [[-0.08,0.08]] } },
           { name: 'eyes', delay: [100,5000], dt: [ [100,500],[100,5000,2] ], vs: { eyesRotateX: [[-0.6,0.6]], eyesRotateY: [[-0.2,0.6]] } },
           { name: 'blink', delay: [2000,10000], dt: [50,[100,300],100], vs: { eyeBlinkLeft: [1,1,0], eyeBlinkRight: [1,1,0] } },
@@ -81,9 +94,11 @@ class TalkingHead {
         ]
       },
       'angry' : {
+        name: 'angry',
         baseline: { eyesLookDown: 0.1, browDownLeft: 0.7, browDownRight: 0.7, jawForward: 0.3, mouthFrownLeft: 0.8, mouthFrownRight: 0.8, mouthRollLower: 0.3, mouthShrugLower: 0.4 },
         speech: { deltaRate: -0.2, deltaPitch: 0.2, deltaVolume: 0 },
         anims: [
+          { name: 'breathing', delay: 500, dt: [ 1000,1500 ], vs: { chest: [0.7,0] } },
           { name: 'head', delay: [100,500], dt: [ [200,5000] ], vs: { headRotateX: [[-0.04,0.10]], headRotateY: [[-0.2,0.2]], headRotateZ: [[-0.08,0.08]] } },
           { name: 'eyes', delay: [100,5000], dt: [ [100,500],[100,5000,2] ], vs: { eyesRotateX: [[-0.6,0.6]], eyesRotateY: [[-0.2,0.6]] } },
           { name: 'blink', delay: [2000,10000], dt: [50,[100,300],100], vs: { eyeBlinkLeft: [1,1,0], eyeBlinkRight: [1,1,0] } },
@@ -92,9 +107,11 @@ class TalkingHead {
         ]
       },
       'sad' : {
+        name: 'sad',
         baseline: { eyesLookDown: 0.2, browDownRight: 0.1, browInnerUp: 0.7, browOuterUpRight: 0.2, eyeSquintLeft: 0.8, eyeSquintRight: 0.8, mouthFrownLeft: 1, mouthFrownRight: 1, mouthLeft: 0.2, mouthPucker: 0.5, mouthRollLower: 0.2, mouthRollUpper: 0.2, mouthShrugLower: 0.2, mouthShrugUpper: 0.2, mouthStretchLeft: 0.5 },
         speech: { deltaRate: -0.2, deltaPitch: -0.2, deltaVolume: 0 },
         anims: [
+          { name: 'breathing', delay: 1000, dt: [ 1500,3000 ], vs: { chest: [0.5,0] } },
           { name: 'head', delay: [100,500], dt: [ [200,5000] ], vs: { headRotateX: [[-0.04,0.10]], headRotateY: [[-0.2,0.2]], headRotateZ: [[-0.08,0.08]] } },
           { name: 'eyes', delay: [100,5000], dt: [ [100,500],[100,5000,2] ], vs: { eyesRotateX: [[-0.6,0.6]], eyesRotateY: [[-0.2,0.6]] } },
           { name: 'blink', delay: [2000,10000], dt: [50,[100,300],100], vs: { eyeBlinkLeft: [1,1,0], eyeBlinkRight: [1,1,0] } },
@@ -103,9 +120,11 @@ class TalkingHead {
         ]
       },
       'fear' : {
+        name: 'fear',
         baseline: { browInnerUp: 0.8, eyeSquintLeft: 0.5, eyeSquintRight: 0.5, eyeWideLeft: 0.7, eyeWideRight: 0.7, mouthClose: 0.1, mouthFunnel: 0.3, mouthShrugLower: 0.6, mouthShrugUpper: 0.6 },
         speech: { deltaRate: -0.2, deltaPitch: 0, deltaVolume: 0 },
         anims: [
+          { name: 'breathing', delay: 500, dt: [ 600,1200 ], vs: { chest: [0.5,0] } },
           { name: 'head', delay: [100,500], dt: [ [200,5000] ], vs: { headRotateX: [[-0.06,0.12]], headRotateY: [[-0.5,0.5]], headRotateZ: [[-0.1,0.1]] } },
           { name: 'eyes', delay: [100,2000], dt: [ [100,500],[100,5000,2] ], vs: { eyesRotateX: [[-1,1]], eyesRotateY: [[-0.2,0.6]] } },
           { name: 'blink', delay: [4000,10000], dt: [50,[100,300],100], vs: { eyeBlinkLeft: [1,1,0], eyeBlinkRight: [1,1,0] } },
@@ -114,9 +133,11 @@ class TalkingHead {
         ]
       },
       'disgust' : {
+        name: 'disgust',
         baseline: { browDownLeft: 0.9, browDownRight: 0.1, browInnerUp: 0.3, eyeSquintLeft: 1, eyeSquintRight: 1, eyeWideLeft: 0.5, eyeWideRight: 0.5, eyesRotateX: 0.05, mouthLeft: 0.4, mouthPressLeft: 0.3, mouthRollLower: 0.4, mouthShrugLower: 0.4, mouthShrugUpper: 1, mouthUpperUpLeft: 0.3, noseSneerLeft: 1, noseSneerRight: 0.7 },
         speech: { deltaRate: -0.2, deltaPitch: 0, deltaVolume: 0 },
         anims: [
+          { name: 'breathing', delay: 1000, dt: [ 1500,3000 ], vs: { chest: [0.5,0] } },
           { name: 'head', delay: [100,500], dt: [ [200,5000] ], vs: { headRotateX: [[-0.04,0.10]], headRotateY: [[-0.2,0.2]], headRotateZ: [[-0.08,0.08]] } },
           { name: 'eyes', delay: [100,5000], dt: [ [100,500],[100,5000,2] ], vs: { eyesRotateX: [[-0.6,0.6]], eyesRotateY: [[-0.2,0.6]] } },
           { name: 'blink', delay: [2000,10000], dt: [50,[100,300],100], vs: { eyeBlinkLeft: [1,1,0], eyeBlinkRight: [1,1,0] } },
@@ -125,9 +146,11 @@ class TalkingHead {
         ]
       },
       'love' : {
+        name: 'love',
         baseline: { browInnerUp: 0.5, browOuterUpLeft: 0.2, browOuterUpRight: 0.2, mouthSmile: 0.2, eyeBlinkLeft: 0.6, eyeBlinkRight: 0.6, eyeWideLeft: 0.8, eyeWideRight: 0.8, headRotateX: 0.1, mouthDimpleLeft: 0.1, mouthDimpleRight: 0.1, mouthPressLeft: 0.2, mouthShrugUpper: 0.2, mouthUpperUpLeft: 0.1, mouthUpperUpRight: 0.1 },
         speech: { deltaRate: -0.1, deltaPitch: -0.7, deltaVolume: 0 },
         anims: [
+          { name: 'breathing', delay: 1000, dt: [ 1500,3000 ], vs: { chest: [0.5,0] } },
           { name: 'head', dt: [ [1000,5000] ], vs: { headRotateX: [[-0.04,0.10]], headRotateY: [[-0.3,0.3]], headRotateZ: [[-0.08,0.08]] } },
           { name: 'eyes', delay: [300,5000], dt: [ [100,500],[100,5000,2] ], vs: { eyesRotateX: [[-0.6,0.6]], eyesRotateY: [[-0.2,0.6]] } },
           { name: 'blink', delay: [2000,10000], dt: [50,[200,300],100], vs: { eyeBlinkLeft: [0.6,0.6,0], eyeBlinkRight: [0.6,0.6,0] } },
@@ -136,10 +159,16 @@ class TalkingHead {
         ]
       },
       'sleep' : {
+        name: 'sleep',
         baseline: { eyesClosed: 1, eyeBlinkLeft: 1, eyeBlinkRight: 1 },
         speech: { deltaRate: 0, deltaPitch: -0.2, deltaVolume: 0 },
         anims: [
+          { name: 'breathing', delay: 1000, dt: [ 2000,4000 ], vs: { chest: [1,0] } },
           { name: 'head', delay: [1000,5000], dt: [ [2000,10000] ], vs: { headRotateX: [[0,0.4]], headRotateY: [[-0.1,0.1]], headRotateZ: [[-0.04,0.04]] } },
+          { name: 'eyes', delay: 1000 },
+          { name: 'blink', delay: 1000 },
+          { name: 'mouth', delay: 1000 },
+          { name: 'misc', delay: 1000 }
         ]
       }
     };
@@ -216,35 +245,35 @@ class TalkingHead {
     this.easing = this.sigmoidFactory(5); // Ease in and out
 
     // Setup Google text-to-speech
-    if ( this.opt.gttsEndpoint ) {
-      this.gttsAudio = new Audio();
-      if (this.gttsAudio.canPlayType("audio/ogg")) {
-        this.gttsAudioEncoding = "OGG-OPUS";
-        this.gttsAudioData = "data:audio/ogg;base64,";
-      } else if (this.gttsAudio.canPlayType("audio/mp3")) {
-        this.gttsAudioEncoding = "MP3";
-        this.gttsAudioData = "data:audio/mp3;base64,";
+    if ( this.opt.ttsEndpoint ) {
+      this.ttsAudio = new Audio();
+      if (this.ttsAudio.canPlayType("audio/ogg")) {
+        this.ttsAudioEncoding = "OGG-OPUS";
+        this.ttsAudioData = "data:audio/ogg;base64,";
+      } else if (this.ttsAudio.canPlayType("audio/mp3")) {
+        this.ttsAudioEncoding = "MP3";
+        this.ttsAudioData = "data:audio/mp3;base64,";
       } else {
         const msg = "There was no support for either OGG or MP3 audio.";
         console.error(msg);
         if ( error && typeof error === 'function' ) error(msg);
         throw new Error(msg);
       }
-      this.gttsAudio.oncanplaythrough = this.gttsOnCanPlayThrough.bind(this);
-      this.gttsAudio.onended = this.gttsOnEnd.bind(this);
-      this.gttsAudio.onerror = this.gttsOnError.bind(this);
+      this.ttsAudio.oncanplaythrough = this.ttsOnCanPlayThrough.bind(this);
+      this.ttsAudio.onended = this.ttsOnEnd.bind(this);
+      this.ttsAudio.onerror = this.ttsOnError.bind(this);
     } else {
       const msg = "You must provide some Google-compliant Text-To-Speech Endpoint.";
       console.error(msg);
       if ( error && typeof error === 'function' ) error(msg);
       throw new Error(msg);
     }
-    this.gttsQueue = [];
-    this.gttsSpeaking = false;
+    this.ttsQueue = [];
+    this.ttsSpeaking = false;
 
     // Setup 3D Animation
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    this.renderer.setPixelRatio( this.opt.avatarPixelRatio * window.devicePixelRatio );
+    this.renderer.setPixelRatio( this.opt.modelPixelRatio * window.devicePixelRatio );
     this.renderer.setSize(this.nodeAvatar.clientWidth, this.nodeAvatar.clientHeight);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.outputEncoding = THREE.sRGBEncoding;
@@ -252,22 +281,22 @@ class TalkingHead {
     this.renderer.useLegacyLights = false;
     this.renderer.shadowMap.enabled = false;
     this.nodeAvatar.appendChild( this.renderer.domElement );
-    this.camera = new THREE.PerspectiveCamera( 10, 1, 1, 10 );
+    this.camera = new THREE.PerspectiveCamera( 10, 1, 1, 2000 );
     this.scene = new THREE.Scene();
     const pmremGenerator = new THREE.PMREMGenerator( this.renderer );
     pmremGenerator.compileEquirectangularShader();
     this.scene.environment = pmremGenerator.fromScene( new RoomEnvironment() ).texture;
     new ResizeObserver(this.onResize.bind(this)).observe(this.nodeAvatar);
     this.controls = new OrbitControls( this.camera, this.renderer.domElement );
-    this.controls.enableZoom = this.opt.avatarZoomEnable;
-    this.controls.enableRotate = this.opt.avatarRotateEnable;
-    this.controls.enablePan = this.opt.avatarPanEnable;
+    this.controls.enableZoom = this.opt.cameraZoomEnable;
+    this.controls.enableRotate = this.opt.cameraRotateEnable;
+    this.controls.enablePan = this.opt.cameraPanEnable;
     this.controls.minDistance = 2;
-    this.controls.maxDistance = 5;
+    this.controls.maxDistance = 2000;
     this.controls.update();
 
     // Load 3D Avatar
-    this.loadModel(urlAvatar3D,success,error);
+    this.loadModel(url,onsuccess,onerror);
   }
 
   /**
@@ -275,20 +304,18 @@ class TalkingHead {
   * @param {Object} obj Object
   */
   clearThree(obj){
-    while(obj.children.length > 0){
+    while( obj.children.length ){
       this.clearThree(obj.children[0]);
       obj.remove(obj.children[0]);
     }
-    if(obj.geometry) obj.geometry.dispose();
+    if ( obj.geometry ) obj.geometry.dispose();
 
-    if(obj.material){
-      //in case of map, bumpMap, normalMap, envMap ...
-      Object.keys(obj.material).forEach(prop => {
-        if(!obj.material[prop])
-        return;
-        if(obj.material[prop] !== null && typeof obj.material[prop].dispose === 'function')
-        obj.material[prop].dispose();
-      })
+    if ( obj.material ) {
+      Object.keys(obj.material).forEach( x => {
+        if ( obj.material.hasOwnProperty(x) !== null && typeof obj.material[x].dispose === 'function' ) {
+          obj.material[x].dispose();
+        }
+      });
       obj.material.dispose();
     }
   }
@@ -296,10 +323,11 @@ class TalkingHead {
   /**
   * Loader for 3D avatar model.
   * @param {string} url URL to GLTF/GLB file.
-  * @param {successfn} [success=null] Callback when the Avatar has been succesfully loaded
-  * @param {errorfn} [error=null] Callback when there was an error in initialization
+  * @param {successfn} [onsuccess=null] Callback when the Avatar has been succesfully loaded
+  * @param {errorfn} [onerror=null] Callback when there was an error in initialization
   */
-  loadModel(url,success=null,error=null) {
+  loadModel(url,onsuccess=null,onerror=null) {
+
     this.stopAnimation();
     const loader = new GLTFLoader();
     loader.load(url, (gltf) => {
@@ -309,36 +337,39 @@ class TalkingHead {
         this.clearThree( this.scene );
       }
 
-      // Add avatar to the scene
-      this.avatar = gltf.scene.getObjectByName(this.opt.avatarRootObject);
-      if ( !this.avatar ) {
-        const msg = "Avatar root not found.";
+      function notfound(x) {
+        const msg = 'Avatar ' + x + ' not found';
         console.error(msg);
-        if ( error && typeof error === 'function' ) error(msg);
+        if ( onerror && typeof onerror === 'function' ) onerror(msg);
         throw new Error(msg);
       }
-      this.mesh = this.avatar.getObjectByName(this.opt.avatarMeshObject);
-      if ( !this.mesh ) {
-        const msg = "Avatar Mesh not found.";
-        console.error(msg);
-        if ( error && typeof error === 'function' ) error(msg);
-        throw new Error(msg);
-      }
-      this.head = this.avatar.getObjectByName(this.opt.avatarHeadObject);
-      if ( !this.avatar ) {
-        const msg = "Avatar head not found.";
-        console.error(msg);
-        if ( error && typeof error === 'function' ) error(msg);
-        throw new Error(msg);
-      }
-      this.avatar.position.set(0, -0.6, 0);
-      this.scene.add(this.avatar);
 
-      // Hide objects
-      this.opt.avatarHideObjects.forEach( name => {
-        const o = this.avatar.getObjectByName(name);
-        if ( o ) o.position.set();
+      // Add avatar to the scene
+      this.avatar = gltf.scene.getObjectByName("Armature"); // Full-body
+      if ( !this.avatar ) notfound("Armature");
+
+      this.morphs = [];
+      ['EyeLeft','EyeRight','Wolf3D_Head','Wolf3D_Teeth'].forEach( x => {
+        let mesh = this.avatar.getObjectByName(x);
+        if ( !mesh ) notfound(x)
+        this.morphs.push( mesh );
       });
+
+      this.chest = this.avatar.getObjectByName('Spine1');
+      if ( !this.chest ) notfound('Spine1');
+
+      this.head = this.avatar.getObjectByName('Head');
+      if ( !this.head ) notfound('Head');
+
+      // Relax arms
+      ['LeftArm','RightArm'].forEach( x => {
+        const o = this.avatar.getObjectByName(x);
+        if ( !o ) notfound(x);
+        o.rotation.set(1.3,0,0);
+      });
+
+      // Add avatar to scene
+      this.scene.add(this.avatar);
 
       // Add lighting
       const light = new THREE.SpotLight( 0x8888FF, 2 );
@@ -353,40 +384,78 @@ class TalkingHead {
 
       // Fit avatar to screen
       this.controls.reset();
-      this.fitToObject(this.avatar);
+      this.setView(this.opt.cameraView);
 
       // Start animations
+      this.setValue('headRotateX',0);
+      this.setValue('headRotateY',0);
+      this.setValue('headRotateZ',0);
+      this.setValue('chest',0);
       this.setMood( this.opt.avatarMood );
       this.startAnimation();
 
       // Callback
-      if ( success && typeof success === 'function' ) success();
+      if ( onsuccess && typeof onsuccess === 'function' ) onsuccess();
     },
     null,
     (msg) => {
       console.error(msg);
-      if ( error && typeof error === 'function' ) error(msg);
+      if ( onerror && typeof onerror === 'function' ) onerror(msg);
       throw new Error(msg);
     });
   }
 
   /**
-  * Fit 3D object to the view.
-  * @param {Object} object 3D object.
+  * Get mood names.
+  * @return {string[]} Mood names.
   */
-  fitToObject(object) {
-    const offset = this.opt.avatarOffset;
+  getViewNames() {
+    return ['closeup','left','right','fullbody'];
+  }
+
+  /**
+  * Fit 3D object to the view.
+  * @param {string} view Camera view
+  * @param {Object} opt Options
+  */
+  setView(view, opt = null) {
+    if ( !this.avatar ) return;
+
+    opt = opt || {}
+    Object.assign( opt, this.opt );
+
+    // Camera position
     const boundingBox = new THREE.Box3();
-    boundingBox.setFromObject( object );
+    boundingBox.setFromObject( this.avatar );
     var size = new THREE.Vector3();
     boundingBox.getSize(size);
     const fov = this.camera.fov * ( Math.PI / 180 );
-    let cameraZ = offset * ( size.z / 2 + Math.abs( size.y / 2 / Math.tan( fov / 2 ) ));
-    this.camera.position.set( 0, 0, cameraZ );
-    const minZ = boundingBox.min.z;
-    const cameraToFarEdge = ( minZ < 0 ) ? -minZ + cameraZ : cameraZ - minZ;
-    this.camera.far = cameraToFarEdge * 3;
-    this.camera.updateProjectionMatrix();
+    let x, y, z;
+    let distance = 0.7 * (size.z / 2 + Math.abs( size.x / 2 / Math.tan( fov / 2 ) ));
+    let tx = 1, ty = 1, tz = 1;
+    if ( view === 'closeup' ) {
+      x = - opt.cameraX;
+      y = 1.6 - opt.cameraY;
+      z = opt.cameraZ + distance;
+      tz = 0;
+    } else if ( view === 'right' ) {
+      x = - opt.cameraZ - distance;
+      y = 1.6 - opt.cameraY;
+      z = - opt.cameraX + 0.15;
+      tx = 0;
+    } else if ( view === 'left' ) {
+      x = opt.cameraZ + distance;
+      y = 1.6 - opt.cameraY;
+      z = opt.cameraX + 0.05;
+      tx = 0;
+    } else if ( view === 'fullbody' ) {
+      x = - (3.2 * opt.cameraX);
+      y = 1 - opt.cameraY;
+      z = 7.6 + opt.cameraZ + distance;
+      tz = 0;
+    }
+    this.camera.position.set( x, y, z );
+    this.controls.target.set( tx * x, ty * y, tz * z );
     this.controls.update();
     this.render();
   }
@@ -421,8 +490,10 @@ class TalkingHead {
       return this.head.rotation.y;
     } else if ( mt === 'headRotateZ' ) {
       return this.head.rotation.z;
+    } else if ( mt === 'chest' ) {
+      return (this.chest.scale.x-1)*30;
     } else {
-      return this.mesh.morphTargetInfluences[this.mesh.morphTargetDictionary[mt]];
+      return this.morphs[0].morphTargetInfluences[this.morphs[0].morphTargetDictionary[mt]];
     }
   }
 
@@ -443,8 +514,12 @@ class TalkingHead {
     } else if ( mt === 'headRotateZ' ) {
       this.head.rotation.z = v;
       this.avatar.rotation.z = v/6;
+    } else if ( mt === 'chest' ) {
+      const scale = v/30;
+      this.chest.scale.set(1+scale,1+scale/2,1+4*scale);
+      this.head.scale.set(1/(1+scale),1/(1+scale/2),1/(1+4*scale));
     } else {
-      this.mesh.morphTargetInfluences[this.mesh.morphTargetDictionary[mt]] = v;
+      this.morphs.forEach( x => x.morphTargetInfluences[x.morphTargetDictionary[mt]] = v );
     }
   }
 
@@ -458,6 +533,14 @@ class TalkingHead {
   }
 
   /**
+  * Get mood.
+  * @return {string[]} Mood.
+  */
+  getMood() {
+    return this.mood.name;
+  }
+
+  /**
   * Set mood.
   * @param {string} s Mood.
   */
@@ -467,18 +550,18 @@ class TalkingHead {
     this.mood = this.animMoods[s];
 
     // Reset morph target baseline to 0
-    for( let mt of Object.keys(this.mesh.morphTargetDictionary) ) {
+    for( let mt of Object.keys(this.morphs[0].morphTargetDictionary) ) {
       this.setBaselineValue( mt, this.mood.baseline.hasOwnProperty(mt) ? this.mood.baseline[mt] : 0 );
     }
 
-    // Quit current loops
-    this.animQueue.forEach( x => {
-      if ( x.hasOwnProperty('loop') ) delete x.loop;
-    });
-
-    // Set animations
+    // Set/replace animations
     this.mood.anims.forEach( x => {
-      this.animQueue.push( this.animFactory( x, -1 ) );
+      let o = this.animQueue.find( y => y.template.name === x.name );
+      if ( o ) {
+        o.template = x;
+      } else {
+        this.animQueue.push( this.animFactory( x, -1 ) );
+      }
     });
 
   }
@@ -489,8 +572,8 @@ class TalkingHead {
   * @return {string[]} Morph target names.
   */
   getMorphTargetNames() {
-    return [ 'headRotateX', 'headRotateY', 'headRotateZ', 'eyesRotateX', 'eyesRotateY',
-    ...Object.keys(this.mesh.morphTargetDictionary)].sort();
+    return [ 'headRotateX', 'headRotateY', 'headRotateZ', 'eyesRotateX', 'eyesRotateY', 'chest',
+    ...Object.keys(this.morphs[0].morphTargetDictionary)].sort();
   }
 
   /**
@@ -534,8 +617,12 @@ class TalkingHead {
     } else if ( mt === 'eyesRotateY' ) {
       this.setBaselineValue('eyesLookDown', (v === null) ? null : (v>0 ? v : 0) );
       this.setBaselineValue('eyesLookUp', (v === null) ? null : (v>0 ? 0 : -v) );
+    } if ( mt === 'eyeLookOutLeft' || mt === 'eyeLookInLeft' ||
+            mt === 'eyeLookOutRight' || mt === 'eyeLookInRight' ||
+            mt === 'eyesLookDown' || mt === 'eyesLookUp' ) {
+      // skip these
     } else {
-      if ( this.mesh.morphTargetDictionary.hasOwnProperty(mt) ) {
+      if ( this.morphs[0].morphTargetDictionary.hasOwnProperty(mt) ) {
         if ( v === null ) {
           if ( this.animBaseline.hasOwnProperty(mt) ) {
             delete this.animBaseline[mt];
@@ -726,37 +813,33 @@ class TalkingHead {
     }
 
     // Animations
-    const newanim = [];
     for( let i = 0; i < this.animQueue.length; i++ ) {
       const x = this.animQueue[i];
-      if ( t < x.ts[0] ) {
-        newanim.push( x );
-      } else {
+      if ( t >= x.ts[0] ) {
         for( let [mt,vs] of Object.entries(x.vs) ) {
           if ( mt === 'subtitles' ) {
-            o[mt] = (o.hasOwnProperty(mt) ? o[mt] + vs : vs);
+            o[mt] = (x.isFirst ? '\n\n' : '') + (o.hasOwnProperty(mt) ? o[mt] + vs : vs);
             delete x.vs[mt];
           } else {
             if ( vs[0] === null ) vs[0] = this.getValue(mt);
             o[mt] = this.valueAnimationSeq( x.ts, vs, t, this.easing );
             if ( this.animBaseline.hasOwnProperty(mt) ) this.animBaseline[mt].t0 = undefined;
-            for( let j=0; j<newanim.length; j++ ) {
-              if ( newanim[j].vs.hasOwnProperty(mt) ) delete newanim[j].vs[mt];
+            for( let j=0; j<i; j++ ) {
+              if ( this.animQueue[j].vs.hasOwnProperty(mt) ) delete this.animQueue[j].vs[mt];
             }
           }
         }
         if ( t >= x.ts[x.ts.length-1] ) {
           if ( x.hasOwnProperty('mood') ) this.setMood(x.mood);
           if ( x.loop ) {
-            let restrain = ( this.gttsSpeaking && (x.template.name === 'head' || x.template.name === 'eyes') ) ? 4 : 1;
-            newanim.push( this.animFactory( x.template, (x.loop > 0 ? x.loop - 1 : x.loop), 1, 1/restrain ) );
+            let restrain = ( this.ttsSpeaking && (x.template.name === 'head' || x.template.name === 'eyes') ) ? 4 : 1;
+            this.animQueue[i] = this.animFactory( x.template, (x.loop > 0 ? x.loop - 1 : x.loop), 1, 1/restrain );
+          } else {
+            this.animQueue.splice(i--, 1);
           }
-        } else {
-          newanim.push( x );
         }
       }
     }
-    this.animQueue = newanim;
 
     // Set fixed
     for( let [mt,x] of Object.entries(this.animFixed) ) {
@@ -778,10 +861,22 @@ class TalkingHead {
     let changed = false;
     for( let [mt,target] of Object.entries(o) ) {
       if ( mt === 'subtitles' ) {
-        if ( this.nodeSubtitles ) {
-          this.nodeSubtitles.textContent += target;
-          this.nodeSubtitles.parentNode.scrollTop = this.nodeSubtitles.parentNode.scrollHeight;
-        }
+        let last = this.nodeSubtitles.lastElementChild;
+        target.split('\n\n').forEach( (p,i) => {
+          if ( p.length ) {
+            if ( i > 0 || !last ) {
+              last = this.nodeSubtitles.appendChild( document.createElement('p') );
+              last.dataset.markdown = '';
+            }
+            let markdown = last.dataset.markdown + p;
+            last.outerHTML = dompurify.sanitize(marked.parse( markdown, this.opt.markedOptions ));
+            last = this.nodeSubtitles.lastElementChild;
+            last.dataset.markdown = markdown;
+            if ( this.onSubtitles && typeof this.onSubtitles === 'function' ) {
+              this.onSubtitles(last);
+            }
+          }
+        });
       } else {
         this.setValue(mt,target);
         changed = true;
@@ -796,59 +891,41 @@ class TalkingHead {
   * Reset all the visemes for lips.
   */
   resetLips() {
-    if ( this.mesh ) {
-      const md = this.mesh.morphTargetDictionary;
-      const mi = this.mesh.morphTargetInfluences;
-      Object.values(this.visemes).forEach( x => mi[md['viseme_'+x]] = 0 );
-    }
+    Object.values(this.visemes).forEach( x => {
+      this.morphs.forEach( y => y.morphTargetInfluences[y.morphTargetDictionary['viseme_'+x]] );
+    });
   }
 
   /**
   * Audio is ready to be played.
   * @param {Object} event Audio event
   */
-  gttsOnCanPlayThrough(event) {
-    let d = 1000 * this.gttsAudio.duration; // Duration in ms
-    if ( d > this.opt.gttsTrimEnd ) d = d - this.opt.gttsTrimEnd;
-    let t = 0;
-    const os = [];
-    const letters = [...this.gttsAudio.text];
-    for( let i=0; i<letters.length; i++ ) {
-      const viseme = this.visemes[letters[i].toLowerCase()];
-      const o = { template: { name: 'viseme' }, ts: [t-0.2], vs: {} };
-      if ( viseme ) {
-        o.ts = [ t-0.2, t+0.4, t+1.5 ];
-        o.vs['viseme_'+viseme] = [null,0.6,0];
-        t += this.pauses[letters[i]] || 1;
-      }
-      o.vs['subtitles'] = letters[i] + (i===(letters.length-1) ? ' ' : '');
-      os.push( o );
-    }
+  ttsOnCanPlayThrough(event) {
+    // Durations
+    let d = 1000 * this.ttsAudio.duration; // Duration in ms
+    if ( d > this.opt.ttsTrimEnd ) d = d - this.opt.ttsTrimEnd;
+    const lastElement = this.ttsAudio.anim[ this.ttsAudio.anim.length-1 ];
+    let t = lastElement.ts[ lastElement.ts.length-1 ] + 1;
 
-    // Reset subtitles
-    if ( this.nodeSubtitles ) {
-      this.nodeSubtitles.textContent = this.nodeSubtitles.textContent.split('\r\n').slice(-2).join('\r\n');
-    }
-
-    // Rescale
-    os.forEach( x => {
+    // Rescale and push to queue
+    this.resetLips();
+    this.ttsAudio.anim.forEach( x => {
       for(let i=0; i<x.ts.length; i++) {
-        x.ts[i] = performance.now() + (x.ts[i] * d/t) + this.opt.gttsTrimStart;
+        x.ts[i] = performance.now() + (x.ts[i] * d/t) + this.opt.ttsTrimStart;
       }
       this.animQueue.push(x);
     });
 
     // Play
-    this.resetLips();
-    this.gttsAudio.play();
+    this.ttsAudio.play();
   }
 
   /**
   * Audio has ended.
   * @param {Object} event Audio event
   */
-  gttsOnEnd(event) {
-    this.gttsSpeaking = false;
+  ttsOnEnd(event) {
+    this.ttsSpeaking = false;
     this.startSpeaking();
   }
 
@@ -856,9 +933,9 @@ class TalkingHead {
   * Audio error.
   * @param {Object} event Audio event
   */
-  gttsOnError(event) {
+  ttsOnError(event) {
     console.log(event);
-    this.gttsSpeaking = false;
+    this.ttsSpeaking = false;
     this.startSpeaking();
   }
 
@@ -903,63 +980,153 @@ class TalkingHead {
     return w.join('').trim();
   }
 
+
   /**
   * Filter text to include only speech and emojis.
   * @param {string} s String
   */
   speechFilter(s) {
-    return s.replace(/\s*\(.*?\)\s*/g, '') // remove brackets /w content
-    .replace(/\s*\[.*?\]\s*/g, '') // remove square brackets /w content
-    .replace('/[#_*\'\":;]/g','')
-    .replaceAll('%',' prosenttia ')
-    .replaceAll('€',' euroa ')
-    .replaceAll('&',' ja ')
-    .replaceAll('+',' plus ')
-    .replace(/(\D)\1\1+/g, "$1$1") // max 2 repeating chars
-    .replaceAll('  ',' ') // Only one repeating space
-    .replace(/(\d)\,(\d)/g, '$1 pilkku $2') // Number separator
-    .replace(/\d+/g, this.numberToWords.bind(this)); // Numbers to words
+    return s.replace('/[#_*\'\":;]/g','')
+        .replaceAll('%',' prosenttia ')
+        .replaceAll('€',' euroa ')
+        .replaceAll('&',' ja ')
+        .replaceAll('+',' plus ')
+        .replace(/(\D)\1\1+/g, "$1$1") // max 2 repeating chars
+        .replaceAll('  ',' ') // Only one repeating space
+        .replace(/(\d)\,(\d)/g, '$1 pilkku $2') // Number separator
+        .replace(/\d+/g, this.numberToWords.bind(this)) // Numbers to words
+        .trim();
   }
 
   /**
   * Add text to the speech queue.
   * @param {string} s Text.
   * @param {Options} [opt=null] Text-specific options for TTS language, voice, rate and pitch.
+  * @param {Object} [nodeSubtitles=null] DOM element of the subtitles
+  * @param {subtitlesfn} [onsubtitles=null] Callback when started
   */
-  // TODO: Limit silence to one.
-  speak(s, opt = null) {
-    s = this.speechFilter(s);
+  speak(s, opt = null, nodeSubtitles = null, onsubtitles = null) {
     opt = opt || {};
 
-    // Split into sentences
-    const regex = /[!\.\?\n\p{Extended_Pictographic}]/;
-    const regexMatch = new RegExp(regex,'ug');
-    const regexSplit = new RegExp(regex,'u');
-    const m = s.match(regexMatch) || [];
-    let firstSentence = true;
-    s.split(regexSplit).forEach( (sentence,i) => {
-      sentence = sentence.trim();
-      if ( sentence.length ) {
-        const pre = ( firstSentence ? '\r\n' : '' );
-        const post = (m[i] && '!.?'.indexOf(m[i]) !== -1) ? m[i] : '';
-        const o = {
-          text: pre + sentence + post,
-        };
-        if ( opt.gttsLang ) o.lang = opt.gttsLang;
-        if ( opt.gttsVoice ) o.voice = opt.gttsVoice;
-        if ( opt.gttsRate ) o.rate = opt.gttsRate;
-        if ( opt.gttsVoice ) o.pitch = opt.gttsPitch;
-        if ( opt.gttsVolume ) o.volume = opt.gttsVolume;
-        this.gttsQueue.push(o);
-        firstSentence = false;
+    // Classifiers
+    const dividersSentence = /[!\.\?\n\p{Extended_Pictographic}]/ug;
+    const dividersWord = /[ !\.\?\n\p{Extended_Pictographic}]/ug;
+    const speakables = /[\p{L}\p{N},]/ug;
+    const emojis = /[\p{Extended_Pictographic}]/ug;
+
+    let t = 0; // time counter
+    let markdownWord = ''; // markdown word
+    let textWord = ''; // text-to-speech word
+    let textSentence = ''; // text-to-speech sentence
+    let lipsyncAnim = []; // lip-sync animation sequence
+    let lastSubtitles = null;
+    let isFirst = true; // Text begins
+    const letters = [...s];
+    for( let i=0; i<letters.length; i++ ) {
+      const isLast = i === (letters.length-1);
+
+      // Add letters to words
+      if ( letters[i].match(speakables) ) {
+        textWord += letters[i];
+        if ( nodeSubtitles ) {
+          markdownWord += letters[i];
+        }
+      } else {
+        if ( nodeSubtitles ) {
+          if ( markdownWord.length || !lastSubtitles || letters[i]==='\n' ) {
+            markdownWord += letters[i];
+          } else {
+            lastSubtitles.vs.subtitles += letters[i];
+          }
+        }
       }
-      let emoji = this.animEmojis[m[i]];
-      if ( emoji && emoji.link ) emoji = this.animEmojis[emoji.link];
-      if ( emoji ) {
-        this.gttsQueue.push( { emoji: emoji } );
+
+      // Add words to sentence and animations
+      if ( letters[i].match(dividersWord) || isLast ) {
+
+        // Add to text-to-speech sentence
+        if ( textWord.length ) {
+          textWord = this.speechFilter(textWord);
+          textSentence += textWord;
+        }
+
+        // Push subtitles to animation queue
+        if ( markdownWord.length ) {
+          lastSubtitles = {
+            template: { name: 'subtitles' },
+            ts: [t-0.2],
+            vs: {
+              subtitles: markdownWord
+            },
+            isFirst: isFirst
+          };
+          lipsyncAnim.push( lastSubtitles );
+          markdownWord = '';
+          isFirst = false;
+        }
+
+        // Push visemes to animation queue
+        if ( textWord.length ) {
+          const chars = [...textWord];
+          for( let j=0; j<chars.length; j++ ) {
+            const viseme = this.visemes[chars[j].toLowerCase()];
+            if ( viseme ) {
+              lipsyncAnim.push( {
+                template: { name: 'viseme' },
+                ts: [ t-0.5, t+0.5, t+1.5 ],
+                vs: {
+                  ['viseme_'+viseme]: [null,(viseme === 'PP' || viseme === 'FF') ? 1 : 0.6,0]
+                }
+              });
+              t += this.pauses[chars[j]] || 1;
+            }
+          }
+          textWord = ' ';
+        }
       }
-      this.gttsQueue.push( { break: 300 } );
-    });
+
+      // Process sentences
+      if ( letters[i].match(dividersSentence) || isLast ) {
+
+        // Send sentence to Text-to-speech queue
+        textSentence = textSentence.trim();
+        if ( textSentence.length ) {
+          const o = {
+            text: textSentence,
+            anim: lipsyncAnim
+          };
+          if ( nodeSubtitles ) o.nodeSubtitles = nodeSubtitles;
+          if ( onsubtitles ) o.onSubtitles = onsubtitles;
+          if ( opt.ttsLang ) o.lang = opt.ttsLang;
+          if ( opt.ttsVoice ) o.voice = opt.ttsVoice;
+          if ( opt.ttsRate ) o.rate = opt.ttsRate;
+          if ( opt.ttsVoice ) o.pitch = opt.ttsPitch;
+          if ( opt.ttsVolume ) o.volume = opt.ttsVolume;
+          this.ttsQueue.push(o);
+
+          // Reset sentence and animation sequence
+          textSentence = '';
+          lipsyncAnim = [];
+          t = 0;
+        }
+
+        // Send emoji, if the divider was a known emoji
+        if ( letters[i].match(emojis) ) {
+          let emoji = this.animEmojis[letters[i]];
+          if ( emoji && emoji.link ) emoji = this.animEmojis[emoji.link];
+          if ( emoji ) {
+            this.ttsQueue.push( { emoji: emoji } );
+          }
+        }
+
+        this.ttsQueue.push( { break: 300 } );
+      }
+
+    }
+
+    this.ttsQueue.push( { break: 1000 } );
+
+    // Start speaking (if not already)
     this.startSpeaking();
   }
 
@@ -969,21 +1136,22 @@ class TalkingHead {
   * @param {boolean} [force=false] If true, forces to proceed (e.g. after break)
   */
   async startSpeaking( force = false ) {
-    if ( !this.avatar || !this.gttsAudio || (this.gttsSpeaking && !force) ) return;
-    this.gttsSpeaking = true;
-    if ( this.gttsQueue.length === 0 ) {
-      this.gttsSpeaking = false;
+    if ( !this.avatar || !this.ttsAudio || (this.ttsSpeaking && !force) ) return;
+    this.ttsSpeaking = true;
+    if ( this.ttsQueue.length === 0 ) {
+      this.ttsSpeaking = false;
       return;
     }
-    let line = this.gttsQueue.shift();
+    let line = this.ttsQueue.shift();
     if ( line.emoji ) {
+      let duration = line.emoji.dt.reduce((a,b) => a+b,0);
       this.animQueue.push( this.animFactory( line.emoji ) );
-    }
-    if ( line.break ) {
+      setTimeout( this.startSpeaking.bind(this), duration/2, true );
+    } else if ( line.break ) {
       setTimeout( this.startSpeaking.bind(this), line.break, true );
     } else if ( line.text ) {
       try {
-        const res = await fetch( this.opt.gttsEndpoint + (this.opt.gttsApikey ? "?key=" + this.opt.gttsApikey : ''), {
+        const res = await fetch( this.opt.ttsEndpoint + (this.opt.ttsApikey ? "?key=" + this.opt.ttsApikey : ''), {
           method: "POST",
           headers: {
             "Content-Type": "application/json; charset=utf-8"
@@ -993,14 +1161,14 @@ class TalkingHead {
               "text": line.text
             },
             "voice": {
-              "languageCode": line.lang || this.opt.gttsLang,
-              "name": line.voice || this.opt.gttsVoice
+              "languageCode": line.lang || this.opt.ttsLang,
+              "name": line.voice || this.opt.ttsVoice
             },
             "audioConfig": {
-              "audioEncoding": this.gttsAudioEncoding,
-              "speakingRate": (line.rate || this.opt.gttsRate) + this.mood.speech.deltaRate,
-              "pitch": (line.pitch || this.opt.gttsPitch) + this.mood.speech.deltaPitch,
-              "volumeGainDb": (line.volume || this.opt.gttsVolume) + this.mood.speech.deltaVolume
+              "audioEncoding": this.ttsAudioEncoding,
+              "speakingRate": (line.rate || this.opt.ttsRate) + this.mood.speech.deltaRate,
+              "pitch": (line.pitch || this.opt.ttsPitch) + this.mood.speech.deltaPitch,
+              "volumeGainDb": (line.volume || this.opt.ttsVolume) + this.mood.speech.deltaVolume
             }
           })
         });
@@ -1008,21 +1176,24 @@ class TalkingHead {
         const data = await res.json();
 
         if ( res.status === 200 && data && data.audioContent ) {
-          this.gttsAudio.pause();
-          this.gttsAudio.text = line.text;
-          this.gttsAudio.src = this.gttsAudioData + data.audioContent;
-          this.gttsAudio.load();
+          this.ttsAudio.pause();
+          this.ttsAudio.text = line.text;
+          this.ttsAudio.anim = line.anim;
+          this.ttsAudio.src = this.ttsAudioData + data.audioContent;
+          this.nodeSubtitles = line.nodeSubtitles || null;
+          this.onSubtitles = line.onSubtitles || null;
+          this.ttsAudio.load();
         } else {
-          this.gttsSpeaking = false;
+          this.ttsSpeaking = false;
           this.startSpeaking();
         }
       } catch (error) {
         console.error("Error:", error);
-        this.gttsSpeaking = false;
+        this.ttsSpeaking = false;
         this.startSpeaking();
       }
     } else {
-      this.gttsSpeaking = false;
+      this.ttsSpeaking = false;
       this.startSpeaking();
     }
   }
@@ -1031,8 +1202,8 @@ class TalkingHead {
   * Pause speaking.
   */
   pauseSpeaking() {
-    if ( this.gttsAudio ) this.gttsAudio.pause();
-    this.gttsSpeaking = false;
+    if ( this.ttsAudio ) this.ttsAudio.pause();
+    this.ttsSpeaking = false;
     this.animQueue = this.animQueue.filter( x  => x.template.name !== 'viseme' );
     if ( this.avatar ) {
       this.resetLips();
@@ -1044,10 +1215,10 @@ class TalkingHead {
   * Stop speaking and clear the speech queue.
   */
   stopSpeaking() {
-    if ( this.gttsAudio ) this.gttsAudio.pause();
-    this.gttsQueue.length = 0;
+    if ( this.ttsAudio ) this.ttsAudio.pause();
+    this.ttsQueue.length = 0;
     this.animQueue = this.animQueue.filter( x  => x.template.name !== 'viseme' );
-    this.gttsSpeaking = false;
+    this.ttsSpeaking = false;
     if ( this.avatar ) {
       this.resetLips();
       this.render();

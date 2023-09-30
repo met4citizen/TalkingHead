@@ -5,17 +5,22 @@
 
   <meta charset="utf-8">
   <meta content="width=device-width, height=device-height, minimum-scale=1.0, maximum-scale=1.0, initial-scale=1.0, user-scalable=no, interactive-widget=resizes-content" name="viewport">
-  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="icon" type="image/jpg" href="favicon.jpg">
 
   <style>
 html{ width:100%; height:100%; height: -webkit-fill-available; font-size: 14px; }
-body{ width: 100%; height: 100%; min-height: 100vh; min-height: -webkit-fill-available; margin: 0; padding: 0; background-color: darkgray; color: #505050; overflow: hidden; text-align: left; touch-action: manipulation; font-family: Arial; font-size: 1.3rem;  line-height: 1.8rem; scrollbar-color: #505050 transparent; scrollbar-width: 2vw; scrollbar-height: 2vw; }
+body{ width: 100%; height: 100%; min-height: 100vh; min-height: -webkit-fill-available; margin: 0; padding: 0; background-color: darkgray; color: #505050; overflow: hidden; text-align: left; touch-action: manipulation; font-family: Arial; font-size: 1.3rem;  line-height: 1.8rem; }
 
-#container { display: flex; gap: 0.5rem; position: absolute; left:0; right:0; bottom:0; top:0; margin:0; padding:0; }
+::-webkit-scrollbar { width: 1.5rem; height: 1.5rem; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background-color: gray; }
 
-.header { font-family: Arial; color: #505050; font-size: 1.4rem; font-weight: bold; height: 1.5rem; margin: 0.5rem 1rem;}
+#main { display:flex; position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: 0; padding: 0; }
+.container { flex: 1; display: flex; margin: 0; padding: 0; }
 
-#input { flex: 1; display: flex; flex-direction: column; }
+.header { font-family: Arial; color: #505050; font-size: 1.4rem; font-weight: bold; height: 1.5rem; margin: 0.2rem 1rem;}
+
+#input { flex: 3; display: flex; flex-direction: column; }
 #text { flex: 2; display: flex; }
 #textemojis, #templateemojis { display: block; margin: 0.2rem 0.7rem; opacity: 0.7; }
 .emoji { display: inline-block; cursor: pointer; pointer-events: auto; padding: 0.1rem; font-size: 1.6rem; }
@@ -25,18 +30,16 @@ textarea { flex: 1 1; margin: 0.5rem; border: 0; border-radius: 10px; padding: 0
 textarea::placeholder { color: #505050; opacity: 0.5; }
 select { color: #505050; text-align:left; font-family: Arial; font-size: 1.2rem; line-height: 1.7rem; border: 1px solid #505050; background-color: lightgray; width: 100px; }
 
-#morphs { flex: 1; display: flex; flex-direction: column; overflow-x: hidden; overflow-y: scroll; padding: 0 0.5rem; }
+#morphs { flex: 3; display: flex; flex-direction: column; overflow-x: hidden; overflow-y: scroll; padding: 0 0.5rem; }
 .morph { flex: 1; display: flex; font-family: Arial; color: #505050; font-size: 1rem; font-weight: bold; }
 .morphtitle { flex:3; text-align: left; }
 .morphrange { flex:2; text-align: left; min-width: 0; }
 .morphvalue { flex:1; text-align: center; }
 
-#talkinghead {flex:1; position: relative; display: flex; flex-direction: column; background-color: gray; overflow: hidden; }
+#talkinghead {flex:6; position: relative; display: flex; flex-direction: column; background-color: gray; overflow: hidden; }
 #avatar { flex:1; overflow: hidden; }
-#bubble { flex-basis: 3.8rem; margin: 0.2rem 0.5rem 0.4rem 0.5rem; overflow-y: scroll; scrollbar-width: none; background-color: lightgray; border-radius: 10px; }
-#bubble::-webkit-scrollbar { width: 0; height: 0; }
-#bubble:before { content: ""; width: 0; height: 0; border-left: 0.6rem solid transparent; border-right: 0.6rem solid transparent; border-bottom: 0.7rem solid lightgray; position: absolute; bottom: 4.2rem; left: 2rem; }
-#subtitles { display: block; margin: 0.2rem 1rem; color: #505050; text-align:left; font-family: Arial; font-size: 1.2rem; line-height: 1.7rem; white-space: pre-line; }
+#subtitles { position: absolute; left: 60%; right: 0; top:0; bottom:0; margin: 0; padding: 0; overflow-y: auto; max-height: 100vh; scrollbar-color: gray; scrollbar-width: 0; background-color: transparent; pointer-events: none; }
+#subtitles > * { display: block; min-height: 5rem; padding: 1rem; background-color: lightgray; opacity: 0.8; margin: 1rem 1rem; color: #505050; text-align:left; font-family: Arial; font-size: 1.2rem; line-height: 1.7rem; white-space: pre-line; border-radius: 10px; }
 
 .emoji:active, .selected { background-color: #505050; color: #c0c0c0; }
 .noselect { -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; -webkit-user-select: none; }
@@ -52,7 +55,9 @@ select { color: #505050; text-align:left; font-family: Arial; font-size: 1.2rem;
       {
         "three": "https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.module.js/+esm",
         "three/examples/": "https://cdn.jsdelivr.net/npm/three@0.149.0/examples/",
-        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.149.0/examples/jsm/"
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.149.0/examples/jsm/",
+        "dompurify": "https://cdn.jsdelivr.net/npm/dompurify@3.0.6/+esm",
+        "marked": "https://cdn.jsdelivr.net/npm/marked@9.0.3/+esm"
       }
     }
   </script>
@@ -70,7 +75,12 @@ select { color: #505050; text-align:left; font-family: Arial; font-size: 1.2rem;
         const e = d3.select("#text > textarea");
         let text = e.property("value");
         if ( text.length ) {
-          head.speak(text);
+          head.speak(
+            text,
+            null,
+            document.getElementById('subtitles'),
+            function(node) { this.nodeSubtitles.scrollTop = this.nodeSubtitles.scrollHeight; }
+          );
         }
       }
     });
@@ -197,6 +207,22 @@ select { color: #505050; text-align:left; font-family: Arial; font-size: 1.2rem;
     d3.select("#mood").on('change', function(e) {
       head.setMood( document.getElementById("mood").value );
     });
+
+    // Views
+    const elView = d3.select("#view");
+    head.getViewNames().forEach( (x,i) => {
+      let m = elView.append("option")
+        .property("value", x)
+        .text(x.charAt(0).toUpperCase() + x.slice(1));
+      if ( i === 0 ) {
+        m.property("selected",true);
+        head.setView(x);
+      }
+    });
+
+    d3.select("#view").on('change', function(e) {
+      head.setView( document.getElementById("view").value );
+    });
   }
 
   function updateTemplate() {
@@ -283,13 +309,15 @@ select { color: #505050; text-align:left; font-family: Arial; font-size: 1.2rem;
   document.addEventListener('DOMContentLoaded', function(e) {
 
     const nodeAvatar = document.getElementById('avatar');
-    const nodeSubtitles = document.getElementById('subtitles');
     const url = document.getElementById("url").value;
-    head = new TalkingHead( nodeAvatar, nodeSubtitles, url, {
-        gttsEndpoint: "https://eu-texttospeech.googleapis.com/v1/text:synthesize",
-        gttsApikey: null, // WARNING: Specify me for private testing only
-        avatarZoomEnable: true,
-        avatarPanEnable: true
+    head = new TalkingHead( url, nodeAvatar, {
+        ttsEndpoint: "https://eu-texttospeech.googleapis.com/v1/text:synthesize",
+        ttsApikey: null, // WARNING: USE ONLY FOR PRIVATE TESTING, NOT IN PRODUCTION
+        cameraShowfull: false,
+        cameraZoomEnable: true,
+        cameraPanEnable: true,
+        cameraView: 'closeup',
+        avatarMood: 'neutral'
       }, headLoaded, function(error) { alert(error); } );
     window.head = head;
 
@@ -303,15 +331,34 @@ select { color: #505050; text-align:left; font-family: Arial; font-size: 1.2rem;
 </script>
 </head>
 <body>
-  <div id="container">
+  <div id="main">
     <div id="input">
-      <div class="header">AVATAR:
-        <select id="url">
-          <option value="https://models.readyplayer.me/64da1f0bcfdd0f000df59582.glb" selected>Brunette</option>
-        </select>
-        <select id="mood">
-        </select>
+      <div class="container">
+        <div class="container" style="flex-direction: column">
+          <div class="header">AVATAR:</div>
+          <div class="header">
+            <select id="url">
+              <option value="https://models.readyplayer.me/64bfa15f0e72c63d7c3934a6.glb?morphTargets=ARKit,Oculus+Visemes,mouthOpen,mouthSmile,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png&pose=A" selected>Brunette</option>
+            </select>
+          </div>
+        </div>
+        <div class="container" style="flex-direction: column">
+          <div class="header">MOOD:</div>
+          <div class="header">
+            <select id="mood">
+            </select>
+          </div>
+        </div>
+        <div class="container" style="flex-direction: column">
+          <div class="header">VIEW:</div>
+          <div class="header">
+            <select id="view">
+            </select>
+          </div>
+        </div>
       </div>
+      <div class="header"></div>
+      <div class="header">LIP-SYNC TESTER:</div>
       <div id="text">
         <textarea placeholder="Puhun suomea / I speak Finnish."></textarea>
       </div>
@@ -323,14 +370,12 @@ select { color: #505050; text-align:left; font-family: Arial; font-size: 1.2rem;
       </div>
       <div id="templateemojis" class="noselect nodrag"></div>
     </div>
-    <div id="talkinghead" class="noselect nodrag">
+    <div id="talkinghead">
+      <div id="subtitles"></div>
       <div id="avatar"></div>
-      <div id="bubble">
-        <div id="subtitles"></div>
-      </div>
     </div>
     <div id="morphs" class="noselect nodrag">
-      <div class="header">BLEND SHAPES:</div>
+      <div class="header">BLENDSHAPES:</div>
     </div>
   </div>
 </body>
