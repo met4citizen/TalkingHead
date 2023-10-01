@@ -60,6 +60,8 @@ class TalkingHead {
       cameraPanEnable: false,
       cameraZoomEnable: false,
       avatarMood: "neutral",
+      avatarMute: false,
+      avatarSkip: null,
       markedOptions: { mangle:false, headerIds:false, breaks: true }
     };
     Object.assign( this.opt, opt );
@@ -68,7 +70,6 @@ class TalkingHead {
     // Animation templates for moods
     this.animMoods = {
       'neutral' : {
-        name: 'neutral',
         baseline: { eyesLookDown: 0.1 },
         speech: { deltaRate: 0, deltaPitch: 0, deltaVolume: 0 },
         anims: [
@@ -81,7 +82,6 @@ class TalkingHead {
         ]
       },
       'happy' : {
-        name: 'happy',
         baseline: { mouthSmile: 0.3, eyesLookDown: 0.1 },
         speech: { deltaRate: 0, deltaPitch: 0.1, deltaVolume: 0 },
         anims: [
@@ -94,7 +94,6 @@ class TalkingHead {
         ]
       },
       'angry' : {
-        name: 'angry',
         baseline: { eyesLookDown: 0.1, browDownLeft: 0.7, browDownRight: 0.7, jawForward: 0.3, mouthFrownLeft: 0.8, mouthFrownRight: 0.8, mouthRollLower: 0.3, mouthShrugLower: 0.4 },
         speech: { deltaRate: -0.2, deltaPitch: 0.2, deltaVolume: 0 },
         anims: [
@@ -107,7 +106,6 @@ class TalkingHead {
         ]
       },
       'sad' : {
-        name: 'sad',
         baseline: { eyesLookDown: 0.2, browDownRight: 0.1, browInnerUp: 0.7, browOuterUpRight: 0.2, eyeSquintLeft: 0.8, eyeSquintRight: 0.8, mouthFrownLeft: 1, mouthFrownRight: 1, mouthLeft: 0.2, mouthPucker: 0.5, mouthRollLower: 0.2, mouthRollUpper: 0.2, mouthShrugLower: 0.2, mouthShrugUpper: 0.2, mouthStretchLeft: 0.5 },
         speech: { deltaRate: -0.2, deltaPitch: -0.2, deltaVolume: 0 },
         anims: [
@@ -120,7 +118,6 @@ class TalkingHead {
         ]
       },
       'fear' : {
-        name: 'fear',
         baseline: { browInnerUp: 0.8, eyeSquintLeft: 0.5, eyeSquintRight: 0.5, eyeWideLeft: 0.7, eyeWideRight: 0.7, mouthClose: 0.1, mouthFunnel: 0.3, mouthShrugLower: 0.6, mouthShrugUpper: 0.6 },
         speech: { deltaRate: -0.2, deltaPitch: 0, deltaVolume: 0 },
         anims: [
@@ -133,7 +130,6 @@ class TalkingHead {
         ]
       },
       'disgust' : {
-        name: 'disgust',
         baseline: { browDownLeft: 0.9, browDownRight: 0.1, browInnerUp: 0.3, eyeSquintLeft: 1, eyeSquintRight: 1, eyeWideLeft: 0.5, eyeWideRight: 0.5, eyesRotateX: 0.05, mouthLeft: 0.4, mouthPressLeft: 0.3, mouthRollLower: 0.4, mouthShrugLower: 0.4, mouthShrugUpper: 1, mouthUpperUpLeft: 0.3, noseSneerLeft: 1, noseSneerRight: 0.7 },
         speech: { deltaRate: -0.2, deltaPitch: 0, deltaVolume: 0 },
         anims: [
@@ -146,7 +142,6 @@ class TalkingHead {
         ]
       },
       'love' : {
-        name: 'love',
         baseline: { browInnerUp: 0.5, browOuterUpLeft: 0.2, browOuterUpRight: 0.2, mouthSmile: 0.2, eyeBlinkLeft: 0.6, eyeBlinkRight: 0.6, eyeWideLeft: 0.8, eyeWideRight: 0.8, headRotateX: 0.1, mouthDimpleLeft: 0.1, mouthDimpleRight: 0.1, mouthPressLeft: 0.2, mouthShrugUpper: 0.2, mouthUpperUpLeft: 0.1, mouthUpperUpRight: 0.1 },
         speech: { deltaRate: -0.1, deltaPitch: -0.7, deltaVolume: 0 },
         anims: [
@@ -159,7 +154,6 @@ class TalkingHead {
         ]
       },
       'sleep' : {
-        name: 'sleep',
         baseline: { eyesClosed: 1, eyeBlinkLeft: 1, eyeBlinkRight: 1 },
         speech: { deltaRate: 0, deltaPitch: -0.2, deltaVolume: 0 },
         anims: [
@@ -570,7 +564,7 @@ class TalkingHead {
   * @return {string[]} Mood.
   */
   getMood() {
-    return this.mood.name;
+    return this.opt.avatarMood;
   }
 
   /**
@@ -580,6 +574,7 @@ class TalkingHead {
   setMood(s) {
     s = (s || '').trim().toLowerCase();
     if ( !this.animMoods.hasOwnProperty(s) ) throw new Error("Unknown mood.");
+    this.opt.avatarMood = s;
     this.mood = this.animMoods[s];
 
     // Reset morph target baseline to 0
@@ -941,7 +936,6 @@ class TalkingHead {
     let t = lastElement.ts[ lastElement.ts.length-1 ] + 1;
 
     // Rescale and push to queue
-    this.resetLips();
     this.ttsAudio.anim.forEach( x => {
       for(let i=0; i<x.ts.length; i++) {
         x.ts[i] = performance.now() + (x.ts[i] * d/t) + this.opt.ttsTrimStart;
@@ -1034,11 +1028,12 @@ class TalkingHead {
   /**
   * Add text to the speech queue.
   * @param {string} s Text.
-  * @param {Options} [opt=null] Text-specific options for TTS language, voice, rate and pitch.
+  * @param {Options} [opt=null] Text-specific options for TTS language, voice, rate and pitch, mood and mute
   * @param {Object} [nodeSubtitles=null] DOM element of the subtitles
-  * @param {subtitlesfn} [onsubtitles=null] Callback when started
+  * @param {subtitlesfn} [onsubtitles=null] Callback when subtitles were added
+  * @param {number[][]} [excludes=null] Array of [start, end] index arrays to not speak
   */
-  speak(s, opt = null, nodeSubtitles = null, onsubtitles = null) {
+  speak(s, opt = null, nodeSubtitles = null, onsubtitles = null, excludes = null ) {
     opt = opt || {};
 
     // Classifiers
@@ -1052,26 +1047,21 @@ class TalkingHead {
     let textWord = ''; // text-to-speech word
     let textSentence = ''; // text-to-speech sentence
     let lipsyncAnim = []; // lip-sync animation sequence
-    let lastSubtitles = null;
     let isFirst = true; // Text begins
     const letters = [...s];
     for( let i=0; i<letters.length; i++ ) {
       const isLast = i === (letters.length-1);
 
-      // Add letters to words
+      // Add letter to spoken word
       if ( letters[i].match(speakables) ) {
-        textWord += letters[i];
-        if ( nodeSubtitles ) {
-          markdownWord += letters[i];
+        if ( !excludes || excludes.every( x => (i < x[0]) || (i > x[1]) ) ) {
+          textWord += letters[i];
         }
-      } else {
-        if ( nodeSubtitles ) {
-          if ( markdownWord.length || !lastSubtitles || letters[i]==='\n' ) {
-            markdownWord += letters[i];
-          } else {
-            lastSubtitles.vs.subtitles += letters[i];
-          }
-        }
+      }
+
+      // Add letter to subtitles
+      if ( nodeSubtitles ) {
+        markdownWord += letters[i];
       }
 
       // Add words to sentence and animations
@@ -1085,15 +1075,14 @@ class TalkingHead {
 
         // Push subtitles to animation queue
         if ( markdownWord.length ) {
-          lastSubtitles = {
+          lipsyncAnim.push( {
             template: { name: 'subtitles' },
             ts: [t-0.2],
             vs: {
               subtitles: markdownWord
             },
             isFirst: isFirst
-          };
-          lipsyncAnim.push( lastSubtitles );
+          });
           markdownWord = '';
           isFirst = false;
         }
@@ -1123,11 +1112,12 @@ class TalkingHead {
 
         // Send sentence to Text-to-speech queue
         textSentence = textSentence.trim();
-        if ( textSentence.length ) {
+        if ( textSentence.length || (isLast && lipsyncAnim.length) ) {
           const o = {
-            text: textSentence,
             anim: lipsyncAnim
           };
+          if ( opt.avatarMood ) o.mood = opt.avatarMood;
+          if ( !opt.avatarMute ) o.text = textSentence;
           if ( nodeSubtitles ) o.nodeSubtitles = nodeSubtitles;
           if ( onsubtitles ) o.onSubtitles = onsubtitles;
           if ( opt.ttsLang ) o.lang = opt.ttsLang;
@@ -1177,12 +1167,15 @@ class TalkingHead {
     }
     let line = this.ttsQueue.shift();
     if ( line.emoji ) {
+      // Only emoji
       let duration = line.emoji.dt.reduce((a,b) => a+b,0);
       this.animQueue.push( this.animFactory( line.emoji ) );
       setTimeout( this.startSpeaking.bind(this), duration/2, true );
     } else if ( line.break ) {
+      // Break
       setTimeout( this.startSpeaking.bind(this), line.break, true );
     } else if ( line.text ) {
+      // Spoken text
       try {
         const res = await fetch( this.opt.ttsEndpoint + (this.opt.ttsApikey ? "?key=" + this.opt.ttsApikey : ''), {
           method: "POST",
@@ -1215,6 +1208,8 @@ class TalkingHead {
           this.ttsAudio.src = this.ttsAudioData + data.audioContent;
           this.nodeSubtitles = line.nodeSubtitles || null;
           this.onSubtitles = line.onSubtitles || null;
+          this.resetLips();
+          if ( line.mood ) this.setMood( line.mood );
           this.ttsAudio.load();
         } else {
           this.ttsSpeaking = false;
@@ -1225,6 +1220,19 @@ class TalkingHead {
         this.ttsSpeaking = false;
         this.startSpeaking();
       }
+    } else if ( line.anim ) {
+      // Only subtitles
+      this.nodeSubtitles = line.nodeSubtitles || null;
+      this.onSubtitles = line.onSubtitles || null;
+      this.resetLips();
+      if ( line.mood ) this.setMood( line.mood );
+      line.anim.forEach( (x,i) => {
+        for(let j=0; j<x.ts.length; j++) {
+          x.ts[j] = performance.now() + 10 * i;
+        }
+        this.animQueue.push(x);
+      });
+      setTimeout( this.startSpeaking.bind(this), 10 * line.anim.length, true );
     } else {
       this.ttsSpeaking = false;
       this.startSpeaking();

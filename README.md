@@ -56,7 +56,8 @@ Option | Description
 `cameraPanEnable` | True if the user is allowed to pan the 3D model. Default is `false`.
 `cameraZoomEnable` | True if the user is allowed to zoom the 3D model. Default is `false`.
 `cameraShowfull` | Show the avatar in full-body view. Default is `false` i.e. only the upper body is shown.
-`avatarMood` | The initial mood of the avatar. Supported moods: `"neutral"`, `"happy"`, `"angry"`, `"sad"`, `"fear"`, `"disgust"`, `"love"`, `"sleep"`. Default is `"neutral"`.
+`avatarMood` | The mood of the avatar. Supported moods: `"neutral"`, `"happy"`, `"angry"`, `"sad"`, `"fear"`, `"disgust"`, `"love"`, `"sleep"`. Default is `"neutral"`.
+`avatarMute`| Mute the avatar. This can be helpful option if you want to output subtitles without audio and lip-sync. Default is `false`.
 `markedOptions` | Options for Marked markdown parser. Default is `{ mangle:false, headerIds:false, breaks: true }`.
 
 ### Control Your Talking Head
@@ -68,7 +69,7 @@ Method | Description
 `lookAt(x,y,t)` | Make the avatar's head turn to look at the screen position (`x`,`y`) for `t` milliseconds. Note: The point is calculated relative to `"closeup"` view.
 `setMood(mood)` | Set avatar mood. Supported moods: `"neutral"`, `"happy"`, `"angry"`, `"sad"`, `"fear"`, `"disgust"`, `"love"`, `"sleep"`.
 `getMood(mood)` | Get avatar mood.
-`speak(text, [opt], [nodeSubtitles], [onsubtitles])` | Add the `text` string to the speech queue. The text can contain face emojis. Options `opt` can be used to set text-specific `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`. If the DOM element `nodeSubtitles` is specified, subtitles are displayed. Optional callback function `onsubtitles` is called whenever a new subtitle is written with the parameter of the target DOM node.
+`speak(text, [opt], [nodeSubtitles], [onsubtitles], [excludes])` | Add the `text` string to the speech queue. The text can contain face emojis. Options `opt` can be used to set text-specific `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood`, `avatarMute`. If the DOM element `nodeSubtitles` is specified, subtitles are displayed. Optional callback function `onsubtitles` is called whenever a new subtitle is written with the parameter of the target DOM node. The optional `excludes` is an array of [start,end] indices to be excluded from audio.
 `startSpeaking()` | Start speaking.
 `pauseSpeaking()` | Pause speaking.
 `stopSpeaking()` | Stop speaking and clear the speech queue.
