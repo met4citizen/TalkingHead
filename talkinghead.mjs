@@ -322,7 +322,7 @@ class TalkingHead {
 
     if ( obj.material ) {
       Object.keys(obj.material).forEach( x => {
-        if ( obj.material.hasOwnProperty(x) !== null && typeof obj.material[x].dispose === 'function' ) {
+        if ( obj.material[x] && obj.material[x] !== null && typeof obj.material[x].dispose === 'function' ) {
           obj.material[x].dispose();
         }
       });
