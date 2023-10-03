@@ -203,7 +203,7 @@ class TalkingHead {
       '😋': { link:  '😝' }, '😛': { link:  '😝' }, '😛': { link:  '😝' }, '😜': { link:  '😝' }, '🤪': { link:  '😝' },
       '😂': { mood: 'happy', dt: [300,2000], vs: { browInnerUp: [0.3], eyeSquintLeft: [1], eyeSquintRight: [1], eyesClosed: [0.6], jawOpen: [0.3], mouthDimpleLeft: [0.2], mouthDimpleRight: [0.2], mouthPressLeft: [0.5], mouthPressRight: [0.5], mouthShrugUpper: [0.4], mouthSmile: [0.7], mouthUpperUpLeft: [0.3], mouthUpperUpRight: [0.3], noseSneerLeft: [0.4], noseSneerRight: [0.4] } },
       '🤣': { link:  '😂' }, '😅': { link:  '😂' },
-      '😉': { mood: 'happy', dt: [500,200,200], vs: { mouthSmile: [0.5], mouthOpen: [0.2], mouthSmileLeft: [0,0.5,0], eyeBlinkLeft: [0,0.7,0], eyeBlinkRight: [0,0,0], browDownLeft: [0,0.7,0], cheekSquintLeft: [0,0.7,0], eyeSquintLeft: [0,1,0], eyesClosed: [0] } },
+      '😉': { mood: 'happy', dt: [500,200,500,500], vs: { mouthSmile: [0.5], mouthOpen: [0.2], mouthSmileLeft: [0,0.5,0], eyeBlinkLeft: [0,0.7,0], eyeBlinkRight: [0,0,0], headRotateX: [0.05,0.05,0.05,0], headRotateZ: [-0.05,-0.05,-0.05,0], browDownLeft: [0,0.7,0], cheekSquintLeft: [0,0.7,0], eyeSquintLeft: [0,1,0], eyesClosed: [0] } },
 
       '😭': { mood: 'sad', dt: [1000,1000], vs: { browInnerUp: [1], eyeSquintLeft: [1], eyeSquintRight: [1], eyesClosed: [0.1], jawOpen: [0], mouthFrownLeft: [1], mouthFrownRight: [1], mouthOpen: [0.5], mouthPucker: [0.5], mouthUpperUpLeft: [0.6], mouthUpperUpRight: [0.6] } },
       '🥺': { mood: 'sad', dt: [1000,1000], vs: { browDownLeft: [0.2], browDownRight: [0.2], browInnerUp: [1], eyeWideLeft: [0.9], eyeWideRight: [0.9], eyesClosed: [0.1], mouthClose: [0.2], mouthFrownLeft: [1], mouthFrownRight: [1], mouthPressLeft: [0.4], mouthPressRight: [0.4], mouthPucker: [1], mouthRollLower: [0.6], mouthRollUpper: [0.2], mouthUpperUpLeft: [0.8], mouthUpperUpRight: [0.8] } },
@@ -213,7 +213,7 @@ class TalkingHead {
       '☹️': { mood: 'sad', dt: [500,1500], vs: { mouthFrownLeft: [1], mouthFrownRight: [1], mouthPucker: [0.1], mouthRollLower: [0.8] } },
 
       '😚': { mood: 'love', dt: [500,1000,1000], vs: { browInnerUp: [0.6], eyeBlinkLeft: [1], eyeBlinkRight: [1], eyeSquintLeft: [1], eyeSquintRight: [1], mouthPucker: [0,0.5], noseSneerLeft: [0,0.7], noseSneerRight: [0,0.7], viseme_U: [0,1] } },
-      '😘': { mood: 'love', dt: [500,1000,1000,1000], vs: { browInnerUp: [0.6], eyeBlinkLeft: [0,0,1,0], eyeBlinkRight: [0], eyeSquintLeft: [1], eyeSquintRight: [1], mouthPucker: [0,0.5], noseSneerLeft: [0,0.7], noseSneerRight: [0.7], viseme_U: [0,1] } },
+      '😘': { mood: 'love', dt: [500,500,200,500], vs: { browInnerUp: [0.6], eyeBlinkLeft: [0,0,1,0], eyeBlinkRight: [0], eyesRotateY: [0], headRotateY: [0], headRotateX: [0,0.05,0.05,0], headRotateZ: [0,-0.05,-0.05,0], eyeSquintLeft: [1], eyeSquintRight: [1], mouthPucker: [0,0.5,0], noseSneerLeft: [0,0.7], noseSneerRight: [0.7], viseme_U: [0,1] } },
       '🥰': { mood: 'love', dt: [1000,1000], vs: { browInnerUp: [0.6], eyeSquintLeft: [1], eyeSquintRight: [1], mouthSmile: [0.7], noseSneerLeft: [0.7], noseSneerRight: [0.7] } },
       '😍': { mood: 'love', dt: [1000,1000], vs: { browInnerUp: [0.6], jawOpen: [0.1], mouthDimpleLeft: [0.2], mouthDimpleRight: [0.2], mouthOpen: [0.3], mouthPressLeft: [0.3], mouthPressRight: [0.3], mouthRollLower: [0.4], mouthShrugUpper: [0.4], mouthSmile: [0.7], mouthUpperUpLeft: [0.3], mouthUpperUpRight: [0.3], noseSneerLeft: [0.4], noseSneerRight: [0.4] } },
       '🤩': { link:  '😍' },
@@ -527,7 +527,7 @@ class TalkingHead {
     } else if ( mt === 'chest' ) {
       return (this.rig.chest.scale.x-1)*30;
     } else if ( mt === 'weight' ) {
-      return this.rig.head.rotation.z - ( 24 * this.rig.hips.rotation.z);
+      return 12 * this.avatar.rotation.y;
     } else {
       return this.morphs[0].morphTargetInfluences[this.morphs[0].morphTargetDictionary[mt]];
     }
@@ -545,55 +545,59 @@ class TalkingHead {
       this.rig.spine.rotation.x = v/12;
       this.rig.hips.rotation.x = v/32 - 0.06;
     } else if ( mt === 'headRotateY' ) {
-      let weight = this.getValue('weight');
+      let w = this.getValue('weight');
       this.rig.head.rotation.y = v;
       this.rig.chest.rotation.y = v / 2;
       this.rig.spine.rotation.y = v / 2;
-      this.rig.hips.rotation.y = v / 4;
-      this.rig.leftUpperLeg.rotation.y = ( weight > 0 ? 0 : (v / 2 - weight / 20) );
+      this.rig.hips.rotation.y = v / 4 + w / 12;
+      this.rig.leftUpperLeg.rotation.y = ( w > 0 ? 0 : (v / 2 - w / 20) );
       this.rig.leftLowerLeg.rotation.y = v / 2;
-      this.rig.rightUpperLeg.rotation.y = ( weight < 0 ? 0 : (v / 2 + weight / 20) );
+      this.rig.rightUpperLeg.rotation.y = ( w < 0 ? 0 : (v / 2 + w / 20) );
       this.rig.rightLowerLeg.rotation.y = v / 2;
     } else if ( mt === 'headRotateZ' ) {
-      let weight = this.getValue('weight');
+      let w = this.getValue('weight');
       this.rig.head.rotation.z = v;
       this.rig.chest.rotation.z = v/12;
-      this.rig.hips.rotation.z = v/24  - weight/24;
-      this.rig.spine.rotation.z = v/12 + weight/12;
+      this.rig.hips.rotation.z = v/24  + w/18;
+      this.rig.spine.rotation.z = v/12 - w/12;
     } else if ( mt === 'chest' ) {
       const scale = v/30;
       this.rig.chest.scale.set(1+scale,1+scale/2,1+4*scale);
       this.rig.head.scale.set(1/(1+scale),1/(1+scale/2),1/(1+4*scale));
     } else if ( mt === 'weight' ) {
       // Limit
-      v = Math.max(-1,Math.min(1,v));
+      let w = Math.max(-1,Math.min(1,v));
 
       // Body
       let headRotateY = this.getValue('headRotateY');
       let headRotateZ = this.getValue('headRotateZ');
-      this.avatar.position.y = -(v*v)/128;
-      this.avatar.rotation.y = v/6;
-      this.rig.hips.position.x = v/64;
-      this.rig.hips.rotation.z = headRotateZ/24 - v / 24;
-      this.rig.spine.rotation.z = headRotateZ/12 + v / 12;
+      this.avatar.position.y = -(w*w)/128;
+      this.avatar.rotation.x = -0.02;
+      this.avatar.rotation.y = w/12;
+      this.avatar.rotation.z = 0;
+
+      this.rig.hips.position.x = w/64;
+      this.rig.hips.rotation.y = headRotateY / 4 + w / 12;
+      this.rig.hips.rotation.z = headRotateZ/24 + w / 18;
+      this.rig.spine.rotation.z = headRotateZ/12 - w / 12;
 
       // Legs
-      this.rig.leftUpperLeg.rotation.x = ( v > 0 ? 0.15 : (0.15 + v / 3) );
-      this.rig.leftUpperLeg.rotation.y = ( v > 0 ? 0 : headRotateY / 2 - v / 20 );
-      this.rig.leftUpperLeg.rotation.z = ( v > 0 ? 3.10 : 3.10 - v/32 );
-      this.rig.rightUpperLeg.rotation.x = ( v < 0 ? 0.15 : (0.15 - v / 3) );
-      this.rig.rightUpperLeg.rotation.y = ( v < 0 ? 0 : headRotateY / 2 + v / 20 );
-      this.rig.rightUpperLeg.rotation.z = ( v < 0 ? 3.19 : 3.19 - v/32 );
-      this.rig.leftLowerLeg.rotation.x = ( v > 0 ? 0 : (v/2) );
-      this.rig.rightLowerLeg.rotation.x = ( v < 0 ? 0 : -(v/2) );
+      this.rig.leftUpperLeg.rotation.x = ( w > 0 ? 0.15 : (0.15 + w / 4) );
+      this.rig.leftUpperLeg.rotation.y = ( w > 0 ? 0 : headRotateY / 2 - w / 20 );
+      this.rig.leftUpperLeg.rotation.z = Math.PI + (headRotateZ/24 - w / 18) - ( w > 0 ? 0 : w/16 );
+      this.rig.rightUpperLeg.rotation.x = ( w < 0 ? 0.15 : (0.15 - w / 4) );
+      this.rig.rightUpperLeg.rotation.y = ( w < 0 ? 0 : headRotateY / 2 + w / 20 );
+      this.rig.rightUpperLeg.rotation.z = Math.PI + (headRotateZ/24 - w / 18) + 0.06 - ( w < 0 ? 0 : w/16 );
+      this.rig.leftLowerLeg.rotation.x = ( w > 0 ? -0.1 : -0.1 + (w/4) );
+      this.rig.rightLowerLeg.rotation.x = ( w < 0 ? -0.1 : -0.1 - (w/4) );
 
       // Feet
       this.rig.leftFoot.rotation.x = 1;
-      this.rig.leftFoot.rotation.y = ( v > 0 ? -0.3 : -0.3 - v / 20 );
-      this.rig.leftFoot.rotation.z = ( v > 0 ? 0.3 : 0.3 - v / 20 );
+      this.rig.leftFoot.rotation.y = ( w > 0 ? -0.3 : -0.3 - w / 20 );
+      this.rig.leftFoot.rotation.z = ( w > 0 ? 0.3 : 0.3 - w / 20 );
       this.rig.rightFoot.rotation.x = 1;
-      this.rig.rightFoot.rotation.y = ( v < 0 ? 0.3 : 0.3 - v / 20 );
-      this.rig.rightFoot.rotation.z = ( v < 0 ? -0.3 : -0.3 - v / 20 );
+      this.rig.rightFoot.rotation.y = ( w < 0 ? 0.3 : 0.3 - w / 20 );
+      this.rig.rightFoot.rotation.z = ( w < 0 ? -0.3 : -0.3 - w / 20 );
     } else {
       this.morphs.forEach( x => x.morphTargetInfluences[x.morphTargetDictionary[mt]] = v );
     }
