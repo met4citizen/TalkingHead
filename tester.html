@@ -76,7 +76,7 @@ select { color: #505050; text-align:left; font-family: Arial; font-size: 1.2rem;
         let text = e.property("value");
         if ( text.length ) {
           head.speak(
-            text,
+            '\n\n' + text,
             null,
             document.getElementById('subtitles'),
             function(node) { this.nodeSubtitles.scrollTop = this.nodeSubtitles.scrollHeight; }
@@ -317,7 +317,7 @@ select { color: #505050; text-align:left; font-family: Arial; font-size: 1.2rem;
     }
   }
 
-  
+
   // Page ready
   document.addEventListener('DOMContentLoaded', function(e) {
 
