@@ -18,9 +18,9 @@ Everything is packaged in one JavaScript class called `TalkingHead` that can be 
 
 1. Create your own full-body avatar at [https://readyplayer.me](https://readyplayer.me)
 
-2. Copy the given URL and add the following URL parameters in order to include all the needed morph targets:<br>`morphTargets=ARKit,Oculus+Visemes,mouthOpen,mouthSmile,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png&pose=A`<br><br>Your final URL should look something like this:<br>`https://models.readyplayer.me/64bfa15f0e72c63d7c3934a6.glb?morphTargets=ARKit,Oculus+Visemes,mouthOpen,mouthSmile,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png&pose=A`
+2. Copy the given URL and add the following URL parameters in order to include all the needed morph targets:<br>`morphTargets=ARKit,Oculus+Visemes,mouthOpen,mouthSmile,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png`<br><br>Your final URL should look something like this:<br>`https://models.readyplayer.me/64bfa15f0e72c63d7c3934a6.glb?morphTargets=ARKit,Oculus+Visemes,mouthOpen,mouthSmile,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png`
 
-3. Use the URL directly or use it to download the GLB file to your own web server.
+3. Use the URL to download the GLB file to your own web server.
 
 ### Make Your Own Google Text-to-speech Proxy
 
@@ -48,14 +48,15 @@ Option | Description
 `ttsTrimStart` | Trim the viseme sequence start relative to the beginning of the audio (shift in milliseconds). Default is `0`.
 `ttsTrimEnd`| Trim the viseme sequence end relative to the end of the audio (shift in milliseconds). Default is `200`.
 `modelPixelRatio` | Sets the device's pixel ratio. Default is `1`.
-`cameraView` | Initial view. Supported views: `"closeup"` (default), `"left"`, `"right"`, `"fullbody"`. Note: Currently lower body is not animated.
-`cameraX` | Camera position offset in X direction. Default is `0`.
-`cameraY` | Camera position offset in Y direction. Default is `0`.
-`cameraZ` | Camera position offset in Z direction. Default is `0`.
+`cameraView` | Initial view. Supported views are `"closeup"` and `"fullbody"`. Default is `"closeup"`.
+`cameraDistance` | Camera distance offset for initial view in meters. Default is `0`.
+`cameraX` | Camera position offset in X direction in meters. Default is `0`.
+`cameraY` | Camera position offset in Y direction in meters. Default is `0`.
+`cameraRotateX` | Camera rotation offset in X direction in relative units [1,1]. Default is `0`.
+`cameraRotateY` | Camera rotation offset in Y direction in relative units [-1,1]. Default is `0`.
 `cameraRotateEnable` | True if the user is allowed to rotate the 3D model. Default is `true`.
 `cameraPanEnable` | True if the user is allowed to pan the 3D model. Default is `false`.
 `cameraZoomEnable` | True if the user is allowed to zoom the 3D model. Default is `false`.
-`cameraShowfull` | Show the avatar in full-body view. Default is `false` i.e. only the upper body is shown.
 `avatarMood` | The mood of the avatar. Supported moods: `"neutral"`, `"happy"`, `"angry"`, `"sad"`, `"fear"`, `"disgust"`, `"love"`, `"sleep"`. Default is `"neutral"`.
 `avatarMute`| Mute the avatar. This can be helpful option if you want to output subtitles without audio and lip-sync. Default is `false`.
 `markedOptions` | Options for Marked markdown parser. Default is `{ mangle:false, headerIds:false, breaks: true }`.
@@ -65,16 +66,21 @@ Option | Description
 Method | Description
 --- | ---
 `loadModel(url,[success],[error])` | Load new GLB avatar `url` with callback functions `success` and `error`.
-`setView(view, [opt])` | Set view. Supported views: `"closeup"` (default), `"profile"`, `"fullbody"`. Options `opt` can be used to set `cameraX`, `cameraY`, `cameraZ`. Note: Currently lower body is not animated.
-`lookAt(x,y,t)` | Make the avatar's head turn to look at the screen position (`x`,`y`) for `t` milliseconds. Note: The point is calculated relative to `"closeup"` view.
+`setView(view, [opt])` | Set view. Supported views: `"closeup"` (default) and `"fullbody"`. Options `opt` can be used to set `cameraDistance`, `cameraX`, `cameraY`, `cameraRotateX`, `cameraRotateY`.
+`lookAt(x,y,t)` | Make the avatar's head turn to look at the screen position (`x`,`y`) for `t` milliseconds.
 `setMood(mood)` | Set avatar mood. Supported moods: `"neutral"`, `"happy"`, `"angry"`, `"sad"`, `"fear"`, `"disgust"`, `"love"`, `"sleep"`.
 `getMood(mood)` | Get avatar mood.
-`speak(text, [opt], [nodeSubtitles], [onsubtitles], [excludes])` | Add the `text` string to the speech queue. The text can contain face emojis. Options `opt` can be used to set text-specific `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood`, `avatarMute`. If the DOM element `nodeSubtitles` is specified, subtitles are displayed. Optional callback function `onsubtitles` is called whenever a new subtitle is written with the parameter of the target DOM node. The optional `excludes` is an array of [start,end] indices to be excluded from audio.
+`speak(text, [opt={}, [nodeSubtitles=null], [onsubtitles=null], [excludes=[]])` | Add the `text` string to the speech queue. The text can contain face emojis. Options `opt` can be used to set text-specific `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood`, `avatarMute`. If the DOM element `nodeSubtitles` is specified, subtitles are displayed. Optional callback function `onsubtitles` is called whenever a new subtitle is written with the parameter of the target DOM node. The optional `excludes` is an array of [start,end] indices to be excluded from audio but includes in the subtitles.
+`start` | Start/re-start the Talking Head.
+`stop` | Stop the Talking Head.
 `startSpeaking()` | Start speaking.
 `pauseSpeaking()` | Pause speaking.
 `stopSpeaking()` | Stop speaking and clear the speech queue.
-`startAnimation()` | Start/re-start the animation.
-`stopAnimation()` | Stop the animation.
+`playAnimation(url,[repeat=1],[ndx=0],[scale=0.01])` | Play Mixamo animation file. Repeat `repeat` times. If the FBX file includes several animations, the parameter `ndx` specifies the index. Since Mixamo rigs have a scale 100 and RPM a scale 1, the `scale` factor can be used to scale the positions.
+`stopAnimation()` | Stop the current animation started by `playAnimation`.
+`playPose(url, [dur=5], [ndx=0], [scale=0.01])` | Play the initial pose of a Mixamo animation file for `dur` seconds. If the FBX file includes several animations, the parameter `ndx` specifies the index. Since Mixamo rigs have a scale 100 and RPM a scale 1, the `scale` factor can be used to scale the positions.
+`stopPose()` | Stop the current pose started by `playPose`.
+
 
 ### FAQ
 
