@@ -18,9 +18,17 @@ class TalkingHead {
   */
 
   /**
-  * Callback if there was en error while loading the avatar.
+  * Callback if there was en error while loading.
   * @callback errorfn
   * @param {string} error Error message
+  */
+
+  /**
+  * Loading progress.
+  * @callback progressfn
+  * @param {string} url URL of the resource
+  * @param {number} loaded Loaded items
+  * @param {number} total Total items
   */
 
   /**
@@ -37,9 +45,10 @@ class TalkingHead {
   * @param {Object} node DOM element of the avatar
   * @param {Object} [opt=null] Options
   * @param {successfn} [onsuccess=null] Callback when the Avatar has been succesfully loaded
+  * @param {progressfn} [onprogress=null] Callback for progress
   * @param {errorfn} [onerror=null] Callback when there was an error in initialization
   */
-  constructor(url, node, opt = null, onsuccess = null, onerror = null ) {
+  constructor(url, node, opt = null, onsuccess = null, onprogress = null, onerror = null ) {
     this.nodeAvatar = node;
     opt = opt || {};
     this.opt = {
@@ -53,6 +62,7 @@ class TalkingHead {
       ttsTrimStart: 0,
       ttsTrimEnd: 200,
       modelPixelRatio: 1,
+      modelFPS: 30,
       cameraView: 'closeup',
       cameraDistance: 0,
       cameraX: 0,
@@ -68,53 +78,51 @@ class TalkingHead {
     };
     Object.assign( this.opt, opt );
 
-    // Rig based on RPM/Mixamo rigs
-    this.rig = ['Hips', 'Spine', 'Spine1', 'Spine2', 'Neck', 'Head',
-      'LeftShoulder', 'LeftArm', 'LeftForeArm', 'LeftHand', 'LeftHandThumb1',
-      'LeftHandThumb2', 'LeftHandThumb3', 'LeftHandIndex1', 'LeftHandIndex2',
-      'LeftHandIndex3', 'LeftHandMiddle1', 'LeftHandMiddle2',
-      'LeftHandMiddle3', 'LeftHandRing1', 'LeftHandRing2', 'LeftHandRing3',
-      'LeftHandPinky1', 'LeftHandPinky2', 'LeftHandPinky3', 'RightShoulder',
-      'RightArm', 'RightForeArm', 'RightHand', 'RightHandThumb1',
-      'RightHandThumb2', 'RightHandThumb3', 'RightHandIndex1',
-      'RightHandIndex2', 'RightHandIndex3', 'RightHandMiddle1',
-      'RightHandMiddle2', 'RightHandMiddle3', 'RightHandRing1',
-      'RightHandRing2', 'RightHandRing3', 'RightHandPinky1',
-      'RightHandPinky2', 'RightHandPinky3', 'LeftUpLeg', 'LeftLeg',
-      'LeftFoot', 'LeftToeBase', 'RightUpLeg', 'RightLeg', 'RightFoot',
-      'RightToeBase'
-    ];
 
     // Pose templates
-    // NOTE: The body weight should be on left foot
+    // NOTE: The body weight on each pose should be on left foot
+    // for most natural result.
     this.poseTemplates = {
-      'side': {'Hips.position':{x:0, y:1, z:0}, 'Hips.rotation':{x:-0.003, y:-0.017, z:0.1}, 'Spine.rotation':{x:-0.103, y:-0.002, z:-0.063}, 'Spine1.rotation':{x:0.042, y:-0.02, z:-0.069}, 'Spine2.rotation':{x:0.131, y:-0.012, z:-0.065}, 'Neck.rotation':{x:0.027, y:0.006, z:0}, 'Head.rotation':{x:0.077, y:-0.065, z:0}, 'LeftShoulder.rotation':{x:1.599, y:0.084, z:-1.77}, 'LeftArm.rotation':{x:1.364, y:0.052, z:-0.044}, 'LeftForeArm.rotation':{x:0.002, y:-0.007, z:0.331}, 'LeftHand.rotation':{x:0.104, y:-0.067, z:-0.174}, 'LeftHandThumb1.rotation':{x:0.231, y:0.258, z:0.355}, 'LeftHandThumb2.rotation':{x:-0.106, y:-0.339, z:-0.454}, 'LeftHandThumb3.rotation':{x:-0.02, y:-0.142, z:-0.004}, 'LeftHandIndex1.rotation':{x:0.148, y:0.032, z:-0.069}, 'LeftHandIndex2.rotation':{x:0.326, y:-0.049, z:-0.029}, 'LeftHandIndex3.rotation':{x:0.247, y:-0.053, z:-0.073}, 'LeftHandMiddle1.rotation':{x:0.238, y:-0.057, z:-0.089}, 'LeftHandMiddle2.rotation':{x:0.469, y:-0.036, z:-0.081}, 'LeftHandMiddle3.rotation':{x:0.206, y:-0.015, z:-0.017}, 'LeftHandRing1.rotation':{x:0.187, y:-0.118, z:-0.157}, 'LeftHandRing2.rotation':{x:0.579, y:0.02, z:-0.097}, 'LeftHandRing3.rotation':{x:0.272, y:0.021, z:-0.063}, 'LeftHandPinky1.rotation':{x:0.405, y:-0.182, z:-0.138}, 'LeftHandPinky2.rotation':{x:0.613, y:0.128, z:-0.144}, 'LeftHandPinky3.rotation':{x:0.268, y:0.094, z:-0.081}, 'RightShoulder.rotation':{x:1.541, y:0.192, z:1.775}, 'RightArm.rotation':{x:1.273, y:-0.352, z:-0.067}, 'RightForeArm.rotation':{x:-0.011, y:-0.031, z:-0.357}, 'RightHand.rotation':{x:-0.008, y:0.312, z:-0.028}, 'RightHandThumb1.rotation':{x:0.23, y:-0.258, z:-0.355}, 'RightHandThumb2.rotation':{x:-0.107, y:0.339, z:0.454}, 'RightHandThumb3.rotation':{x:-0.02, y:0.142, z:0.004}, 'RightHandIndex1.rotation':{x:0.148, y:-0.031, z:0.069}, 'RightHandIndex2.rotation':{x:0.326, y:0.049, z:0.029}, 'RightHandIndex3.rotation':{x:0.247, y:0.053, z:0.073}, 'RightHandMiddle1.rotation':{x:0.237, y:0.057, z:0.089}, 'RightHandMiddle2.rotation':{x:0.469, y:0.036, z:0.081}, 'RightHandMiddle3.rotation':{x:0.206, y:0.015, z:0.017}, 'RightHandRing1.rotation':{x:0.204, y:0.086, z:0.135}, 'RightHandRing2.rotation':{x:0.579, y:-0.02, z:0.098}, 'RightHandRing3.rotation':{x:0.272, y:-0.021, z:0.063}, 'RightHandPinky1.rotation':{x:0.404, y:0.182, z:0.137}, 'RightHandPinky2.rotation':{x:0.613, y:-0.128, z:0.144}, 'RightHandPinky3.rotation':{x:0.268, y:-0.094, z:0.081}, 'LeftUpLeg.rotation':{x:0.096, y:0.209, z:2.983}, 'LeftLeg.rotation':{x:-0.053, y:0.042, z:-0.017}, 'LeftFoot.rotation':{x:1.091, y:0.15, z:0.026}, 'LeftToeBase.rotation':{x:0.469, y:-0.07, z:-0.015}, 'RightUpLeg.rotation':{x:-0.307, y:-0.219, z:2.912}, 'RightLeg.rotation':{x:-0.359, y:0.164, z:0.015}, 'RightFoot.rotation':{x:1.035, y:0.11, z:0.005}, 'RightToeBase.rotation':{x:0.467, y:0.07, z:0.015}},
+      'side': {
+        'Hips.position':{x:0, y:1, z:0}, 'Hips.rotation':{x:-0.003, y:-0.017, z:0.1}, 'Spine.rotation':{x:-0.103, y:-0.002, z:-0.063}, 'Spine1.rotation':{x:0.042, y:-0.02, z:-0.069}, 'Spine2.rotation':{x:0.131, y:-0.012, z:-0.065}, 'Neck.rotation':{x:0.027, y:0.006, z:0}, 'Head.rotation':{x:0.077, y:-0.065, z:0}, 'LeftShoulder.rotation':{x:1.599, y:0.084, z:-1.77}, 'LeftArm.rotation':{x:1.364, y:0.052, z:-0.044}, 'LeftForeArm.rotation':{x:0.002, y:-0.007, z:0.331}, 'LeftHand.rotation':{x:0.104, y:-0.067, z:-0.174}, 'LeftHandThumb1.rotation':{x:0.231, y:0.258, z:0.355}, 'LeftHandThumb2.rotation':{x:-0.106, y:-0.339, z:-0.454}, 'LeftHandThumb3.rotation':{x:-0.02, y:-0.142, z:-0.004}, 'LeftHandIndex1.rotation':{x:0.148, y:0.032, z:-0.069}, 'LeftHandIndex2.rotation':{x:0.326, y:-0.049, z:-0.029}, 'LeftHandIndex3.rotation':{x:0.247, y:-0.053, z:-0.073}, 'LeftHandMiddle1.rotation':{x:0.238, y:-0.057, z:-0.089}, 'LeftHandMiddle2.rotation':{x:0.469, y:-0.036, z:-0.081}, 'LeftHandMiddle3.rotation':{x:0.206, y:-0.015, z:-0.017}, 'LeftHandRing1.rotation':{x:0.187, y:-0.118, z:-0.157}, 'LeftHandRing2.rotation':{x:0.579, y:0.02, z:-0.097}, 'LeftHandRing3.rotation':{x:0.272, y:0.021, z:-0.063}, 'LeftHandPinky1.rotation':{x:0.405, y:-0.182, z:-0.138}, 'LeftHandPinky2.rotation':{x:0.613, y:0.128, z:-0.144}, 'LeftHandPinky3.rotation':{x:0.268, y:0.094, z:-0.081}, 'RightShoulder.rotation':{x:1.541, y:0.192, z:1.775}, 'RightArm.rotation':{x:1.273, y:-0.352, z:-0.067}, 'RightForeArm.rotation':{x:-0.011, y:-0.031, z:-0.357}, 'RightHand.rotation':{x:-0.008, y:0.312, z:-0.028}, 'RightHandThumb1.rotation':{x:0.23, y:-0.258, z:-0.355}, 'RightHandThumb2.rotation':{x:-0.107, y:0.339, z:0.454}, 'RightHandThumb3.rotation':{x:-0.02, y:0.142, z:0.004}, 'RightHandIndex1.rotation':{x:0.148, y:-0.031, z:0.069}, 'RightHandIndex2.rotation':{x:0.326, y:0.049, z:0.029}, 'RightHandIndex3.rotation':{x:0.247, y:0.053, z:0.073}, 'RightHandMiddle1.rotation':{x:0.237, y:0.057, z:0.089}, 'RightHandMiddle2.rotation':{x:0.469, y:0.036, z:0.081}, 'RightHandMiddle3.rotation':{x:0.206, y:0.015, z:0.017}, 'RightHandRing1.rotation':{x:0.204, y:0.086, z:0.135}, 'RightHandRing2.rotation':{x:0.579, y:-0.02, z:0.098}, 'RightHandRing3.rotation':{x:0.272, y:-0.021, z:0.063}, 'RightHandPinky1.rotation':{x:0.404, y:0.182, z:0.137}, 'RightHandPinky2.rotation':{x:0.613, y:-0.128, z:0.144}, 'RightHandPinky3.rotation':{x:0.268, y:-0.094, z:0.081}, 'LeftUpLeg.rotation':{x:0.096, y:0.209, z:2.983}, 'LeftLeg.rotation':{x:-0.053, y:0.042, z:-0.017}, 'LeftFoot.rotation':{x:1.091, y:0.15, z:0.026}, 'LeftToeBase.rotation':{x:0.469, y:-0.07, z:-0.015}, 'RightUpLeg.rotation':{x:-0.307, y:-0.219, z:2.912}, 'RightLeg.rotation':{x:-0.359, y:0.164, z:0.015}, 'RightFoot.rotation':{x:1.035, y:0.11, z:0.005}, 'RightToeBase.rotation':{x:0.467, y:0.07, z:0.015}, 'LeftShoulder.position':{x:0.062, y:0.105, z:-0.012}, 'RightShoulder.position':{x:-0.062, y:0.105, z:-0.012}
+      },
 
-      'hip':{'Hips.position':{x:0,y:1,z:0}, 'Hips.rotation':{x:-0.036,y:0.09,z:0.135}, 'Spine.rotation':{x:0.076,y:-0.035,z:0.01}, 'Spine1.rotation':{x:-0.096,y:0.013,z:-0.094}, 'Spine2.rotation':{x:-0.014,y:0.002,z:-0.097}, 'Neck.rotation':{x:0.034,y:-0.051,z:-0.075}, 'Head.rotation':{x:0.298,y:-0.1,z:0.154}, 'LeftShoulder.rotation':{x:1.694,y:0.011,z:-1.68}, 'LeftArm.rotation':{x:1.343,y:0.177,z:-0.153}, 'LeftForeArm.rotation':{x:-0.049,y:0.134,z:0.351}, 'LeftHand.rotation':{x:0.057,y:-0.189,z:-0.026}, 'LeftHandThumb1.rotation':{x:0.368,y:-0.066,z:0.438}, 'LeftHandThumb2.rotation':{x:-0.156,y:0.029,z:-0.369}, 'LeftHandThumb3.rotation':{x:0.034,y:-0.009,z:0.016}, 'LeftHandIndex1.rotation':{x:0.157,y:-0.002,z:-0.171}, 'LeftHandIndex2.rotation':{x:0.099,y:0,z:0}, 'LeftHandIndex3.rotation':{x:0.1,y:0,z:0}, 'LeftHandMiddle1.rotation':{x:0.222,y:-0.019,z:-0.16}, 'LeftHandMiddle2.rotation':{x:0.142,y:0,z:0}, 'LeftHandMiddle3.rotation':{x:0.141,y:0,z:0}, 'LeftHandRing1.rotation':{x:0.333,y:-0.039,z:-0.174}, 'LeftHandRing2.rotation':{x:0.214,y:0,z:0}, 'LeftHandRing3.rotation':{x:0.213,y:0,z:0}, 'LeftHandPinky1.rotation':{x:0.483,y:-0.069,z:-0.189}, 'LeftHandPinky2.rotation':{x:0.312,y:0,z:0}, 'LeftHandPinky3.rotation':{x:0.309,y:0,z:0}, 'RightShoulder.rotation':{x:1.597,y:0.012,z:1.816}, 'RightArm.rotation':{x:0.618,y:-1.274,z:-0.266}, 'RightForeArm.rotation':{x:-0.395,y:-0.097,z:-1.342}, 'RightHand.rotation':{x:-0.816,y:-0.057,z:-0.976}, 'RightHandThumb1.rotation':{x:0.42,y:0.23,z:-1.172}, 'RightHandThumb2.rotation':{x:-0.027,y:0.361,z:0.122}, 'RightHandThumb3.rotation':{x:0.076,y:0.125,z:-0.371}, 'RightHandIndex1.rotation':{x:-0.158,y:-0.045,z:0.033}, 'RightHandIndex2.rotation':{x:0.391,y:0.051,z:0.025}, 'RightHandIndex3.rotation':{x:0.317,y:0.058,z:0.07}, 'RightHandMiddle1.rotation':{x:0.486,y:0.066,z:0.014}, 'RightHandMiddle2.rotation':{x:0.718,y:0.055,z:0.07}, 'RightHandMiddle3.rotation':{x:0.453,y:0.019,z:0.013}, 'RightHandRing1.rotation':{x:0.591,y:0.241,z:0.11}, 'RightHandRing2.rotation':{x:1.014,y:0.023,z:0.097}, 'RightHandRing3.rotation':{x:0.708,y:0.008,z:0.066}, 'RightHandPinky1.rotation':{x:1.02,y:0.305,z:0.051}, 'RightHandPinky2.rotation':{x:1.187,y:-0.028,z:0.191}, 'RightHandPinky3.rotation':{x:0.872,y:-0.031,z:0.121}, 'LeftUpLeg.rotation':{x:-0.095,y:-0.058,z:-3.338}, 'LeftLeg.rotation':{x:-0.366,y:0.287,z:-0.021}, 'LeftFoot.rotation':{x:1.131,y:0.21,z:0.176}, 'LeftToeBase.rotation':{x:0.739,y:-0.068,z:-0.001}, 'RightUpLeg.rotation':{x:-0.502,y:0.362,z:3.153}, 'RightLeg.rotation':{x:-1.002,y:0.109,z:0.008}, 'RightFoot.rotation':{x:0.626,y:-0.097,z:-0.194}, 'RightToeBase.rotation':{x:1.33,y:0.288,z:-0.078}},
+      'hip':{
+        'Hips.position':{x:0,y:1,z:0}, 'Hips.rotation':{x:-0.036,y:0.09,z:0.135}, 'Spine.rotation':{x:0.076,y:-0.035,z:0.01}, 'Spine1.rotation':{x:-0.096,y:0.013,z:-0.094}, 'Spine2.rotation':{x:-0.014,y:0.002,z:-0.097}, 'Neck.rotation':{x:0.034,y:-0.051,z:-0.075}, 'Head.rotation':{x:0.298,y:-0.1,z:0.154}, 'LeftShoulder.rotation':{x:1.694,y:0.011,z:-1.68}, 'LeftArm.rotation':{x:1.343,y:0.177,z:-0.153}, 'LeftForeArm.rotation':{x:-0.049,y:0.134,z:0.351}, 'LeftHand.rotation':{x:0.057,y:-0.189,z:-0.026}, 'LeftHandThumb1.rotation':{x:0.368,y:-0.066,z:0.438}, 'LeftHandThumb2.rotation':{x:-0.156,y:0.029,z:-0.369}, 'LeftHandThumb3.rotation':{x:0.034,y:-0.009,z:0.016}, 'LeftHandIndex1.rotation':{x:0.157,y:-0.002,z:-0.171}, 'LeftHandIndex2.rotation':{x:0.099,y:0,z:0}, 'LeftHandIndex3.rotation':{x:0.1,y:0,z:0}, 'LeftHandMiddle1.rotation':{x:0.222,y:-0.019,z:-0.16}, 'LeftHandMiddle2.rotation':{x:0.142,y:0,z:0}, 'LeftHandMiddle3.rotation':{x:0.141,y:0,z:0}, 'LeftHandRing1.rotation':{x:0.333,y:-0.039,z:-0.174}, 'LeftHandRing2.rotation':{x:0.214,y:0,z:0}, 'LeftHandRing3.rotation':{x:0.213,y:0,z:0}, 'LeftHandPinky1.rotation':{x:0.483,y:-0.069,z:-0.189}, 'LeftHandPinky2.rotation':{x:0.312,y:0,z:0}, 'LeftHandPinky3.rotation':{x:0.309,y:0,z:0}, 'RightShoulder.rotation':{x:1.597,y:0.012,z:1.816}, 'RightArm.rotation':{x:0.618,y:-1.274,z:-0.266}, 'RightForeArm.rotation':{x:-0.395,y:-0.097,z:-1.342}, 'RightHand.rotation':{x:-0.816,y:-0.057,z:-0.976}, 'RightHandThumb1.rotation':{x:0.42,y:0.23,z:-1.172}, 'RightHandThumb2.rotation':{x:-0.027,y:0.361,z:0.122}, 'RightHandThumb3.rotation':{x:0.076,y:0.125,z:-0.371}, 'RightHandIndex1.rotation':{x:-0.158,y:-0.045,z:0.033}, 'RightHandIndex2.rotation':{x:0.391,y:0.051,z:0.025}, 'RightHandIndex3.rotation':{x:0.317,y:0.058,z:0.07}, 'RightHandMiddle1.rotation':{x:0.486,y:0.066,z:0.014}, 'RightHandMiddle2.rotation':{x:0.718,y:0.055,z:0.07}, 'RightHandMiddle3.rotation':{x:0.453,y:0.019,z:0.013}, 'RightHandRing1.rotation':{x:0.591,y:0.241,z:0.11}, 'RightHandRing2.rotation':{x:1.014,y:0.023,z:0.097}, 'RightHandRing3.rotation':{x:0.708,y:0.008,z:0.066}, 'RightHandPinky1.rotation':{x:1.02,y:0.305,z:0.051}, 'RightHandPinky2.rotation':{x:1.187,y:-0.028,z:0.191}, 'RightHandPinky3.rotation':{x:0.872,y:-0.031,z:0.121}, 'LeftUpLeg.rotation':{x:-0.095,y:-0.058,z:-3.338}, 'LeftLeg.rotation':{x:-0.366,y:0.287,z:-0.021}, 'LeftFoot.rotation':{x:1.131,y:0.21,z:0.176}, 'LeftToeBase.rotation':{x:0.739,y:-0.068,z:-0.001}, 'RightUpLeg.rotation':{x:-0.502,y:0.362,z:3.153}, 'RightLeg.rotation':{x:-1.002,y:0.109,z:0.008}, 'RightFoot.rotation':{x:0.626,y:-0.097,z:-0.194}, 'RightToeBase.rotation':{x:1.33,y:0.288,z:-0.078}
+      },
 
-      'turn':{'Hips.position':{x:0,y:1,z:0}, 'Hips.rotation':{x:-0.07,y:-0.604,z:-0.004}, 'Spine.rotation':{x:-0.007,y:0.003,z:0.071}, 'Spine1.rotation':{x:-0.053,y:0.024,z:-0.06}, 'Spine2.rotation':{x:0.074,y:0.013,z:-0.068}, 'Neck.rotation':{x:0.03,y:0.186,z:-0.077}, 'Head.rotation':{x:0.045,y:0.243,z:-0.086}, 'LeftShoulder.rotation':{x:1.717,y:-0.085,z:-1.761}, 'LeftArm.rotation':{x:1.314,y:0.07,z:-0.057}, 'LeftForeArm.rotation':{x:-0.151,y:0.714,z:0.302}, 'LeftHand.rotation':{x:-0.069,y:0.003,z:-0.118}, 'LeftHandThumb1.rotation':{x:0.23,y:0.258,z:0.354}, 'LeftHandThumb2.rotation':{x:-0.107,y:-0.338,z:-0.455}, 'LeftHandThumb3.rotation':{x:-0.015,y:-0.142,z:0.002}, 'LeftHandIndex1.rotation':{x:0.145,y:0.032,z:-0.069}, 'LeftHandIndex2.rotation':{x:0.323,y:-0.049,z:-0.028}, 'LeftHandIndex3.rotation':{x:0.249,y:-0.053,z:-0.074}, 'LeftHandMiddle1.rotation':{x:0.235,y:-0.057,z:-0.088}, 'LeftHandMiddle2.rotation':{x:0.468,y:-0.036,z:-0.081}, 'LeftHandMiddle3.rotation':{x:0.203,y:-0.015,z:-0.017}, 'LeftHandRing1.rotation':{x:0.185,y:-0.118,z:-0.157}, 'LeftHandRing2.rotation':{x:0.578,y:0.02,z:-0.097}, 'LeftHandRing3.rotation':{x:0.27,y:0.021,z:-0.063}, 'LeftHandPinky1.rotation':{x:0.404,y:-0.182,z:-0.138}, 'LeftHandPinky2.rotation':{x:0.612,y:0.128,z:-0.144}, 'LeftHandPinky3.rotation':{x:0.267,y:0.094,z:-0.081}, 'RightShoulder.rotation':{x:1.605,y:0.17,z:1.625}, 'RightArm.rotation':{x:1.574,y:-0.655,z:0.388}, 'RightForeArm.rotation':{x:-0.36,y:-0.849,z:-0.465}, 'RightHand.rotation':{x:0.114,y:0.416,z:-0.069}, 'RightHandThumb1.rotation':{x:0.486,y:0.009,z:-0.492}, 'RightHandThumb2.rotation':{x:-0.073,y:-0.01,z:0.284}, 'RightHandThumb3.rotation':{x:-0.054,y:-0.006,z:0.209}, 'RightHandIndex1.rotation':{x:0.245,y:-0.014,z:0.052}, 'RightHandIndex2.rotation':{x:0.155,y:0,z:0}, 'RightHandIndex3.rotation':{x:0.153,y:0,z:0}, 'RightHandMiddle1.rotation':{x:0.238,y:0.004,z:0.028}, 'RightHandMiddle2.rotation':{x:0.15,y:0,z:0}, 'RightHandMiddle3.rotation':{x:0.149,y:0,z:0}, 'RightHandRing1.rotation':{x:0.267,y:0.012,z:0.007}, 'RightHandRing2.rotation':{x:0.169,y:0,z:0}, 'RightHandRing3.rotation':{x:0.167,y:0,z:0}, 'RightHandPinky1.rotation':{x:0.304,y:0.018,z:-0.021}, 'RightHandPinky2.rotation':{x:0.192,y:0,z:0}, 'RightHandPinky3.rotation':{x:0.19,y:0,z:0}, 'LeftUpLeg.rotation':{x:-0.001,y:-0.058,z:-3.238}, 'LeftLeg.rotation':{x:-0.29,y:0.058,z:-0.021}, 'LeftFoot.rotation':{x:1.288,y:0.168,z:0.183}, 'LeftToeBase.rotation':{x:0.363,y:-0.09,z:-0.01}, 'RightUpLeg.rotation':{x:-0.100,y:0.36,z:3.062}, 'RightLeg.rotation':{x:-0.67,y:-0.304,z:0.043}, 'RightFoot.rotation':{x:1.195,y:-0.159,z:-0.294}, 'RightToeBase.rotation':{x:0.737,y:0.164,z:-0.002}},
+      'turn':{
+        'Hips.position':{x:0,y:1,z:0}, 'Hips.rotation':{x:-0.07,y:-0.604,z:-0.004}, 'Spine.rotation':{x:-0.007,y:0.003,z:0.071}, 'Spine1.rotation':{x:-0.053,y:0.024,z:-0.06}, 'Spine2.rotation':{x:0.074,y:0.013,z:-0.068}, 'Neck.rotation':{x:0.03,y:0.186,z:-0.077}, 'Head.rotation':{x:0.045,y:0.243,z:-0.086}, 'LeftShoulder.rotation':{x:1.717,y:-0.085,z:-1.761}, 'LeftArm.rotation':{x:1.314,y:0.07,z:-0.057}, 'LeftForeArm.rotation':{x:-0.151,y:0.714,z:0.302}, 'LeftHand.rotation':{x:-0.069,y:0.003,z:-0.118}, 'LeftHandThumb1.rotation':{x:0.23,y:0.258,z:0.354}, 'LeftHandThumb2.rotation':{x:-0.107,y:-0.338,z:-0.455}, 'LeftHandThumb3.rotation':{x:-0.015,y:-0.142,z:0.002}, 'LeftHandIndex1.rotation':{x:0.145,y:0.032,z:-0.069}, 'LeftHandIndex2.rotation':{x:0.323,y:-0.049,z:-0.028}, 'LeftHandIndex3.rotation':{x:0.249,y:-0.053,z:-0.074}, 'LeftHandMiddle1.rotation':{x:0.235,y:-0.057,z:-0.088}, 'LeftHandMiddle2.rotation':{x:0.468,y:-0.036,z:-0.081}, 'LeftHandMiddle3.rotation':{x:0.203,y:-0.015,z:-0.017}, 'LeftHandRing1.rotation':{x:0.185,y:-0.118,z:-0.157}, 'LeftHandRing2.rotation':{x:0.578,y:0.02,z:-0.097}, 'LeftHandRing3.rotation':{x:0.27,y:0.021,z:-0.063}, 'LeftHandPinky1.rotation':{x:0.404,y:-0.182,z:-0.138}, 'LeftHandPinky2.rotation':{x:0.612,y:0.128,z:-0.144}, 'LeftHandPinky3.rotation':{x:0.267,y:0.094,z:-0.081}, 'RightShoulder.rotation':{x:1.605,y:0.17,z:1.625}, 'RightArm.rotation':{x:1.574,y:-0.655,z:0.388}, 'RightForeArm.rotation':{x:-0.36,y:-0.849,z:-0.465}, 'RightHand.rotation':{x:0.114,y:0.416,z:-0.069}, 'RightHandThumb1.rotation':{x:0.486,y:0.009,z:-0.492}, 'RightHandThumb2.rotation':{x:-0.073,y:-0.01,z:0.284}, 'RightHandThumb3.rotation':{x:-0.054,y:-0.006,z:0.209}, 'RightHandIndex1.rotation':{x:0.245,y:-0.014,z:0.052}, 'RightHandIndex2.rotation':{x:0.155,y:0,z:0}, 'RightHandIndex3.rotation':{x:0.153,y:0,z:0}, 'RightHandMiddle1.rotation':{x:0.238,y:0.004,z:0.028}, 'RightHandMiddle2.rotation':{x:0.15,y:0,z:0}, 'RightHandMiddle3.rotation':{x:0.149,y:0,z:0}, 'RightHandRing1.rotation':{x:0.267,y:0.012,z:0.007}, 'RightHandRing2.rotation':{x:0.169,y:0,z:0}, 'RightHandRing3.rotation':{x:0.167,y:0,z:0}, 'RightHandPinky1.rotation':{x:0.304,y:0.018,z:-0.021}, 'RightHandPinky2.rotation':{x:0.192,y:0,z:0}, 'RightHandPinky3.rotation':{x:0.19,y:0,z:0}, 'LeftUpLeg.rotation':{x:-0.001,y:-0.058,z:-3.238}, 'LeftLeg.rotation':{x:-0.29,y:0.058,z:-0.021}, 'LeftFoot.rotation':{x:1.288,y:0.168,z:0.183}, 'LeftToeBase.rotation':{x:0.363,y:-0.09,z:-0.01}, 'RightUpLeg.rotation':{x:-0.100,y:0.36,z:3.062}, 'RightLeg.rotation':{x:-0.67,y:-0.304,z:0.043}, 'RightFoot.rotation':{x:1.195,y:-0.159,z:-0.294}, 'RightToeBase.rotation':{x:0.737,y:0.164,z:-0.002}
+      },
 
-      'bend':{'Hips.position':{x:-0.007, y:0.943, z:-0.001}, 'Hips.rotation':{x:1.488, y:-0.633, z:1.435}, 'Spine.rotation':{x:-0.126, y:0.007, z:-0.057}, 'Spine1.rotation':{x:-0.134, y:0.009, z:0.01}, 'Spine2.rotation':{x:-0.019, y:0, z:-0.002}, 'Neck.rotation':{x:-0.159, y:0.572, z:-0.108}, 'Head.rotation':{x:-0.064, y:0.716, z:-0.257}, 'RightShoulder.rotation':{x:1.625, y:-0.043, z:1.382}, 'RightArm.rotation':{x:0.746, y:-0.96, z:-1.009}, 'RightForeArm.rotation':{x:-0.199, y:-0.528, z:-0.38}, 'RightHand.rotation':{x:-0.261, y:-0.043, z:-0.027}, 'RightHandThumb1.rotation':{x:0.172, y:-0.138, z:-0.445}, 'RightHandThumb2.rotation':{x:-0.158, y:0.327, z:0.545}, 'RightHandThumb3.rotation':{x:-0.062, y:0.138, z:0.152}, 'RightHandIndex1.rotation':{x:0.328, y:-0.005, z:0.132}, 'RightHandIndex2.rotation':{x:0.303, y:0.049, z:0.028}, 'RightHandIndex3.rotation':{x:0.241, y:0.046, z:0.077}, 'RightHandMiddle1.rotation':{x:0.309, y:0.074, z:0.089}, 'RightHandMiddle2.rotation':{x:0.392, y:0.036, z:0.081}, 'RightHandMiddle3.rotation':{x:0.199, y:0.014, z:0.019}, 'RightHandRing1.rotation':{x:0.239, y:0.143, z:0.091}, 'RightHandRing2.rotation':{x:0.275, y:-0.02, z:0.097}, 'RightHandRing3.rotation':{x:0.248, y:-0.023, z:0.061}, 'RightHandPinky1.rotation':{x:0.211, y:0.154, z:0.029}, 'RightHandPinky2.rotation':{x:0.348, y:-0.128, z:0.144}, 'RightHandPinky3.rotation':{x:0.21, y:-0.091, z:0.065}, 'LeftShoulder.rotation':{x:1.626, y:-0.027, z:-1.367}, 'LeftArm.rotation':{x:1.048, y:0.737, z:0.712}, 'LeftForeArm.rotation':{x:-0.508, y:0.879, z:0.625}, 'LeftHand.rotation':{x:0.06, y:-0.243, z:-0.079}, 'LeftHandThumb1.rotation':{x:0.187, y:-0.072, z:0.346}, 'LeftHandThumb2.rotation':{x:-0.066, y:0.008, z:-0.256}, 'LeftHandThumb3.rotation':{x:-0.085, y:0.014, z:-0.334}, 'LeftHandIndex1.rotation':{x:-0.1, y:0.016, z:-0.058}, 'LeftHandIndex2.rotation':{x:0.334, y:0, z:0}, 'LeftHandIndex3.rotation':{x:0.281, y:0, z:0}, 'LeftHandMiddle1.rotation':{x:-0.056, y:0, z:0}, 'LeftHandMiddle2.rotation':{x:0.258, y:0, z:0}, 'LeftHandMiddle3.rotation':{x:0.26, y:0, z:0}, 'LeftHandRing1.rotation':{x:-0.067, y:-0.002, z:0.008}, 'LeftHandRing2.rotation':{x:0.259, y:0, z:0}, 'LeftHandRing3.rotation':{x:0.276, y:0, z:0}, 'LeftHandPinky1.rotation':{x:-0.128, y:-0.007, z:0.042}, 'LeftHandPinky2.rotation':{x:0.227, y:0, z:0}, 'LeftHandPinky3.rotation':{x:0.145, y:0, z:0}, 'RightUpLeg.rotation':{x:-1.507, y:0.2, z:-3.043}, 'RightLeg.rotation':{x:-0.689, y:-0.124, z:0.017}, 'RightFoot.rotation':{x:0.909, y:0.008, z:-0.093}, 'RightToeBase.rotation':{x:0.842, y:0.075, z:-0.008}, 'LeftUpLeg.rotation':{x:-1.449, y:-0.2, z:3.018}, 'LeftLeg.rotation':{x:-0.74, y:-0.115, z:-0.008}, 'LeftFoot.rotation':{x:1.048, y:-0.058, z:0.117}, 'LeftToeBase.rotation':{x:0.807, y:-0.067, z:0.003}},
+      'bend':{
+        'Hips.position':{x:-0.007, y:0.943, z:-0.001}, 'Hips.rotation':{x:1.488, y:-0.633, z:1.435}, 'Spine.rotation':{x:-0.126, y:0.007, z:-0.057}, 'Spine1.rotation':{x:-0.134, y:0.009, z:0.01}, 'Spine2.rotation':{x:-0.019, y:0, z:-0.002}, 'Neck.rotation':{x:-0.159, y:0.572, z:-0.108}, 'Head.rotation':{x:-0.064, y:0.716, z:-0.257}, 'RightShoulder.rotation':{x:1.625, y:-0.043, z:1.382}, 'RightArm.rotation':{x:0.746, y:-0.96, z:-1.009}, 'RightForeArm.rotation':{x:-0.199, y:-0.528, z:-0.38}, 'RightHand.rotation':{x:-0.261, y:-0.043, z:-0.027}, 'RightHandThumb1.rotation':{x:0.172, y:-0.138, z:-0.445}, 'RightHandThumb2.rotation':{x:-0.158, y:0.327, z:0.545}, 'RightHandThumb3.rotation':{x:-0.062, y:0.138, z:0.152}, 'RightHandIndex1.rotation':{x:0.328, y:-0.005, z:0.132}, 'RightHandIndex2.rotation':{x:0.303, y:0.049, z:0.028}, 'RightHandIndex3.rotation':{x:0.241, y:0.046, z:0.077}, 'RightHandMiddle1.rotation':{x:0.309, y:0.074, z:0.089}, 'RightHandMiddle2.rotation':{x:0.392, y:0.036, z:0.081}, 'RightHandMiddle3.rotation':{x:0.199, y:0.014, z:0.019}, 'RightHandRing1.rotation':{x:0.239, y:0.143, z:0.091}, 'RightHandRing2.rotation':{x:0.275, y:-0.02, z:0.097}, 'RightHandRing3.rotation':{x:0.248, y:-0.023, z:0.061}, 'RightHandPinky1.rotation':{x:0.211, y:0.154, z:0.029}, 'RightHandPinky2.rotation':{x:0.348, y:-0.128, z:0.144}, 'RightHandPinky3.rotation':{x:0.21, y:-0.091, z:0.065}, 'LeftShoulder.rotation':{x:1.626, y:-0.027, z:-1.367}, 'LeftArm.rotation':{x:1.048, y:0.737, z:0.712}, 'LeftForeArm.rotation':{x:-0.508, y:0.879, z:0.625}, 'LeftHand.rotation':{x:0.06, y:-0.243, z:-0.079}, 'LeftHandThumb1.rotation':{x:0.187, y:-0.072, z:0.346}, 'LeftHandThumb2.rotation':{x:-0.066, y:0.008, z:-0.256}, 'LeftHandThumb3.rotation':{x:-0.085, y:0.014, z:-0.334}, 'LeftHandIndex1.rotation':{x:-0.1, y:0.016, z:-0.058}, 'LeftHandIndex2.rotation':{x:0.334, y:0, z:0}, 'LeftHandIndex3.rotation':{x:0.281, y:0, z:0}, 'LeftHandMiddle1.rotation':{x:-0.056, y:0, z:0}, 'LeftHandMiddle2.rotation':{x:0.258, y:0, z:0}, 'LeftHandMiddle3.rotation':{x:0.26, y:0, z:0}, 'LeftHandRing1.rotation':{x:-0.067, y:-0.002, z:0.008}, 'LeftHandRing2.rotation':{x:0.259, y:0, z:0}, 'LeftHandRing3.rotation':{x:0.276, y:0, z:0}, 'LeftHandPinky1.rotation':{x:-0.128, y:-0.007, z:0.042}, 'LeftHandPinky2.rotation':{x:0.227, y:0, z:0}, 'LeftHandPinky3.rotation':{x:0.145, y:0, z:0}, 'RightUpLeg.rotation':{x:-1.507, y:0.2, z:-3.043}, 'RightLeg.rotation':{x:-0.689, y:-0.124, z:0.017}, 'RightFoot.rotation':{x:0.909, y:0.008, z:-0.093}, 'RightToeBase.rotation':{x:0.842, y:0.075, z:-0.008}, 'LeftUpLeg.rotation':{x:-1.449, y:-0.2, z:3.018}, 'LeftLeg.rotation':{x:-0.74, y:-0.115, z:-0.008}, 'LeftFoot.rotation':{x:1.048, y:-0.058, z:0.117}, 'LeftToeBase.rotation':{x:0.807, y:-0.067, z:0.003}
+      },
 
-      'back':{'Hips.position':{x:0,y:1,z:0}, 'Hips.rotation':{x:-0.732,y:-1.463,z:-0.637}, 'Spine.rotation':{x:-0.171,y:0.106,z:0.157}, 'Spine1.rotation':{x:-0.044,y:0.138,z:-0.059}, 'Spine2.rotation':{x:0.082,y:0.133,z:-0.074}, 'Neck.rotation':{x:0.39,y:0.591,z:-0.248}, 'Head.rotation':{x:-0.001,y:0.596,z:-0.057}, 'LeftShoulder.rotation':{x:1.676,y:0.007,z:-1.892}, 'LeftArm.rotation':{x:-5.566,y:1.188,z:-0.173}, 'LeftForeArm.rotation':{x:-0.673,y:-0.105,z:1.702}, 'LeftHand.rotation':{x:-0.469,y:-0.739,z:0.003}, 'LeftHandThumb1.rotation':{x:0.876,y:0.274,z:0.793}, 'LeftHandThumb2.rotation':{x:0.161,y:-0.23,z:-0.172}, 'LeftHandThumb3.rotation':{x:0.078,y:0.027,z:0.156}, 'LeftHandIndex1.rotation':{x:-0.085,y:-0.002,z:0.009}, 'LeftHandIndex2.rotation':{x:0.176,y:0,z:-0.002}, 'LeftHandIndex3.rotation':{x:-0.036,y:0.001,z:-0.035}, 'LeftHandMiddle1.rotation':{x:0.015,y:0.144,z:-0.076}, 'LeftHandMiddle2.rotation':{x:0.378,y:-0.007,z:-0.077}, 'LeftHandMiddle3.rotation':{x:-0.141,y:-0.001,z:0.031}, 'LeftHandRing1.rotation':{x:0.039,y:0.02,z:-0.2}, 'LeftHandRing2.rotation':{x:0.25,y:-0.002,z:-0.073}, 'LeftHandRing3.rotation':{x:0.236,y:0.006,z:-0.075}, 'LeftHandPinky1.rotation':{x:0.172,y:-0.033,z:-0.275}, 'LeftHandPinky2.rotation':{x:0.216,y:0.043,z:-0.054}, 'LeftHandPinky3.rotation':{x:0.325,y:0.078,z:-0.13}, 'RightShoulder.rotation':{x:2.015,y:-0.168,z:1.706}, 'RightArm.rotation':{x:0.203,y:-1.258,z:-0.782}, 'RightForeArm.rotation':{x:-0.658,y:-0.133,z:-1.401}, 'RightHand.rotation':{x:-1.504,y:0.375,z:-0.005}, 'RightHandThumb1.rotation':{x:0.413,y:-0.158,z:-1.121}, 'RightHandThumb2.rotation':{x:-0.142,y:-0.008,z:0.209}, 'RightHandThumb3.rotation':{x:-0.091,y:0.021,z:0.142}, 'RightHandIndex1.rotation':{x:-0.167,y:0.014,z:-0.072}, 'RightHandIndex2.rotation':{x:0.474,y:0.009,z:0.051}, 'RightHandIndex3.rotation':{x:0.115,y:0.006,z:0.047}, 'RightHandMiddle1.rotation':{x:0.385,y:0.019,z:0.144}, 'RightHandMiddle2.rotation':{x:0.559,y:0.035,z:0.101}, 'RightHandMiddle3.rotation':{x:0.229,y:0,z:0.027}, 'RightHandRing1.rotation':{x:0.48,y:0.026,z:0.23}, 'RightHandRing2.rotation':{x:0.772,y:0.038,z:0.109}, 'RightHandRing3.rotation':{x:0.622,y:0.039,z:0.106}, 'RightHandPinky1.rotation':{x:0.767,y:0.288,z:0.353}, 'RightHandPinky2.rotation':{x:0.886,y:0.049,z:0.122}, 'RightHandPinky3.rotation':{x:0.662,y:0.044,z:0.113}, 'LeftUpLeg.rotation':{x:-0.206,y:-0.268,z:-3.343}, 'LeftLeg.rotation':{x:-0.333,y:0.757,z:-0.043}, 'LeftFoot.rotation':{x:1.049,y:0.167,z:0.287}, 'LeftToeBase.rotation':{x:0.672,y:-0.069,z:-0.004}, 'RightUpLeg.rotation':{x:0.055,y:-0.226,z:3.037}, 'RightLeg.rotation':{x:-0.559,y:0.39,z:-0.001}, 'RightFoot.rotation':{x:1.2,y:0.133,z:0.085}, 'RightToeBase.rotation':{x:0.92,y:0.093,z:-0.013}},
+      'back':{
+        'Hips.position':{x:0,y:1,z:0}, 'Hips.rotation':{x:-0.732,y:-1.463,z:-0.637}, 'Spine.rotation':{x:-0.171,y:0.106,z:0.157}, 'Spine1.rotation':{x:-0.044,y:0.138,z:-0.059}, 'Spine2.rotation':{x:0.082,y:0.133,z:-0.074}, 'Neck.rotation':{x:0.39,y:0.591,z:-0.248}, 'Head.rotation':{x:-0.001,y:0.596,z:-0.057}, 'LeftShoulder.rotation':{x:1.676,y:0.007,z:-1.892}, 'LeftArm.rotation':{x:-5.566,y:1.188,z:-0.173}, 'LeftForeArm.rotation':{x:-0.673,y:-0.105,z:1.702}, 'LeftHand.rotation':{x:-0.469,y:-0.739,z:0.003}, 'LeftHandThumb1.rotation':{x:0.876,y:0.274,z:0.793}, 'LeftHandThumb2.rotation':{x:0.161,y:-0.23,z:-0.172}, 'LeftHandThumb3.rotation':{x:0.078,y:0.027,z:0.156}, 'LeftHandIndex1.rotation':{x:-0.085,y:-0.002,z:0.009}, 'LeftHandIndex2.rotation':{x:0.176,y:0,z:-0.002}, 'LeftHandIndex3.rotation':{x:-0.036,y:0.001,z:-0.035}, 'LeftHandMiddle1.rotation':{x:0.015,y:0.144,z:-0.076}, 'LeftHandMiddle2.rotation':{x:0.378,y:-0.007,z:-0.077}, 'LeftHandMiddle3.rotation':{x:-0.141,y:-0.001,z:0.031}, 'LeftHandRing1.rotation':{x:0.039,y:0.02,z:-0.2}, 'LeftHandRing2.rotation':{x:0.25,y:-0.002,z:-0.073}, 'LeftHandRing3.rotation':{x:0.236,y:0.006,z:-0.075}, 'LeftHandPinky1.rotation':{x:0.172,y:-0.033,z:-0.275}, 'LeftHandPinky2.rotation':{x:0.216,y:0.043,z:-0.054}, 'LeftHandPinky3.rotation':{x:0.325,y:0.078,z:-0.13}, 'RightShoulder.rotation':{x:2.015,y:-0.168,z:1.706}, 'RightArm.rotation':{x:0.203,y:-1.258,z:-0.782}, 'RightForeArm.rotation':{x:-0.658,y:-0.133,z:-1.401}, 'RightHand.rotation':{x:-1.504,y:0.375,z:-0.005}, 'RightHandThumb1.rotation':{x:0.413,y:-0.158,z:-1.121}, 'RightHandThumb2.rotation':{x:-0.142,y:-0.008,z:0.209}, 'RightHandThumb3.rotation':{x:-0.091,y:0.021,z:0.142}, 'RightHandIndex1.rotation':{x:-0.167,y:0.014,z:-0.072}, 'RightHandIndex2.rotation':{x:0.474,y:0.009,z:0.051}, 'RightHandIndex3.rotation':{x:0.115,y:0.006,z:0.047}, 'RightHandMiddle1.rotation':{x:0.385,y:0.019,z:0.144}, 'RightHandMiddle2.rotation':{x:0.559,y:0.035,z:0.101}, 'RightHandMiddle3.rotation':{x:0.229,y:0,z:0.027}, 'RightHandRing1.rotation':{x:0.48,y:0.026,z:0.23}, 'RightHandRing2.rotation':{x:0.772,y:0.038,z:0.109}, 'RightHandRing3.rotation':{x:0.622,y:0.039,z:0.106}, 'RightHandPinky1.rotation':{x:0.767,y:0.288,z:0.353}, 'RightHandPinky2.rotation':{x:0.886,y:0.049,z:0.122}, 'RightHandPinky3.rotation':{x:0.662,y:0.044,z:0.113}, 'LeftUpLeg.rotation':{x:-0.206,y:-0.268,z:-3.343}, 'LeftLeg.rotation':{x:-0.333,y:0.757,z:-0.043}, 'LeftFoot.rotation':{x:1.049,y:0.167,z:0.287}, 'LeftToeBase.rotation':{x:0.672,y:-0.069,z:-0.004}, 'RightUpLeg.rotation':{x:0.055,y:-0.226,z:3.037}, 'RightLeg.rotation':{x:-0.559,y:0.39,z:-0.001}, 'RightFoot.rotation':{x:1.2,y:0.133,z:0.085}, 'RightToeBase.rotation':{x:0.92,y:0.093,z:-0.013}
+      },
 
-      'straight':{'Hips.position':{x:0, y:1, z:0}, 'Hips.rotation':{x:-0.003, y:-0.017, z:0.1}, 'Spine.rotation':{x:-0.103, y:-0.002, z:-0.063}, 'Spine1.rotation':{x:0.042, y:-0.02, z:-0.069}, 'Spine2.rotation':{x:0.131, y:-0.012, z:-0.065}, 'Neck.rotation':{x:0.027, y:0.006, z:0}, 'Head.rotation':{x:0.077, y:-0.065, z:0}, 'LeftShoulder.rotation':{x:1.599, y:0.084, z:-1.77}, 'LeftArm.rotation':{x:1.364, y:0.052, z:-0.044}, 'LeftForeArm.rotation':{x:0.002, y:-0.007, z:0.331}, 'LeftHand.rotation':{x:0.104, y:-0.067, z:-0.174}, 'LeftHandThumb1.rotation':{x:0.231, y:0.258, z:0.355}, 'LeftHandThumb2.rotation':{x:-0.106, y:-0.339, z:-0.454}, 'LeftHandThumb3.rotation':{x:-0.02, y:-0.142, z:-0.004}, 'LeftHandIndex1.rotation':{x:0.148, y:0.032, z:-0.069}, 'LeftHandIndex2.rotation':{x:0.326, y:-0.049, z:-0.029}, 'LeftHandIndex3.rotation':{x:0.247, y:-0.053, z:-0.073}, 'LeftHandMiddle1.rotation':{x:0.238, y:-0.057, z:-0.089}, 'LeftHandMiddle2.rotation':{x:0.469, y:-0.036, z:-0.081}, 'LeftHandMiddle3.rotation':{x:0.206, y:-0.015, z:-0.017}, 'LeftHandRing1.rotation':{x:0.187, y:-0.118, z:-0.157}, 'LeftHandRing2.rotation':{x:0.579, y:0.02, z:-0.097}, 'LeftHandRing3.rotation':{x:0.272, y:0.021, z:-0.063}, 'LeftHandPinky1.rotation':{x:0.405, y:-0.182, z:-0.138}, 'LeftHandPinky2.rotation':{x:0.613, y:0.128, z:-0.144}, 'LeftHandPinky3.rotation':{x:0.268, y:0.094, z:-0.081}, 'RightShoulder.rotation':{x:1.541, y:0.192, z:1.775}, 'RightArm.rotation':{x:1.273, y:-0.352, z:-0.067}, 'RightForeArm.rotation':{x:-0.011, y:-0.031, z:-0.357}, 'RightHand.rotation':{x:-0.008, y:0.312, z:-0.028}, 'RightHandThumb1.rotation':{x:0.23, y:-0.258, z:-0.355}, 'RightHandThumb2.rotation':{x:-0.107, y:0.339, z:0.454}, 'RightHandThumb3.rotation':{x:-0.02, y:0.142, z:0.004}, 'RightHandIndex1.rotation':{x:0.148, y:-0.031, z:0.069}, 'RightHandIndex2.rotation':{x:0.326, y:0.049, z:0.029}, 'RightHandIndex3.rotation':{x:0.247, y:0.053, z:0.073}, 'RightHandMiddle1.rotation':{x:0.237, y:0.057, z:0.089}, 'RightHandMiddle2.rotation':{x:0.469, y:0.036, z:0.081}, 'RightHandMiddle3.rotation':{x:0.206, y:0.015, z:0.017}, 'RightHandRing1.rotation':{x:0.204, y:0.086, z:0.135}, 'RightHandRing2.rotation':{x:0.579, y:-0.02, z:0.098}, 'RightHandRing3.rotation':{x:0.272, y:-0.021, z:0.063}, 'RightHandPinky1.rotation':{x:0.404, y:0.182, z:0.137}, 'RightHandPinky2.rotation':{x:0.613, y:-0.128, z:0.144}, 'RightHandPinky3.rotation':{x:0.268, y:-0.094, z:0.081}, 'LeftUpLeg.rotation':{x:0.096, y:0.209, z:2.983}, 'LeftLeg.rotation':{x:-0.053, y:0.042, z:-0.017}, 'LeftFoot.rotation':{x:1.091, y:0.15, z:0.026}, 'LeftToeBase.rotation':{x:0.469, y:-0.07, z:-0.015}, 'RightUpLeg.rotation':{x:-0.307, y:-0.219, z:2.912}, 'RightLeg.rotation':{x:-0.359, y:0.164, z:0.015}, 'RightFoot.rotation':{x:1.035, y:0.11, z:0.005}, 'RightToeBase.rotation':{x:0.467, y:0.07, z:0.015}},
+      'straight':{
+        'Hips.position':{x:0, y:0.989, z:0.001}, 'Hips.rotation':{x:0.047, y:0.007, z:-0.007}, 'Spine.rotation':{x:-0.143, y:-0.007, z:0.005}, 'Spine1.rotation':{x:-0.043, y:-0.014, z:0.012}, 'Spine2.rotation':{x:0.072, y:-0.013, z:0.013}, 'Neck.rotation':{x:0.048, y:-0.003, z:0.012}, 'Head.rotation':{x:0.05, y:-0.02, z:-0.017}, 'LeftShoulder.rotation':{x:1.62, y:-0.166, z:-1.605}, 'LeftArm.rotation':{x:1.275, y:0.544, z:-0.092}, 'LeftForeArm.rotation':{x:0, y:0, z:0.302}, 'LeftHand.rotation':{x:-0.225, y:-0.154, z:0.11}, 'LeftHandThumb1.rotation':{x:0.435, y:-0.044, z:0.457}, 'LeftHandThumb2.rotation':{x:-0.028, y:0.002, z:-0.246}, 'LeftHandThumb3.rotation':{x:-0.236, y:-0.025, z:0.113}, 'LeftHandIndex1.rotation':{x:0.218, y:0.008, z:-0.081}, 'LeftHandIndex2.rotation':{x:0.165, y:-0.001, z:-0.017}, 'LeftHandIndex3.rotation':{x:0.165, y:-0.001, z:-0.017}, 'LeftHandMiddle1.rotation':{x:0.235, y:-0.011, z:-0.065}, 'LeftHandMiddle2.rotation':{x:0.182, y:-0.002, z:-0.019}, 'LeftHandMiddle3.rotation':{x:0.182, y:-0.002, z:-0.019}, 'LeftHandRing1.rotation':{x:0.316, y:-0.017, z:0.008}, 'LeftHandRing2.rotation':{x:0.253, y:-0.003, z:-0.026}, 'LeftHandRing3.rotation':{x:0.255, y:-0.003, z:-0.026}, 'LeftHandPinky1.rotation':{x:0.336, y:-0.062, z:0.088}, 'LeftHandPinky2.rotation':{x:0.276, y:-0.004, z:-0.028}, 'LeftHandPinky3.rotation':{x:0.276, y:-0.004, z:-0.028}, 'RightShoulder.rotation':{x:1.615, y:0.064, z:1.53}, 'RightArm.rotation':{x:1.313, y:-0.424, z:0.131}, 'RightForeArm.rotation':{x:0, y:0, z:-0.317}, 'RightHand.rotation':{x:-0.158, y:-0.639, z:-0.196}, 'RightHandThumb1.rotation':{x:0.44, y:0.048, z:-0.549}, 'RightHandThumb2.rotation':{x:-0.056, y:-0.008, z:0.274}, 'RightHandThumb3.rotation':{x:-0.258, y:0.031, z:-0.095}, 'RightHandIndex1.rotation':{x:0.169, y:-0.011, z:0.105}, 'RightHandIndex2.rotation':{x:0.134, y:0.001, z:0.011}, 'RightHandIndex3.rotation':{x:0.134, y:0.001, z:0.011}, 'RightHandMiddle1.rotation':{x:0.288, y:0.014, z:0.092}, 'RightHandMiddle2.rotation':{x:0.248, y:0.003, z:0.02}, 'RightHandMiddle3.rotation':{x:0.249, y:0.003, z:0.02}, 'RightHandRing1.rotation':{x:0.369, y:0.019, z:0.006}, 'RightHandRing2.rotation':{x:0.321, y:0.004, z:0.026}, 'RightHandRing3.rotation':{x:0.323, y:0.004, z:0.026}, 'RightHandPinky1.rotation':{x:0.468, y:0.085, z:-0.03}, 'RightHandPinky2.rotation':{x:0.427, y:0.007, z:0.034}, 'RightHandPinky3.rotation':{x:0.142, y:0.001, z:0.012}, 'LeftUpLeg.rotation':{x:-0.077, y:-0.058, z:3.126}, 'LeftLeg.rotation':{x:-0.252, y:0.001, z:-0.018}, 'LeftFoot.rotation':{x:1.315, y:-0.064, z:0.315}, 'LeftToeBase.rotation':{x:0.577, y:-0.07, z:-0.009}, 'RightUpLeg.rotation':{x:-0.083, y:-0.032, z:3.124}, 'RightLeg.rotation':{x:-0.272, y:-0.003, z:0.021}, 'RightFoot.rotation':{x:1.342, y:0.076, z:-0.222}, 'RightToeBase.rotation':{x:0.44, y:0.069, z:0.016}
+      },
 
-      'wide':{'Hips.position':{x:0.002, y:0.929, z:-0.01}, 'Hips.rotation':{x:-0.106, y:-0.75, z:-0.07}, 'Spine.rotation':{x:-0.02, y:0.082, z:-0.011}, 'Spine1.rotation':{x:0.206, y:0.163, z:-0.034}, 'Spine2.rotation':{x:0.322, y:0.158, z:-0.053}, 'Neck.rotation':{x:-0.069, y:-0.022, z:0.004}, 'Head.rotation':{x:-0.109, y:0.357, z:-0.007}, 'LeftShoulder.rotation':{x:1.603, y:-0.159, z:-1.761}, 'LeftArm.rotation':{x:1.109, y:0.034, z:0.296}, 'LeftForeArm.rotation':{x:-0.07, y:0.096, z:0.839}, 'LeftHand.rotation':{x:-0.341, y:0.272, z:0.078}, 'LeftHandThumb1.rotation':{x:0.619, y:0.082, z:0.302}, 'LeftHandThumb2.rotation':{x:-0.015, y:0.001, z:0.002}, 'LeftHandThumb3.rotation':{x:0, y:0, z:0}, 'LeftHandIndex1.rotation':{x:0.066, y:-0.008, z:0.123}, 'LeftHandIndex2.rotation':{x:0.287, y:-0.003, z:-0.014}, 'LeftHandIndex3.rotation':{x:0, y:0, z:0}, 'LeftHandMiddle1.rotation':{x:0.25, y:-0.009, z:-0.172}, 'LeftHandMiddle2.rotation':{x:0.382, y:0.003, z:0.028}, 'LeftHandMiddle3.rotation':{x:0, y:0, z:0}, 'LeftHandRing1.rotation':{x:0.529, y:-0.095, z:-0.247}, 'LeftHandRing2.rotation':{x:0.558, y:0.017, z:0.045}, 'LeftHandRing3.rotation':{x:0, y:0, z:0}, 'LeftHandPinky1.rotation':{x:0.58, y:-0.122, z:-0.308}, 'LeftHandPinky2.rotation':{x:0.684, y:0.054, z:0.086}, 'LeftHandPinky3.rotation':{x:0, y:0, z:0}, 'RightShoulder.rotation':{x:1.633, y:0.189, z:1.605}, 'RightArm.rotation':{x:1.018, y:0.184, z:0.125}, 'RightForeArm.rotation':{x:0.104, y:0.022, z:-0.738}, 'RightHand.rotation':{x:0.201, y:-0.15, z:-0.189}, 'RightHandThumb1.rotation':{x:0.524, y:0.177, z:-0.467}, 'RightHandThumb2.rotation':{x:-0.081, y:-0.011, z:0.359}, 'RightHandThumb3.rotation':{x:0, y:0, z:0}, 'RightHandIndex1.rotation':{x:0.079, y:0.021, z:0.02}, 'RightHandIndex2.rotation':{x:0.296, y:0.003, z:0.019}, 'RightHandIndex3.rotation':{x:0, y:0, z:0}, 'RightHandMiddle1.rotation':{x:0.222, y:0.022, z:0.047}, 'RightHandMiddle2.rotation':{x:0.533, y:-0.006, z:-0.033}, 'RightHandMiddle3.rotation':{x:0, y:0, z:0}, 'RightHandRing1.rotation':{x:0.377, y:0.008, z:0.136}, 'RightHandRing2.rotation':{x:0.652, y:-0.026, z:-0.063}, 'RightHandRing3.rotation':{x:0, y:0, z:0}, 'RightHandPinky1.rotation':{x:0.418, y:0.016, z:0.185}, 'RightHandPinky2.rotation':{x:0.711, y:-0.071, z:-0.121}, 'RightHandPinky3.rotation':{x:0, y:0, z:0}, 'LeftUpLeg.rotation':{x:-0.458, y:0.105, z:-2.896}, 'LeftLeg.rotation':{x:-0.645, y:0.253, z:-0.002}, 'LeftFoot.rotation':{x:1.235, y:-0.074, z:-0.024}, 'LeftToeBase.rotation':{x:0.5, y:-0.055, z:-0.069}, 'RightUpLeg.rotation':{x:-0.084, y:-0.241, z:2.872}, 'RightLeg.rotation':{x:-0.634, y:0.155, z:0.012}, 'RightFoot.rotation':{x:1.512, y:0.237, z:0.046}, 'RightToeBase.rotation':{x:0.491, y:0.075, z:0.007}},
+      'wide':{
+        'Hips.position':{x:0.002, y:0.929, z:-0.01}, 'Hips.rotation':{x:-0.106, y:-0.75, z:-0.07}, 'Spine.rotation':{x:-0.02, y:0.082, z:-0.011}, 'Spine1.rotation':{x:0.206, y:0.163, z:-0.034}, 'Spine2.rotation':{x:0.322, y:0.158, z:-0.053}, 'Neck.rotation':{x:-0.069, y:-0.022, z:0.004}, 'Head.rotation':{x:-0.109, y:0.357, z:-0.007}, 'LeftShoulder.rotation':{x:1.603, y:-0.159, z:-1.761}, 'LeftArm.rotation':{x:1.109, y:0.034, z:0.296}, 'LeftForeArm.rotation':{x:-0.07, y:0.096, z:0.839}, 'LeftHand.rotation':{x:-0.341, y:0.272, z:0.078}, 'LeftHandThumb1.rotation':{x:0.619, y:0.082, z:0.302}, 'LeftHandThumb2.rotation':{x:-0.015, y:0.001, z:0.002}, 'LeftHandThumb3.rotation':{x:0, y:0, z:0}, 'LeftHandIndex1.rotation':{x:0.066, y:-0.008, z:0.123}, 'LeftHandIndex2.rotation':{x:0.287, y:-0.003, z:-0.014}, 'LeftHandIndex3.rotation':{x:0, y:0, z:0}, 'LeftHandMiddle1.rotation':{x:0.25, y:-0.009, z:-0.172}, 'LeftHandMiddle2.rotation':{x:0.382, y:0.003, z:0.028}, 'LeftHandMiddle3.rotation':{x:0, y:0, z:0}, 'LeftHandRing1.rotation':{x:0.529, y:-0.095, z:-0.247}, 'LeftHandRing2.rotation':{x:0.558, y:0.017, z:0.045}, 'LeftHandRing3.rotation':{x:0, y:0, z:0}, 'LeftHandPinky1.rotation':{x:0.58, y:-0.122, z:-0.308}, 'LeftHandPinky2.rotation':{x:0.684, y:0.054, z:0.086}, 'LeftHandPinky3.rotation':{x:0, y:0, z:0}, 'RightShoulder.rotation':{x:1.633, y:0.189, z:1.605}, 'RightArm.rotation':{x:1.018, y:0.184, z:0.125}, 'RightForeArm.rotation':{x:0.104, y:0.022, z:-0.738}, 'RightHand.rotation':{x:0.201, y:-0.15, z:-0.189}, 'RightHandThumb1.rotation':{x:0.524, y:0.177, z:-0.467}, 'RightHandThumb2.rotation':{x:-0.081, y:-0.011, z:0.359}, 'RightHandThumb3.rotation':{x:0, y:0, z:0}, 'RightHandIndex1.rotation':{x:0.079, y:0.021, z:0.02}, 'RightHandIndex2.rotation':{x:0.296, y:0.003, z:0.019}, 'RightHandIndex3.rotation':{x:0, y:0, z:0}, 'RightHandMiddle1.rotation':{x:0.222, y:0.022, z:0.047}, 'RightHandMiddle2.rotation':{x:0.533, y:-0.006, z:-0.033}, 'RightHandMiddle3.rotation':{x:0, y:0, z:0}, 'RightHandRing1.rotation':{x:0.377, y:0.008, z:0.136}, 'RightHandRing2.rotation':{x:0.652, y:-0.026, z:-0.063}, 'RightHandRing3.rotation':{x:0, y:0, z:0}, 'RightHandPinky1.rotation':{x:0.418, y:0.016, z:0.185}, 'RightHandPinky2.rotation':{x:0.711, y:-0.071, z:-0.121}, 'RightHandPinky3.rotation':{x:0, y:0, z:0}, 'LeftUpLeg.rotation':{x:-0.458, y:0.105, z:-2.896}, 'LeftLeg.rotation':{x:-0.645, y:0.253, z:-0.002}, 'LeftFoot.rotation':{x:1.235, y:-0.074, z:-0.024}, 'LeftToeBase.rotation':{x:0.5, y:-0.055, z:-0.069}, 'RightUpLeg.rotation':{x:-0.084, y:-0.241, z:2.872}, 'RightLeg.rotation':{x:-0.634, y:0.155, z:0.012}, 'RightFoot.rotation':{x:1.512, y:0.237, z:0.046}, 'RightToeBase.rotation':{x:0.491, y:0.075, z:0.007}
+      },
 
-      'kneel':{'Hips.position':{x:-0.005, y:0.415, z:-0.017}, 'Hips.rotation':{x:-0.25, y:0.04, z:-0.238}, 'Spine.rotation':{x:0.037, y:0.043, z:0.047}, 'Spine1.rotation':{x:0.317, y:0.103, z:0.066}, 'Spine2.rotation':{x:0.433, y:0.109, z:0.054}, 'Neck.rotation':{x:-0.156, y:-0.092, z:0.059}, 'Head.rotation':{x:-0.398, y:-0.032, z:0.018}, 'RightShoulder.rotation':{x:1.546, y:0.119, z:1.528}, 'RightArm.rotation':{x:0.896, y:-0.247, z:-0.512}, 'RightForeArm.rotation':{x:0.007, y:0, z:-1.622}, 'RightHand.rotation':{x:1.139, y:-0.853, z:0.874}, 'RightHandThumb1.rotation':{x:0.176, y:0.107, z:-0.311}, 'RightHandThumb2.rotation':{x:-0.047, y:-0.003, z:0.12}, 'RightHandThumb3.rotation':{x:0, y:0, z:0}, 'RightHandIndex1.rotation':{x:0.186, y:0.005, z:0.125}, 'RightHandIndex2.rotation':{x:0.454, y:0.005, z:0.015}, 'RightHandIndex3.rotation':{x:0, y:0, z:0}, 'RightHandMiddle1.rotation':{x:0.444, y:0.035, z:0.127}, 'RightHandMiddle2.rotation':{x:0.403, y:-0.006, z:-0.04}, 'RightHandMiddle3.rotation':{x:0, y:0, z:0}, 'RightHandRing1.rotation':{x:0.543, y:0.074, z:0.121}, 'RightHandRing2.rotation':{x:0.48, y:-0.018, z:-0.063}, 'RightHandRing3.rotation':{x:0, y:0, z:0}, 'RightHandPinky1.rotation':{x:0.464, y:0.086, z:0.113}, 'RightHandPinky2.rotation':{x:0.667, y:-0.06, z:-0.128}, 'RightHandPinky3.rotation':{x:0, y:0, z:0}, 'LeftShoulder.rotation':{x:1.545, y:-0.116, z:-1.529}, 'LeftArm.rotation':{x:0.799, y:0.631, z:0.556}, 'LeftForeArm.rotation':{x:-0.002, y:0.007, z:0.926}, 'LeftHand.rotation':{x:-0.508, y:0.439, z:0.502}, 'LeftHandThumb1.rotation':{x:0.651, y:-0.035, z:0.308}, 'LeftHandThumb2.rotation':{x:-0.053, y:0.008, z:-0.11}, 'LeftHandThumb3.rotation':{x:0, y:0, z:0}, 'LeftHandIndex1.rotation':{x:0.662, y:-0.053, z:-0.116}, 'LeftHandIndex2.rotation':{x:0.309, y:-0.004, z:-0.02}, 'LeftHandIndex3.rotation':{x:0, y:0, z:0}, 'LeftHandMiddle1.rotation':{x:0.501, y:-0.062, z:-0.12}, 'LeftHandMiddle2.rotation':{x:0.144, y:-0.002, z:0.016}, 'LeftHandMiddle3.rotation':{x:0, y:0, z:0}, 'LeftHandRing1.rotation':{x:0.397, y:-0.029, z:-0.143}, 'LeftHandRing2.rotation':{x:0.328, y:0.01, z:0.059}, 'LeftHandRing3.rotation':{x:0, y:0, z:0}, 'LeftHandPinky1.rotation':{x:0.194, y:0.008, z:-0.164}, 'LeftHandPinky2.rotation':{x:0.38, y:0.031, z:0.128}, 'LeftHandPinky3.rotation':{x:0, y:0, z:0}, 'RightUpLeg.rotation':{x:-1.594, y:-0.251, z:2.792}, 'RightLeg.rotation':{x:-2.301, y:-0.073, z:0.055}, 'RightFoot.rotation':{x:1.553, y:-0.207, z:-0.094}, 'RightToeBase.rotation':{x:0.459, y:0.069, z:0.016}, 'LeftUpLeg.rotation':{x:-0.788, y:-0.236, z:-2.881}, 'LeftLeg.rotation':{x:-2.703, y:0.012, z:-0.047}, 'LeftFoot.rotation':{x:2.191, y:-0.102, z:0.019}, 'LeftToeBase.rotation':{x:1.215, y:-0.027, z:0.01}}
+      'kneel':{
+        'Hips.position':{x:-0.005, y:0.415, z:-0.017}, 'Hips.rotation':{x:-0.25, y:0.04, z:-0.238}, 'Spine.rotation':{x:0.037, y:0.043, z:0.047}, 'Spine1.rotation':{x:0.317, y:0.103, z:0.066}, 'Spine2.rotation':{x:0.433, y:0.109, z:0.054}, 'Neck.rotation':{x:-0.156, y:-0.092, z:0.059}, 'Head.rotation':{x:-0.398, y:-0.032, z:0.018}, 'RightShoulder.rotation':{x:1.546, y:0.119, z:1.528}, 'RightArm.rotation':{x:0.896, y:-0.247, z:-0.512}, 'RightForeArm.rotation':{x:0.007, y:0, z:-1.622}, 'RightHand.rotation':{x:1.139, y:-0.853, z:0.874}, 'RightHandThumb1.rotation':{x:0.176, y:0.107, z:-0.311}, 'RightHandThumb2.rotation':{x:-0.047, y:-0.003, z:0.12}, 'RightHandThumb3.rotation':{x:0, y:0, z:0}, 'RightHandIndex1.rotation':{x:0.186, y:0.005, z:0.125}, 'RightHandIndex2.rotation':{x:0.454, y:0.005, z:0.015}, 'RightHandIndex3.rotation':{x:0, y:0, z:0}, 'RightHandMiddle1.rotation':{x:0.444, y:0.035, z:0.127}, 'RightHandMiddle2.rotation':{x:0.403, y:-0.006, z:-0.04}, 'RightHandMiddle3.rotation':{x:0, y:0, z:0}, 'RightHandRing1.rotation':{x:0.543, y:0.074, z:0.121}, 'RightHandRing2.rotation':{x:0.48, y:-0.018, z:-0.063}, 'RightHandRing3.rotation':{x:0, y:0, z:0}, 'RightHandPinky1.rotation':{x:0.464, y:0.086, z:0.113}, 'RightHandPinky2.rotation':{x:0.667, y:-0.06, z:-0.128}, 'RightHandPinky3.rotation':{x:0, y:0, z:0}, 'LeftShoulder.rotation':{x:1.545, y:-0.116, z:-1.529}, 'LeftArm.rotation':{x:0.799, y:0.631, z:0.556}, 'LeftForeArm.rotation':{x:-0.002, y:0.007, z:0.926}, 'LeftHand.rotation':{x:-0.508, y:0.439, z:0.502}, 'LeftHandThumb1.rotation':{x:0.651, y:-0.035, z:0.308}, 'LeftHandThumb2.rotation':{x:-0.053, y:0.008, z:-0.11}, 'LeftHandThumb3.rotation':{x:0, y:0, z:0}, 'LeftHandIndex1.rotation':{x:0.662, y:-0.053, z:-0.116}, 'LeftHandIndex2.rotation':{x:0.309, y:-0.004, z:-0.02}, 'LeftHandIndex3.rotation':{x:0, y:0, z:0}, 'LeftHandMiddle1.rotation':{x:0.501, y:-0.062, z:-0.12}, 'LeftHandMiddle2.rotation':{x:0.144, y:-0.002, z:0.016}, 'LeftHandMiddle3.rotation':{x:0, y:0, z:0}, 'LeftHandRing1.rotation':{x:0.397, y:-0.029, z:-0.143}, 'LeftHandRing2.rotation':{x:0.328, y:0.01, z:0.059}, 'LeftHandRing3.rotation':{x:0, y:0, z:0}, 'LeftHandPinky1.rotation':{x:0.194, y:0.008, z:-0.164}, 'LeftHandPinky2.rotation':{x:0.38, y:0.031, z:0.128}, 'LeftHandPinky3.rotation':{x:0, y:0, z:0}, 'RightUpLeg.rotation':{x:-1.594, y:-0.251, z:2.792}, 'RightLeg.rotation':{x:-2.301, y:-0.073, z:0.055}, 'RightFoot.rotation':{x:1.553, y:-0.207, z:-0.094}, 'RightToeBase.rotation':{x:0.459, y:0.069, z:0.016}, 'LeftUpLeg.rotation':{x:-0.788, y:-0.236, z:-2.881}, 'LeftLeg.rotation':{x:-2.703, y:0.012, z:-0.047}, 'LeftFoot.rotation':{x:2.191, y:-0.102, z:0.019}, 'LeftToeBase.rotation':{x:1.215, y:-0.027, z:0.01}
+      }
     };
 
     // Pose deltas
-    this.poseDelta = {};
-    ['Hips.rotation','Spine.rotation','Spine1.rotation',
-    'Neck.rotation', 'Head.rotation', 'LeftUpLeg.rotation',
-    'RightUpLeg.rotation', 'LeftLeg.rotation',
-    'RightLeg.rotation'].forEach( x => {
-      this.poseDelta[x] = { x: 0, y:0, z:0 };
-    });
+    // NOTE: This should include all the used delta properties.
+    this.poseDelta = {
+      'Hips.rotation':{x:0, y:0, z:0},'Spine.rotation':{x:0, y:0, z:0}, 'Spine1.rotation':{x:0, y:0, z:0}, 'Neck.rotation':{x:0, y:0, z:0}, 'Head.rotation':{x:0, y:0, z:0}, 'LeftUpLeg.rotation':{x:0, y:0, z:0}, 'RightUpLeg.rotation':{x:0, y:0, z:0}, 'LeftLeg.rotation':{x:0, y:0, z:0}, 'RightLeg.rotation':{x:0, y:0, z:0}, 'Spine1.scale':{x:0, y:0, z:0}, 'Neck.scale':{x:0, y:0, z:0}, 'LeftArm.scale':{x:0, y:0, z:0}, 'RightArm.scale':{x:0, y:0, z:0}, 'LeftShoulder.position':{x:0, y:0, z:0}, 'RightShoulder.position':{x:0, y:0, z:0}
+    };
 
-    // Dynamically pick up all the property names that we need
+    // Dynamically pick up all the property names that we need in the code
     const names = new Set();
     Object.values(this.poseTemplates).forEach( x => {
       Object.keys(x).forEach( y => names.add(y) );
@@ -122,22 +130,16 @@ class TalkingHead {
     Object.keys(this.poseDelta).forEach( x => {
       names.add(x)
     });
-    ['Spine1.scale', 'Neck.scale','LeftArm.scale', 'RightArm.scale'].forEach( x => {
-      names.add(x);
-    });
     this.posePropNames = [...names];
 
-    // Pose name, previous, base, target and avatar
+    // Use "side" as the first pose, weight on left leg
     this.poseName = "side"; // First pose
+    this.poseWeightOnLeft = true; // Initial weight on left leg
+    this.posePrev = this.poseFactory( this.poseTemplates[this.poseName] );
+    this.poseBase = this.poseFactory( this.poseTemplates[this.poseName] );
     this.poseTarget = this.poseFactory( this.poseTemplates[this.poseName] );
-    this.posePrev = {};
-    this.poseBase = {};
-    this.poseLeft = true; // Initial weight on left leg
-    Object.entries(this.poseTarget).forEach( x => {
-      this.posePrev[x[0]] = x[1].clone();
-      this.poseBase[x[0]] = x[1].clone();
-    });
     this.poseAvatar = null; // Set when avatar has been loaded
+
 
     // Animation templates
     //
@@ -164,9 +166,9 @@ class TalkingHead {
         anims: [
           { name: 'breathing', delay: 1500, dt: [ 1200,500,1000 ], vs: { chestInhale: [0.5,0.5,0] } },
           { name: 'pose', alt: [
-            { p: 0.7, delay: [5000,20000], vs: { pose: ['side',[-1,1]] } },
-            { p: 0.2, delay: [5000,20000], vs: { pose: ['hip',[-1,1]] } },
-            { delay: [5000,20000], vs: { pose: ['straight',[-1,1]] } }
+            { p: 0.7, delay: [5000,20000], vs: { pose: ['side'] } },
+            { p: 0.2, delay: [5000,20000], vs: { pose: ['hip'] } },
+            { delay: [5000,20000], vs: { pose: ['straight'] } }
           ]},
           { name: 'head', delay: [0,1000], dt: [ [200,5000] ], vs: { headRotateX: [[-0.04,0.10]], headRotateY: [[-0.3,0.3]], headRotateZ: [[-0.08,0.08]] } },
           { name: 'eyes', delay: [200,5000], dt: [ [100,500],[100,5000,2] ], vs: { eyesRotateY: [[-0.6,0.6]], eyesRotateX: [[-0.2,0.6]] } },
@@ -183,18 +185,18 @@ class TalkingHead {
           { name: 'pose',
             idle: {
               alt: [
-                { p: 0.6, delay: [5000,20000], vs: { pose: ['side',[-1,1]] } },
-                { p: 0.2, delay: [5000,20000], vs: { pose: ['hip',[-1,1]] } },
-                { p: 0.1, delay: [5000,20000], vs: { pose: ['straight',[-1,1]] } },
-                { delay: [5000,10000], vs: { pose: ['wide',[-1,1]] } },
-                { delay: [1000,3000], vs: { pose: ['turn',[-1,1]] } },
+                { p: 0.6, delay: [5000,20000], vs: { pose: ['side'] } },
+                { p: 0.2, delay: [5000,20000], vs: { pose: ['hip'] } },
+                { p: 0.1, delay: [5000,20000], vs: { pose: ['straight'] } },
+                { delay: [5000,10000], vs: { pose: ['wide'] } },
+                { delay: [1000,3000], vs: { pose: ['turn'] } },
               ]
             },
             talking: {
               alt: [
-                { p: 0.4, delay: [5000,20000], vs: { pose: ['side',[-1,1]] } },
-                { p: 0.4, delay: [5000,20000], vs: { pose: ['straight',[-1,1]] } },
-                { delay: [5000,20000], vs: { pose: ['hip',[-1,1]] } },
+                { p: 0.4, delay: [5000,20000], vs: { pose: ['side'] } },
+                { p: 0.4, delay: [5000,20000], vs: { pose: ['straight'] } },
+                { delay: [5000,20000], vs: { pose: ['hip'] } },
               ]
             }
           },
@@ -211,9 +213,9 @@ class TalkingHead {
         anims: [
           { name: 'breathing', delay: 500, dt: [ 1000,500,1000 ], vs: { chestInhale: [0.7,0.7,0] } },
           { name: 'pose', alt: [
-            { p: 0.4, delay: [5000,20000], vs: { pose: ['side',[-1,1]] } },
-            { p: 0.4, delay: [5000,20000], vs: { pose: ['straight',[-1,1]] } },
-            { p: 0.2, delay: [5000,20000], vs: { pose: ['hip',[-1,1]] } },
+            { p: 0.4, delay: [5000,20000], vs: { pose: ['side'] } },
+            { p: 0.4, delay: [5000,20000], vs: { pose: ['straight'] } },
+            { p: 0.2, delay: [5000,20000], vs: { pose: ['hip'] } },
           ]},
           { name: 'head', delay: [100,500], dt: [ [200,5000] ], vs: { headRotateX: [[-0.04,0.10]], headRotateY: [[-0.2,0.2]], headRotateZ: [[-0.08,0.08]] } },
           { name: 'eyes', delay: [100,5000], dt: [ [100,500],[100,5000,2] ], vs: { eyesRotateY: [[-0.6,0.6]], eyesRotateX: [[-0.2,0.6]] } },
@@ -228,9 +230,9 @@ class TalkingHead {
         anims: [
           { name: 'breathing', delay: 1500, dt: [ 1000,500,1000 ], vs: { chestInhale: [0.3,0.3,0] } },
           { name: 'pose', alt: [
-            { p: 0.4, delay: [5000,20000], vs: { pose: ['side',[-1,1]] } },
-            { p: 0.4, delay: [5000,20000], vs: { pose: ['straight',[-1,1]] } },
-            { delay: [5000,10000], vs: { pose: ['kneel',[-1,1]] } },
+            { p: 0.4, delay: [5000,20000], vs: { pose: ['side'] } },
+            { p: 0.4, delay: [5000,20000], vs: { pose: ['straight'] } },
+            { delay: [5000,10000], vs: { pose: ['kneel'] } },
           ]},
           { name: 'head', delay: [100,500], dt: [ [200,5000] ], vs: { headRotateX: [[-0.04,0.10]], headRotateY: [[-0.2,0.2]], headRotateZ: [[-0.08,0.08]] } },
           { name: 'eyes', delay: [100,5000], dt: [ [100,500],[100,5000,2] ], vs: { eyesRotateY: [[-0.6,0.6]], eyesRotateX: [[-0.2,0.6]] } },
@@ -245,10 +247,10 @@ class TalkingHead {
         anims: [
           { name: 'breathing', delay: 500, dt: [ 1000,500,1000 ], vs: { chestInhale: [0.7,0.7,0] } },
           { name: 'pose', alt: [
-            { p: 0.8, delay: [5000,20000], vs: { pose: ['side',[-1,1]] } },
-            { delay: [5000,20000], vs: { pose: ['straight',[-1,1]] } },
-            { delay: [5000,10000], vs: { pose: ['wide',[-1,1]] } },
-            { delay: [5000,10000], vs: { pose: ['kneel',[-1,1]] } },
+            { p: 0.8, delay: [5000,20000], vs: { pose: ['side'] } },
+            { delay: [5000,20000], vs: { pose: ['straight'] } },
+            { delay: [5000,10000], vs: { pose: ['wide'] } },
+            { delay: [5000,10000], vs: { pose: ['kneel'] } },
           ]},
           { name: 'head', delay: [100,500], dt: [ [200,3000] ], vs: { headRotateX: [[-0.06,0.12]], headRotateY: [[-0.7,0.7]], headRotateZ: [[-0.1,0.1]] } },
           { name: 'eyes', delay: [100,2000], dt: [ [100,500],[100,5000,2] ], vs: { eyesRotateY: [[-1,1]], eyesRotateX: [[-0.2,0.6]] } },
@@ -263,7 +265,7 @@ class TalkingHead {
         anims: [
           { name: 'breathing', delay: 1500, dt: [ 1000,500,1000 ], vs: { chestInhale: [0.5,0.5,0] } },
           { name: 'pose', alt: [
-            { delay: [5000,10000], vs: { pose: ['side',[-1,1]] } },
+            { delay: [5000,10000], vs: { pose: ['side'] } },
           ]},
           { name: 'head', delay: [100,500], dt: [ [200,5000] ], vs: { headRotateX: [[-0.04,0.10]], headRotateY: [[-0.2,0.2]], headRotateZ: [[-0.08,0.08]] } },
           { name: 'eyes', delay: [100,5000], dt: [ [100,500],[100,5000,2] ], vs: { eyesRotateY: [[-0.6,0.6]], eyesRotateX: [[-0.2,0.6]] } },
@@ -278,14 +280,14 @@ class TalkingHead {
         anims: [
           { name: 'breathing', delay: 1500, dt: [ 1500,500,1500 ], vs: { chestInhale: [0.8,0.8,0] } },
           { name: 'pose', alt: [
-            { p: 0.4, delay: [5000,20000], vs: { pose: ['side',[-1,1]] } },
-            { p: 0.2, delay: [5000,20000], vs: { pose: ['straight',[-1,1]] } },
-            { p: 0.2, delay: [5000,20000], vs: { pose: ['hip',[-1,1]] } },
-            { delay: [5000,10000], vs: { pose: ['wide',[-1,1]] } },
-            { delay: [1000,3000], vs: { pose: ['turn',[-1,1]] } },
-            { delay: [1000,3000], vs: { pose: ['back',[-1,1]] } },
-            { delay: [1000,3000], vs: { pose: ['bend',[-1,1]] } },
-            { delay: [1000,3000], vs: { pose: ['kneel',[-1,1]] } },
+            { p: 0.4, delay: [5000,20000], vs: { pose: ['side'] } },
+            { p: 0.2, delay: [5000,20000], vs: { pose: ['straight'] } },
+            { p: 0.2, delay: [5000,20000], vs: { pose: ['hip'] } },
+            { delay: [5000,10000], vs: { pose: ['wide'] } },
+            { delay: [1000,3000], vs: { pose: ['turn'] } },
+            { delay: [1000,3000], vs: { pose: ['back'] } },
+            { delay: [1000,3000], vs: { pose: ['bend'] } },
+            { delay: [1000,3000], vs: { pose: ['kneel'] } },
           ]},
           { name: 'head', dt: [ [1000,5000] ], vs: { headRotateX: [[-0.04,0.10]], headRotateY: [[-0.3,0.3]], headRotateZ: [[-0.08,0.08]] } },
           { name: 'eyes', delay: [300,5000], dt: [ [100,500],[100,5000,2] ], vs: { eyesRotateY: [[-0.6,0.6]], eyesRotateX: [[-0.2,0.6]] } },
@@ -300,7 +302,7 @@ class TalkingHead {
         anims: [
           { name: 'breathing', delay: 1500, dt: [ 1000,500,1000 ], vs: { chestInhale: [0.6,0.6,0] } },
           { name: 'pose', alt: [
-            { delay: [5000,20000], vs: { pose: ['side',[-1,1]] } }
+            { delay: [5000,20000], vs: { pose: ['side'] } }
           ]},
           { name: 'head', delay: [1000,5000], dt: [ [2000,10000] ], vs: { headRotateX: [[0,0.4]], headRotateY: [[-0.1,0.1]], headRotateZ: [[-0.04,0.04]] } },
           { name: 'eyes', delay: 1000, dt: [], vs: {} },
@@ -320,7 +322,7 @@ class TalkingHead {
     // Animation templates for emojis
     this.animEmojis = {
 
-      '😐': { mood: 'neutral', dt: [300,2000], vs: { browInnerUp: [0.4], eyeWideLeft: [0.7], eyeWideRight: [0.7], mouthPressLeft: [0.6], mouthPressRight: [0.6], mouthRollLower: [0.3], mouthStretchLeft: [1], mouthStretchRight: [1] } },
+      '😐': { mood: 'neutral', dt: [300,2000], vs: { pose: ['straight'], browInnerUp: [0.4], eyeWideLeft: [0.7], eyeWideRight: [0.7], mouthPressLeft: [0.6], mouthPressRight: [0.6], mouthRollLower: [0.3], mouthStretchLeft: [1], mouthStretchRight: [1] } },
       '😶': { link:  '😐' },
       '😏': { mood: 'happy', dt: [300,2000], vs: { browDownRight: [0.1], browInnerUp: [0.7], browOuterUpRight: [0.2], eyeLookInRight: [0.7], eyeLookOutLeft: [0.7], eyeSquintLeft: [1], eyeSquintRight: [0.8], eyesRotateY: [0.7], mouthLeft: [0.4], mouthPucker: [0.4], mouthShrugLower: [0.3], mouthShrugUpper: [0.2], mouthSmile: [0.2], mouthSmileLeft: [0.4], mouthSmileRight: [0.2], mouthStretchLeft: [0.5], mouthUpperUpLeft: [0.6], noseSneerLeft: [0.7] } },
       '🙂': { mood: 'happy', dt: [300,2000], vs: { mouthSmile: [0.5] } },
@@ -373,6 +375,11 @@ class TalkingHead {
     this.animQueue = [];
     this.animClips = [];
     this.animPoses = [];
+
+    // Clock
+    this.animFrameDur = 1000/ this.opt.modelFPS;
+    this.animClock = 0;
+    this.animTimeLast = 0;
     this.easing = this.sigmoidFactory(5); // Ease in and out
 
     // Finnish letters to visemes. And yes, it is this SIMPLE in Finnish!
@@ -439,7 +446,7 @@ class TalkingHead {
     this.controls.update();
 
     // Load 3D Avatar
-    this.loadModel(url,onsuccess,onerror);
+    this.loadModel(url,onsuccess,onprogress,onerror);
   }
 
   /**
@@ -467,12 +474,17 @@ class TalkingHead {
   * Loader for 3D avatar model.
   * @param {string} url URL to GLTF/GLB file.
   * @param {successfn} [onsuccess=null] Callback when the Avatar has been succesfully loaded
+  * @param {progressfn} [onprogress=null] Callback for progress
   * @param {errorfn} [onerror=null] Callback when there was an error in initialization
   */
-  async loadModel(url,onsuccess=null,onerror=null) {
+  async loadModel(url, onsuccess=null, onprogress=null, onerror=null ) {
 
+    const manager = new THREE.LoadingManager();
+    if ( onprogress && typeof onprogress === 'function' ) manager.onProgress = onprogress;
+    if ( onerror && typeof onerror === 'function' ) manager.onError = onerror;
     this.stop();
-    const loader = new GLTFLoader();
+
+    const loader = new GLTFLoader(manager);
     loader.load(url, (gltf) => {
 
       function notfound(x) {
@@ -484,7 +496,6 @@ class TalkingHead {
 
       // Clear previous scene, if avatar was previously loaded
       this.mixer = null;
-      this.lastt = performance.now();
       if ( this.avatar ) {
         this.clearThree( this.scene );
       }
@@ -494,7 +505,7 @@ class TalkingHead {
       if ( !this.avatar ) notfound("Armature");
       this.avatar.scale.setScalar(1);
 
-      // Morphs
+      // Morph targets
       this.morphs = ['EyeLeft','EyeRight','Wolf3D_Head','Wolf3D_Teeth'].map( x => {
         let y = this.avatar.getObjectByName( x );
         if ( !y ) notfound(x);
@@ -511,6 +522,13 @@ class TalkingHead {
         this.poseAvatar[x] = o[ids[1]];
         if ( this.poseBase.hasOwnProperty(x) ) {
           this.poseAvatar[x].copy( this.poseBase[x] );
+        } else {
+          this.poseBase[x] = this.poseAvatar[x].clone();
+        }
+
+        // Make sure target has the delta properties
+        if ( this.poseDelta.hasOwnProperty(x) && !this.poseTarget.hasOwnProperty(x) ) {
+          this.poseTarget[x] = this.poseAvatar[x].clone();
         }
       });
 
@@ -521,18 +539,14 @@ class TalkingHead {
       this.setMood( this.moodName || this.opt.avatarMood );
       if ( !this.viewName ) this.setView( this.opt.cameraView );
       this.posePeriod = 1500;
-      this.poseTime = performance.now();
+      this.poseTime = this.animClock + this.animFrameDur;
       this.start();
 
       // Callback
       if ( onsuccess && typeof onsuccess === 'function' ) onsuccess();
-    },
-    null,
-    (msg) => {
-      console.error(msg);
-      if ( onerror && typeof onerror === 'function' ) onerror(msg);
-      throw new Error(msg);
+
     });
+
   }
 
   /**
@@ -588,7 +602,7 @@ class TalkingHead {
   * Render scene.
   */
   render() {
-    if ( this.running ) this.renderer.render( this.scene, this.camera );
+    if ( this.isRunning ) this.renderer.render( this.scene, this.camera );
   }
 
   /**
@@ -620,7 +634,6 @@ class TalkingHead {
           } else if ( v.isVector3 ) {
             o.copy( this.poseBase[key].lerp(v, this.easing(alpha) ));
           }
-
         }
       }
     }
@@ -643,23 +656,6 @@ class TalkingHead {
 
 
   /**
-  * Randomize pose
-  */
-  randomizePoseTarget() {
-    for( const [key,t] of Object.entries(this.poseTarget) ) {
-      /* const p = this.posePrev[key];
-      const b = this.poseBase[key];
-      if ( !p || !b ) continue; */
-      if ( t.isQuaternion ) {
-        const r = new THREE.Quaternion().random();
-        t.rotateTowards(r,0.05);
-      }
-    }
-/*    this.posePrev = {};
-    Object.entries(this.poseBase).forEach( x => this.posePrev[x[0]] = x[1].clone() ); */
-  }
-
-  /**
   * Get given pose as a string.
   * @param {Object} pose Pose
   * @param {number} [prec=0.001] Precision used in values
@@ -669,13 +665,15 @@ class TalkingHead {
     let s = '{';
     Object.entries(pose).forEach( (x,i) => {
       const ids = x[0].split('.');
-      const key = (ids[1] === 'quaternion' ? (ids[0]+'.rotation') : x[0]);
-      const val = (x[1].isQuaternion ? new THREE.Euler().setFromQuaternion(x[1]) : x[1]);
-      s += (i?", ":"") + "'" + key + "':{";
-      s += 'x:' + Math.round(val.x * prec) / prec;
-      s += ', y:' + Math.round(val.y * prec) / prec;
-      s += ', z:' + Math.round(val.z * prec) / prec;
-      s += '}';
+      if ( ids[1] === 'position' || ids[1] === 'rotation' || ids[1] === 'quaternion' ) {
+        const key = (ids[1] === 'quaternion' ? (ids[0]+'.rotation') : x[0]);
+        const val = (x[1].isQuaternion ? new THREE.Euler().setFromQuaternion(x[1]) : x[1]);
+        s += (i?", ":"") + "'" + key + "':{";
+        s += 'x:' + Math.round(val.x * prec) / prec;
+        s += ', y:' + Math.round(val.y * prec) / prec;
+        s += ', z:' + Math.round(val.z * prec) / prec;
+        s += '}';
+      }
     });
     s += '}';
     return s;
@@ -687,9 +685,9 @@ class TalkingHead {
   */
   updatePoseWeight() {
     const headr = this.poseDelta['Head.rotation'].y;
-    if ( Math.abs(headr) < 0.2 ) return; // Small movements are ignored
+    if ( Math.abs(headr) < 0.1 ) return; // Small movements are ignored
     const isLookingLeft = (headr > 0);
-    if ( isLookingLeft === this.poseLeft ) {
+    if ( isLookingLeft === this.poseWeightOnLeft ) {
       const r = {};
       for( let [key,v] of Object.entries(this.poseTarget) ) {
 
@@ -706,14 +704,16 @@ class TalkingHead {
 
         r[key] = v;
       }
-      this.poseLeft = !this.poseLeft;
+
+      this.poseWeightOnLeft = !this.poseWeightOnLeft;
       this.poseTarget = r;
+
       let anim = this.animQueue.find( x => x.template.name === 'pose' );
       if ( anim ) {
         anim.ts[0] += 4000;
       }
-      this.posePerion = 500;
-      this.poseTime = performance.now();
+      this.posePeriod = 1500;
+      this.poseTime = this.animClock + this.animFrameDur;
     }
   }
 
@@ -727,7 +727,7 @@ class TalkingHead {
     for( let [key,val] of Object.entries(t) ) {
       const ids = key.split('.');
       let v;
-      if ( ids[1] === 'position' ) {
+      if ( ids[1] === 'position' || ids[1] === 'scale' ) {
         v = new THREE.Vector3(val.x,val.y,val.z);
       } else if ( ids[1] === 'rotation' ) { // NOTE: Internally all rotations are quaternions
         v = new THREE.Quaternion().setFromEuler(new THREE.Euler(val.x,val.y,val.z,'XYZ')).normalize();
@@ -737,7 +737,7 @@ class TalkingHead {
       }
 
       // If the avatar is standing on its right leg, create a mirror image
-      if ( !this.poseLeft && v.isQuaternion ) {
+      if ( !this.poseWeightOnLeft && v && v.isQuaternion ) {
         if ( key.startsWith('Left') ) {
           key = 'Right' + key.substring(4);
         } else if ( key.startsWith('Right') ) {
@@ -755,15 +755,22 @@ class TalkingHead {
   /**
   * Set a new pose and start transition timer.
   * @param {Object} pose Pose template
-  * @param {number} [mirror=-1] If positive, create a mirror image
   */
   setPose(pose) {
     this.posePrev = {};
     Object.entries(this.poseBase).forEach( x => this.posePrev[x[0]] = x[1].clone() );
     this.poseTarget = this.poseFactory(pose);
+
+    // Make sure deltas are included in the target
+    Object.keys(this.poseDelta).forEach( key => {
+      if ( !this.poseTarget.hasOwnProperty(key) ) {
+        this.poseTarget[key] = this.poseBase[key].clone();
+      }
+    });
+
     this.updatePoseWeight();
     this.posePeriod = 2000;
-    this.poseTime = performance.now();
+    this.poseTime = this.animClock + this.animFrameDur;
   }
 
   /**
@@ -779,7 +786,7 @@ class TalkingHead {
     } else if ( mt === 'headRotateZ' ) {
       return this.poseDelta['Head.rotation'].z;
     } else if ( mt === 'chestInhale' ) {
-      return (this.poseAvatar['Spine1.scale'].x-1)*20;
+      return this.poseDelta['Spine1.scale'].x * 20;
     } else {
       return this.morphs[0].morphTargetInfluences[this.morphs[0].morphTargetDictionary[mt]];
     }
@@ -814,10 +821,14 @@ class TalkingHead {
       this.poseDelta['Hips.rotation'].z = v/24;
     } else if ( mt === 'chestInhale' ) {
       const scale = v/20;
-      this.poseAvatar['Spine1.scale'].set(1+scale,1+scale/2,1+3*scale);
-      this.poseAvatar['Neck.scale'].set(1/(1+scale),1/(1+scale/2),1/(1+3*scale));
-      this.poseAvatar['LeftArm.scale'].set(1/(1+scale),1/(1+scale/2),1/(1+3*scale));
-      this.poseAvatar['RightArm.scale'].set(1/(1+scale),1/(1+scale/2),1/(1+3*scale));
+      const d = { x: scale, y: scale/2, z: 3 * scale };
+      const dneg = { x: 1/(1+scale) - 1, y: 1/(1 + scale/2) - 1, z: 1/(1 + 3 * scale) - 1 };
+      this.poseDelta['Spine1.scale'] = d;
+      this.poseDelta['Neck.scale'] = dneg;
+      this.poseDelta['LeftArm.scale'] = dneg;
+      this.poseDelta['RightArm.scale'] = dneg;
+      this.poseDelta['LeftShoulder.position'].y = v/150;
+      this.poseDelta['RightShoulder.position'].y = v/150;
     } else {
       this.morphs.forEach( x => x.morphTargetInfluences[x.morphTargetDictionary[mt]] = v );
     }
@@ -1039,13 +1050,13 @@ class TalkingHead {
     }
 
     // Time series
-    const delay = a.delay ? (Array.isArray(a.delay) ? this.gaussianRandom(a.delay[0],a.delay[1],a.delay[2]) : a.delay ) : 0;
+    const delay = a.delay ? (Array.isArray(a.delay) ? this.gaussianRandom(a.delay[0], a.delay[1], a.delay[2]) : a.delay ) : 0;
     if ( a.hasOwnProperty('dt') ) {
       a.dt.forEach( (x,i) => {
         o.ts[i+1] = o.ts[i] + (Array.isArray(x) ? this.gaussianRandom(x[0],x[1],x[2]) : x);
       });
     }
-    o.ts = o.ts.map( x => performance.now() + delay + x * scaleTime );
+    o.ts = o.ts.map( x => this.animClock + delay + x * scaleTime );
 
     // Values
     for( let [mt,vs] of Object.entries(a.vs) ) {
@@ -1147,121 +1158,119 @@ class TalkingHead {
   */
   animate(t) {
 
-    const dt = t - this.lastt;
-    if ( dt > 33 ) { // 30 FPS
-      this.lastt = t;
-
-      // Start from baseline
-      const o = {};
-      for( let [mt,x] of Object.entries(this.animBaseline) ) {
-        const v = this.getValue(mt);
-        if ( v !== x.target ) {
-          if ( x.t0 === undefined ) {
-            x.t0 = performance.now();
-            x.v0 = v;
-          }
-          o[mt] = this.valueAnimationSeq( [x.t0,x.t0+1000], [x.v0,x.target], t, this.easing );
-        } else {
-          x.t0 = undefined;
-        }
-      }
-
-      // Animations
-      for( let i = 0; i < this.animQueue.length; i++ ) {
-        const x = this.animQueue[i];
-        if ( t >= x.ts[0] ) {
-          for( let [mt,vs] of Object.entries(x.vs) ) {
-            if ( mt === 'subtitles' ) {
-              o[mt] = (o.hasOwnProperty(mt) ? o[mt] + vs : vs);
-              delete x.vs[mt];
-            } else if ( mt === 'speak' ) {
-              o[mt] = (o.hasOwnProperty(mt) ? o[mt] + ' ' + vs : vs);
-              delete x.vs[mt];
-            } else if ( mt === 'pose' ) {
-              o[mt] = [...vs];
-              delete x.vs[mt];
-            } else {
-              if ( vs[0] === null ) vs[0] = this.getValue(mt);
-              o[mt] = this.valueAnimationSeq( x.ts, vs, t, this.easing );
-              if ( this.animBaseline.hasOwnProperty(mt) ) this.animBaseline[mt].t0 = undefined;
-              for( let j=0; j<i; j++ ) {
-                if ( this.animQueue[j].vs.hasOwnProperty(mt) ) delete this.animQueue[j].vs[mt];
-              }
-            }
-          }
-          if ( t >= x.ts[x.ts.length-1] ) {
-            if ( x.hasOwnProperty('mood') ) this.setMood(x.mood);
-            if ( x.loop ) {
-              let restrain = ( this.ttsSpeaking && (x.template.name === 'head' || x.template.name === 'eyes') ) ? 4 : 1;
-              this.animQueue[i] = this.animFactory( x.template, (x.loop > 0 ? x.loop - 1 : x.loop), 1, 1/restrain );
-            } else {
-              this.animQueue.splice(i--, 1);
-            }
-          }
-        }
-      }
-
-      // Set fixed
-      for( let [mt,x] of Object.entries(this.animFixed) ) {
-        const v = this.getValue(mt);
-        if ( v !== x.target ) {
-          if ( x.t0 === undefined ) {
-            x.t0 = performance.now();
-            x.v0 = v;
-          }
-          o[mt] = this.valueAnimationSeq( [x.t0,x.t0+1000], [x.v0,x.target], t, this.easing );
-        } else {
-          if ( o.hasOwnProperty(mt) ) delete o[mt];
-          x.t0 = undefined;
-        }
-        if ( this.animBaseline.hasOwnProperty(mt) ) this.animBaseline[mt].t0 = undefined;
-      }
-
-      // Update values
-      for( let [mt,x] of Object.entries(o) ) {
-        if ( mt === 'subtitles' ) {
-          this.addSubtitle(x);
-        } else if ( mt === 'speak' ) {
-          this.speak(x);
-        } else if ( mt === 'pose' ) {
-          this.poseName = x[1];
-          this.setPose( this.poseTemplates[x[1]] );
-        } else {
-          this.setValue(mt,x);
-        }
-      }
-
-      // Look at you when talking
-      if ( this.gttsTalking ) {
-        // TODO
-      }
-
-      // Animate
-      if ( this.mixer ) {
-        this.mixer.update(dt / 1000 * this.mixer.timeScale);
-      } else {
-        this.updatePoseBase(t);
-        /* if ( (t-this.poseTime)>this.posePeriod ) {
-          this.randomizePoseTarget();
-          this.poseTime = performance.now();
-        } */
-      }
-      this.updatePoseDelta();
-
-      // Hip-feet balance
-      const hips = this.avatar.getObjectByName('Hips');
-      const ltoePos = new THREE.Vector3();
-      const rtoePos = new THREE.Vector3();
-      this.avatar.getObjectByName('LeftToeBase').getWorldPosition(ltoePos);
-      this.avatar.getObjectByName('RightToeBase').getWorldPosition(rtoePos);
-      hips.position.y -= (ltoePos.y+rtoePos.y)/2;
-      hips.position.x -= (ltoePos.x+rtoePos.x)/4;
-      hips.position.z -= (ltoePos.z+rtoePos.z)/2;
-
-      this.render();
+    // Are we running?
+    if ( this.isRunning ) {
+      requestAnimationFrame( this.animate.bind(this) );
+    } else {
+      return;
     }
 
-    if ( this.running ) requestAnimationFrame( this.animate.bind(this) );
+    // Delta time
+    let dt = t - this.animTimeLast;
+    if ( dt < this.animFrameDur ) return;
+    this.animClock += dt;
+    this.animTimeLast = t;
+
+    // Start from baseline
+    const o = {};
+    for( let [mt,x] of Object.entries(this.animBaseline) ) {
+      const v = this.getValue(mt);
+      if ( v !== x.target ) {
+        if ( x.t0 === undefined ) {
+          x.t0 = this.animClock;
+          x.v0 = v;
+        }
+        o[mt] = this.valueAnimationSeq( [x.t0,x.t0+1000], [x.v0,x.target], this.animClock, this.easing );
+      } else {
+        x.t0 = undefined;
+      }
+    }
+
+    // Animations
+    for( let i = 0; i < this.animQueue.length; i++ ) {
+      const x = this.animQueue[i];
+      if ( this.animClock >= x.ts[0] ) {
+        for( let [mt,vs] of Object.entries(x.vs) ) {
+          if ( mt === 'subtitles' ) {
+            o[mt] = (o.hasOwnProperty(mt) ? o[mt] + vs : vs);
+            delete x.vs[mt];
+          } else if ( mt === 'speak' ) {
+            o[mt] = (o.hasOwnProperty(mt) ? o[mt] + ' ' + vs : vs);
+            delete x.vs[mt];
+          } else if ( mt === 'pose' ) {
+            o[mt] = [...vs];
+            delete x.vs[mt];
+          } else {
+            if ( vs[0] === null ) vs[0] = this.getValue(mt);
+            o[mt] = this.valueAnimationSeq( x.ts, vs, this.animClock, this.easing );
+            if ( this.animBaseline.hasOwnProperty(mt) ) this.animBaseline[mt].t0 = undefined;
+            for( let j=0; j<i; j++ ) {
+              if ( this.animQueue[j].vs.hasOwnProperty(mt) ) delete this.animQueue[j].vs[mt];
+            }
+          }
+        }
+        if ( this.animClock >= x.ts[x.ts.length-1] ) {
+          if ( x.hasOwnProperty('mood') ) this.setMood(x.mood);
+          if ( x.loop ) {
+            let restrain = ( this.ttsSpeaking && (x.template.name === 'head' || x.template.name === 'eyes') ) ? 4 : 1;
+            this.animQueue[i] = this.animFactory( x.template, (x.loop > 0 ? x.loop - 1 : x.loop), 1, 1/restrain );
+          } else {
+            this.animQueue.splice(i--, 1);
+          }
+        }
+      }
+    }
+
+    // Set fixed
+    for( let [mt,x] of Object.entries(this.animFixed) ) {
+      const v = this.getValue(mt);
+      if ( v !== x.target ) {
+        if ( x.t0 === undefined ) {
+          x.t0 = this.animClock;
+          x.v0 = v;
+        }
+        o[mt] = this.valueAnimationSeq( [x.t0,x.t0+1000], [x.v0,x.target], this.animClock, this.easing );
+      } else {
+        if ( o.hasOwnProperty(mt) ) delete o[mt];
+        x.t0 = undefined;
+      }
+      if ( this.animBaseline.hasOwnProperty(mt) ) this.animBaseline[mt].t0 = undefined;
+    }
+
+    // Update values
+    for( let [mt,x] of Object.entries(o) ) {
+      if ( mt === 'subtitles' ) {
+        this.addSubtitle(x);
+      } else if ( mt === 'speak' ) {
+        this.speak(x);
+      } else if ( mt === 'pose' ) {
+        this.poseName = x[1];
+        this.setPose( this.poseTemplates[x[1]] );
+      } else {
+        this.setValue(mt,x);
+      }
+    }
+
+    // Animate
+    this.updatePoseBase(this.animClock);
+    if ( this.mixer ) {
+      this.mixer.update(dt / 1000 * this.mixer.timeScale);
+    }
+    this.updatePoseDelta();
+
+
+    // Hip-feet balance
+    const hips = this.avatar.getObjectByName('Hips');
+    const ltoePos = new THREE.Vector3();
+    const rtoePos = new THREE.Vector3();
+    this.avatar.getObjectByName('LeftToeBase').getWorldPosition(ltoePos);
+    this.avatar.getObjectByName('RightToeBase').getWorldPosition(rtoePos);
+    hips.position.y -= (ltoePos.y+rtoePos.y)/2;
+    hips.position.x -= (ltoePos.x+rtoePos.x)/4;
+    hips.position.z -= (ltoePos.z+rtoePos.z)/2;
+
+    this.render();
+
   }
 
   /**
@@ -1310,7 +1319,7 @@ class TalkingHead {
     // Rescale and push to queue
     this.ttsAudio.anim.forEach( x => {
       for(let i=0; i<x.ts.length; i++) {
-        x.ts[i] = performance.now() + (x.ts[i] * d/t) + this.opt.ttsTrimStart;
+        x.ts[i] = this.animClock + this.animFrameDur + (x.ts[i] * d/t) + this.opt.ttsTrimStart;
       }
       this.animQueue.push(x);
     });
@@ -1550,10 +1559,12 @@ class TalkingHead {
     } else if ( line.text ) {
 
       // Look at the camera
+      let roty = (this.camera.rotation.y - this.avatar.getObjectByName('Hips').rotation.y)/4;
+      roty = Math.min( 0.4, Math.max(-0.4,roty));
       const templateLookAt = {
         name: 'lookat',
-        dt: [1000,2000],
-        vs: { eyesRotateY: [ 0 ], eyesRotateX: [ 0 ], headRotateY: [ 0 ], headRotateX: [ 0 ] }
+        dt: [800,1000],
+        vs: { eyesRotateY: [ 2 * roty ], eyesRotateX: [ 0.2 ], headRotateY: [ roty ], headRotateX: [ 0 ] }
       };
       this.animQueue.push( this.animFactory( templateLookAt ) );
 
@@ -1612,7 +1623,7 @@ class TalkingHead {
       if ( line.mood ) this.setMood( line.mood );
       line.anim.forEach( (x,i) => {
         for(let j=0; j<x.ts.length; j++) {
-          x.ts[j] = performance.now() + 10 * i;
+          x.ts[j] = this.animClock  + 10 * i;
         }
         this.animQueue.push(x);
       });
@@ -1682,9 +1693,9 @@ class TalkingHead {
   * Start animation cycle.
   */
   start() {
-    if ( this.avatar && this.running === false ) {
-      this.running = true;
-      this.lastt = performance.now();
+    if ( this.avatar && this.isRunning === false ) {
+      this.animTimeLast = performance.now();
+      this.isRunning = true;
       requestAnimationFrame( this.animate.bind(this) );
     }
   }
@@ -1693,11 +1704,7 @@ class TalkingHead {
   * Stop animation cycle.
   */
   stop() {
-    this.running = false;
-    if ( this.mixer ) {
-      this.mixer.stopAllAction();
-      this.mixer = null;
-    }
+    this.isRunning = false;
   }
 
   /**
@@ -1713,21 +1720,18 @@ class TalkingHead {
     let item = this.animClips.find( x => x.url === url+'-'+ndx );
     if ( item ) {
 
-      // Reset pose
+      // Reset pose update
       let anim = this.animQueue.find( x => x.template.name === 'pose' );
       if ( anim ) {
         anim.ts[0] = Infinity;
       }
-      this.poseTimer = Infinity;
 
-      // Set new pose base
+      // Set new pose
+      this.posePrev = {};
+      Object.entries(this.poseBase).forEach( x => this.posePrev[x[0]] = x[1].clone() );
       Object.entries(item.pose).forEach( x => {
-        if ( this.poseBase.hasOwnProperty(x[0]) ) {
-          this.poseBase[x[0]].copy(x[1]);
-        }
-        if ( this.poseTarget.hasOwnProperty(x[0]) ) {
-          this.poseTarget[x[0]].copy(x[1]);
-        }
+        this.poseBase[x[0]] = x[1].clone();
+        this.poseTarget[x[0]] = x[1].clone();
       });
 
       // Create a new mixer
@@ -1792,11 +1796,11 @@ class TalkingHead {
   * Stop running animations.
   */
   stopAnimation() {
-    this.poseTime = performance.now();
+    this.poseTime = this.animClock;
     this.mixer = null;
     let anim = this.animQueue.find( x => x.template.name === 'pose' );
     if ( anim ) {
-      anim.ts[0] = performance.now() + 1000;
+      anim.ts[0] = this.animClock + 1000;
     }
   }
 
@@ -1805,7 +1809,6 @@ class TalkingHead {
   * Play RPM/Mixamo pose.
   * @param {string} url URL to animation file FBX
   * @param {number} [dur=5] Duration of thepose in seconds
-  * @param {number} [mirror=false] If true, mirror image
   * @param {number} [ndx=0] Index of the clip
   * @param {number} [scale=0.01] Position scale factor
   */
@@ -1826,7 +1829,7 @@ class TalkingHead {
 
       let anim = this.animQueue.find( x => x.template.name === 'pose' );
       if ( anim ) {
-        anim.ts[0] = performance.now() + (dur * 1000) + 2000;
+        anim.ts[0] = this.animClock + (dur * 1000) + 2000;
       }
       this.setPose( pose );
 
@@ -1846,7 +1849,7 @@ class TalkingHead {
             // Rename and scale Mixamo tracks
             t.name = t.name.replaceAll('mixamorig','');
             const ids = t.name.split('.');
-            if ( ids[1] === 'position' ) {
+            if ( ids[1] === 'position' || ids[1] === 'scale' ) {
               pose[t.name] = {
                 x: t.values[0] * scale,
                 y: t.values[1] * scale,

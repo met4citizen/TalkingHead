@@ -4,13 +4,13 @@
 
 <img src="screenshot.jpg" width="512"><br/>
 
-This is a small side-project featuring a 3D talking head capable of speaking and lip-syncing in Finnish. The Talking Head supports markdown and it knows a set of emojis, which it can convert into facial expressions.
+This is a small side-project featuring a 3D talking avatar capable of speaking and lip-syncing in Finnish. The Talking Head supports markdown text, subtitles and knows a set of emojis, which it can convert into facial expressions.
 
-The current version uses [Ready Player Me](https://readyplayer.me/) 3D full-body avatar, [Google Text-to-Speech](https://cloud.google.com/text-to-speech), [ThreeJS](https://github.com/mrdoob/three.js/)/WebGL for 3D rendering, and [Marked](https://github.com/markedjs/marked) markdown parser.
+The current version of the app uses [Google Text-to-Speech](https://cloud.google.com/text-to-speech), [ThreeJS](https://github.com/mrdoob/three.js/)/WebGL for 3D rendering, and [Marked](https://github.com/markedjs/marked) markdown parser. The app supports [Ready Player Me](https://readyplayer.me/) full-body 3D avatars (GLB) and can play [Mixamo](https://www.mixamo.com) animations (FBX).
 
 ### Introduction
 
-Everything is packaged in one JavaScript class called `TalkingHead` that can be found in the module `talkinghead.mjs`. The file `tester.html` is intended for testing, but it also serves as an example of how to initialize and use the class.
+Everything is packaged in one JavaScript class called `TalkingHead` that can be found in the module `talkinghead.mjs`. The file `tester.html` is intended for development/testing, but it also serves as an example of how to initialize and use the class.
 
 **NOTE**: In order too make the avatar speak, you need to add the URL for your own text-to-speech backend that operates as a proxy to the Google Text-to-Speech API. Alternatively, it is possible to use Google's original endpoint directly and initialize the class with your own Google Text-to-Speech API key. However, it is NOT recommended to include your API key in any client-side code.
 
@@ -33,21 +33,23 @@ Init parameter | Description
 `url` | URL for the Ready Player Me avatar GLB file.
 `node` | DOM element for the talking head.
 `opt` | Object for options. Refer to the next table for available options.
-`onSuccess` | Callback function triggered when the avatar has been successfully loaded.
-`onError` | Callback function triggered if there's an initialization error. The first parameter is the error message string.
+`onsuccess` | Callback function triggered when the avatar has been successfully loaded.
+`onprogress` | Callback function for load progress with arguments `url`, `loaded`, and `total`.
+`onerror` | Callback function triggered if there's an initialization error. The first parameter is the error message string.
 
 Option | Description
 --- | ---
 `ttsEndpoint` | Text-to-speech backend/endpoint/proxy implementing the Google Text-to-Speech API. Required if you want the talking head to actually speak.
-`ttsApikey` | Google Text-to-Speech API key when using the Google TTS endpoint. **NOTE: Don't use this in client-side code in production**.
+`ttsApikey` | Google Text-to-Speech API key when using the Google TTS endpoint. **NOTE: Don't use this in client-side code in production**
 `ttsLang` | Google text-to-speech language. Default is `"fi-FI"`.
 `ttsVoice` | Google text-to-speech voice. Default is `"fi-FI-Standard-A"`.
-`ttsRate` | Google text-to-speech rate in the range [0.25, 4.0]. Default is `0.90`.
+`ttsRate` | Google text-to-speech rate in the range [0.25, 4.0]. Default is `0.95`.
 `ttsPitch` | Google text-to-speech pitch in the range [-20.0, 20.0]. Default is `0`.
 `ttsVolume` | Google text-to-speech volume gain (in dB) in the range [-96.0, 16.0]. Default is `0`.
 `ttsTrimStart` | Trim the viseme sequence start relative to the beginning of the audio (shift in milliseconds). Default is `0`.
 `ttsTrimEnd`| Trim the viseme sequence end relative to the end of the audio (shift in milliseconds). Default is `200`.
 `modelPixelRatio` | Sets the device's pixel ratio. Default is `1`.
+`modelFPS` | Frames per second. Default is `30`.
 `cameraView` | Initial view. Supported views are `"closeup"` and `"fullbody"`. Default is `"closeup"`.
 `cameraDistance` | Camera distance offset for initial view in meters. Default is `0`.
 `cameraX` | Camera position offset in X direction in meters. Default is `0`.
@@ -65,12 +67,12 @@ Option | Description
 
 Method | Description
 --- | ---
-`loadModel(url,[success],[error])` | Load new GLB avatar `url` with callback functions `success` and `error`.
+`loadModel(url,[onsuccess],[onprogress],[onerror])` | Load new GLB avatar `url` with callback functions `success`, `progress` and `error`.
 `setView(view, [opt])` | Set view. Supported views: `"closeup"` (default) and `"fullbody"`. Options `opt` can be used to set `cameraDistance`, `cameraX`, `cameraY`, `cameraRotateX`, `cameraRotateY`.
 `lookAt(x,y,t)` | Make the avatar's head turn to look at the screen position (`x`,`y`) for `t` milliseconds.
 `setMood(mood)` | Set avatar mood. Supported moods: `"neutral"`, `"happy"`, `"angry"`, `"sad"`, `"fear"`, `"disgust"`, `"love"`, `"sleep"`.
-`getMood(mood)` | Get avatar mood.
-`speak(text, [opt={}, [nodeSubtitles=null], [onsubtitles=null], [excludes=[]])` | Add the `text` string to the speech queue. The text can contain face emojis. Options `opt` can be used to set text-specific `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood`, `avatarMute`. If the DOM element `nodeSubtitles` is specified, subtitles are displayed. Optional callback function `onsubtitles` is called whenever a new subtitle is written with the parameter of the target DOM node. The optional `excludes` is an array of [start,end] indices to be excluded from audio but includes in the subtitles.
+`getMood()` | Get avatar mood.
+`speak(text, [opt={}], [nodeSubtitles=null], [onsubtitles=null], [excludes=[]])` | Add the `text` string to the speech queue. The text can contain face emojis. Options `opt` can be used to set text-specific `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood`, `avatarMute`. If the DOM element `nodeSubtitles` is specified, subtitles are displayed. Optional callback function `onsubtitles` is called whenever a new subtitle is written with the parameter of the target DOM node. The optional `excludes` is an array of [start,end] indices to be excluded from audio but includes in the subtitles.
 `start` | Start/re-start the Talking Head.
 `stop` | Stop the Talking Head.
 `startSpeaking()` | Start speaking.

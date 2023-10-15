@@ -39,6 +39,8 @@ textarea::placeholder { color: #505050; opacity: 0.5; }
 .morphvalue { flex:1; text-align: center; }
 
 #talkinghead {flex:6; position: relative; display: flex; flex-direction: column; background-color: gray; overflow: hidden; }
+#progress { position: absolute; top:45%; bottom: 45%; left: 45%; right: 45%; opacity: 0.5; border: 1px solid white; }
+#progressbar { height: 100%; width: 0; background-color: white; }
 #avatar { flex:1; overflow: hidden; }
 #subtitles { position: absolute; left: 60%; right: 0; top:0; bottom:0; margin: 0; padding: 0; overflow-y: auto; max-height: 100vh; scrollbar-color: gray; scrollbar-width: 0; background-color: transparent; pointer-events: none; }
 #subtitles > * { display: block; min-height: 5rem; padding: 1rem; background-color: lightgray; opacity: 0.8; margin: 1rem 1rem; color: #505050; text-align:left; font-family: Arial; font-size: 1.2rem; line-height: 1.7rem; white-space: pre-line; border-radius: 10px; }
@@ -191,7 +193,7 @@ textarea::placeholder { color: #505050; opacity: 0.5; }
 
     d3.select("#url").on('change', function(e) {
       d3.select("#subtitles").text('');
-      head.loadModel( document.getElementById("url").value, null, (e) => { alert(e); } );
+      head.loadModel( document.getElementById("url").value, null, onProgress, onError );
     });
 
     // Moods
@@ -319,11 +321,27 @@ textarea::placeholder { color: #505050; opacity: 0.5; }
     }
   }
 
+  function onProgress(item, loaded, total) {
+    const progress = document.getElementById("progress");
+    const progressBar = document.getElementById("progressbar");
+    if ( loaded < total ) {
+      progress.style.display = 'block';
+      progressBar.style.width = (loaded / total * 100) + '%';
+    } else {
+      progress.style.display = 'none';
+    }
+  }
+
+  function onError(error) {
+    alert(error);
+  }
+
   // Page ready
   document.addEventListener('DOMContentLoaded', function(e) {
 
     const nodeAvatar = document.getElementById('avatar');
     const url = document.getElementById("url").value;
+
     head = new TalkingHead( url, nodeAvatar, {
         ttsEndpoint: "https://eu-texttospeech.googleapis.com/v1/text:synthesize",
         ttsApikey: null, // WARNING: USE ONLY FOR PRIVATE TESTING, NOT IN PRODUCTION
@@ -332,8 +350,9 @@ textarea::placeholder { color: #505050; opacity: 0.5; }
         cameraPanEnable: true,
         cameraView: 'fullview',
         cameraX: -0.4,
+        cameraRotateY: -0.2,
         avatarMood: 'happy'
-      }, headLoaded, function(error) { alert(error); } );
+      }, headLoaded, onProgress, onError );
     window.head = head;
 
     // Follow double clicks
@@ -432,6 +451,9 @@ textarea::placeholder { color: #505050; opacity: 0.5; }
       <div id="templateemojis" class="noselect nodrag"></div>
     </div>
     <div id="talkinghead">
+      <div id="progress">
+        <div id="progressbar"></div>
+      </div>
       <div id="subtitles"></div>
       <div id="avatar"></div>
     </div>
