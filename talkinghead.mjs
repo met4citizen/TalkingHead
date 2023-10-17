@@ -57,7 +57,7 @@ class TalkingHead {
       ttsLang: "fi-FI",
       ttsVoice: "fi-FI-Standard-A",
       ttsRate: 0.95,
-      ttsPitch: 0,
+      ttsPitch: -2,
       ttsVolume: 0,
       ttsTrimStart: 0,
       ttsTrimEnd: 200,
@@ -135,7 +135,7 @@ class TalkingHead {
     // Use "side" as the first pose, weight on left leg
     this.poseName = "side"; // First pose
     this.poseWeightOnLeft = true; // Initial weight on left leg
-    this.posePrev = this.poseFactory( this.poseTemplates[this.poseName] );
+    this.posePrev = null;
     this.poseBase = this.poseFactory( this.poseTemplates[this.poseName] );
     this.poseTarget = this.poseFactory( this.poseTemplates[this.poseName] );
     this.poseAvatar = null; // Set when avatar has been loaded
@@ -526,7 +526,7 @@ class TalkingHead {
           this.poseBase[x] = this.poseAvatar[x].clone();
         }
 
-        // Make sure target has the delta properties
+        // Make sure target has the delta properties, because we need it as a basis
         if ( this.poseDelta.hasOwnProperty(x) && !this.poseTarget.hasOwnProperty(x) ) {
           this.poseTarget[x] = this.poseAvatar[x].clone();
         }
@@ -581,12 +581,14 @@ class TalkingHead {
     if ( view === 'closeup' ) {
       z = ( 1 + opt.cameraDistance ) * distance;
       x = - opt.cameraX * Math.tan( fov / 2 ) * z;
-      y = 1.55 - opt.cameraY * Math.tan( fov / 2 ) * z;
+      y = 1.6 - opt.cameraY * Math.tan( fov / 2 ) * z;
+      ty = 0.97;
       tz = 0;
     } else if ( view === 'fullbody' ) {
       z = 7.7 + ( 1 + opt.cameraDistance ) * distance;
       x = - opt.cameraX * Math.tan( fov / 2 ) * z;
-      y = 1.02 - opt.cameraY * Math.tan( fov / 2 ) * z;
+      y = 1.6 - opt.cameraY * Math.tan( fov / 2 ) * z;
+      ty = 0.64
       tz = 0;
     }
     this.controls.reset();
@@ -681,40 +683,28 @@ class TalkingHead {
 
 
   /**
-  * Set body weight on left/right leg
+  * Change body weight from current leg to another.
+  * @param {Object} p Pose
   */
-  updatePoseWeight() {
-    const headr = this.poseDelta['Head.rotation'].y;
-    if ( Math.abs(headr) < 0.1 ) return; // Small movements are ignored
-    const isLookingLeft = (headr > 0);
-    if ( isLookingLeft === this.poseWeightOnLeft ) {
-      const r = {};
-      for( let [key,v] of Object.entries(this.poseTarget) ) {
+  mirrorPose(p) {
+    const r = {};
+    for( let [key,v] of Object.entries(p) ) {
 
-        // Create a mirror image
-        if ( v.isQuaternion ) {
-          if ( key.startsWith('Left') ) {
-            key = 'Right' + key.substring(4);
-          } else if ( key.startsWith('Right') ) {
-            key = 'Left' + key.substring(5);
-          }
-          v.x *= -1;
-          v.w *= -1;
+      // Create a mirror image
+      if ( v.isQuaternion ) {
+        if ( key.startsWith('Left') ) {
+          key = 'Right' + key.substring(4);
+        } else if ( key.startsWith('Right') ) {
+          key = 'Left' + key.substring(5);
         }
-
-        r[key] = v;
+        v.x *= -1;
+        v.w *= -1;
       }
 
-      this.poseWeightOnLeft = !this.poseWeightOnLeft;
-      this.poseTarget = r;
-
-      let anim = this.animQueue.find( x => x.template.name === 'pose' );
-      if ( anim ) {
-        anim.ts[0] += 4000;
-      }
-      this.posePeriod = 1500;
-      this.poseTime = this.animClock + this.animFrameDur;
+      r[key] = v;
     }
+    this.poseWeightOnLeft = !this.poseWeightOnLeft;
+    return r;
   }
 
   /**
@@ -735,18 +725,6 @@ class TalkingHead {
         key = ids[0] + '.rotation'; // NOTE: Internally all rotations are quaternions
         v = new THREE.Quaternion(val.x,val.y,val.z,val.w).normalize();
       }
-
-      // If the avatar is standing on its right leg, create a mirror image
-      if ( !this.poseWeightOnLeft && v && v.isQuaternion ) {
-        if ( key.startsWith('Left') ) {
-          key = 'Right' + key.substring(4);
-        } else if ( key.startsWith('Right') ) {
-          key = 'Left' + key.substring(5);
-        }
-        v.x *= -1;
-        v.w *= -1;
-      }
-
       if (v) r[key] = v;
     }
     return r;
@@ -754,21 +732,35 @@ class TalkingHead {
 
   /**
   * Set a new pose and start transition timer.
-  * @param {Object} pose Pose template
+  * @param {Object} t Pose template
   */
-  setPose(pose) {
-    this.posePrev = {};
-    Object.entries(this.poseBase).forEach( x => this.posePrev[x[0]] = x[1].clone() );
-    this.poseTarget = this.poseFactory(pose);
+  setPose(t) {
 
-    // Make sure deltas are included in the target
-    Object.keys(this.poseDelta).forEach( key => {
-      if ( !this.poseTarget.hasOwnProperty(key) ) {
-        this.poseTarget[key] = this.poseBase[key].clone();
+    if ( this.posePrev === t ) {
+
+      // Same pose, shift weight
+      this.poseTarget = this.mirrorPose( this.poseTarget );
+
+    } else {
+
+      // Create a new pose from the template
+      this.poseTarget = this.poseFactory(t);
+
+      // Templates have thw weight on left leg, so switch if necessary
+      if ( !this.poseWeightOnLeft ) {
+        this.poseTarget = this.mirrorPose( this.poseTarget );
       }
-    });
 
-    this.updatePoseWeight();
+      // Make sure deltas are included in the target
+      Object.keys(this.poseDelta).forEach( key => {
+        if ( !this.poseTarget.hasOwnProperty(key) ) {
+          this.poseTarget[key] = this.poseBase[key].clone();
+        }
+      });
+
+      this.posePrev = t;
+    }
+
     this.posePeriod = 2000;
     this.poseTime = this.animClock + this.animFrameDur;
   }
@@ -813,7 +805,6 @@ class TalkingHead {
       this.poseDelta['RightUpLeg.rotation'].y = v/2;
       this.poseDelta['LeftLeg.rotation'].y = v/4;
       this.poseDelta['RightLeg.rotation'].y = v/4;
-      this.updatePoseWeight();
     } else if ( mt === 'headRotateZ' ) {
       this.poseDelta['Head.rotation'].z = v;
       this.poseDelta['Spine1.rotation'].z = v/12;
@@ -821,8 +812,8 @@ class TalkingHead {
       this.poseDelta['Hips.rotation'].z = v/24;
     } else if ( mt === 'chestInhale' ) {
       const scale = v/20;
-      const d = { x: scale, y: scale/2, z: 3 * scale };
-      const dneg = { x: 1/(1+scale) - 1, y: 1/(1 + scale/2) - 1, z: 1/(1 + 3 * scale) - 1 };
+      const d = { x: scale, y: (scale/2), z: (3 * scale) };
+      const dneg = { x: (1/(1+scale) - 1), y: (1/(1 + scale/2) - 1), z: (1/(1 + 3 * scale) - 1) };
       this.poseDelta['Spine1.scale'] = d;
       this.poseDelta['Neck.scale'] = dneg;
       this.poseDelta['LeftArm.scale'] = dneg;
@@ -1549,6 +1540,10 @@ class TalkingHead {
     }
     let line = this.ttsQueue.shift();
     if ( line.emoji ) {
+
+      // Look at the camera
+      this.lookAtCamera(500);
+
       // Only emoji
       let duration = line.emoji.dt.reduce((a,b) => a+b,0);
       this.animQueue.push( this.animFactory( line.emoji ) );
@@ -1559,14 +1554,7 @@ class TalkingHead {
     } else if ( line.text ) {
 
       // Look at the camera
-      let roty = (this.camera.rotation.y - this.avatar.getObjectByName('Hips').rotation.y)/4;
-      roty = Math.min( 0.4, Math.max(-0.4,roty));
-      const templateLookAt = {
-        name: 'lookat',
-        dt: [800,1000],
-        vs: { eyesRotateY: [ 2 * roty ], eyesRotateX: [ 0.2 ], headRotateY: [ roty ], headRotateX: [ 0 ] }
-      };
-      this.animQueue.push( this.animFactory( templateLookAt ) );
+      this.lookAtCamera(500);
 
       // Spoken text
       try {
@@ -1665,24 +1653,69 @@ class TalkingHead {
   }
 
   /**
+  * Turn head and eyes to look at the camera.
+  * @param {number} t Time in milliseconds
+  */
+  lookAtCamera(t) {
+    // Head Position
+    const rect = this.nodeAvatar.getBoundingClientRect();
+    const o = this.avatar.getObjectByName('Head');
+    o.updateMatrixWorld();
+    const p = new THREE.Vector3().setFromMatrixPosition(o.matrixWorld);
+    p.project(this.camera);
+    this.lookAt(
+      (p.x + 1) / 2 * rect.width + rect.left,
+      -(p.y - 1) / 2 * rect.height + rect.top,
+      t
+    );
+  }
+
+  /**
   * Turn head and eyes to look at the point (x,y).
-  * @param {number} x X-coordinate
-  * @param {number} y Y-coordinate
+  * @param {number} x X-coordinate relative to visual viewport
+  * @param {number} y Y-coordinate relative to visual viewport
   * @param {number} t Time in milliseconds
   */
   lookAt(x,y,t) {
-    const box = this.nodeAvatar.getBoundingClientRect();
-    x = Math.min(box.right,Math.max(x,box.left));
-    y = Math.min(box.bottom,Math.max(y,box.top));
+
+    // Eye position
+    const rect = this.nodeAvatar.getBoundingClientRect();
+    const lEye = this.avatar.getObjectByName('LeftEye');
+    const rEye = this.avatar.getObjectByName('RightEye');
+    lEye.updateMatrixWorld();
+    rEye.updateMatrixWorld();
+    const plEye = new THREE.Vector3().setFromMatrixPosition(lEye.matrixWorld);
+    const prEye = new THREE.Vector3().setFromMatrixPosition(rEye.matrixWorld);
+    const pEyes = new THREE.Vector3().addVectors( plEye, prEye ).divideScalar( 2 );
+    pEyes.project(this.camera);
+    let eyesx = (pEyes.x + 1) / 2 * rect.width + rect.left;
+    let eyesy  = -(pEyes.y - 1) / 2 * rect.height + rect.top;
+
+    // Head rotation
+    let headr = new THREE.Euler().setFromQuaternion( this.poseTarget['Head.rotation'] );
+    let headrx = headr.x;
+    let headry = headr.y;
+    let camerary = Math.min(0.4, Math.max(-0.4,this.camera.rotation.y));
+
+    // Calculate new delta
+    let maxx = Math.max( window.innerWidth - eyesx, eyesx );
+    let maxy = Math.max( window.innerHeight - eyesy, eyesy );
+    let rotx = this.convertRange(y,[eyesy-maxy,eyesy+maxy],[-0.6,0.6]) - headrx;
+    let roty = this.convertRange(x,[eyesx-maxx,eyesx+maxx],[-0.8,0.8]) - headry + camerary;
+    rotx = Math.min(0.8,Math.max(-0.8,rotx));
+    roty = Math.min(0.8,Math.max(-0.8,roty));
+
+    // console.log("size:", maxx, maxy, "mouse:", x, y, "eyes:", eyesx, eyesy, "headr:", headrx, headry, "cam:", camerary, 'rot', rotx, roty);
+
     if ( t ) {
       const templateLookAt = {
         name: 'lookat',
         dt: [1000,t],
         vs: {
-          eyesRotateY: [ this.convertRange(x,[box.left,box.right],[-0.6,0.6]) ],
-          eyesRotateX: [ this.convertRange(y,[box.top,box.bottom],[-0.5,0.6]) ],
-          headRotateY: [ this.convertRange(x,[box.left,box.right],[-0.3,0.3]) ],
-          headRotateX: [ this.convertRange(y,[box.top,box.bottom],[-0.15,0.2]) ],
+          headRotateX: [ rotx ],
+          headRotateY: [ roty ],
+          eyesRotateX: [ rotx / 2 +0.1 ],
+          eyesRotateY: [ roty / 2 ]
         }
       };
       this.animQueue.push( this.animFactory( templateLookAt ) );
@@ -1727,8 +1760,6 @@ class TalkingHead {
       }
 
       // Set new pose
-      this.posePrev = {};
-      Object.entries(this.poseBase).forEach( x => this.posePrev[x[0]] = x[1].clone() );
       Object.entries(item.pose).forEach( x => {
         this.poseBase[x[0]] = x[1].clone();
         this.poseTarget[x[0]] = x[1].clone();

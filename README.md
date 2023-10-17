@@ -70,6 +70,7 @@ Method | Description
 `loadModel(url,[onsuccess],[onprogress],[onerror])` | Load new GLB avatar `url` with callback functions `success`, `progress` and `error`.
 `setView(view, [opt])` | Set view. Supported views: `"closeup"` (default) and `"fullbody"`. Options `opt` can be used to set `cameraDistance`, `cameraX`, `cameraY`, `cameraRotateX`, `cameraRotateY`.
 `lookAt(x,y,t)` | Make the avatar's head turn to look at the screen position (`x`,`y`) for `t` milliseconds.
+`lookAtCamera(x,y,t)` | Make the avatar's head turn to look at the camera for `t` milliseconds.
 `setMood(mood)` | Set avatar mood. Supported moods: `"neutral"`, `"happy"`, `"angry"`, `"sad"`, `"fear"`, `"disgust"`, `"love"`, `"sleep"`.
 `getMood()` | Get avatar mood.
 `speak(text, [opt={}], [nodeSubtitles=null], [onsubtitles=null], [excludes=[]])` | Add the `text` string to the speech queue. The text can contain face emojis. Options `opt` can be used to set text-specific `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood`, `avatarMute`. If the DOM element `nodeSubtitles` is specified, subtitles are displayed. Optional callback function `onsubtitles` is called whenever a new subtitle is written with the parameter of the target DOM node. The optional `excludes` is an array of [start,end] indices to be excluded from audio but includes in the subtitles.
