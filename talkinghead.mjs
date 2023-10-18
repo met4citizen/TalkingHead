@@ -1270,13 +1270,16 @@ class TalkingHead {
   */
   addSubtitle(s) {
     let last = this.nodeSubtitles.lastElementChild;
-    s.split('\n\n').forEach( (p,i) => {
+    s.split('\n').forEach( (p,i) => {
       if ( p.length ) {
+        let markdown;
         if ( i > 0 || !last ) {
           last = this.nodeSubtitles.appendChild( document.createElement('p') );
-          last.dataset.markdown = '';
+          markdown = p;
+        } else {
+          last = this.nodeSubtitles.lastElementChild;
+          markdown = last.dataset.markdown + p;
         }
-        let markdown = last.dataset.markdown + p;
         last.outerHTML = dompurify.sanitize(marked.parse( markdown, this.opt.markedOptions ));
         last = this.nodeSubtitles.lastElementChild;
         last.dataset.markdown = markdown;
@@ -1443,7 +1446,7 @@ class TalkingHead {
         // Add to text-to-speech sentence
         if ( textWord.length ) {
           textWord = this.speechFilter(textWord);
-          textSentence += textWord;
+          textSentence += ' ' + textWord;
         }
 
         // Push subtitles to animation queue
@@ -1474,7 +1477,7 @@ class TalkingHead {
               t += this.pauses[chars[j]] || 1;
             }
           }
-          textWord = ' ';
+          textWord = '';
         }
       }
 
@@ -1714,7 +1717,7 @@ class TalkingHead {
         vs: {
           headRotateX: [ rotx ],
           headRotateY: [ roty ],
-          eyesRotateX: [ rotx / 2 +0.1 ],
+          eyesRotateX: [ rotx / 2 + 0.1 ],
           eyesRotateY: [ roty / 2 ]
         }
       };
