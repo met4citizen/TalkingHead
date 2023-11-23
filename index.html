@@ -1,0 +1,2851 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Talking Head</title>
+
+  <meta charset="utf-8">
+  <meta content="width=device-width, height=device-height, minimum-scale=1.0, maximum-scale=1.0, initial-scale=1.0, user-scalable=no, interactive-widget=resizes-content" name="viewport">
+  <link rel="icon" type="image/jpg" href="favicon.jpg">
+
+  <style>
+
+  html {
+    width:100%; height:100%; height: -webkit-fill-available; font-size: 14px;
+  }
+
+  /* Color themes */
+  :root, .theme-dark {
+    --colorBody: #88ccff;
+    --colorBackground: #202020;
+    --colorPanel: rgba(32,32,32,0.98);
+    --colorBorderPassive: rgba(136,204,255,0.6);
+    --colorBorderActive: #88ccff;
+    --colorUserText: #88ccff;
+    --colorSystemText: #cc77ff;
+    --colorToolbarPassive: rgba(136,204,255,0.6);
+    --colorToolbarPassive2: rgba(136,204,255,0.3);
+    --colorToolbarActive: #88ccff;
+    --widthLabel: 5rem;
+    --colorGlow: #88ccff;
+  }
+  .theme-light {
+    --colorBody: #505050;
+    --colorBackground: #f0f0f0;
+    --colorPanel: rgba(224,224,224,0.98);
+    --colorBorderPassive: #d0d0d0;
+    --colorBorderActive: #d0d0d0;
+    --colorUserText: #404444;
+    --colorSystemText: #678fb9;
+    --colorToolbarPassive: rgba(80,80,80,0.75);
+    --colorToolbarPassive2: rgba(80,80,80,0.5);
+    --colorToolbarActive: #606666;
+    --widthLabel: 5rem;
+  }
+
+  body {
+    width: 100%; height: 100%; min-height: 100vh;
+    min-height: -webkit-fill-available; margin: 0; padding: 0;
+    background-color: var(--colorBackground); color: var(--colorBody);
+    overflow: hidden; text-align: left; touch-action: manipulation;
+    font-family: "SansRegular", sans-serif; font-size: 1.4rem;
+    line-height: 1.4rem; scrollbar-color: var(--colorToolbarPassive) transparent;
+    scrollbar-width: 20px; scrollbar-height: 20px;
+  }
+
+  ::-webkit-scrollbar { width: 20px; height: 20px; }
+  ::-webkit-scrollbar-track {
+    background: linear-gradient(
+      to right, transparent,
+      transparent 9px,
+      var(--colorToolbarPassive) 9px,
+      var(--colorToolbarPassive) 11px,
+      transparent 11px
+    );
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--colorPanel); border-radius: 10px;
+    border: 2px solid var(--colorToolbarPassive);
+  }
+
+  input[type="range"] {
+    position: relative; width: 180px; height: 0.8rem; line-height: 2rem;
+    -webkit-appearance: none; appearance: none; margin-top: 0.6rem;
+    cursor: pointer; pointer-events: auto;
+    background: repeating-linear-gradient(
+      to right, var(--colorToolbarPassive),
+      var(--colorToolbarPassive) 2px,
+      transparent 2px,
+      transparent 44.5px
+    );
+  }
+  input[type="range"]::-webkit-slider-runnable-track {
+    background: var(--colorToolbarPassive); height: 2px;
+  }
+  input[type="range"]::-moz-range-track {
+    background: var(--colorToolbarPassive); height: 2px;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    background: var(--colorToolbarActive);
+    margin-top: -0.6rem; height: 1.4rem; width: 0.8rem; border-radius: 0.1rem;
+  }
+  input[type="range"]::-moz-range-thumb {
+    border: none; background-color: var(--colorToolbarActive); height: 1.2rem;
+    width: 0.8rem; border-radius: 0.1rem;
+  }
+  input[type="range"]:focus { outline: none; }
+  input[type="range"]:focus::-webkit-slider-thumb { outline: none; }
+  input[type="range"]:focus::-moz-range-thumb { outline: none; }
+
+  input[type="text"] {
+    flex: 1; background-color: transparent; color: var(--colorUserText);
+    border: 0; outline: none; line-height: 2rem; font-family: "SansRegular";
+    font-size: 1.4rem; cursor: pointer; pointer-events: auto; margin: 0;
+    padding: 0 6px;
+  }
+  input[type="text"]::placeholder {
+    color: var(--colorUserText); opacity: 0.3;
+  }
+
+  /* Pages */
+  .pages {
+    position: absolute; top: 18px; left: 30px; right: 30px; bottom: 18px;
+    display: flex; flex-direction: column; row-gap: 6px;
+  }
+  .row { display: flex; row-gap: 0; column-gap: 8px; }
+  .column { flex: 1; display: flex; flex-direction: column; row-gap: 2px; }
+  .page {
+    flex-grow: 1; display: flex; flex-direction: column;
+    overflow-y: auto; overflow-x: hidden; min-height: 0; margin: 8px 0 8px 0;
+    padding-right: 16px;
+  }
+  .rowWrap {
+    display: flex; row-gap: 2px; column-gap: 8px; flex-wrap: wrap;
+  }
+  .vspace {
+    flex-shrink: 0; height: 2rem;
+  }
+  .vbar {
+    height: 1px; background-color: var(--colorToolbarPassive2);
+    flex-shrink: 0; margin: 1rem 0 1rem 0;
+  }
+  .fill, .filler {
+    flex-shrink: 0; flex-grow: 1; flex-basis: 0; min-width: 0;
+  }
+  .filler { visibility: hidden; pointer-events: none; }
+  .command, .text {
+    display: inline-block; height: calc( 2rem + 2px); font-size: 1.4rem;
+    line-height: calc( 2rem + 2px); padding: 0 6px;
+    vertical-align: middle; text-align: left; font-family: "SansRegularCondensed";
+    color: var(--colorToolbarPassive); white-space: nowrap; overflow: hidden;
+  }
+  .command, .text {
+    font-family: "SansRegularCondensed"; color: var(--colorToolbarPassive);
+  }
+  .command { cursor: pointer; pointer-events: auto; }
+  .command > svg, .text > svg {
+    height: 2rem; width: 2rem; padding: 1px 0;
+  }
+  .label {
+    width: var(--widthLabel); flex-shrink: 0; color: var(--colorToolbarPassive2);
+  }
+  .border {
+    position: absolute; top: 0; left: 0; bottom: 0; right: 0;
+    background: transparent; border-width: 3px; border-style: solid;
+    border-color: var(--colorBorderActive); pointer-events: none;
+    border-radius: inherit;
+  }
+  .glow { box-shadow: 0 0 25px 5px var(--colorGlow); }
+  .theme-light .glow { box-shadow: none; }
+
+  /* Main */
+  #main {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%,-50%); background-color: transparent;
+  }
+
+  /* Left panel */
+  #left {
+    position: absolute; margin: 4px; pointer-events: none;
+    background-color: var(--colorPanel);
+  }
+  #avatar, #view {
+    position: absolute; opacity: 0; top: 0; left: 0; right: 0;
+    bottom: 0; pointer-events: auto; overflow: hidden;
+    border-radius: inherit;
+  }
+  #view {
+    background-image: none; background-repeat:no-repeat;
+    background-position: center center; background-size: cover;
+  }
+  #video {
+    position: absolute; height: 100%; width: 100%;
+    object-position: center center; object-fit: cover;
+  }
+
+  /* Loading */
+  #loading {
+    display: block; position: absolute; top: 6px; left: 6px; width: 300px;
+    height: 30px; pointer-events: none; font-size: 1rem;
+    background-color: transparent;
+  }
+  #loading-back, #loading-top {
+    display: block; position: absolute; top: 10px; left: 20px; bottom: 10px;
+    width: 95px;
+  }
+  #loading-back {
+    background: repeating-linear-gradient(
+      to right, var(--colorToolbarPassive2),
+      var(--colorToolbarPassive) 5px,
+      transparent 5px,
+      transparent 10px
+    );
+  }
+  #loading-top {
+    clip-path: inset(0 100% 0 0);
+    background: repeating-linear-gradient(
+      to right, var(--colorBody),
+      var(--colorBody) 5px,
+      transparent 5px,
+      transparent 10px
+    );
+  }
+  #loading-value {
+    display: block; position: absolute; top: 0; left: 125px; bottom: 0;
+    right: 0; line-height: 30px; text-align: left; font-size: 1.4rem;
+    font-family: "SansRegularCondensed";
+  }
+
+
+  /* Right panel */
+  #right {
+    position: absolute; margin: 4px;
+    background-color: var(--colorPanel);
+  }
+  #right .border { border-color: var(--colorBorderPassive); }
+  .session { display: none; width: 100%; }
+  .session.selected { display: block; }
+  .message {
+    position: relative; display: block; width: 100%; min-height: 2rem;
+  }
+  .message > * {
+    display: block; padding: 0 calc(6rem + 8px) 0 calc(4rem + 4px);
+    color: var(--colorSystemText); text-align:left; font-size: 1.4rem;
+    line-height: 2rem; white-space: pre-line; z-index: 10;
+  }
+  .message.user > * { color: var(--colorUserText); }
+  .message > .toolbar-left {
+    position: absolute; left:0; bottom:0; padding: 0;
+    display: flex; row-gap: 0; column-gap: 4px;
+  }
+  .message > .toolbar-right {
+    position: absolute; right: 0; bottom:0; padding: 0;
+    display: flex; row-gap: 0; column-gap: 4px;
+  }
+  #directory div:first-child div[data-entry-move="up"] { visibility: hidden; }
+  #directory div:last-child div[data-entry-move="down"] { visibility: hidden; }
+  #right div[data-scroll] { color: var(--colorToolbarPassive2); }
+  #right textarea {
+    flex: 1; min-height: 2rem; margin: auto; background: transparent;
+    border: 0; font-family: "SansRegular"; font-size: 1.4rem; padding: 0 6px;
+    line-height: 2rem; resize: none; outline: none; color: var(--colorUserText);
+    pointer-events: auto;
+  }
+  #right textarea[data-item="ai-ai1"], #right textarea[data-item="ai-ai2"] {
+    color: var(--colorSystemText);
+  }
+  #right textarea::placeholder { color: inherit; opacity: 0.3; }
+  .emoji { cursor: pointer; pointer-events: auto; }
+  #morphs .label { width: calc( 2.5 * var(--widthLabel) ); }
+
+  /* Bottom panel */
+  #bottom {
+    position: absolute; margin: 4px; padding: 25px 25px 60px 25px;
+    background-color: var(--colorPanel);
+  }
+  #bottom .border { border-color: var(--colorBorderPassive); }
+  #bottom textarea {
+    flex: 1; min-height: 2rem; margin: 0; background: transparent;
+    border: 0; font-family: "SansRegular"; font-size: 1.4rem;
+    line-height: 2rem; resize: none; outline: none; color: var(--colorUserText);
+    pointer-events: auto; box-sizing: border-box;
+  }
+  #bottom textarea::placeholder { color: var(--colorUserText); opacity: 0.3; }
+  #flag, #score { color: var(--colorToolbarPassive2); }
+
+
+  /* Misc */
+  .text.selected, .command.selected, .screen:active, .command:active,
+  .range:active , .emoji.selected, .emoji:active {
+    color: var(--colorToolbarActive); filter: drop-shadow(0 0 8px var(--colorGlow));
+  }
+  .theme-light .text.selected, .theme-light .command.selected,
+  .theme-light .screen:active, .theme-light .command:active,
+  .theme-light .range:active, .theme-light .emoji.selected,
+  .theme-light .emoji:active {
+    background-color: var(--colorToolbarActive); color: var(--colorPanel);
+    filter: none; border-radius: 6px;
+  }
+  .grayed { opacity: 0.3; }
+  .noselect {
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none;
+    user-select: none; -webkit-user-select: none;
+  }
+  .nodrag {
+    -webkit-user-drag: none; -khtml-user-drag: none; -moz-user-drag: none;
+    -o-user-drag: none; -ms-user-drag: none; user-drag: none;
+  }
+  .hidden { display: none; }
+  .starttransparent { opacity: 0; }
+
+  /* Fonts */
+  @font-face {
+    font-family:"SansRegular";
+    src: url("./fonts/FiraSansCondensed-Regular.ttf") format('truetype');
+  }
+  @font-face {
+    font-family:"SansItalic";
+    src: url("./fonts/FiraSansCondensed-Italic.ttf") format('truetype');
+  }
+  @font-face {
+    font-family:"SansBold";
+    src: url("./fonts/FiraSansCondensed-Bold.ttf") format('truetype');
+  }
+  @font-face {
+    font-family:"SansBoldItalic";
+    src: url("./fonts/FiraSansCondensed-BoldItalic.ttf") format('truetype');
+  }
+  @font-face {
+    font-family:"SansRegularCondensed";
+    src: url("./fonts/FiraSansExtraCondensed-Regular.ttf") format('truetype');
+  }
+  @font-face {
+    font-family:"SansBoldCondensed";
+    src: url("./fonts/FiraSansExtraCondensed-Bold.ttf") format('truetype');
+  }
+
+  /* Layouts */
+  #main.ratio-wide { width: min(96vw, 192vh, 1400px); height: min(48vw,96vh,700px); } /* 1:2 */
+  #main.ratio-normal { width: min(96vw, 128vh, 1040px); height: min(72vw,96vh,780px); } /* 3:4 */
+  #main.layout-land #left { top: 0; left: 0; bottom: 38%; right: 50%; }
+  #main.layout-port #left { top: 0; left: 0; bottom: 0; right: 60%; }
+  #main.layout-land #right { top: 0; left: 50%; bottom: 0; right: 0; }
+  #main.layout-port #right { top: 0; left: 40%; bottom: 30%; right: 0; }
+  #main.layout-land #bottom { top: 62%; left: 0; bottom: 0; right: 50%; }
+  #main.layout-port #bottom { top: 70%; left: 40%; bottom: 0; right: 0; }
+  #main.presence-vr #left { box-shadow: none; background-color: transparent; }
+  #main.presence-vr #view { display: none; }
+  #main.presence-vr #left .border { display: none; }
+  #main.presence-vr #avatar { bottom: -8px; left: -400px; right: -400px; }
+
+  @media (max-width: 1000px) {
+    #main.ratio-wide, #main.ratio-normal { width: 96vw; height: 90vh; }
+    #main.layout-land #left { top: 0; left: 0; bottom: 62%; right: 0; }
+    #main.layout-port #left { top: 0; left: 0; bottom: 24%; right: 62%; }
+    #main.layout-land #right { top: 38%; left: 0; bottom: 24%; right: 0; }
+    #main.layout-port #right { top: 0; left: 38%; bottom: 24%; right: 0; }
+    #main.layout-land #bottom { top: 76%; left: 0; bottom: 0; right: 0; }
+    #main.layout-port #bottom { top: 76%; left: 0; bottom: 0; right: 0; }
+  }
+
+  </style>
+
+<script nomodule>alert("You browser doesn't seem to support modules. Use a modern browser to run Enterprise.");</script>
+<script src="https://d3js.org/d3.v6.min.js"></script>
+<script async src="https://cdn.jsdelivr.net/npm/es-module-shims@1.7.1/dist/es-module-shims.js"></script>
+<script type="importmap">
+{ "imports":
+  {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.module.js/+esm",
+    "three/examples/": "https://cdn.jsdelivr.net/npm/three@0.149.0/examples/",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.149.0/examples/jsm/",
+    "dompurify": "https://cdn.jsdelivr.net/npm/dompurify@3.0.6/+esm",
+    "marked": "https://cdn.jsdelivr.net/npm/marked@9.0.3/+esm"
+  }
+}
+</script>
+
+<script type="module">
+import { TalkingHead } from "./modules/talkinghead.mjs";
+import dompurify from 'dompurify';
+import { marked } from 'marked';
+
+// API endpoints/proxys
+const jwtEndpoint = "/app/jwt/get"; // Get JSON Web Token for Single Sign-On
+const openaiChatCompletionsProxy = "/openai/v1/chat/completions";
+const openaiModerationsProxy = "/openai/v1/moderations";
+const googleTTSProxy = "/gtts/";
+const elevenTTSProxy = [
+  "wss://" + window.location.host + "/elevenlabs/",
+  "/v1/text-to-speech/",
+  "/stream-input?model_id=eleven_multilingual_v2"
+];
+
+
+// Site configuration
+const site = {
+
+  // Preset avatars
+  avatars: {
+    'Brunetti': {
+      url: './avatars/brunette.glb',
+      body: 'F',
+      avatarMood: 'neutral'
+    }
+  },
+
+  // Preset views
+  views: {
+    'TohtoriOuto': { url: './views/strange.jpg', type: 'image/jpg' },
+    'Matrix': { url: './views/matrix.mp4', type: 'video/mp4' }
+  },
+
+  // Preset poses (in addition to internal poses)
+  poses: {
+    'Tanssi': { url: './poses/dance.fbx' }
+  },
+
+  // Preset animations
+  animations: {
+    'Kävely': { url: './animations/walking.fbx' }
+  }
+
+};
+
+// Markdown configuration
+const markedOptions = { mangle:false, headerIds:false, breaks: true };
+
+// Open AI configuration
+let openaiController = null;
+
+// ElevenLabs configuration
+const elevenBOS = {
+  "text": " ",
+  "voice_settings": { "stability": 0.8, "similarity_boost": true },
+};
+let elevenSocket = null;
+let elevenInputMsgs = null;
+let elevenOutputMsg = null;
+
+// JSON Web Token (JWT)
+let jwt = ''; // Current token
+let jwtExpires = 0;
+
+// Get JSON Web Token
+async function jwtGet() {
+  const limit = Math.round(Date.now() / 1000) + 60;
+  if ( jwtExpires < limit ) {
+    try {
+      const o = await (await fetch( jwtEndpoint )).json();
+      if ( o && o.jwt ) {
+        const b64Url = o.jwt.split('.')[1];
+        const b64 = b64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const s = decodeURIComponent( window.atob(b64).split('').map( (c) => {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        const p = JSON.parse(s);
+        jwtExpires = (p && p.exp) ? p.exp : 0;
+        jwt = o.jwt;
+      } else {
+        jwt = '';
+        jwtExpires = 0;
+      }
+    } catch(e) {
+      console.error(e);
+      jwt = '';
+      jwtExpires = 0;
+    }
+  }
+  return jwt.slice();
+}
+
+// Speak using ElevenLabs
+async function elevenSpeak(s,node=null) {
+  if ( !elevenSocket ) {
+    // Temporary reservation of WebSocket connection
+    elevenSocket = { readyState: 0 };
+
+    // Temporary stack of message until the connection is established
+    elevenInputMsgs = [
+      elevenBOS,
+      {
+        "text": s,
+        "try_trigger_generation": true,
+      }
+    ];
+
+    // Build the URL
+    let url = elevenTTSProxy[0];
+    url += await jwtGet();
+    url += elevenTTSProxy[1];
+    url += cfg('voice-eleven-id');
+    url += elevenTTSProxy[2];
+
+    // Make the connection
+    elevenSocket = new WebSocket(url);
+
+    // Connection opened
+    elevenSocket.onopen = function (event) {
+      elevenOutputMsg = null;
+      while (elevenInputMsgs.length > 0) {
+        elevenSocket.send(JSON.stringify(elevenInputMsgs.shift()));
+      }
+    }
+
+    // New message received
+    elevenSocket.onmessage = function (event) {
+      const r = JSON.parse(event.data);
+
+      // Speak audio
+      if ( (r.isFinal || r.normalizedAlignment) && elevenOutputMsg ) {
+        elevenOutputMsg.audio = head.b64ChunksToArrayBuffer( elevenOutputMsg.audio );
+        head.speakAudio( elevenOutputMsg, node ? addText.bind(null,node) : null );
+        elevenOutputMsg = null;
+      }
+
+      if ( !r.isFinal ) {
+        // New part
+        if ( r.normalizedAlignment ) {
+          elevenOutputMsg = {
+            audio: [],
+            chars: r.normalizedAlignment.chars,
+            ts: r.normalizedAlignment.charStartTimesMs,
+            ds: r.normalizedAlignment.charDurationsMs
+          };
+        }
+
+        // Add audio content to message
+        if ( r.audio &&  elevenOutputMsg ) {
+          elevenOutputMsg.audio.push( r.audio );
+        }
+      }
+    };
+
+    // Error
+    elevenSocket.onerror = function (error) {
+      console.error(`WebSocket Error: ${error}`);
+    };
+
+    // Connection closed
+    elevenSocket.onclose = function (event) {
+      if ( event.wasClean) {
+        console.info(`Connection closed cleanly, code=${event.code}, reason=${event.reason}`);
+      } else {
+        console.warn('Connection died');
+      }
+      elevenSocket = null;
+    };
+  } else {
+    let msg = {
+      "text": s,
+      "try_trigger_generation": true,
+    };
+    if (elevenSocket.readyState === 1) { // OPEN
+      elevenSocket.send(JSON.stringify(msg))
+    } else if ( elevenSocket.readyState === 0 ) { // CONNECTING
+      elevenInputMsgs.push(msg);
+    }
+  }
+}
+
+
+
+// Number of words on a string.
+function nWords(str) {
+  return str ? str.trim().split(/\s+/).length : 0;
+}
+
+// Settings
+let CFG = {
+  session: 0,
+  sessions : [
+    { name: "Nimetön 1", theme: {}, view: {}, avatar: {}, camera: {}, ai: {} },
+    { name: "Nimetön 2", theme: {}, view: {}, avatar: {}, camera: {}, ai: {} }
+  ]
+};
+
+// Dynamically created icons
+const svgSelect = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M10.5858 13.4142L7.75735 10.5858L6.34314 12L10.5858 16.2427L17.6568 9.1716L16.2426 7.75739L10.5858 13.4142Z" fill="currentColor" /></svg>';
+const svgSpeak = '<svg viewBox="-2 -2 28 28" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 18.939C14.2091 18.939 16 17.1482 16 14.939C16 12.7299 14.2091 10.939 12 10.939C9.79086 10.939 8 12.7299 8 14.939C8 17.1482 9.79086 18.939 12 18.939ZM12 16.939C13.1046 16.939 14 16.0436 14 14.939C14 13.8345 13.1046 12.939 12 12.939C10.8954 12.939 10 13.8345 10 14.939C10 16.0436 10.8954 16.939 12 16.939Z" fill="currentColor" /><path d="M12 9.04401C13.1046 9.04401 14 8.14858 14 7.04401C14 5.93944 13.1046 5.04401 12 5.04401C10.8954 5.04401 10 5.93944 10 7.04401C10 8.14858 10.8954 9.04401 12 9.04401Z" fill="currentColor" /><path fill-rule="evenodd" clip-rule="evenodd" d="M7 1C5.34315 1 4 2.34315 4 4V20C4 21.6569 5.34315 23 7 23H17C18.6569 23 20 21.6569 20 20V4C20 2.34315 18.6569 1 17 1H7ZM17 3H7C6.44772 3 6 3.44772 6 4V20C6 20.5523 6.44772 21 7 21H17C17.5523 21 18 20.5523 18 20V4C18 3.44772 17.5523 3 17 3Z" fill="currentColor" /></svg>'
+const svgStop = '<svg viewBox="-2 -2 28 28" xmlns="http://www.w3.org/2000/svg"><path d="M6.2253 4.81108C5.83477 4.42056 5.20161 4.42056 4.81108 4.81108C4.42056 5.20161 4.42056 5.83477 4.81108 6.2253L10.5858 12L4.81114 17.7747C4.42062 18.1652 4.42062 18.7984 4.81114 19.1889C5.20167 19.5794 5.83483 19.5794 6.22535 19.1889L12 13.4142L17.7747 19.1889C18.1652 19.5794 18.7984 19.5794 19.1889 19.1889C19.5794 18.7984 19.5794 18.1652 19.1889 17.7747L13.4142 12L19.189 6.2253C19.5795 5.83477 19.5795 5.20161 19.189 4.81108C18.7985 4.42056 18.1653 4.42056 17.7748 4.81108L12 10.5858L6.2253 4.81108Z" fill="currentColor" /></svg>';
+const svgRepost = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13.1459 11.0499L12.9716 9.05752L15.3462 8.84977C14.4471 7.98322 13.2242 7.4503 11.8769 7.4503C9.11547 7.4503 6.87689 9.68888 6.87689 12.4503C6.87689 15.2117 9.11547 17.4503 11.8769 17.4503C13.6977 17.4503 15.2911 16.4771 16.1654 15.0224L18.1682 15.5231C17.0301 17.8487 14.6405 19.4503 11.8769 19.4503C8.0109 19.4503 4.87689 16.3163 4.87689 12.4503C4.87689 8.58431 8.0109 5.4503 11.8769 5.4503C13.8233 5.4503 15.5842 6.24474 16.853 7.52706L16.6078 4.72412L18.6002 4.5498L19.1231 10.527L13.1459 11.0499Z" fill="currentColor" /></svg>';
+
+// Get/set config value for the current session
+function cfg(key,value) {
+  if ( key === undefined ) return CFG.sessions[CFG.session];
+  let parts = key.split('-').map( x => isNaN(x) ? x : parseInt(x) );
+  if ( value === undefined ) {
+    return parts.reduce( (o,p) => o ? o[p] : undefined, CFG.sessions[CFG.session] );
+  } else {
+    parts.reduce( (o,p,i) => {
+      const def = (typeof parts[i+1] === 'number') ? [] : {};
+      return (o[p] = (parts.length-1) === i ? value : (o[p] || def));
+    }, CFG.sessions[CFG.session] );
+  }
+}
+window.cfg = cfg;
+
+// Save config to localStorage and show active session config
+function saveConfig() {
+  let json = JSON.stringify(CFG);
+  localStorage.setItem("cfg", json);
+  json = JSON.stringify( cfg() );
+  d3.select("#json").property("value", json );
+}
+
+// Load config for the given session
+function loadConfig(session = null) {
+  try {
+    let json = localStorage.getItem('cfg');
+    const config = (json ? JSON.parse(json) : CFG);
+    if ( config && config.hasOwnProperty("session") && config.hasOwnProperty("sessions") && config.sessions.length ) {
+      CFG = config;
+      if ( session !== null && session >= 0 && session < CFG.sessions.length ) {
+        CFG.session = session;
+        json = JSON.stringify(CFG);
+        localStorage.setItem("cfg", json);
+      }
+
+      // Populate sessions
+      d3.selectAll(".session").nodes().forEach( n => {
+        const e = d3.select(n);
+        const id = parseInt( e.property("id").split("-")[1] );
+        if ( id >= 0 && id < CFG.sessions.length ) {
+          e.classed("selected", (id === CFG.session) );
+        } else {
+          e.remove();
+        }
+      });
+      for( let i=0; i<CFG.sessions.length; i++ ) {
+        const e = d3.select("#session-"+i);
+        if ( e.empty() ) {
+          d3.select("#sessions").append("div")
+            .property("id","session-"+i)
+            .classed("session", true)
+            .classed("selected", (i === CFG.session) );
+        }
+      }
+
+      // Populate directory
+      d3.selectAll(".entry").nodes().forEach( n => {
+        const e = d3.select(n);
+        const id = parseInt( e.property("id").split("-")[1] );
+        if ( id >= 0 && id < CFG.sessions.length ) {
+          let name = CFG.sessions[id].name;
+          if ( !name || name.length === 0 ) {
+            name = "Nimetön";
+            CFG.sessions[id].name = name;
+          }
+          e.select("div")
+            .classed("selected", (id === CFG.session) )
+            .text( name );
+        } else {
+          e.remove();
+        }
+      });
+      for( let i=0; i<CFG.sessions.length; i++ ) {
+        const e = d3.select("#entry-"+i);
+        if ( e.empty() ) {
+          let n = d3.select("#directory").node().lastElementChild;
+          let name = CFG.sessions[i].name;
+          if ( !name || name.length === 0 ) {
+            name = "Nimetön";
+            CFG.sessions[i].name = name;
+          }
+          let clone = d3.select(n).clone(true);
+          clone.property("id","entry-"+i);
+          clone.select("[data-session]")
+            .attr("data-session", i)
+            .classed("selected", (i === CFG.session) )
+            .text(name)
+            .on('click.command', entrySelect);
+          clone.selectAll("[data-entry-move]")
+            .on('click.command', entryMove );
+        }
+      }
+
+      // Populate settings page
+      d3.selectAll("[data-item='view-url'],[data-item='avatar-url'],[data-item='avatar-body'],[data-item]").nodes().forEach( (n) => {
+        const e = d3.select(n);
+        const item = e.attr("data-item");
+        const type = e.attr("data-type");
+        let value = cfg( item );
+        if ( value !== undefined ) {
+          if ( type === 'option' ) {
+            if ( value === e.attr("data-"+item) ) {
+              e.dispatch("click");
+            }
+          } else {
+            e.property("value",value)
+              .dispatch("change");
+          }
+        } else {
+          if ( type === 'option' ) {
+            if ( e.classed("selected") ) {
+              e.dispatch("click");
+            }
+          } else {
+            e.dispatch("change");
+          }
+        }
+      });
+
+      // Populate other UI
+      d3.select("#name").text( cfg("name") );
+      json = JSON.stringify( cfg() );
+      d3.select("#json").property("value",json);
+    }
+  } catch(error) {
+    alert("Invalid JSON settings");
+    console.error(error)
+  }
+}
+
+// Build outgoing message
+function aiBuildMessage() {
+  const msgs = [];
+
+  const systems = [
+    { sel: "[data-ai-system]", role: "system" },
+    { sel: "[data-ai-user1]", role: "user" },
+    { sel: "[data-ai-ai1]", role: "assistant" },
+    { sel: "[data-ai-user2]", role: "user" },
+    { sel: "[data-ai-ai2]", role: "assistant" }
+  ];
+  const session = d3.select(".session.selected");
+  const input = d3.select("#input");
+  const messages = session.selectAll(".message:not(.grayed)");
+
+  const limitDialog = parseInt( cfg('ai-dialog') );
+  const limitInput = parseInt( cfg('ai-input') );
+  let dialogs = 0;
+  let words = 0;
+
+  // System messages
+  systems.forEach( x => {
+    const n = d3.select(x.sel).node();
+    if ( n.value && n.value.length ) {
+      if ( n.dataset.words ) {
+        words += parseInt( n.dataset.words );
+      } else {
+        let wc = nWords( n.value );
+        n.dataset.words = wc;
+        words += wc;
+      }
+      msgs.push( { n: n, role: x.role, content: n.value } );
+    }
+  });
+
+  // messages in reverse order
+  const revmsgs = [];
+  revmsgs.push( { n: input.node(), role: "user", content: input.property("value") } );
+  words += nWords( input.property("value") );
+  messages.nodes().reverse().forEach( (n) => {
+    if ( dialogs < limitDialog && words < limitInput ) {
+      if ( n.dataset.input ) {
+        revmsgs.push( { n: n, role: "user", content: n.dataset.input } );
+      } else if ( n.dataset.output ) {
+        revmsgs.push( { n: n, role: "assistant", content: n.dataset.output } );
+      }
+      if ( n.dataset.words ) {
+        words += parseInt( n.dataset.words );
+      } else {
+        let wc = nWords( n.value );
+        n.dataset.words = wc;
+        words += wc;
+      }
+      dialogs++;
+    }
+  });
+
+  // Build message
+  msgs.push( ...revmsgs.reverse() );
+
+  return msgs;
+}
+
+// Moderate messages
+async function aiModerateMessage(msgs) {
+  // Known status
+  let flag = msgs.reduce( (a,b) => ((b.n && b.n.dataset.flag !== undefined) ? ( a | (b.n.dataset.flag === 'true') ) : a ), false);
+  let score = msgs.reduce( (a,b) => ((b.n && b.n.dataset.score !== undefined) ? Math.max( a, parseFloat(b.n.dataset.score) ) : a ), 0.0);
+
+  // Moderate only yet unmoderated messages, add the grouped message
+  const modMsgs = msgs.filter( x => ( x.n && (x.n.dataset.flag === undefined) && x.content && x.content.length ) );
+  if ( modMsgs.length === 0 ) return false;
+  if ( msgs.length > 1 ) {
+    const full = msgs.map( x => x.content ).join('\n\n');
+    modMsgs.push( { content: full } );
+  }
+
+  const text = modMsgs.map( x => x.content );
+  try {
+    const res = await fetch( openaiModerationsProxy, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + await jwtGet()
+      },
+      body: JSON.stringify({ input: text })
+    });
+
+    const data = await res.json();
+    // console.log(text,data);
+
+    if ( res.status === 200 && data.results && data.results.length ) {
+      data.results.forEach( (x,i) => {
+        let flagtmp = Boolean( x.flagged );
+        let scoretmp = 0.0;
+        Object.keys(x.categories).forEach( key => {
+          scoretmp = Math.max( scoretmp, x.category_scores[key] );
+        });
+
+        if ( modMsgs[i].n ) {
+          modMsgs[i].n.dataset.flag = flagtmp;
+          modMsgs[i].n.dataset.score = scoretmp;
+        }
+
+        flag |= flagtmp;
+        score = Math.max(score,scoretmp);
+      });
+
+    } else {
+      console.error(res.status,data);
+    }
+
+    d3.select("#flag").classed("selected",flag);
+    d3.select("#score").text( "" + Math.round(100 * score) / 100 );
+
+  } catch (error) {
+    console.error("Error:", error);
+  }
+
+  return flag;
+}
+
+// Send messages to OpenAI API and handle streamed response
+async function aiSendMessage(node,msgs) {
+
+  // Create a new AbortController instance
+  openaiController = new AbortController();
+  const signal = openaiController.signal;
+
+  // Elements
+  node.dataset.output = '';
+  let tts = '';
+
+  // Chat completion
+  try {
+    // Message body
+    const body = {
+      model: cfg('ai-model'),
+      messages: msgs.map( x => {
+        const {role,content,name} = x;
+        return (name ? {role,content,name} : {role,content});
+      }),
+      temperature: parseFloat( cfg('ai-temperature') ),
+      presence_penalty: parseFloat( cfg('ai-presence') ),
+      frequency_penalty: parseFloat( cfg('ai-frequency') ),
+      max_tokens: parseInt( cfg('ai-output') ),
+      stream: true
+    };
+    const stop = cfg('ai-stop');
+    if ( stop && stop.length ) {
+      body.stop = [ stop ];
+    }
+    const user = cfg('ai-user');
+    if ( user && user.length ) {
+      body.user = user;
+    }
+
+    // Fetch the response from the OpenAI API
+    const res = await fetch( openaiChatCompletionsProxy, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + await jwtGet()
+      },
+      body: JSON.stringify(body),
+      signal
+    });
+
+    if ( res.ok ) {
+
+      // Read the response as a stream of data
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let buf = new Uint8Array(512);
+      let ndx = 0;
+      let ns = -1; // Number of consecutive line break, -1=new chapter begins
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        for (let i = 0; i < value.byteLength; ++i) {
+          buf[ndx++] = value[i];
+          if ( ns === -1 ) {
+            // if ( value[i] === 42 ) person = 4; // asterisk
+            ns = 0;
+          }
+          ns = (value[i]===10) ? (ns + 1) : 0;
+          if ( ns == 2 ) {
+            let line = decoder.decode( buf.subarray(0, ndx - 2) );
+            if ( !line.startsWith('data: ') ) throw new Error('Expected "data:" prefix in: ' + line);
+            line = line.substring(6);
+            if ( line === '[DONE]' ) {
+              if ( tts.length ) {
+                if ( cfg('voice-type') === 'eleven' ) {
+                  elevenSpeak( tts + " ", node );
+                } else {
+                  head.speakText( tts, {
+                    ttsVoice: cfg('voice-google-id'),
+                    ttsRate: parseFloat( cfg('voice-google-rate') ),
+                    ttsPitch: parseFloat( cfg('voice-google-pitch') )
+                  }, addText.bind(null,node) );
+                }
+              }
+              break;
+            } else {
+              let obj;
+              try {
+                obj = JSON.parse(line);
+              } catch(e) {
+                throw new Error( "Error JSON parsing line: " + line );
+              }
+              if ( obj && obj.error ) throw new Error( obj.error.message || ''+res.status );
+              if ( obj && obj.choices && obj.choices[0] &&
+                obj.choices[0].delta && obj.choices[0].delta.content ) {
+                let c = obj.choices[0].delta.content;
+                node.dataset.output += c;
+                tts += c;
+              }
+              let m = tts.match(/[!\.\?\n]/g);
+              let s = tts.split(/[!\.\?\n]/);
+              tts = s[s.length-1];
+              for(let i=0; i<(s.length-1); i++) {
+                // Add to TTS queue
+                if ( s[i] && s[i].length ) {
+                  if ( cfg('voice-type') === 'eleven' ) {
+                    elevenSpeak( s[i] + (m[i] || '') + " ", node );
+                  } else {
+                    head.speakText( s[i] + (m[i] || ''), {
+                      ttsVoice: cfg('voice-google-id'),
+                      ttsRate: parseFloat( cfg('voice-google-rate') ),
+                      ttsPitch: parseFloat( cfg('voice-google-pitch') )
+                    }, addText.bind(null,node) );
+                  }
+                }
+              }
+            }
+
+            // Continue
+            ndx = 0;
+            ns = -1;
+          }
+        }
+      }
+
+      // Moderate
+      let flag = await aiModerateMessage([{ content: node.dataset.output, n: node }]);
+
+    } else {
+      console.error( await res.text() );
+      throw new Error( json.error ? json.error.message : ''+res.status );
+    }
+
+  } catch (error) {
+    if ( signal.aborted ) error = "aborted";
+    console.error(error);
+    addText( node, ' [' + error + ']');
+  } finally {
+    openaiController = null; // Reset the AbortController instance
+    if ( elevenSocket ) {
+      elevenSpeak("",null);
+    }
+  }
+}
+
+
+// Add new message to UI
+function addMessage(user = false) {
+  const session = d3.select(".session.selected");
+  const message = session.append("div");
+  message.classed("message", true).classed("user",user);
+
+
+  // Add selection
+  const toolbarLeft = message.append("div");
+  toolbarLeft.classed("toolbar-left", true);
+  toolbarLeft.append("div")
+    .classed("command",true)
+    .classed("select", true )
+    .on('click', function(ev) {
+      let e = d3.select(this);
+      let mode = !e.classed("selected");
+      e.classed("selected", mode );
+      d3.select(this.parentNode.parentNode).classed("grayed", mode );
+    })
+    .html(svgSelect);
+
+  if ( user ) {
+    const toolbarRight = message.append("div");
+    toolbarRight.classed("toolbar-right", true);
+    toolbarRight.append("div")
+      .classed("command", true)
+      .on('click', function(ev) {
+        let n = this.parentNode.parentNode;
+        const text = d3.select(n).attr('data-input');
+        while(n) {
+          let e = d3.select(n);
+          e.classed("grayed",true);
+          e.select(".select").classed("selected", true );
+          n = n.nextSibling;
+        }
+        let node = d3.select("#input").property("value",text).dispatch("change").node();
+        node.scrollTop = node.scrollHeight;
+        node.focus();
+      })
+      .html(svgRepost);
+
+  } else {
+    const toolbarRight = message.append("div");
+    toolbarRight.classed("toolbar-right", true);
+    toolbarRight.append("div")
+      .classed("command", true)
+      .on('click', function(ev) {
+        let e = d3.select(this);
+        let mode = !e.classed("selected");
+        e.classed("selected", mode );
+        d3.select(this.parentNode.parentNode).classed("grayed", mode );
+      })
+      .html(svgSpeak);
+
+    toolbarRight.append("div")
+      .classed("command", true)
+      .on('click', function(ev) {
+        head.stopSpeaking();
+        // Abort the fetch request by calling abort() on the AbortController instance
+        if (openaiController) {
+          openaiController.abort();
+          openaiController = null;
+        }
+      })
+      .html(svgStop);
+
+  }
+
+  const nodeSessions = d3.select("#right-sessions").node();
+  nodeSessions.scrollTop = nodeSessions.scrollHeight;
+
+  return message.node();
+}
+
+// Add text to session
+function addText(node,s) {
+  const nodeSessions = d3.select("#right-sessions").node();
+  const onbottom = Math.abs( nodeSessions.scrollHeight - nodeSessions.scrollTop - nodeSessions.clientHeight) < 20;
+  let last = node.lastElementChild;
+  s.split('\n').forEach( (p,i) => {
+    if ( p.length ) {
+      let markdown;
+      if ( i > 0 || !last || last.classList.contains("toolbar-left") || last.classList.contains("toolbar-right") ) {
+        last = node.appendChild( document.createElement('p') );
+        markdown = p;
+      } else {
+        last = node.lastElementChild;
+        markdown = last.dataset.markdown + ' ' + p;
+      }
+      last.outerHTML = dompurify.sanitize(marked.parse( markdown, markedOptions ));
+      last = node.lastElementChild;
+      last.dataset.markdown = markdown;
+    }
+  });
+  if ( onbottom ) nodeSessions.scrollTop = nodeSessions.scrollHeight;
+}
+window.trek = addText;
+
+// Select an directory entry
+function entrySelect() {
+  reconnectEffect();
+  const e = d3.select(this);
+  const id = parseInt( e.attr("data-session") );
+  d3.selectAll("[data-session]").classed('selected',false);
+  e.classed('selected',true);
+  loadConfig(id);
+}
+
+// Move directory entry
+function entryMove() {
+  const e = d3.select(this);
+  const n = e.node().parentElement; // Entry
+  const id = parseInt( n.id.split('-')[1] );
+  const directory = d3.select("#directory").node();
+  const direction = e.attr("data-entry-move");
+  let session = CFG.session;
+
+  if ( direction === 'up' ) {
+
+    // Swap configuration
+    var tmp = CFG.sessions[id];
+    CFG.sessions[id] = CFG.sessions[id-1];
+    CFG.sessions[id-1] = tmp;
+
+    // Swap directory entries
+    d3.select(n)
+      .property("id","entry-"+(id-1))
+      .select("[data-session]")
+      .attr("data-session",(id-1));
+    d3.select(n.previousElementSibling)
+      .property("id","entry-"+id)
+      .select("[data-session]")
+      .attr("data-session",id);
+    directory.insertBefore(n,n.previousElementSibling);
+    if ( session === id ) {
+      session = id - 1;
+    } else if ( session === (id-1) ) {
+      session = id;
+    }
+
+    // Swap sessions ids (no need to swap their places)
+    const s1 = d3.select("#session-"+id);
+    const s2 = d3.select("#session-"+(id-1));
+    s1.property("id","session-"+(id-1) );
+    s2.property("id","session-"+id );
+
+  } else if ( direction === 'down' ) {
+
+    // Swap configuration
+    var tmp = CFG.sessions[id];
+    CFG.sessions[id] = CFG.sessions[id+1];
+    CFG.sessions[id+1] = tmp;
+
+    // Swap directory entries
+    d3.select(n)
+      .property("id","entry-"+(id+1))
+      .select("[data-session]")
+      .attr("data-session",(id+1));
+    d3.select(n.nextElementSibling)
+      .property("id","entry-"+id)
+      .select("[data-session]")
+      .attr("data-session",id);
+    directory.insertBefore(n.nextElementSibling,n);
+    if ( session === id ) {
+      session = id + 1;
+    } else if ( session === (id+1) ) {
+      session = id;
+    }
+
+    // Swap sessions ids (no need to swap their places)
+    const s1 = d3.select("#session-"+id);
+    const s2 = d3.select("#session-"+(id+1));
+    s1.property("id","session-"+(id+1) );
+    s2.property("id","session-"+id );
+
+  }
+
+  // Save new configuration and load the session
+  saveConfig();
+  loadConfig(session);
+}
+
+// Turn on effect
+function turnOnEffect() {
+  d3.selectAll('.starttransparent').nodes().forEach( panel => {
+    const steps = 5 + Math.floor( Math.random() * 10 );
+    const ops = [];
+    for( let i=steps; i > 0; i-- ) {
+      ops.push( { opacity: Math.random() } );
+    }
+    ops.push( { opacity: 1 } );
+    const timing = {
+      duration: Math.floor( Math.random() * 2000 ) + 300,
+      fill: "forwards"
+    };
+    panel.animate(ops,timing);
+  });
+}
+
+// Reconnect effect
+function reconnectEffect() {
+
+  // Turn off
+  d3.selectAll("#avatar,#view").style("opacity","0");
+  d3.select("#left").classed("glow",false);
+
+  // Turn on
+  setTimeout( () => {
+    d3.selectAll("#avatar,#view").style("opacity","1");
+    d3.select("#left").classed("glow",true);
+  }, 1000);
+
+}
+
+// Talking Head
+let head;
+
+function headLoaded() {
+
+  // Populate emoji tester
+  const elEmojis = d3.select("#emojis");
+  for( let [em,x] of Object.entries(head.animEmojis) ) {
+    elEmojis.append("div")
+      .classed("emoji", true)
+      .on('click', function(ev) {
+        const e = d3.select(this);
+        const name = e.text();
+
+        // Clear morphs
+        head.getMorphTargetNames().forEach( mt => {
+          const el = d3.select('#'+mt);
+          if ( !el.empty() ) {
+            el.property("value",testerGetValue(mt,null)).dispatch("change");
+          }
+        });
+
+        const selected = e.classed("selected");
+        d3.selectAll(".emoji").classed("selected",false);
+        if ( selected ) {
+          d3.selectAll(".emoji").classed("selected",false);
+        } else {
+          e.classed("selected",true);
+
+          // Animate
+          head.speakText(name);
+
+          // Update morphs
+          const o = head.animEmojis[name];
+          if ( o ) {
+            head.getMorphTargetNames().forEach( mt => {
+              let val = null;
+              if ( o.vs &&  o.vs[mt] ) {
+                val = o.vs[mt][o.vs[mt].length-1];
+                if ( Array.isArray(val) ) val = lastv[0];
+              }
+              const el = d3.select('#'+mt);
+              if ( !el.empty() ) {
+                el.property("value",testerGetValue(mt,val)).dispatch("change");
+              }
+            });
+          }
+        }
+        testerUpdateMorphData();
+      })
+      .html(em);
+  }
+
+  // Populote morph targets (a.k.a. blend shapes)
+  const elMorphs = d3.select("#morphs");
+  head.getMorphTargetNames().forEach( mt => {
+    let v = head.getFixedValue(mt);
+
+    const morph = elMorphs.append("div")
+      .classed("row", true)
+      .classed("morph", true);
+
+    morph.append("div")
+      .classed("text", true)
+      .classed("label", true)
+      .html(mt);
+
+    morph.append("input")
+      .property("id", mt)
+      .property("type", "range")
+      .property("min", testerGetMin(mt))
+      .property("max", testerGetMax(mt))
+      .property("step", testerGetStep(mt))
+      .property("value", testerGetValue(mt,v))
+      .on('input change keyup', function(ev) {
+        const e = d3.select(this);
+        const mt = e.property("id");
+        let v = parseFloat(e.property("value"));
+        d3.select(e.node().nextElementSibling).html(testerGetLabel(mt,v));
+        head.setFixedValue(mt,testerGetFixedValue(mt,v));
+        testerUpdateMorphData();
+      });
+
+    morph.append("div")
+      .classed("text", true)
+      .html(testerGetLabel(mt,v));
+  });
+
+  d3.select("#loading").style("display","none");
+
+  setTimeout( () => {
+    turnOnEffect();
+    reconnectEffect();
+    loadConfig();
+  }, 1000);
+}
+
+// Update progress bar
+let progressTimeout;
+function progressShow() {
+  if ( progressTimeout ) {
+    clearTimeout(progressTimeout);
+    progressTimeout = null;
+  }
+  d3.select("#loading").style("display","block");
+  progressUpdate( { lengthComputable: true, loaded: 0, total: 1 } );
+}
+
+function progressUpdate(ev) {
+  if ( ev.lengthComputable ) {
+    let val = Math.round(ev.loaded/ev.total * 100 );
+    d3.select("#loading-top").style("clip-path", "inset(0 " + (100-val) + "% 0 0)");
+    d3.selectAll("#loading-value").text( val + "%" );
+  } else {
+    d3.selectAll("#loading-value").text( "" + ev.loaded );
+  }
+}
+
+function progressHide() {
+  if ( progressTimeout ) {
+    clearTimeout(progressTimeout);
+    progressTimeout = null;
+  }
+  progressTimeout = setTimeout( () => {
+    d3.select("#loading").style("display","none");
+    progressTimeout = null;
+  }, 1000);
+}
+
+function errorShow(error) {
+  console.error(error);
+  progressHide();
+}
+
+function testerUpdateMorphData() {
+  let s = '{';
+  for( let mt of head.getMorphTargetNames() ) {
+    const el = d3.select('#'+mt);
+    if ( !el.empty() ) {
+      const v = testerGetFixedValue( mt, parseFloat(el.property("value")) );
+      if ( v !== null ) {
+        s += (s.length > 1 ? ',' : '') + ' ' + mt + ': [' + v + ']';
+      }
+    }
+  }
+  s += ' }';
+  d3.select('#morphdata').property("value",s).dispatch('change');
+}
+
+function testerGetValue(mt,v) {
+  if ( mt.startsWith('headRotate') || mt.startsWith('eyesRotate') ) {
+    return ( v === null || v === undefined ) ? 0 : v;
+  } else {
+    return ( v === null || v === undefined ) ? -0.1 : v;
+  }
+}
+
+function testerGetFixedValue(mt,v) {
+  if ( mt.startsWith('headRotate') || mt.startsWith('eyesRotate') ) {
+    return ( v === 0 ? null : v);
+  } else {
+    return ( v >= 0 ? v : null);
+  }
+}
+
+function testerGetMin(mt) {
+  if ( mt.startsWith('headRotate') ) {
+    return -0.5;
+  } else if ( mt.startsWith('eyesRotate') ) {
+    return -1;
+  } else {
+    return -0.1;
+  }
+}
+
+function testerGetMax(mt) {
+  return mt.startsWith('headRotate') ? 0.5 : 1;
+}
+
+function testerGetStep(mt) {
+  return ( mt.startsWith('headRotate') || mt.startsWith('eyesRotate') ) ? 0.05 : 0.1;
+}
+
+function testerGetLabel(mt,v) {
+  if ( mt.startsWith('headRotate') || mt.startsWith('eyesRotate') ) {
+    return (v ? v : '');
+  } else {
+    return ( v>=0 ? v : '');
+  }
+}
+
+
+// Page ready
+document.addEventListener('DOMContentLoaded', async function(e) {
+
+  // Add avatar links
+  const eAvatarsRight = d3.select("#r-avatars");
+  const eAvatarsLeft = d3.select("#l-avatars");
+  for ( const [i,k] of Object.entries(Object.keys(site.avatars)) ) {
+
+    eAvatarsRight.append("div")
+      .classed("command", true)
+      .classed("selected", i === 0 )
+      .attr("data-item","avatar-name")
+      .attr("data-type","option")
+      .attr("data-avatar-name", k )
+      .text( k );
+
+    eAvatarsLeft.append("div")
+      .classed("command", true)
+      .classed("selected", i === 0 )
+      .attr("data-avatar-name", k )
+      .text( k );
+  }
+
+  // Add views
+  const eViews = d3.select("#views");
+  for ( const [k,o] of Object.entries(site.views) ) {
+    eViews.append("div")
+      .classed("command", true)
+      .attr("data-item","view-image")
+      .attr("data-type","option")
+      .attr("data-image-type",o.type)
+      .attr("data-view-image",o.url)
+      .text( k );
+  }
+
+  // Add poses
+  const ePoses = d3.select("#poses");
+  for ( const [k,o] of Object.entries(site.poses) ) {
+    ePoses.append("div")
+      .classed("command", true)
+      .attr("data-pose",o.url)
+      .text( k );
+  }
+
+  // Add animations
+  const eAnimations = d3.select("#animations");
+  for ( const [k,o] of Object.entries(site.animations) ) {
+    eAnimations.append("div")
+      .classed("command", true)
+      .attr("data-animation",o.url)
+      .text( k );
+  }
+
+  // Create the talking head avatar
+  const nodeAvatar = document.getElementById('avatar');
+  head = new TalkingHead( nodeAvatar, {
+    jwtGet: jwtGet,
+    ttsEndpoint: googleTTSProxy,
+    cameraZoomEnable: true,
+    cameraPanEnable: true,
+    cameraView: 'full',
+    avatarMood: 'neutral'
+  });
+
+  // Follow double clicks
+  document.body.addEventListener('dblclick', function(e) {
+    e = e || window.event;
+    head.lookAt(e.clientX,e.clientY,500);
+  });
+
+  // Auto resize textarea
+  d3.selectAll("textarea").on("input.resize change.resize keyup.resize paste.resize", function(e) {
+    let pos = this.parentElement.parentElement.scrollTop;
+    this.style.height = '0px';
+    this.style.height = this.scrollHeight+'px';
+    this.parentElement.parentElement.scrollTop = pos;
+  });
+
+  // Reset moderation flag, score and word count
+  d3.selectAll("textarea").on("input.moderate change.moderate paste.moderate", function(e) {
+    delete this.dataset.flag;
+    delete this.dataset.score;
+    delete this.dataset.words;
+  });
+
+  d3.selectAll("[data-scroll]").on("click", function(ev) {
+    const e = d3.select(this);
+    d3.select("#"+e.attr("data-scroll")).node().scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
+  });
+
+  // Send message
+  d3.select("#input").on("keydown", async function(ev) {
+    if ( ev.keyCode === 13 && !ev.shiftKey ) {
+      ev.preventDefault();
+      const e = d3.select("#input");
+      let text = e.property("value");
+      if ( head && text.length ) {
+
+        const m = aiBuildMessage();
+        const flag = await aiModerateMessage(m);
+
+        if (flag) {
+          console.info("Moderation flagged.");
+        } else {
+          const nodeInput = addMessage(true);
+          nodeInput.dataset.input = text;
+          addText(nodeInput,text);
+          e.property("value","");
+          const nodeOutput = addMessage(false);
+          aiSendMessage(nodeOutput,m);
+        }
+
+      }
+    }
+  });
+
+  // Speak test
+  d3.select("#playtest").on("click", function(ev) {
+    const e = d3.select("[data-voice-test]");
+    let text = e.property("value");
+    if ( head && text.length ) {
+      if ( cfg('voice-type') === 'eleven' ) {
+        elevenSpeak( text + " " );
+        elevenSpeak( "" );
+      } else {
+        head.speakText( text, {
+          ttsVoice: cfg('voice-google-id'),
+          ttsRate: parseFloat( cfg('voice-google-rate') ),
+          ttsPitch: parseFloat( cfg('voice-google-pitch') )
+        } );
+      }
+    }
+  });
+
+  // Repeat
+  d3.selectAll("#pose-repeat,#animation-repeat").on("click", function(ev) {
+    const e = d3.select(this);
+    const sel = e.classed("selected");
+    e.classed("selected", !sel );
+  });
+
+  d3.select("#pause").on("click", function(ev) {
+    const e = d3.select(this);
+    const sel = e.classed("selected");
+    e.classed("selected", !sel );
+    if ( !sel ) {
+      head.stop();
+    } else {
+      head.start();
+    }
+  });
+
+  d3.select("#slowdown").on("click", function(ev) {
+    const e = d3.select(this);
+    let k = 2 * head.getSlowdownRate();
+    let t = 'Hidastus x' + k;
+    if ( k >= 16 ) {
+      k = 1;
+      t = 'Hidastus'
+    }
+    e.classed("selected", (k > 1) ).text(t);
+    head.setSlowdownRate( k );
+  });
+
+  d3.select("#autorotate").on("click", function(ev) {
+    const e = d3.select(this);
+    let k = head.getAutoRotateSpeed() + 10;
+    let t = 'Panoroi ' + k;
+    if ( k >= 60 ) {
+      k = 0;
+      t = 'Panoroi'
+    }
+    e.classed("selected", (k > 0) ).text(t);
+    head.setAutoRotateSpeed( k );
+  });
+
+  // Avatar mood
+  d3.selectAll("[data-mood]").on('click.command', function(ev) {
+    const e = d3.select(this);
+    head.setMood( e.attr('data-mood') );
+  });
+
+  // Avatar pose
+  d3.selectAll("[data-pose]").on('click.command', async function(ev) {
+    const e = d3.select(this);
+    const sel = e.classed("selected");
+    const repeat = d3.select("#pose-repeat").classed("selected");
+    d3.selectAll("[data-pose]").classed("selected",false);
+    if ( sel ) {
+      head.stopPose();
+    } else {
+      let pose = e.attr('data-pose');
+      if ( pose === 'FILE' ) {
+        let input = document.createElement('input');
+        input.type = 'file';
+        input.onchange = (ev2) => {
+          let file = ev2.target.files[0];
+          var reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = async readerEvent => {
+            let content = readerEvent.target.result;
+            d3.selectAll("[data-pose='" + pose + "']").classed("selected",repeat);
+            progressShow();
+            await head.playPose( content, progressUpdate, (repeat ? 600 : 5) );
+            progressHide();
+          }
+        }
+        input.click();
+      } else {
+        d3.selectAll("[data-pose='" + pose + "']").classed("selected",repeat);
+        progressShow();
+        await head.playPose( pose, progressUpdate, (repeat ? 600 : 5) );
+        progressHide();
+      }
+    }
+  });
+
+  d3.selectAll("[data-animation]").on('click.command', async function(ev) {
+    const e = d3.select(this);
+    const sel = e.classed("selected");
+    const repeat = d3.select("#animation-repeat").classed("selected");
+    d3.selectAll("[data-animation]").classed("selected",false);
+    if ( sel ) {
+      head.stopAnimation();
+    } else {
+      let animation = e.attr('data-animation');
+      if ( animation === 'FILE' ) {
+        let input = document.createElement('input');
+        input.type = 'file';
+        input.onchange = (ev2) => {
+          let file = ev2.target.files[0];
+          var reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = async readerEvent => {
+            let content = readerEvent.target.result;
+            d3.selectAll("[data-animation='" + animation + "']").classed("selected",repeat);
+            progressShow();
+            await head.playAnimation( content, progressUpdate, (repeat ? Infinity : 1) );
+            progressHide();
+          }
+        }
+        input.click();
+      } else {
+        d3.selectAll("[data-animation='" + animation + "']").classed("selected",repeat);
+        progressShow();
+        await head.playAnimation( animation, progressUpdate, (repeat ? Infinity : 1) );
+        progressHide();
+      }
+    }
+  });
+
+  // Save configuration changes
+  d3.selectAll("[data-item]").on('click.config input.config change.config keyup.config', function(ev) {
+    const e = d3.select(this);
+    const item = e.attr("data-item");
+    const type = e.attr("data-type");
+    let value;
+    if ( type === "option" ) {
+      value = e.attr("data-"+item);
+    } else {
+      value = e.property("value");
+    }
+    cfg( item, value );
+    saveConfig();
+  });
+
+  // Change session
+  d3.selectAll("[data-session]").on('click.command', entrySelect );
+  d3.selectAll("[data-entry-move]").on('click.command', entryMove );
+
+  d3.select("#selectall").on("click", function(ev) {
+    const e = d3.select(this);
+    const mode = !e.classed("selected");
+    e.classed("selected", mode);
+
+    d3.select(".session.selected").selectAll(".select").nodes().forEach( (n) => {
+      const x = d3.select(n);
+      if ( x.classed("selected") !== mode ) {
+        x.dispatch("click");
+      }
+    });
+  });
+
+  // Reset range
+  d3.selectAll("[data-range-reset]").on('click.command', function(ev) {
+    const e = d3.select(this);
+    const item = e.attr("data-item");
+    const value = e.attr("data-range-reset");
+    d3.select("[data-"+item+"]").property("value",value).dispatch("change");
+  });
+
+  // Show value labels
+  d3.selectAll("[data-range]").on('input.label change.label keyup.label', function(ev) {
+    const e = d3.select(this);
+    const n = e.node();
+    const type = e.attr("data-range");
+    let v = '';
+    if ( type === 'float' ) {
+      v = Math.round(100 * n.value) / 100;
+    } else if ( type === 'second' ) {
+      v = Math.round(100 * n.value) / 100 + ' s';
+    } else if ( type === 'percentage' ) {
+      v = Math.round(100 * n.value) + '%';
+    } else if ( type === 'px' ) {
+      v = n.value + ' px';
+    } else if ( type === 'meter' ) {
+      v = n.value + ' m';
+    } else if ( type === 'radian' ) {
+      v = n.value + ' rad';
+    } else if ( type === 'word' ) {
+      v = n.value + ' sanaa';
+    } else if ( type === 'dialog' ) {
+      v = n.value + ' sanomaa';
+    }
+    n.nextElementSibling.textContent = v;
+  });
+
+  d3.selectAll("[data-item='name']").on('input.command change.command keyup.command', function(ev) {
+    const e = d3.select(this);
+    const name = e.property("value");
+    d3.select("#entry-"+CFG.session).select("div").text( name );
+    d3.select("#name").text( name );
+  });
+
+  // Show/hide pages
+  d3.selectAll("[data-show]").on('click.command', function(ev) {
+    const e = d3.select(this);
+    const sel = e.classed("selected");
+    const show = e.attr("data-show");
+    const parts = show.split("-");
+
+    d3.selectAll("[data-show*='" + parts[0] + "-']").classed("selected", false);
+    d3.selectAll("[id*='" + parts[0] + "-']").classed("hidden", true);
+    if ( !sel ) {
+      e.classed("selected",true);
+      d3.select('#'+show)
+        .classed("hidden", false)
+        .selectAll("textarea").dispatch("keyup");
+      if ( parts[0] === 'right' ) {
+        d3.select("#right-sessions").classed("hidden", true);
+      }
+    } else {
+      if ( parts[0] === 'right' ) {
+        d3.select("#right-sessions").classed("hidden", false);
+      }
+    }
+  });
+
+  d3.selectAll("[data-theme-ratio]").on('click.command', function(ev) {
+    const e = d3.select(this);
+    d3.selectAll("[data-theme-ratio]").classed('selected',false);
+    e.classed('selected',true);
+    const main = d3.select("#main");
+    d3.selectAll("[data-theme-ratio]").nodes().forEach( x => {
+      main.classed("ratio-" + x.dataset.themeRatio, false);
+    });
+    let ratio = 'ratio-' + d3.select("[data-theme-ratio].selected").attr('data-theme-ratio');
+    main.classed(ratio, true);
+  });
+
+  d3.selectAll("[data-theme-layout]").on('click.command', function(ev) {
+    const e = d3.select(this);
+    d3.selectAll("[data-theme-layout]").classed('selected',false);
+    e.classed('selected',true);
+    const main = d3.select("#main");
+    d3.selectAll("[data-theme-layout]").nodes().forEach( x => {
+      main.classed("layout-" + x.dataset.themeLayout, false);
+    });
+    let layout = 'layout-' + d3.select("[data-theme-layout].selected").attr('data-theme-layout');
+    main.classed(layout, true);
+  });
+
+  d3.selectAll("[data-theme-brightness]").on('click.command', function(ev) {
+    const e = d3.select(this);
+    d3.selectAll("[data-theme-brightness]").classed('selected',false);
+    e.classed('selected',true);
+    const body = d3.select("body");
+    d3.selectAll("[data-theme-brightness]").nodes().forEach( x => {
+      body.classed("theme-" + x.dataset.themeBrightness, false);
+    });
+    let theme = 'theme-' + d3.select("[data-theme-brightness].selected").attr('data-theme-brightness');
+    body.classed(theme, true);
+  });
+
+  d3.selectAll("[data-avatar-name]").on('click.command', async function(ev) {
+    const e = d3.select(this);
+    d3.selectAll("[data-avatar-name]").classed('selected',false);
+    let avatar = e.attr('data-avatar-name');
+    d3.selectAll("[data-avatar-name='" + avatar + "']").classed("selected",true);
+    if ( avatar === 'FILE' ) {
+      let input = document.createElement('input');
+      input.type = 'file';
+      input.onchange = (ev2) => {
+        let file = ev2.target.files[0];
+        var reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = async readerEvent => {
+          d3.selectAll("[data-pose],[data-animation],#pause").classed("selected",false);
+          progressShow();
+          const o = {
+            url: readerEvent.target.result,
+            body: cfg('avatar-body')
+          };
+          try {
+            await head.showAvatar( o, progressUpdate );
+            progressHide();
+            d3.select("[data-camera-frame].selected").dispatch('click');
+          } catch(error) {
+            errorShow(error);
+          }
+        }
+      }
+      input.click();
+    } else if ( avatar === 'URL' ) {
+      let url = cfg('avatar-url');
+      d3.selectAll("[data-pose],[data-animation],#pause").classed("selected",false);
+      progressShow();
+      const o = {
+        url: url,
+        body: cfg('avatar-body')
+      };
+      try {
+        await head.showAvatar( o, progressUpdate );
+        progressHide();
+        d3.select("[data-camera-frame].selected").dispatch('click');
+      } catch(error) {
+        errorShow(error);
+      }
+    } else {
+      const name = e.attr('data-avatar-name');
+      d3.selectAll("[data-pose],[data-animation],#pause").classed("selected",false);
+      progressShow();
+      try {
+        await head.showAvatar( site.avatars[name], progressUpdate );
+        progressHide();
+        d3.select("[data-camera-frame].selected").dispatch('click');
+      } catch(error) {
+        errorShow(error);
+      }
+    }
+  });
+
+  d3.selectAll("[data-avatar-brightness],[data-avatar-contrast],[data-avatar-saturate]").on('input.command change.command keyup.command', function(ev) {
+    const e = d3.select(this);
+    let filters = [];
+    d3.selectAll("[data-avatar-brightness],[data-avatar-contrast],[data-avatar-saturate]").nodes().forEach( node => {
+      filters.push( (node.dataset.avatarBrightness || node.dataset.avatarContrast || node.dataset.avatarSaturate) + '(' + node.value + ')' );
+    });
+    d3.select("#avatar").style("filter", filters.join(' ') );
+  });
+
+  d3.selectAll("[data-avatar-body]").on('click.command', function(ev) {
+    const e = d3.select(this);
+    d3.selectAll("[data-avatar-body]").classed('selected',false);
+    e.classed('selected',true);
+  });
+
+  d3.selectAll("[data-view-image]").on('click.command', function(ev) {
+    const e = d3.select(this);
+    d3.selectAll("[data-view-image]").classed('selected',false);
+    e.classed('selected',true);
+    let view = e.attr('data-view-image');
+    if ( view === 'NONE' ) {
+      CFG.sessions[CFG.session].view.image = "NONE";
+      d3.select("#main")
+        .classed("presence-video",false)
+        .classed("presence-vr", true);
+      d3.select("#view-video").attr("src","");
+      d3.select("#video").node().load();
+      d3.select("#view").style("background-image","none" );
+    } else if ( view === 'FILE' ) {
+      let input = document.createElement('input');
+      input.type = 'file';
+      input.onchange = (ev2) => {
+        let file = ev2.target.files[0];
+        var reader = new FileReader();
+        if ( file.type.startsWith('image/') ) {
+          d3.select("#main")
+            .classed("presence-video", true)
+            .classed("presence-vr", false);
+          reader.readAsDataURL(file);
+          reader.onload = readerEvent => {
+            CFG.sessions[CFG.session].view.image = "FILE";
+            d3.select("#view-video").attr("src","");
+            d3.select("#video").node().load();
+            d3.select("#view").style("background-image","url(" + readerEvent.target.result + ")" );
+          }
+        } else if ( file.type.startsWith('video/') ) {
+          d3.select("#main")
+            .classed("presence-video", true)
+            .classed("presence-vr", false);
+          reader.readAsDataURL(file);
+          reader.onload = readerEvent => {
+            CFG.sessions[CFG.session].view.image = "FILE";
+            let content = readerEvent.target.result;
+            d3.select("#view-video").attr("src",content);
+            d3.select("#video").node().load();
+          }
+        }
+      }
+      input.click();
+    } else if ( view === 'URL' ) {
+      CFG.sessions[CFG.session].view.image = "URL";
+      d3.select("#main")
+        .classed("presence-video", true)
+        .classed("presence-vr", false);
+      d3.select("#view-video").attr("src","");
+      d3.select("#video").node().load();
+      const image = cfg('view-url');
+      d3.select("#view").style("background-image","url(" + image + ")" );
+    } else {
+      CFG.sessions[CFG.session].view.image = view;
+      d3.select("#main")
+        .classed("presence-video", true)
+        .classed("presence-vr", false);
+      const image = e.attr('data-view-image');
+      const type = e.attr('data-image-type');
+      if ( type.startsWith('video/') ) {
+        d3.select("#view-video")
+          .attr("src", image )
+          .attr("type", type );
+        d3.select("#video").node().load();
+        d3.select("#view").style("background-image","none" );
+      } else if ( type.startsWith('image/') ) {
+        d3.select("#view-video").attr("src","");
+        d3.select("#video").node().load();
+        d3.select("#view").style("background-image","url(" + image + ")" );
+      }
+    }
+  });
+
+  d3.selectAll("[data-camera-frame]").on('click.command', function(ev) {
+    const e = d3.select(this);
+    d3.selectAll("[data-camera-frame]").classed('selected',false);
+    const camera = e.attr('data-camera-frame');
+    d3.selectAll("[data-camera-frame='" + camera + "']").classed("selected",true);
+    const opt = {};
+    opt.cameraX = parseFloat( cfg("camera-x") );
+    opt.cameraY = parseFloat( cfg("camera-y") );
+    opt.cameraDistance = parseFloat( cfg("camera-d") );
+    opt.cameraRotateX = parseFloat( cfg("camera-rotx") );
+    opt.cameraRotateY = parseFloat( cfg("camera-roty]") );
+    head.setView( camera, opt );
+  });
+
+  d3.selectAll("[data-camera-x],[data-camera-y],[data-camera-d],[data-camera-rotx],[data-camera-roty]").on('input.command change.command keyup.command', function(ev) {
+    d3.select("[data-camera-frame].selected").dispatch('click');
+  });
+
+  d3.selectAll("[data-view-brightness],[data-view-contrast],[data-view-saturate],[data-view-blur]").on('input.command change.command keyup.command', function(ev) {
+    const e = d3.select(this);
+    let filters = [];
+    d3.selectAll("[data-view-brightness],[data-view-contrast],[data-view-saturate],[data-view-blur]").nodes().forEach( node => {
+      filters.push( (node.dataset.viewBrightness || node.dataset.viewContrast || node.dataset.viewSaturate || node.dataset.viewBlur) + '(' + node.value + (node.dataset.viewBlur ? 'px' :'') + ')' );
+    });
+    d3.select("#view").style("filter", filters.join(' ') );
+  });
+
+  d3.selectAll("[data-voice-type]").on('click.command', function(ev) {
+    const e = d3.select(this);
+    d3.selectAll("[data-voice-type]").classed('selected',false);
+    e.classed('selected',true);
+    d3.select("#voice-google").style("display", (e.attr("data-voice-type") === 'google') ? "flex" : "none" );
+    d3.select("#voice-eleven").style("display", (e.attr("data-voice-type") === 'eleven') ? "flex" : "none" );
+  });
+
+  d3.selectAll("[data-voice-google-id]").on('click.command', function(ev) {
+    const e = d3.select(this);
+    d3.selectAll("[data-voice-google-id]").classed('selected',false);
+    e.classed('selected',true);
+  });
+
+  d3.selectAll("[data-voice-eleven-id]").on('click.command', function(ev) {
+    const e = d3.select(this);
+    d3.selectAll("[data-voice-eleven-id]").classed('selected',false);
+    e.classed('selected',true);
+  });
+
+  d3.select("[data-voice-gain]").on('input.command change.command keyup.command', function(ev) {
+    let gain = parseFloat( d3.select("[data-voice-gain]").property("value") );
+    head.setGain( gain );
+  });
+
+  d3.selectAll("[data-ai-model]").on('click.command', function(ev) {
+    const e = d3.select(this);
+    d3.selectAll("[data-ai-model]").classed('selected',false);
+    e.classed('selected',true);
+  });
+
+  d3.select("#session-duplicate").on('click', function(ev) {
+    let id = CFG.sessions.length;
+    let clone = JSON.parse( JSON.stringify(cfg()) );
+    clone.name = 'Nimetön';
+    CFG.sessions.push(clone);
+    saveConfig();
+    loadConfig(id);
+  });
+
+  d3.select("#session-delete").on('click', function(ev) {
+    if ( CFG.sessions.length > 1 ) {
+      let id = CFG.session;
+      CFG.sessions.splice(id,1);
+      if ( id > 0 ) id--;
+      saveConfig();
+      loadConfig(id);
+    }
+  });
+
+  d3.select("#delete").on("click", function(ev) {
+    d3.select("#selectall").classed("selected",false);
+    d3.select(".session.selected").selectAll(".select.selected").nodes().forEach( (n) => {
+      d3.select(n.parentElement.parentElement).remove();
+    });
+  });
+
+  d3.select("#flag").on("click", async function(ev) {
+    let msgs = aiBuildMessage();
+    let flag = await aiModerateMessage(msgs);
+  });
+
+  d3.select('#copy').on('click', function(ev) {
+    const session = d3.select(".session.selected");
+    const ms = [];
+
+    [ 'ai-system', 'ai-user1', 'ai-ai1',
+      'ai-user2', 'ai-ai2' ].forEach( x => {
+      let p = cfg(x);
+      if ( p && p.length ) ms.push(p);
+    });
+
+    session.selectAll(".message").nodes().forEach( (d) => {
+      let e = d3.select(d);
+      let md = e.attr("data-input") || e.attr("data-output");
+      ms.push( md );
+    } );
+
+    const textarea = document.createElement('textarea');
+    textarea.value = ms.join("\n\n");
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+  });
+
+  d3.select(window).on('resize.updatesvg', function(ev) {
+    d3.selectAll("textarea").dispatch("keyup");
+  });
+
+  d3.selectAll("#json").on("blur", function(ev) {
+    let e = d3.select(this);
+    const json = e.property("value");
+    try {
+      const c = JSON.parse( json );
+      CFG.sessions[CFG.session] = c;
+      saveConfig();
+      loadConfig();
+    } catch(error) {
+      console.error(error);
+    }
+  });
+
+  try {
+    progressShow();
+    await head.showAvatar( Object.values(site.avatars)[0], progressUpdate);
+    progressHide();
+    headLoaded();
+  } catch (error) {
+    errorShow(error);
+  }
+
+});
+
+</script>
+</head>
+<body class="theme-dark">
+
+  <div id="main" class="ratio-wide layout-land presence-video">
+
+    <div id="left" class="noselect nodrag">
+
+      <div id="view">
+        <video id="video" autoplay loop muted>
+          <source id="view-video" src="" type="video/mp4">
+        </video>
+      </div>
+
+      <div id="avatar"></div>
+
+      <div class="border starttransparent"></div>
+
+      <div id="loading">
+        <div id="loading-back"></div>
+        <div id="loading-top"></div>
+        <div id="loading-value"></div>
+      </div>
+
+    </div>
+
+
+    <div id="right">
+
+      <div class="pages">
+
+        <div class="row noselect nodrag">
+          <div class="command starttransparent" title="Tunne" data-show="right-avatar">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M16 7C16 9.20914 14.2091 11 12 11C9.79086 11 8 9.20914 8 7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7ZM14 7C14 8.10457 13.1046 9 12 9C10.8954 9 10 8.10457 10 7C10 5.89543 10.8954 5 12 5C13.1046 5 14 5.89543 14 7Z" fill="currentColor" />
+              <path d="M16 15C16 14.4477 15.5523 14 15 14H9C8.44772 14 8 14.4477 8 15V21H6V15C6 13.3431 7.34315 12 9 12H15C16.6569 12 18 13.3431 18 15V21H16V15Z" fill="currentColor" />
+            </svg>
+          </div>
+          <div class="command starttransparent" title="Animaatio" data-show="right-animation">
+            <svg viewBox="-1 -1 26 26" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M4 4.5V6.5H12V7.5H3C1.34315 7.5 0 8.84315 0 10.5V16.5C0 18.1569 1.34315 19.5 3 19.5H15C16.5731 19.5 17.8634 18.2892 17.9898 16.7487L24 17.5V9.5L17.9898 10.2513C17.8634 8.71078 16.5731 7.5 15 7.5H14V5.5C14 4.94772 13.5523 4.5 13 4.5H4ZM18 12.2656V14.7344L22 15.2344V11.7656L18 12.2656ZM16 10.5C16 9.94772 15.5523 9.5 15 9.5H3C2.44772 9.5 2 9.94772 2 10.5V16.5C2 17.0523 2.44772 17.5 3 17.5H15C15.5523 17.5 16 17.0523 16 16.5V10.5Z" fill="currentColor" />
+            </svg>
+          </div>
+          <div class="filler"></div>
+          <div id="name" class="text starttransparent">
+            Nimet&ouml;n
+          </div>
+          <div class="filler"></div>
+          <div class="command starttransparent" title="Asetukset" data-show="right-settings">
+            <svg viewBox="-2 -2 28 28" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2 6C2 5.44772 2.44772 5 3 5H21C21.5523 5 22 5.44772 22 6C22 6.55228 21.5523 7 21 7H3C2.44772 7 2 6.55228 2 6Z" fill="currentColor" />
+              <path d="M2 12.0322C2 11.4799 2.44772 11.0322 3 11.0322H21C21.5523 11.0322 22 11.4799 22 12.0322C22 12.5845 21.5523 13.0322 21 13.0322H3C2.44772 13.0322 2 12.5845 2 12.0322Z" fill="currentColor" />
+              <path d="M3 17.0645C2.44772 17.0645 2 17.5122 2 18.0645C2 18.6167 2.44772 19.0645 3 19.0645H21C21.5523 19.0645 22 18.6167 22 18.0645C22 17.5122 21.5523 17.0645 21 17.0645H3Z" fill="currentColor" />
+            </svg>
+          </div>
+        </div>
+
+        <div id="right-avatar" class="page noselect nodrag hidden">
+          <div class="row">
+            <div class="text label">Hahmo</div>
+            <div id="l-avatars" class="rowWrap">
+              <div class="command" data-avatar-name="FILE">
+                <svg viewBox="-2 -2 28 28" xmlns="http://www.w3.org/2000/svg">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M4 1.5C2.89543 1.5 2 2.39543 2 3.5V4.5C2 4.55666 2.00236 4.61278 2.00698 4.66825C0.838141 5.07811 0 6.19118 0 7.5V19.5C0 21.1569 1.34315 22.5 3 22.5H21C22.6569 22.5 24 21.1569 24 19.5V7.5C24 5.84315 22.6569 4.5 21 4.5H11.874C11.4299 2.77477 9.86384 1.5 8 1.5H4ZM9.73244 4.5C9.38663 3.9022 8.74028 3.5 8 3.5H4V4.5H9.73244ZM3 6.5C2.44772 6.5 2 6.94772 2 7.5V19.5C2 20.0523 2.44772 20.5 3 20.5H21C21.5523 20.5 22 20.0523 22 19.5V7.5C22 6.94772 21.5523 6.5 21 6.5H3Z" fill="currentColor" />
+                </svg>
+              </div>
+              <div class="command" data-avatar-name="URL">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M14.8284 12L16.2426 13.4142L19.071 10.5858C20.6331 9.02365 20.6331 6.49099 19.071 4.9289C17.509 3.3668 14.9763 3.3668 13.4142 4.9289L10.5858 7.75732L12 9.17154L14.8284 6.34311C15.6095 5.56206 16.8758 5.56206 17.6568 6.34311C18.4379 7.12416 18.4379 8.39049 17.6568 9.17154L14.8284 12Z" fill="currentColor" />
+                  <path d="M12 14.8285L13.4142 16.2427L10.5858 19.0711C9.02372 20.6332 6.49106 20.6332 4.92896 19.0711C3.36686 17.509 3.36686 14.9764 4.92896 13.4143L7.75739 10.5858L9.1716 12L6.34317 14.8285C5.56212 15.6095 5.56212 16.8758 6.34317 17.6569C7.12422 18.4379 8.39055 18.4379 9.1716 17.6569L12 14.8285Z" fill="currentColor" />
+                  <path d="M14.8285 10.5857C15.219 10.1952 15.219 9.56199 14.8285 9.17147C14.4379 8.78094 13.8048 8.78094 13.4142 9.17147L9.1716 13.4141C8.78107 13.8046 8.78107 14.4378 9.1716 14.8283C9.56212 15.2188 10.1953 15.2188 10.5858 14.8283L14.8285 10.5857Z" fill="currentColor" />
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="text label">Asento</div>
+            <div id="poses" class="rowWrap">
+              <div class="command" data-pose="FILE">
+                <svg viewBox="-2 -2 28 28" xmlns="http://www.w3.org/2000/svg">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M4 1.5C2.89543 1.5 2 2.39543 2 3.5V4.5C2 4.55666 2.00236 4.61278 2.00698 4.66825C0.838141 5.07811 0 6.19118 0 7.5V19.5C0 21.1569 1.34315 22.5 3 22.5H21C22.6569 22.5 24 21.1569 24 19.5V7.5C24 5.84315 22.6569 4.5 21 4.5H11.874C11.4299 2.77477 9.86384 1.5 8 1.5H4ZM9.73244 4.5C9.38663 3.9022 8.74028 3.5 8 3.5H4V4.5H9.73244ZM3 6.5C2.44772 6.5 2 6.94772 2 7.5V19.5C2 20.0523 2.44772 20.5 3 20.5H21C21.5523 20.5 22 20.0523 22 19.5V7.5C22 6.94772 21.5523 6.5 21 6.5H3Z" fill="currentColor" />
+                </svg>
+              </div>
+              <div id="pose-repeat" class="command selected">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M18.3701 7.99993L13.8701 10.598V8.99993H6.88989V12.9999H4.88989V6.99993H13.8701V5.40186L18.3701 7.99993Z" fill="currentColor" />
+                  <path d="M10.1299 16.9999H19.1101V10.9999H17.1101V14.9999H10.1299V13.4019L5.62988 15.9999L10.1299 18.598V16.9999Z" fill="currentColor" />
+                </svg>
+              </div>
+              <div class="command" data-pose="straight">Suora</div>
+              <div class="command" data-pose="side">Keno</div>
+              <div class="command" data-pose="hip">Lantio</div>
+              <div class="command" data-pose="turn">Sivu</div>
+              <div class="command" data-pose="back">Taka</div>
+              <div class="command" data-pose="wide">Haara</div>
+              <div class="command" data-pose="oneknee">Polvi</div>
+              <div class="command" data-pose="kneel">Polvet</div>
+              <div class="command" data-pose="bend">Per&auml;</div>
+              <div class="command" data-pose="sitting">Istuva</div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="text label">Tunne</div>
+            <div class="rowWrap">
+              <div class="command" data-mood="neutral">Perus</div>
+              <div class="command" data-mood="happy">Ilo</div>
+              <div class="command" data-mood="angry">Viha</div>
+              <div class="command" data-mood="sad">Suru</div>
+              <div class="command" data-mood="fear">Pelko</div>
+              <div class="command" data-mood="disgust">Inho</div>
+              <div class="command" data-mood="love">Rakkaus</div>
+              <div class="command" data-mood="sleep">Uni</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="right-animation" class="page noselect nodrag hidden">
+          <div class="row">
+            <div class="text label">Rajaus</div>
+            <div class="rowWrap">
+              <div class="command" data-camera-frame="full">Kokovartalo</div>
+              <div class="command selected" data-camera-frame="upper">Yl&auml;osa</div>
+              <div class="command" data-camera-frame="head">P&auml;&auml;</div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="text label">Toiminta</div>
+            <div id="animations" class="rowWrap">
+              <div class="command" data-animation="FILE">
+                <svg viewBox="-2 -2 28 28" xmlns="http://www.w3.org/2000/svg">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M4 1.5C2.89543 1.5 2 2.39543 2 3.5V4.5C2 4.55666 2.00236 4.61278 2.00698 4.66825C0.838141 5.07811 0 6.19118 0 7.5V19.5C0 21.1569 1.34315 22.5 3 22.5H21C22.6569 22.5 24 21.1569 24 19.5V7.5C24 5.84315 22.6569 4.5 21 4.5H11.874C11.4299 2.77477 9.86384 1.5 8 1.5H4ZM9.73244 4.5C9.38663 3.9022 8.74028 3.5 8 3.5H4V4.5H9.73244ZM3 6.5C2.44772 6.5 2 6.94772 2 7.5V19.5C2 20.0523 2.44772 20.5 3 20.5H21C21.5523 20.5 22 20.0523 22 19.5V7.5C22 6.94772 21.5523 6.5 21 6.5H3Z" fill="currentColor" />
+                </svg>
+              </div>
+              <div id="animation-repeat" class="command selected">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M18.3701 7.99993L13.8701 10.598V8.99993H6.88989V12.9999H4.88989V6.99993H13.8701V5.40186L18.3701 7.99993Z" fill="currentColor" />
+                  <path d="M10.1299 16.9999H19.1101V10.9999H17.1101V14.9999H10.1299V13.4019L5.62988 15.9999L10.1299 18.598V16.9999Z" fill="currentColor" />
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="text label">Ohjaus</div>
+            <div class="rowWrap">
+              <div id="pause" class="command">Pys&auml;ytyskuva</div>
+              <div id="autorotate" class="command">Panorointi</div>
+              <div id="slowdown" class="command">Hidastus</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="right-sessions" class="page">
+          <div id="sessions">
+            <div id="session-0" class="session selected"></div>
+            <div id="session-1" class="session"></div>
+          </div>
+        </div>
+
+        <div id="right-settings" class="page noselect nodrag hidden">
+
+          <div id="top" class="vbar"></div>
+
+          <div class="row">
+            <div class="text label">Seikkailu</div>
+            <div id="directory" class="column fill">
+              <div id="entry-0" class="entry row">
+                <div class="command fill selected" data-session="0">Nimet&ouml;n</div>
+                <div class="command" data-entry-move="up">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M17.6569 16.2427L19.0711 14.8285L12.0001 7.75739L4.92896 14.8285L6.34317 16.2427L12.0001 10.5858L17.6569 16.2427Z" fill="currentColor" />
+                  </svg>
+                </div>
+                <div class="command" data-entry-move="down">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6.34317 7.75732L4.92896 9.17154L12 16.2426L19.0711 9.17157L17.6569 7.75735L12 13.4142L6.34317 7.75732Z" fill="currentColor" />
+                  </svg>
+                </div>
+              </div>
+              <div id="entry-1" class="entry row">
+                <div class="command fill" data-session="1">Nimet&ouml;n</div>
+                <div class="command" data-entry-move="up">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M17.6569 16.2427L19.0711 14.8285L12.0001 7.75739L4.92896 14.8285L6.34317 16.2427L12.0001 10.5858L17.6569 16.2427Z" fill="currentColor" />
+                  </svg>
+                </div>
+                <div class="command" data-entry-move="down">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6.34317 7.75732L4.92896 9.17154L12 16.2426L19.0711 9.17157L17.6569 7.75735L12 13.4142L6.34317 7.75732Z" fill="currentColor" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="vbar"></div>
+
+          <div class="rowWrap">
+            <div class="command" data-scroll="theme">Teema</div>
+            <div class="command" data-scroll="background">Tausta</div>
+            <div class="command" data-scroll="model">Hahmo</div>
+            <div class="command" data-scroll="camera">Kamera</div>
+            <div class="command" data-scroll="voice">&Auml;&auml;ni</div>
+            <div class="command" data-scroll="ai">Teko&auml;ly</div>
+            <div class="command" data-scroll="config">JSON</div>
+            <div class="command" data-scroll="tester">Emojit</div>
+          </div>
+
+          <div class="vbar"></div>
+
+          <div class="row">
+            <div class="text label">Otsikko</div>
+            <input class="fill" type="text" placeholder="Nimi" data-item="name" data-type="value">
+            <div id="session-duplicate" class="command">
+              <svg viewBox="-2 -2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M19 5H7V3H21V17H19V5Z" fill="currentColor" />
+                <path d="M9 13V11H11V13H13V15H11V17H9V15H7V13H9Z" fill="currentColor" />
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M3 7H17V21H3V7ZM5 9H15V19H5V9Z" fill="currentColor" />
+              </svg>
+            </div>
+            <div id="session-delete" class="command">
+              <svg viewBox="-1 -1 26 26" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M17 5V4C17 2.89543 16.1046 2 15 2H9C7.89543 2 7 2.89543 7 4V5H4C3.44772 5 3 5.44772 3 6C3 6.55228 3.44772 7 4 7H5V18C5 19.6569 6.34315 21 8 21H16C17.6569 21 19 19.6569 19 18V7H20C20.5523 7 21 6.55228 21 6C21 5.44772 20.5523 5 20 5H17ZM15 4H9V5H15V4ZM17 7H7V18C7 18.5523 7.44772 19 8 19H16C16.5523 19 17 18.5523 17 18V7Z" fill="currentColor" />
+                <path d="M9 9H11V17H9V9Z" fill="currentColor" />
+                <path d="M13 9H15V17H13V9Z" fill="currentColor" />
+              </svg>
+            </div>
+          </div>
+
+          <div class="vbar"></div>
+
+          <div class="row">
+            <div class="text label">Tarina</div>
+            <textarea placeholder="Järjestelmäviesti." rows="1" autocapitalize="sentences" data-item="ai-system" data-type="value" data-ai-system=""></textarea>
+          </div>
+          <div class="row">
+            <div class="text label">Esim #1</div>
+            <textarea placeholder="Käyttäjän syöte #1" rows="1" autocapitalize="sentences" data-item="ai-user1" data-type="value" data-ai-user1=""></textarea>
+          </div>
+          <div class="row">
+            <div class="text label"></div>
+            <textarea placeholder="Tekoälyn vaste #1" rows="1" autocapitalize="sentences" data-item="ai-ai1" data-type="value" data-ai-ai1=""></textarea>
+          </div>
+          <div class="row">
+            <div class="text label">Esim #2</div>
+            <textarea placeholder="Käyttäjän syöte #2" rows="1" autocapitalize="sentences" data-item="ai-user2" data-type="value" data-ai-user2=""></textarea>
+          </div>
+          <div class="row">
+            <div class="text label"></div>
+            <textarea placeholder="Tekoälyn vaste #2" rows="1" autocapitalize="sentences" data-item="ai-ai2" data-type="value" data-ai-ai2=""></textarea>
+          </div>
+
+          <div id="theme" class="row">
+            <div class="vbar fill"></div>
+            <div class="command" data-scroll="top">
+              <svg viewBox="-4 -4 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M17.6569 16.2427L19.0711 14.8285L12.0001 7.75739L4.92896 14.8285L6.34317 16.2427L12.0001 10.5858L17.6569 16.2427Z" fill="currentColor" />
+              </svg>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="text label">Teema</div>
+            <div class="column">
+              <div class="rowWrap">
+                <div class="command selected" data-item="theme-brightness" data-type="option" data-theme-brightness="dark">Tumma</div>
+                <div class="command" data-item="theme-brightness" data-type="option" data-theme-brightness="light">Vaalea</div>
+              </div>
+              <div class="rowWrap">
+                <div class="command selected" data-item="theme-ratio" data-type="option" data-theme-ratio="wide">Laajakuva</div>
+                <div class="command" data-item="theme-ratio" data-type="option" data-theme-ratio="normal">4:3</div>
+              </div>
+              <div class="rowWrap">
+                <div class="command selected" data-item="theme-layout" data-type="option" data-theme-layout="land">Vaaka</div>
+                <div class="command" data-item="theme-layout" data-type="option" data-theme-layout="port">Pysty</div>
+              </div>
+            </div>
+          </div>
+
+          <div id="background" class="row">
+            <div class="vbar fill"></div>
+            <div class="command" data-scroll="top">
+              <svg viewBox="-4 -4 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M17.6569 16.2427L19.0711 14.8285L12.0001 7.75739L4.92896 14.8285L6.34317 16.2427L12.0001 10.5858L17.6569 16.2427Z" fill="currentColor" />
+              </svg>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="text label">Tausta</div>
+            <div class="column">
+              <div id="views" class="rowWrap">
+                <div class="command selected" data-item="view-image" data-type="option" data-view-image="NONE">TYHJ&Auml;</div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="text label">Oma</div>
+            <div class="row fill">
+              <div class="command" data-item="view-image" data-type="option" data-view-image="FILE">
+                <svg viewBox="-2 -2 28 28" xmlns="http://www.w3.org/2000/svg">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M4 1.5C2.89543 1.5 2 2.39543 2 3.5V4.5C2 4.55666 2.00236 4.61278 2.00698 4.66825C0.838141 5.07811 0 6.19118 0 7.5V19.5C0 21.1569 1.34315 22.5 3 22.5H21C22.6569 22.5 24 21.1569 24 19.5V7.5C24 5.84315 22.6569 4.5 21 4.5H11.874C11.4299 2.77477 9.86384 1.5 8 1.5H4ZM9.73244 4.5C9.38663 3.9022 8.74028 3.5 8 3.5H4V4.5H9.73244ZM3 6.5C2.44772 6.5 2 6.94772 2 7.5V19.5C2 20.0523 2.44772 20.5 3 20.5H21C21.5523 20.5 22 20.0523 22 19.5V7.5C22 6.94772 21.5523 6.5 21 6.5H3Z" fill="currentColor" />
+                </svg>
+              </div>
+              <div class="command" data-item="view-image" data-type="option" data-view-image="URL">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M14.8284 12L16.2426 13.4142L19.071 10.5858C20.6331 9.02365 20.6331 6.49099 19.071 4.9289C17.509 3.3668 14.9763 3.3668 13.4142 4.9289L10.5858 7.75732L12 9.17154L14.8284 6.34311C15.6095 5.56206 16.8758 5.56206 17.6568 6.34311C18.4379 7.12416 18.4379 8.39049 17.6568 9.17154L14.8284 12Z" fill="currentColor" />
+                  <path d="M12 14.8285L13.4142 16.2427L10.5858 19.0711C9.02372 20.6332 6.49106 20.6332 4.92896 19.0711C3.36686 17.509 3.36686 14.9764 4.92896 13.4143L7.75739 10.5858L9.1716 12L6.34317 14.8285C5.56212 15.6095 5.56212 16.8758 6.34317 17.6569C7.12422 18.4379 8.39055 18.4379 9.1716 17.6569L12 14.8285Z" fill="currentColor" />
+                  <path d="M14.8285 10.5857C15.219 10.1952 15.219 9.56199 14.8285 9.17147C14.4379 8.78094 13.8048 8.78094 13.4142 9.17147L9.1716 13.4141C8.78107 13.8046 8.78107 14.4378 9.1716 14.8283C9.56212 15.2188 10.1953 15.2188 10.5858 14.8283L14.8285 10.5857Z" fill="currentColor" />
+                </svg>
+              </div>
+              <input class="fill" type="text" placeholder="URL" data-item="view-url" data-type="value">
+            </div>
+          </div>
+          <div class="row">
+            <div class="text label">S&auml;&auml;t&ouml;</div>
+            <div class="column">
+              <div class="row">
+                <div class="command" data-item="view-brightness" data-range-reset="1">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16ZM12 18C15.3137 18 18 15.3137 18 12C18 8.68629 15.3137 6 12 6C8.68629 6 6 8.68629 6 12C6 15.3137 8.68629 18 12 18Z" fill="currentColor" />
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M11 0H13V4.06189C12.6724 4.02104 12.3387 4 12 4C11.6613 4 11.3276 4.02104 11 4.06189V0ZM7.0943 5.68018L4.22173 2.80761L2.80752 4.22183L5.6801 7.09441C6.09071 6.56618 6.56608 6.0908 7.0943 5.68018ZM4.06189 11H0V13H4.06189C4.02104 12.6724 4 12.3387 4 12C4 11.6613 4.02104 11.3276 4.06189 11ZM5.6801 16.9056L2.80751 19.7782L4.22173 21.1924L7.0943 18.3198C6.56608 17.9092 6.09071 17.4338 5.6801 16.9056ZM11 19.9381V24H13V19.9381C12.6724 19.979 12.3387 20 12 20C11.6613 20 11.3276 19.979 11 19.9381ZM16.9056 18.3199L19.7781 21.1924L21.1923 19.7782L18.3198 16.9057C17.9092 17.4339 17.4338 17.9093 16.9056 18.3199ZM19.9381 13H24V11H19.9381C19.979 11.3276 20 11.6613 20 12C20 12.3387 19.979 12.6724 19.9381 13ZM18.3198 7.0943L21.1923 4.22183L19.7781 2.80762L16.9056 5.6801C17.4338 6.09071 17.9092 6.56608 18.3198 7.0943Z" fill="currentColor" />
+                  </svg>
+                </div>
+                <input type="range" min="0" max="2" step="0.05" value="1" data-item="view-brightness" data-type="value" data-range="percentage" data-view-brightness="brightness">
+                <div class="text">100%</div>
+              </div>
+              <div class="row">
+                <div class="command" data-item="view-contrast" data-range-reset="1">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 18C10.4633 18 9.06151 17.4223 8 16.4722C6.7725 15.3736 6 13.777 6 12C6 10.223 6.7725 8.62643 8 7.52779C9.06151 6.57771 10.4633 6 12 6V18Z" fill="currentColor" />
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12ZM12 20C7.58172 20 4 16.4183 4 12C4 7.58172 7.58172 4 12 4C16.4183 4 20 7.58172 20 12C20 16.4183 16.4183 20 12 20Z" fill="currentColor" />
+                  </svg>
+                </div>
+                <input type="range" min="0" max="2" step="0.05" value="1" data-item="view-contrast" data-type="value" data-range="percentage" data-view-contrast="contrast">
+                <div class="text">100%</div>
+              </div>
+              <div class="row">
+                <div class="command" data-item="view-saturate" data-range-reset="1">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M8.20348 2.00378C9.46407 2.00378 10.5067 3.10742 10.6786 4.54241L19.1622 13.0259L11.384 20.8041C10.2124 21.9757 8.31291 21.9757 7.14134 20.8041L2.8987 16.5615C1.72713 15.3899 1.72713 13.4904 2.8987 12.3188L5.70348 9.51404V4.96099C5.70348 3.32777 6.82277 2.00378 8.20348 2.00378ZM8.70348 4.96099V6.51404L7.70348 7.51404V4.96099C7.70348 4.63435 7.92734 4.36955 8.20348 4.36955C8.47963 4.36955 8.70348 4.63435 8.70348 4.96099ZM8.70348 10.8754V9.34247L4.31291 13.733C3.92239 14.1236 3.92239 14.7567 4.31291 15.1473L8.55555 19.3899C8.94608 19.7804 9.57924 19.7804 9.96977 19.3899L16.3337 13.0259L10.7035 7.39569V10.8754C10.7035 10.9184 10.7027 10.9612 10.7012 11.0038H8.69168C8.69941 10.9625 8.70348 10.9195 8.70348 10.8754Z" fill="currentColor" />
+                    <path d="M16.8586 16.8749C15.687 18.0465 15.687 19.946 16.8586 21.1175C18.0302 22.2891 19.9297 22.2891 21.1013 21.1175C22.2728 19.946 22.2728 18.0465 21.1013 16.8749L18.9799 14.7536L16.8586 16.8749Z" fill="currentColor" />
+                  </svg>
+                </div>
+                <input type="range" min="0" max="2" step="0.05" value="1" data-item="view-saturate" data-type="value" data-range="percentage" data-view-saturate="saturate">
+                <div class="text">100%</div>
+              </div>
+              <div class="row">
+                <div class="command" data-item="view-blur" data-range-reset="0">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M4.70834 15.4397C5.92663 16.2928 7.3222 16.7038 8.70461 16.7063C9.17977 18.0045 10.0433 19.1753 11.2616 20.0284C14.4284 22.2458 18.7932 21.4762 21.0107 18.3093C23.2281 15.1425 22.4585 10.7777 19.2916 8.56024C18.0734 7.70719 16.6778 7.29621 15.2954 7.29371C14.8202 5.99552 13.9567 4.82467 12.7384 3.97161C9.57158 1.75417 5.20676 2.52381 2.98931 5.69064C0.771871 8.85748 1.54151 13.2223 4.70834 15.4397ZM5.8555 13.8014C6.6016 14.3239 7.44081 14.6142 8.28736 14.6875C8.20112 13.1725 8.60464 11.6187 9.54254 10.2793C10.4804 8.9398 11.8025 8.0292 13.2556 7.59209C12.8972 6.82166 12.3374 6.13235 11.5913 5.60992C9.32924 4.02603 6.21151 4.57577 4.62762 6.8378C3.04373 9.09982 3.59347 12.2176 5.8555 13.8014ZM18.1445 10.1985C17.3984 9.67611 16.5592 9.38581 15.7126 9.31251C15.7989 10.8275 15.3953 12.3813 14.4574 13.7207C13.5195 15.0602 12.1975 15.9708 10.7444 16.4079C11.1028 17.1783 11.6626 17.8676 12.4087 18.3901C14.6707 19.9739 17.7885 19.4242 19.3724 17.1622C20.9562 14.9002 20.4065 11.7824 18.1445 10.1985Z" fill="currentColor" />
+                  </svg>
+                </div>
+                <input type="range" min="0" max="4" step="0.2" value="0" data-item="view-blur" data-type="value" data-range="px" data-view-blur="blur">
+                <div class="text">0 px</div>
+              </div>
+            </div>
+          </div>
+
+          <div id="model" class="row">
+            <div class="vbar fill"></div>
+            <div class="command" data-scroll="top">
+              <svg viewBox="-4 -4 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M17.6569 16.2427L19.0711 14.8285L12.0001 7.75739L4.92896 14.8285L6.34317 16.2427L12.0001 10.5858L17.6569 16.2427Z" fill="currentColor" />
+              </svg>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="text label">Hahmo</div>
+            <div class="column">
+              <div id="r-avatars" class="rowWrap">
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="text label">Oma</div>
+            <div class="row fill">
+              <div class="command" data-item="avatar-name" data-type="option" data-avatar-name="FILE">
+                <svg viewBox="-2 -2 28 28" xmlns="http://www.w3.org/2000/svg">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M4 1.5C2.89543 1.5 2 2.39543 2 3.5V4.5C2 4.55666 2.00236 4.61278 2.00698 4.66825C0.838141 5.07811 0 6.19118 0 7.5V19.5C0 21.1569 1.34315 22.5 3 22.5H21C22.6569 22.5 24 21.1569 24 19.5V7.5C24 5.84315 22.6569 4.5 21 4.5H11.874C11.4299 2.77477 9.86384 1.5 8 1.5H4ZM9.73244 4.5C9.38663 3.9022 8.74028 3.5 8 3.5H4V4.5H9.73244ZM3 6.5C2.44772 6.5 2 6.94772 2 7.5V19.5C2 20.0523 2.44772 20.5 3 20.5H21C21.5523 20.5 22 20.0523 22 19.5V7.5C22 6.94772 21.5523 6.5 21 6.5H3Z" fill="currentColor" />
+                </svg>
+              </div>
+              <div class="command" data-item="avatar-name" data-type="option" data-avatar-name="URL">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M14.8284 12L16.2426 13.4142L19.071 10.5858C20.6331 9.02365 20.6331 6.49099 19.071 4.9289C17.509 3.3668 14.9763 3.3668 13.4142 4.9289L10.5858 7.75732L12 9.17154L14.8284 6.34311C15.6095 5.56206 16.8758 5.56206 17.6568 6.34311C18.4379 7.12416 18.4379 8.39049 17.6568 9.17154L14.8284 12Z" fill="currentColor" />
+                  <path d="M12 14.8285L13.4142 16.2427L10.5858 19.0711C9.02372 20.6332 6.49106 20.6332 4.92896 19.0711C3.36686 17.509 3.36686 14.9764 4.92896 13.4143L7.75739 10.5858L9.1716 12L6.34317 14.8285C5.56212 15.6095 5.56212 16.8758 6.34317 17.6569C7.12422 18.4379 8.39055 18.4379 9.1716 17.6569L12 14.8285Z" fill="currentColor" />
+                  <path d="M14.8285 10.5857C15.219 10.1952 15.219 9.56199 14.8285 9.17147C14.4379 8.78094 13.8048 8.78094 13.4142 9.17147L9.1716 13.4141C8.78107 13.8046 8.78107 14.4378 9.1716 14.8283C9.56212 15.2188 10.1953 15.2188 10.5858 14.8283L14.8285 10.5857Z" fill="currentColor" />
+                </svg>
+              </div>
+              <input class="fill" type="text" placeholder="URL" data-item="avatar-url" data-type="value">
+              <div class="command selected" data-item="avatar-body" data-type="option" data-avatar-body="F">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M12 3C9.23858 3 7 5.23858 7 8C7 10.419 8.71776 12.4367 11 12.9V15H8V17H11V21H13V17H16V15H13V12.9C15.2822 12.4367 17 10.419 17 8C17 5.23858 14.7614 3 12 3ZM9 8C9 9.65685 10.3431 11 12 11C13.6569 11 15 9.65685 15 8C15 6.34315 13.6569 5 12 5C10.3431 5 9 6.34315 9 8Z" fill="currentColor" />
+                </svg>
+              </div>
+              <div class="command" data-item="avatar-body" data-type="option" data-avatar-body="M">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M12.1888 7L12.1909 5L19.1909 5.00746L19.1834 12.0075L17.1834 12.0053L17.1873 8.41678L14.143 11.4611C15.4612 13.4063 15.2587 16.0743 13.5355 17.7975C11.5829 19.7501 8.41709 19.7501 6.46447 17.7975C4.51184 15.8449 4.51184 12.6791 6.46447 10.7264C8.16216 9.02873 10.777 8.80709 12.7141 10.0615L15.7718 7.00382L12.1888 7ZM7.87868 12.1406C9.05025 10.9691 10.9497 10.9691 12.1213 12.1406C13.2929 13.3122 13.2929 15.2117 12.1213 16.3833C10.9497 17.5549 9.05025 17.5549 7.87868 16.3833C6.70711 15.2117 6.70711 13.3122 7.87868 12.1406Z" fill="currentColor" />
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="text label">S&auml;&auml;t&ouml;</div>
+            <div class="column">
+              <div class="row">
+                <div class="command" data-item="avatar-brightness" data-range-reset="1">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16ZM12 18C15.3137 18 18 15.3137 18 12C18 8.68629 15.3137 6 12 6C8.68629 6 6 8.68629 6 12C6 15.3137 8.68629 18 12 18Z" fill="currentColor" />
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M11 0H13V4.06189C12.6724 4.02104 12.3387 4 12 4C11.6613 4 11.3276 4.02104 11 4.06189V0ZM7.0943 5.68018L4.22173 2.80761L2.80752 4.22183L5.6801 7.09441C6.09071 6.56618 6.56608 6.0908 7.0943 5.68018ZM4.06189 11H0V13H4.06189C4.02104 12.6724 4 12.3387 4 12C4 11.6613 4.02104 11.3276 4.06189 11ZM5.6801 16.9056L2.80751 19.7782L4.22173 21.1924L7.0943 18.3198C6.56608 17.9092 6.09071 17.4338 5.6801 16.9056ZM11 19.9381V24H13V19.9381C12.6724 19.979 12.3387 20 12 20C11.6613 20 11.3276 19.979 11 19.9381ZM16.9056 18.3199L19.7781 21.1924L21.1923 19.7782L18.3198 16.9057C17.9092 17.4339 17.4338 17.9093 16.9056 18.3199ZM19.9381 13H24V11H19.9381C19.979 11.3276 20 11.6613 20 12C20 12.3387 19.979 12.6724 19.9381 13ZM18.3198 7.0943L21.1923 4.22183L19.7781 2.80762L16.9056 5.6801C17.4338 6.09071 17.9092 6.56608 18.3198 7.0943Z" fill="currentColor" />
+                  </svg>
+                </div>
+                <input type="range" min="0" max="2" step="0.05" value="1" data-item="avatar-brightness" data-type="value" data-range="percentage" data-avatar-brightness="brightness">
+                <div class="text">100%</div>
+              </div>
+              <div class="row">
+                <div class="command" data-item="avatar-contrast" data-range-reset="1">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 18C10.4633 18 9.06151 17.4223 8 16.4722C6.7725 15.3736 6 13.777 6 12C6 10.223 6.7725 8.62643 8 7.52779C9.06151 6.57771 10.4633 6 12 6V18Z" fill="currentColor" />
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12ZM12 20C7.58172 20 4 16.4183 4 12C4 7.58172 7.58172 4 12 4C16.4183 4 20 7.58172 20 12C20 16.4183 16.4183 20 12 20Z" fill="currentColor" />
+                  </svg>
+                </div>
+                <input type="range" min="0" max="2" step="0.05" value="1" data-item="avatar-contrast" data-type="value" data-range="percentage" data-avatar-contrast="contrast">
+                <div class="text">100%</div>
+              </div>
+              <div class="row">
+                <div class="command" data-item="avatar-saturate" data-range-reset="1">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M8.20348 2.00378C9.46407 2.00378 10.5067 3.10742 10.6786 4.54241L19.1622 13.0259L11.384 20.8041C10.2124 21.9757 8.31291 21.9757 7.14134 20.8041L2.8987 16.5615C1.72713 15.3899 1.72713 13.4904 2.8987 12.3188L5.70348 9.51404V4.96099C5.70348 3.32777 6.82277 2.00378 8.20348 2.00378ZM8.70348 4.96099V6.51404L7.70348 7.51404V4.96099C7.70348 4.63435 7.92734 4.36955 8.20348 4.36955C8.47963 4.36955 8.70348 4.63435 8.70348 4.96099ZM8.70348 10.8754V9.34247L4.31291 13.733C3.92239 14.1236 3.92239 14.7567 4.31291 15.1473L8.55555 19.3899C8.94608 19.7804 9.57924 19.7804 9.96977 19.3899L16.3337 13.0259L10.7035 7.39569V10.8754C10.7035 10.9184 10.7027 10.9612 10.7012 11.0038H8.69168C8.69941 10.9625 8.70348 10.9195 8.70348 10.8754Z" fill="currentColor" />
+                    <path d="M16.8586 16.8749C15.687 18.0465 15.687 19.946 16.8586 21.1175C18.0302 22.2891 19.9297 22.2891 21.1013 21.1175C22.2728 19.946 22.2728 18.0465 21.1013 16.8749L18.9799 14.7536L16.8586 16.8749Z" fill="currentColor" />
+                  </svg>
+                </div>
+                <input type="range" min="0" max="2" step="0.05" value="1" data-item="avatar-saturate" data-type="value" data-range="percentage" data-avatar-saturate="saturate">
+                <div class="text">100%</div>
+              </div>
+            </div>
+          </div>
+
+          <div id="camera" class="row">
+            <div class="vbar fill"></div>
+            <div class="command" data-scroll="top">
+              <svg viewBox="-4 -4 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M17.6569 16.2427L19.0711 14.8285L12.0001 7.75739L4.92896 14.8285L6.34317 16.2427L12.0001 10.5858L17.6569 16.2427Z" fill="currentColor" />
+              </svg>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="text label">Kamera</div>
+            <div class="column">
+              <div class="rowWrap">
+                <div class="command" data-item="camera-frame" data-type="option" data-camera-frame="full">Kokovartalo</div>
+                <div class="command selected" data-item="camera-frame" data-type="option" data-camera-frame="upper">Yl&auml;osa</div>
+                <div class="command" data-item="camera-frame" data-type="option" data-camera-frame="head">P&auml;&auml;</div>
+              </div>
+              <div class="row">
+                <div class="command" data-item="camera-x" data-range-reset="0">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M13 7H11V17H13V7Z" fill="currentColor" />
+                    <path d="M5.99996 7.75732L7.41418 9.17154L5.58572 11L9.99996 11V13L5.58579 13L7.41418 14.8284L5.99996 16.2426L1.75732 12L5.99996 7.75732Z" fill="currentColor" />
+                    <path d="M18 16.2427L16.5858 14.8285L18.4143 13H14V11L18.4142 11L16.5858 9.17161L18 7.75739L22.2427 12L18 16.2427Z" fill="currentColor" />
+                  </svg>
+                </div>
+                <input type="range" min="-1" max="1" step="0.01" value="0" data-item="camera-x" data-type="value" data-range="meter" data-camera-x="x">
+                <div class="text">0 m</div>
+              </div>
+              <div class="row">
+                <div class="command" data-item="camera-y" data-range-reset="0">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M7 11L7 13H17V11H7Z" fill="currentColor" />
+                    <path d="M7.75732 18L9.17154 16.5858L11 18.4143V14H13V18.4142L14.8284 16.5858L16.2426 18L12 22.2427L7.75732 18Z" fill="currentColor" />
+                    <path d="M16.2427 5.99996L14.8285 7.41418L13 5.58572V9.99996H11L11 5.58579L9.17161 7.41418L7.75739 5.99996L12 1.75732L16.2427 5.99996Z" fill="currentColor" />
+                  </svg>
+                </div>
+                <input type="range" min="-1" max="1" step="0.01" value="0" data-item="camera-y" data-type="value" data-range="meter" data-camera-y="y">
+                <div class="text">0 m</div>
+              </div>
+              <div class="row">
+                <div class="command" data-item="camera-d" data-range-reset="0">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 3H9V5H5V9H3V3Z" fill="currentColor" />
+                    <path d="M3 21H9V19H5V15H3V21Z" fill="currentColor" />
+                    <path d="M15 21H21V15H19V19H15V21Z" fill="currentColor" />
+                    <path d="M21 3H15V5H19V9H21V3Z" fill="currentColor" />
+                  </svg>
+                </div>
+                <input type="range" min="-10" max="10" step="0.1" value="0" data-item="camera-d" data-type="value" data-range="meter" data-camera-d="d">
+                <div class="text">0 m</div>
+              </div>
+              <div class="row">
+                <div class="command" data-item="camera-rotx" data-range-reset="0">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" transform="scale(0.7 1.2)">
+                    <path d="M5.33929 4.46777H7.33929V7.02487C8.52931 6.08978 10.0299 5.53207 11.6607 5.53207C15.5267 5.53207 18.6607 8.66608 18.6607 12.5321C18.6607 16.3981 15.5267 19.5321 11.6607 19.5321C9.51025 19.5321 7.58625 18.5623 6.30219 17.0363L7.92151 15.8515C8.83741 16.8825 10.1732 17.5321 11.6607 17.5321C14.4222 17.5321 16.6607 15.2935 16.6607 12.5321C16.6607 9.77065 14.4222 7.53207 11.6607 7.53207C10.5739 7.53207 9.56805 7.87884 8.74779 8.46777L11.3393 8.46777V10.4678H5.33929V4.46777Z" fill="currentColor" />
+                  </svg>
+                </div>
+                <input type="range" min="-0.5" max="0.5" step="0.1" value="0" data-item="camera-rotx" data-type="value" data-range="radian" data-camera-rotx="rotx">
+                <div class="text">0 rad</div>
+              </div>
+              <div class="row">
+                <div class="command" data-item="camera-roty" data-range-reset="0">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" transform="scale(1.2 0.7)">
+                    <path d="M13.1459 11.0499L12.9716 9.05752L15.3462 8.84977C14.4471 7.98322 13.2242 7.4503 11.8769 7.4503C9.11547 7.4503 6.87689 9.68888 6.87689 12.4503C6.87689 15.2117 9.11547 17.4503 11.8769 17.4503C13.6977 17.4503 15.2911 16.4771 16.1654 15.0224L18.1682 15.5231C17.0301 17.8487 14.6405 19.4503 11.8769 19.4503C8.0109 19.4503 4.87689 16.3163 4.87689 12.4503C4.87689 8.58431 8.0109 5.4503 11.8769 5.4503C13.8233 5.4503 15.5842 6.24474 16.853 7.52706L16.6078 4.72412L18.6002 4.5498L19.1231 10.527L13.1459 11.0499Z" fill="currentColor" />
+                  </svg>
+                </div>
+                <input type="range" min="-3.2" max="3.2" step="0.1" value="0" data-item="camera-roty" data-type="value" data-range="radian" data-camera-roty="roty">
+                <div class="text">0 rad</div>
+              </div>
+            </div>
+          </div>
+
+          <div id="voice" class="row">
+            <div class="vbar fill"></div>
+            <div class="command" data-scroll="top">
+              <svg viewBox="-4 -4 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M17.6569 16.2427L19.0711 14.8285L12.0001 7.75739L4.92896 14.8285L6.34317 16.2427L12.0001 10.5858L17.6569 16.2427Z" fill="currentColor" />
+              </svg>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="text label">&Auml;&auml;ni</div>
+            <div class="column">
+              <div class="rowWrap">
+                <div class="command selected" data-item="voice-type" data-type="option" data-voice-type="google">Google</div>
+                <div class="command" data-item="voice-type" data-type="option" data-voice-type="eleven">ElevenLabs</div>
+              </div>
+            </div>
+          </div>
+          <div id="voice-google" class="row">
+            <div class="text label"></div>
+            <div class="column">
+              <div class="rowWrap">
+                <div class="command selected" data-item="voice-google-id" data-type="option" data-voice-google-id="fi-FI-Standard-A">fi-F</div>
+                <div class="command" data-item="voice-google-id" data-type="option" data-voice-google-id="en-GB-Standard-A">en-F</div>
+                <div class="command" data-item="voice-google-id" data-type="option" data-voice-google-id="en-GB-Standard-D">en-M</div>
+                <div class="command" data-item="voice-google-id" data-type="option" data-voice-google-id="lv-LV-Standard-A">lv-M</div>
+                <div class="command" data-item="voice-google-id" data-type="option" data-voice-google-id="lt-LT-Standard-A">lt-M</div>
+              </div>
+              <div class="row">
+                <div class="command" data-item="voice-google-rate" data-range-reset="1">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18.6214 2.55029L21.4498 5.37872L20.0356 6.79293L17.2071 3.96451L18.6214 2.55029Z" fill="currentColor" />
+                    <path d="M12.8225 8.60055H10.8225V12.6005H12.8225V8.60055Z" fill="currentColor" />
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M5.18633 18.8137C8.70105 22.3285 14.3995 22.3285 17.9143 18.8137C21.429 15.299 21.429 9.60055 17.9143 6.08583C14.3995 2.57111 8.70105 2.57111 5.18633 6.08583C1.67161 9.60054 1.67161 15.299 5.18633 18.8137ZM6.60054 17.3995C9.33422 20.1332 13.7664 20.1332 16.5 17.3995C19.2337 14.6659 19.2337 10.2337 16.5 7.50004C13.7664 4.76637 9.33422 4.76637 6.60054 7.50004C3.86688 10.2337 3.86688 14.6659 6.60054 17.3995Z" fill="currentColor" />
+                  </svg>
+                </div>
+                <input type="range" min="0.3" max="4" step="0.1" value="1" data-item="voice-google-rate" data-type="value" data-range="float" data-voice-google-rate="rate">
+                <div class="text">0</div>
+              </div>
+              <div class="row">
+                <div class="command" data-item="voice-google-pitch" data-range-reset="0">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M12 8.95439L17.6352 7.82736C19.0102 7.55235 20 6.34501 20 4.94274C20 3.08637 18.3017 1.69406 16.4813 2.05813L12.4117 2.87206C11.0094 3.15252 10 4.38376 10 5.8138V13.8895C9.41165 13.5492 8.72857 13.3544 8 13.3544C5.79086 13.3544 4 15.1453 4 17.3544C4 19.5635 5.79086 21.3544 8 21.3544C10.2091 21.3544 12 19.5635 12 17.3544V8.95439ZM16.8736 4.01929L12.8039 4.83322C12.3365 4.92671 12 5.33712 12 5.8138V6.91479L17.2429 5.8662C17.6831 5.77816 18 5.39165 18 4.94274C18 4.34846 17.4563 3.90274 16.8736 4.01929ZM10 17.3544C10 16.2498 9.10457 15.3544 8 15.3544C6.89543 15.3544 6 16.2498 6 17.3544C6 18.459 6.89543 19.3544 8 19.3544C9.10457 19.3544 10 18.459 10 17.3544Z" fill="currentColor" />
+                  </svg>
+                </div>
+                <input type="range" min="-20" max="20" step="1" value="0" data-item="voice-google-pitch" data-type="value" data-range="float" data-voice-google-pitch="pitch">
+                <div class="text">0</div>
+              </div>
+            </div>
+          </div>
+          <div id="voice-eleven" class="row">
+            <div class="text label"></div>
+            <div class="column">
+              <div class="rowWrap">
+                <div class="command selected" data-item="voice-eleven-id" data-type="option" data-voice-eleven-id="3jYBN5XwAVc3mSLFhrDi">Ada</div>
+                <div class="command" data-item="voice-eleven-id" data-type="option" data-voice-eleven-id="EXAVITQu4vr4xnSDxMaL">Bella</div>
+                <div class="command" data-item="voice-eleven-id" data-type="option" data-voice-eleven-id="MF3mGyEYCl7XYWbV9V6O">Elli</div>
+                <div class="command" data-item="voice-eleven-id" data-type="option" data-voice-eleven-id="21m00Tcm4TlvDq8ikWAM">Rachel</div>
+                <div class="command" data-item="voice-eleven-id" data-type="option" data-voice-eleven-id="pNInz6obpgDQGcFmaJgB">Adam</div>
+                <div class="command" data-item="voice-eleven-id" data-type="option" data-voice-eleven-id="ErXwobaYiN019PkySvjV">Antoni</div>
+                <div class="command" data-item="voice-eleven-id" data-type="option" data-voice-eleven-id="VR6AewLTigWG4xSOukaG">Arnold</div>
+                <div class="command" data-item="voice-eleven-id" data-type="option" data-voice-eleven-id="AZnzlk1XvdvUeBnXmlld">Domi</div>
+                <div class="command" data-item="voice-eleven-id" data-type="option" data-voice-eleven-id="mJ2f4JDL6eqjLtSa7T4U">Jack</div>
+                <div class="command" data-item="voice-eleven-id" data-type="option" data-voice-eleven-id="TxGEqnHWrfWFTfGW9XjX">Josh</div>
+                <div class="command" data-item="voice-eleven-id" data-type="option" data-voice-eleven-id="yoZ06aMxZJJ28mfd3POQ">Sam</div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="text label">Voima</div>
+            <div class="column">
+              <div class="row">
+                <div class="command" data-item="voice-gain" data-range-reset="1">
+                  <svg viewBox="-2 -2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M12 18.939C14.2091 18.939 16 17.1482 16 14.939C16 12.7299 14.2091 10.939 12 10.939C9.79086 10.939 8 12.7299 8 14.939C8 17.1482 9.79086 18.939 12 18.939ZM12 16.939C13.1046 16.939 14 16.0436 14 14.939C14 13.8345 13.1046 12.939 12 12.939C10.8954 12.939 10 13.8345 10 14.939C10 16.0436 10.8954 16.939 12 16.939Z" fill="currentColor" />
+                    <path d="M12 9.04401C13.1046 9.04401 14 8.14858 14 7.04401C14 5.93944 13.1046 5.04401 12 5.04401C10.8954 5.04401 10 5.93944 10 7.04401C10 8.14858 10.8954 9.04401 12 9.04401Z" fill="currentColor" />
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M7 1C5.34315 1 4 2.34315 4 4V20C4 21.6569 5.34315 23 7 23H17C18.6569 23 20 21.6569 20 20V4C20 2.34315 18.6569 1 17 1H7ZM17 3H7C6.44772 3 6 3.44772 6 4V20C6 20.5523 6.44772 21 7 21H17C17.5523 21 18 20.5523 18 20V4C18 3.44772 17.5523 3 17 3Z" fill="currentColor" />
+                  </svg>
+                </div>
+                <input type="range" min="0" max="1" step="0.01" value="1" data-item="voice-gain" data-type="value" data-range="float" data-voice-gain="">
+                <div class="text">1</div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="text label">
+              &Auml;&auml;nitesti
+            </div>
+            <div id="playtest" class="command">
+              <svg viewBox="-2 -2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21ZM12 23C18.0751 23 23 18.0751 23 12C23 5.92487 18.0751 1 12 1C5.92487 1 1 5.92487 1 12C1 18.0751 5.92487 23 12 23Z" fill="currentColor" />
+                <path d="M16 12L10 16.3301V7.66987L16 12Z" fill="currentColor" />
+              </svg>
+            </div>
+            <textarea placeholder="Kirjoita tähän testilause." rows="1" autocapitalize="sentences" data-item="voice-test" data-type="value" data-voice-test=""></textarea>
+          </div>
+
+          <div id="ai" class="row">
+            <div class="vbar fill"></div>
+            <div class="command" data-scroll="top">
+              <svg viewBox="-4 -4 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M17.6569 16.2427L19.0711 14.8285L12.0001 7.75739L4.92896 14.8285L6.34317 16.2427L12.0001 10.5858L17.6569 16.2427Z" fill="currentColor" />
+              </svg>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="text label">Teko&auml;ly</div>
+            <div class="column">
+              <div class="rowWrap">
+                <div class="command selected" data-item="ai-model" data-type="option" data-ai-model="gpt-3.5-turbo-1106">gpt-3.5-turbo-1106</div>
+                <div class="command" data-item="ai-model" data-type="option" data-ai-model="gpt-3.5-turbo-0613">gpt-3.5-turbo-0613</div>
+                <div class="command" data-item="ai-model" data-type="option" data-ai-model="gpt-4-1106-preview">gpt-4-1106-preview</div>
+              </div>
+              <div class="row">
+                <div class="command" data-item="ai-temperature" data-range-reset="1.0">
+                  <svg viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M336 972.8c-60.8-128-28.8-201.6 19.2-268.8 51.2-76.8 64-150.4 64-150.4s41.6 51.2 25.6 134.4c70.4-80 83.2-208 73.6-256 160 112 230.4 358.4 137.6 537.6 492.8-281.6 121.6-700.8 57.6-745.6 22.4 48 25.6 128-19.2 166.4-73.6-281.6-256-336-256-336 22.4 144-76.8 300.8-172.8 419.2-3.2-57.6-6.4-96-38.4-153.6-6.4 105.6-86.4 188.8-108.8 294.4C89.6 758.4 140.8 860.8 336 972.8L336 972.8z"  fill="currentColor" />
+                  </svg>
+                </div>
+                <input type="range" min="0" max="2" step="0.1" value="1.0" data-range="float" data-item="ai-temperature" data-type="value" data-ai-temperature="">
+                <div class="text">1.0</div>
+              </div>
+              <div class="row">
+                <div class="command" data-item="ai-presence" data-range-reset="0.0">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9.00967 5.12761H11.0097C12.1142 5.12761 13.468 5.89682 14.0335 6.8457L16.5089 11H21.0097C21.562 11 22.0097 11.4477 22.0097 12C22.0097 12.5523 21.562 13 21.0097 13H16.4138L13.9383 17.1543C13.3729 18.1032 12.0191 18.8724 10.9145 18.8724H8.91454L12.4138 13H5.42485L3.99036 15.4529H1.99036L4.00967 12L4.00967 11.967L2.00967 8.54712H4.00967L5.44417 11H12.5089L9.00967 5.12761Z" fill="currentColor" />
+                  </svg>
+                </div>
+                <input type="range" min="-1" max="2" step="0.1" value="0.0" data-range="float" data-item="ai-presence" data-type="value" data-ai-presence="">
+                <div class="text">0.0</div>
+              </div>
+              <div class="row">
+                <div class="command" data-item="ai-frequency" data-range-reset="0.0">
+                  <svg viewBox="-2 -2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M21.2635 2.29289C20.873 1.90237 20.2398 1.90237 19.8493 2.29289L18.9769 3.16525C17.8618 2.63254 16.4857 2.82801 15.5621 3.75165L4.95549 14.3582L10.6123 20.0151L21.2189 9.4085C22.1426 8.48486 22.338 7.1088 21.8053 5.99367L22.6777 5.12132C23.0682 4.7308 23.0682 4.09763 22.6777 3.70711L21.2635 2.29289ZM16.9955 10.8035L10.6123 17.1867L7.78392 14.3582L14.1671 7.9751L16.9955 10.8035ZM18.8138 8.98525L19.8047 7.99429C20.1953 7.60376 20.1953 6.9706 19.8047 6.58007L18.3905 5.16586C18 4.77534 17.3668 4.77534 16.9763 5.16586L15.9853 6.15683L18.8138 8.98525Z" fill="currentColor" />
+                    <path d="M2 22.9502L4.12171 15.1717L9.77817 20.8289L2 22.9502Z" fill="currentColor" />
+                  </svg>
+                </div>
+                <input type="range" min="-2" max="2" step="0.1" value="0.0" data-range="float" data-item="ai-frequency" data-type="value" data-ai-frequency="">
+                <div class="text">0.0</div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="text label">Rajat</div>
+            <div class="column">
+              <div class="row">
+                <div class="command" data-item="ai-dialog" data-range-reset="4">
+                  <svg viewBox="-100 -100 1224 1224" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M170.65984 42.65984l682.65984 0q53.00224 0 90.50112 37.49888t37.49888 90.50112l0 469.34016q0 53.00224-37.49888 90.50112t-90.50112 37.49888l-341.34016 0-298.65984 213.34016 0-213.34016-42.65984 0q-53.00224 0-90.50112-37.49888t-37.49888-90.50112l0-469.34016q0-53.00224 37.49888-90.50112t90.50112-37.49888zM853.34016 128l-682.65984 0q-17.67424 0-30.16704 12.4928t-12.4928 30.16704l0 469.34016q0 17.67424 12.4928 30.16704t30.16704 12.4928l128 0 0 132.99712 185.99936-132.99712 368.66048 0q17.67424 0 30.16704-12.4928t12.4928-30.16704l0-469.34016q0-17.67424-12.4928-30.16704t-30.16704-12.4928z" fill="currentColor" />
+                  </svg>
+                </div>
+                <input type="range" min="2" max="10" step="2" value="4" data-range="dialog" data-item="ai-dialog" data-type="value" data-ai-dialog="">
+                <div class="text">4 sanomaa</div>
+              </div>
+              <div class="row">
+                <div class="command" data-item="ai-input" data-range-reset="2000">
+                  <svg viewBox="-1 -1 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M9 4C9 2.34315 10.3431 1 12 1C13.6569 1 15 2.34315 15 4V12C15 13.6569 13.6569 15 12 15C10.3431 15 9 13.6569 9 12V4ZM13 4V12C13 12.5523 12.5523 13 12 13C11.4477 13 11 12.5523 11 12V4C11 3.44772 11.4477 3 12 3C12.5523 3 13 3.44772 13 4Z" fill="currentColor" />
+                    <path d="M18 12C18 14.973 15.8377 17.441 13 17.917V21H17V23H7V21H11V17.917C8.16229 17.441 6 14.973 6 12V9H8V12C8 14.2091 9.79086 16 12 16C14.2091 16 16 14.2091 16 12V9H18V12Z" fill="currentColor" />
+                  </svg>
+                </div>
+                <input type="range" min="100" max="4000" step="100" value="2000" data-range="word" data-item="ai-input" data-type="value" data-ai-input="">
+                <div class="text">1000 sanaa</div>
+              </div>
+              <div class="row">
+                <div class="command" data-item="ai-output" data-range-reset="1000">
+                  <svg viewBox="-2 -2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M12 18.939C14.2091 18.939 16 17.1482 16 14.939C16 12.7299 14.2091 10.939 12 10.939C9.79086 10.939 8 12.7299 8 14.939C8 17.1482 9.79086 18.939 12 18.939ZM12 16.939C13.1046 16.939 14 16.0436 14 14.939C14 13.8345 13.1046 12.939 12 12.939C10.8954 12.939 10 13.8345 10 14.939C10 16.0436 10.8954 16.939 12 16.939Z" fill="currentColor" />
+                    <path d="M12 9.04401C13.1046 9.04401 14 8.14858 14 7.04401C14 5.93944 13.1046 5.04401 12 5.04401C10.8954 5.04401 10 5.93944 10 7.04401C10 8.14858 10.8954 9.04401 12 9.04401Z" fill="currentColor" />
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M7 1C5.34315 1 4 2.34315 4 4V20C4 21.6569 5.34315 23 7 23H17C18.6569 23 20 21.6569 20 20V4C20 2.34315 18.6569 1 17 1H7ZM17 3H7C6.44772 3 6 3.44772 6 4V20C6 20.5523 6.44772 21 7 21H17C17.5523 21 18 20.5523 18 20V4C18 3.44772 17.5523 3 17 3Z" fill="currentColor" />
+                  </svg>
+                </div>
+                <input type="range" min="100" max="4000" step="100" value="1000" data-range="word" data-item="ai-output" data-type="value" data-ai-output="">
+                <div class="text">2000 sanaa</div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="text label">Stop</div>
+            <input type="text" placeholder="Avainsana" data-item="ai-stop" data-type="value" data-ai-stop="">
+          </div>
+          <div class="row">
+            <div class="text label">K&auml;ytt&auml;j&auml;</div>
+            <input type="text" placeholder="Nimi" data-item="ai-user" data-type="value" data-ai-user="">
+          </div>
+
+          <div id="config" class="row">
+            <div class="vbar fill"></div>
+            <div class="command" data-scroll="top">
+              <svg viewBox="-4 -4 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M17.6569 16.2427L19.0711 14.8285L12.0001 7.75739L4.92896 14.8285L6.34317 16.2427L12.0001 10.5858L17.6569 16.2427Z" fill="currentColor" />
+              </svg>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="text label">JSON</div>
+            <input id="json" type="text" placeholder="JSON">
+          </div>
+
+          <div id="tester" class="row">
+            <div class="vbar fill"></div>
+            <div class="command" data-scroll="top">
+              <svg viewBox="-4 -4 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M17.6569 16.2427L19.0711 14.8285L12.0001 7.75739L4.92896 14.8285L6.34317 16.2427L12.0001 10.5858L17.6569 16.2427Z" fill="currentColor" />
+              </svg>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="text label">Emoji</div>
+            <div id="emojis" class="rowWrap">
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="text label">Morphs</div>
+            <div id="morphs" class="column"></div>
+          </div>
+
+          <div class="row">
+            <div class="text label">Data</div>
+            <textarea id="morphdata" placeholder="Emoji data." rows="1"></textarea>
+          </div>
+
+          <div class="row">
+            <div class="vbar fill"></div>
+            <div class="command" data-scroll="top">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M17.6569 16.2427L19.0711 14.8285L12.0001 7.75739L4.92896 14.8285L6.34317 16.2427L12.0001 10.5858L17.6569 16.2427Z" fill="currentColor" />
+              </svg>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="border starttransparent"></div>
+    </div>
+
+
+    <div id="bottom">
+      <div class="pages noselect nodrag">
+
+        <div class="page fill">
+          <div class="row fill">
+            <textarea id="input" class="starttransparent" placeholder="Kirjoita viesti." autocapitalize="sentences"></textarea>
+          </div>
+        </div>
+
+        <div class="row" style="column-gap:0;">
+          <div id="selectall" class="command starttransparent">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10.5858 13.4142L7.75735 10.5858L6.34314 12L10.5858 16.2427L17.6568 9.1716L16.2426 7.75739L10.5858 13.4142Z" fill="currentColor" />
+            </svg>
+          </div>
+          <div id="flag" class="command starttransparent">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M7 8V13C7 15.7614 9.23858 18 12 18C14.7614 18 17 15.7614 17 13V8H7ZM5 4H19V13C19 16.866 15.866 20 12 20C8.13401 20 5 16.866 5 13V4Z" fill="currentColor" />
+            </svg>
+          </div>
+          <div id="score" class="text starttransparent" style="margin-left:-8px;">0</div>
+          <div class="filler"></div>
+          <div id="copy" class="command starttransparent">
+            <svg viewBox="-2 -2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M13 7H7V5H13V7Z" fill="currentColor" />
+              <path d="M13 11H7V9H13V11Z" fill="currentColor" />
+              <path d="M7 15H13V13H7V15Z" fill="currentColor" />
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M3 19V1H17V5H21V23H7V19H3ZM15 17V3H5V17H15ZM17 7V19H9V21H19V7H17Z" fill="currentColor" />
+            </svg>
+          </div>
+          <div id="delete" class="command starttransparent">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M17 5V4C17 2.89543 16.1046 2 15 2H9C7.89543 2 7 2.89543 7 4V5H4C3.44772 5 3 5.44772 3 6C3 6.55228 3.44772 7 4 7H5V18C5 19.6569 6.34315 21 8 21H16C17.6569 21 19 19.6569 19 18V7H20C20.5523 7 21 6.55228 21 6C21 5.44772 20.5523 5 20 5H17ZM15 4H9V5H15V4ZM17 7H7V18C7 18.5523 7.44772 19 8 19H16C16.5523 19 17 18.5523 17 18V7Z" fill="currentColor" />
+              <path d="M9 9H11V17H9V9Z" fill="currentColor" />
+              <path d="M13 9H15V17H13V9Z" fill="currentColor" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="border starttransparent"></div>
+    </div>
+
+  </div>
+
+</body>
+</html>
