@@ -409,6 +409,14 @@ const site = {
   // Preset animations
   animations: {
     'Kävely': { url: './animations/walking.fbx' }
+  },
+
+  // Impulse responses
+  impulses: {
+    'Huone': { url: './audio/ir-room.m4a' },
+    'Kellari': { url: './audio/ir-basement.m4a' },
+    'Metsä': { url: './audio/ir-forest.m4a' },
+    'Kirkko': { url: './audio/ir-church.m4a' }
   }
 
 };
@@ -1426,6 +1434,17 @@ document.addEventListener('DOMContentLoaded', async function(e) {
       .text( k );
   }
 
+  // Add impulse responses
+  const eImpulses = d3.select("#impulses");
+  for ( const [k,o] of Object.entries(site.impulses) ) {
+    eImpulses.append("div")
+      .classed("command", true)
+      .attr("data-item","voice-reverb")
+      .attr("data-type","option")
+      .attr("data-voice-reverb",o.url)
+      .text( k );
+  }
+
   // Create the talking head avatar
   const nodeAvatar = document.getElementById('avatar');
   head = new TalkingHead( nodeAvatar, {
@@ -1957,6 +1976,18 @@ document.addEventListener('DOMContentLoaded', async function(e) {
   d3.select("[data-voice-gain]").on('input.command change.command keyup.command', function(ev) {
     let gain = parseFloat( d3.select("[data-voice-gain]").property("value") );
     head.setGain( gain );
+  });
+
+  d3.selectAll("[data-voice-reverb]").on('click.command', function(ev) {
+    const e = d3.select(this);
+    d3.selectAll("[data-voice-reverb]").classed('selected',false);
+    e.classed('selected',true);
+    let reverb = e.attr('data-voice-reverb');
+    if ( reverb === 'NONE' ) {
+      head.setReverb(null);
+    } else {
+      head.setReverb(reverb);
+    }
   });
 
   d3.selectAll("[data-ai-model]").on('click.command', function(ev) {
@@ -2639,6 +2670,14 @@ document.addEventListener('DOMContentLoaded', async function(e) {
                 </div>
                 <input type="range" min="0" max="1" step="0.01" value="1" data-item="voice-gain" data-type="value" data-range="float" data-voice-gain="">
                 <div class="text">1</div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="text label">Tila</div>
+            <div class="column">
+              <div id="impulses" class="rowWrap">
+                <div class="command selected" data-item="voice-reverb" data-type="option" data-voice-reverb="NONE">Suora</div>
               </div>
             </div>
           </div>

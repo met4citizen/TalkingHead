@@ -433,6 +433,8 @@ class TalkingHead {
     // Audio context and playlist
     this.audioCtx = new AudioContext();
     this.audioSource = this.audioCtx.createBufferSource();
+    this.audioReverbNode = this.audioCtx.createConvolver();
+    this.setReverb(null); // Set dry impulse
     this.audioGainNode = this.audioCtx.createGain();
     this.audioPlaylist = [];
 
@@ -1570,6 +1572,26 @@ class TalkingHead {
   }
 
   /**
+  * Setup the convolver node based on an impulse.
+  * @param {string} [url=null] URL for the impulse, dry impulse if null
+  */
+  async setReverb( url=null ) {
+    if ( url ) {
+      // load impulse response from file
+      let response = await fetch(url);
+      let arraybuffer = await response.arrayBuffer();
+      this.audioReverbNode.buffer = await this.audioCtx.decodeAudioData(arraybuffer);
+    } else {
+      // dry impulse
+      const samplerate = this.audioCtx.sampleRate;
+      const impulse = this.audioCtx.createBuffer(2, samplerate, samplerate);
+      impulse.getChannelData(0)[0] = 1;
+      impulse.getChannelData(1)[0] = 1;
+      this.audioReverbNode.buffer = impulse;
+    }
+  }
+
+  /**
   * Set audio gain.
   * @param {number} gain Gain.
   */
@@ -1663,7 +1685,8 @@ class TalkingHead {
       this.audioSource.buffer = item.audio;
       this.audioSource.playbackRate.value = 1 / this.animSlowdownRate;
       this.audioSource.connect(this.audioGainNode);
-      this.audioGainNode.connect(this.audioCtx.destination);
+      this.audioGainNode.connect(this.audioReverbNode);
+      this.audioReverbNode.connect(this.audioCtx.destination);
       this.audioSource.addEventListener('ended', () => {
         this.playAudio();
       }, { once: true });

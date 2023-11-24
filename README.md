@@ -10,13 +10,13 @@
 
 ### Introduction
 
-This is as a small side-project featuring a 3D talking head capable of speaking and lip-syncing in Finnish. The Talking Head supports [Ready Player Me](https://readyplayer.me/) full-body 3D avatars (GLB), [Mixamo](https://www.mixamo.com) animations (FBX), markdown text and subtitles. It also knows a set of emojis, which it can convert into facial expressions. See Appendix A for how to make your own avatar.
+This is as a small side-project featuring a 3D talking head capable of speaking and lip-syncing in Finnish. The Talking Head supports [Ready Player Me](https://readyplayer.me/) full-body 3D avatars (GLB), [Mixamo](https://www.mixamo.com) animations (FBX), markdown text, and subtitles. It knows a set of emojis, which it can convert into facial expressions.
 
 The class `TalkingHead` can be found in the module `./modules/talkinghead.mjs`. The class uses [Google Text-to-Speech API](https://cloud.google.com/text-to-speech), [ThreeJS](https://github.com/mrdoob/three.js/)/WebGL for 3D rendering, and [Marked](https://github.com/markedjs/marked) Markdown parser.
 
-The included example app `index.html` shows how to integrate and use the class with [OpenAI API](https://openai.com) and [ElevenLabs WebSocket API](https://elevenlabs.io). Using the app you can chat with the avatar using GPT-3.5 or GPT-4.
+The included example app `index.html` shows how to integrate and use the class with [OpenAI API](https://openai.com) and [ElevenLabs WebSocket API](https://elevenlabs.io). You can use either GPT-3.5 or GPT-4. Background view examples are from [Virtual Backgrounds](https://virtualbackgrounds.site) and impulse responses (IR) audios for reverb effects are from [OpenAir](www.openairlib.net). See Appendix A for how to make your own free 3D avatar.
 
-**NOTE:** Google TTS, OpenAI and ElevenLabs APIs are all paid services that require API keys. These API keys are not included, of course, and since it is NOT recommended to put API keys in any client-side code, the class/app calls these external services through proxies. Creating the needed API proxies is not in the scope of this project, but since there is not a lot you can do with the app without them, see Appendix B for how you might implement them in your own web server by using a JSON Web Token (JWT) Single Sign-On.
+**NOTE:** Google TTS, OpenAI, and ElevenLabs APIs are all paid services that require API keys. These API keys are not included, of course, and since it is NOT recommended to put API keys in any client-side code, the class/app calls these external services through proxies. Creating the needed API proxies is not in the scope of this project, but since there is not a lot you can do with the app without them, see Appendix B for how you might implement them in your own web server by using a JSON Web Token (JWT) Single Sign-On.
 
 
 ### Talking Head class
@@ -76,7 +76,7 @@ Method | Description
 
 **Why only Finnish?**
 
-The primary reason is that Finnish is my native language, and I just happened to have a use case for a Finnish-speaking avatar. Finnish language is also very special in that if has a consistent one-to-one mapping between individual letters and phonemes/visemes. Achieving a similar level of lip-sync accuracy in English would likely demand an extensive English word database/vocabulary.
+The primary reason is that Finnish is my native language, and I just happened to have a use case for a Finnish-speaking avatar. Finnish language is also very special in that it has a consistent one-to-one mapping between individual letters and phonemes/visemes. Achieving a similar level of lip-sync accuracy in English would likely demand an extensive English word database/vocabulary.
 
 **Why Google TTS? Why not use the free Web Speech API?**
 

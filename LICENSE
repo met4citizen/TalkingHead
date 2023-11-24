@@ -20,7 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-
+--
 Font Licenses
 
 Release distribution of the software contain embedded versions of
@@ -120,3 +120,24 @@ INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
 DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.
+
+--
+Impulse response files
+
+Attributions:
+
+ir-room
+OpenAirLib
+Public Domain Creative Commons license
+
+ir-basement
+OpenAirLib
+Public Domain Creative Commons license
+
+ir-forest (Abies Grandis Forest, Wheldrake Wood)
+www.openairlib.net
+Creative Commons Attribution 4.0 International License.
+
+ir-church (St. Andrews Church)
+OpenAirLib
+Share Alike Creative Commons 3.0
