@@ -64,6 +64,7 @@ Method | Description
 `lookAt(x,y,t)` | Make the avatar's head turn to look at the screen position (`x`,`y`) for `t` milliseconds.
 `lookAtCamera(t)` | Make the avatar's head turn to look at the camera for `t` milliseconds.
 `setMood(mood)` | Set avatar mood.
+`playBackgroundAudio( [url=null] )` | Play background audio such as ambient sounds/music in a loop. If the `url` is null, stop playing.
 `playAnimation(url, [onprogress=null], [repeat=1], [ndx=0], [scale=0.01])` | Play Mixamo animation file. Repeat `repeat` times. If the FBX file includes several animations, the parameter `ndx` specifies the index. Since Mixamo rigs have a scale 100 and RPM a scale 1, the `scale` factor can be used to scale the positions.
 `stopAnimation()` | Stop the current animation started by `playAnimation`.
 `playPose(url, [onprogress=null], [dur=5], [ndx=0], [scale=0.01])` | Play the initial pose of a Mixamo animation file for `dur` seconds. If the FBX file includes several animations, the parameter `ndx` specifies the index. Since Mixamo rigs have a scale 100 and RPM a scale 1, the `scale` factor can be used to scale the positions.

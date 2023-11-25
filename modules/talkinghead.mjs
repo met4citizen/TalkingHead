@@ -432,10 +432,15 @@ class TalkingHead {
 
     // Audio context and playlist
     this.audioCtx = new AudioContext();
-    this.audioSource = this.audioCtx.createBufferSource();
+    this.audioSpeechSource = this.audioCtx.createBufferSource();
+    this.audioBackgroundSource = this.audioCtx.createBufferSource();
+    this.audioBackgroundGainNode = this.audioCtx.createGain();
+    this.audioSpeechGainNode = this.audioCtx.createGain();
     this.audioReverbNode = this.audioCtx.createConvolver();
-    this.setReverb(null); // Set dry impulse
-    this.audioGainNode = this.audioCtx.createGain();
+    this.setReverb(null); // Set dry impulse as default
+    this.audioBackgroundGainNode.connect(this.audioReverbNode);
+    this.audioSpeechGainNode.connect(this.audioReverbNode);
+    this.audioReverbNode.connect(this.audioCtx.destination);
     this.audioPlaylist = [];
 
     // Create a lookup table for base64 decoding
@@ -1572,6 +1577,30 @@ class TalkingHead {
   }
 
   /**
+  * Play background audio.
+  * @param {string} [url=null] URL for the audio, stop if null.
+  */
+  async playBackgroundAudio( url=null ) {
+    if ( url ) {
+      // Fetch and play audio in a loop
+      let response = await fetch(url);
+      let arraybuffer = await response.arrayBuffer();
+      try { this.audioBackgroundSource.stop(); } catch(error) {}
+      this.audioBackgroundSource.disconnect();
+      this.audioBackgroundSource = this.audioCtx.createBufferSource();
+      this.audioBackgroundSource.loop = true;
+      this.audioBackgroundSource.buffer = await this.audioCtx.decodeAudioData(arraybuffer);
+      this.audioBackgroundSource.playbackRate.value = 1 / this.animSlowdownRate;
+      this.audioBackgroundSource.connect(this.audioBackgroundGainNode);
+      this.audioBackgroundSource.start(0);
+    } else {
+      // Stop background audio
+      try { this.audioBackgroundSource.stop(); } catch(error) {}
+      this.audioBackgroundSource.disconnect();
+    }
+  }
+
+  /**
   * Setup the convolver node based on an impulse.
   * @param {string} [url=null] URL for the impulse, dry impulse if null
   */
@@ -1593,10 +1622,16 @@ class TalkingHead {
 
   /**
   * Set audio gain.
-  * @param {number} gain Gain.
+  * @param {number} speech Gain for speech, if null do not change
+  * @param {number} background Gain for background audio, if null do not change
   */
-  setGain( gain ) {
-    this.audioGainNode.gain.value = gain;
+  setMixerGain( speech, background ) {
+    if ( speech !== null ) {
+      this.audioSpeechGainNode.gain.value = speech;
+    }
+    if ( background !== null ) {
+      this.audioBackgroundGainNode.gain.value = background;
+    }
   }
 
   /**
@@ -1681,13 +1716,13 @@ class TalkingHead {
   async playAudio() {
     if ( this.audioPlaylist.length ) {
       const item = this.audioPlaylist.shift();
-      this.audioSource = this.audioCtx.createBufferSource();
-      this.audioSource.buffer = item.audio;
-      this.audioSource.playbackRate.value = 1 / this.animSlowdownRate;
-      this.audioSource.connect(this.audioGainNode);
-      this.audioGainNode.connect(this.audioReverbNode);
-      this.audioReverbNode.connect(this.audioCtx.destination);
-      this.audioSource.addEventListener('ended', () => {
+      try { this.audioSpeechSource.stop(); } catch(error) {}
+      this.audioSpeechSource.disconnect();
+      this.audioSpeechSource = this.audioCtx.createBufferSource();
+      this.audioSpeechSource.buffer = item.audio;
+      this.audioSpeechSource.playbackRate.value = 1 / this.animSlowdownRate;
+      this.audioSpeechSource.connect(this.audioSpeechGainNode);
+      this.audioSpeechSource.addEventListener('ended', () => {
         this.playAudio();
       }, { once: true });
 
@@ -1701,7 +1736,7 @@ class TalkingHead {
         });
       }
 
-      this.audioSource.start(0);
+      this.audioSpeechSource.start(0);
 
     } else {
       this.stateName = 'idle';
@@ -1960,7 +1995,8 @@ class TalkingHead {
   */
   setSlowdownRate(k) {
     this.animSlowdownRate = k;
-    this.audioSource.playbackRate.value = 1 / this.animSlowdownRate;
+    this.audioSpeechSource.playbackRate.value = 1 / this.animSlowdownRate;
+    this.audioBackgroundSource.playbackRate.value = 1 / this.animSlowdownRate;
   }
 
   /**

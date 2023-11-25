@@ -417,6 +417,11 @@ const site = {
     'Kellari': { url: './audio/ir-basement.m4a' },
     'Metsä': { url: './audio/ir-forest.m4a' },
     'Kirkko': { url: './audio/ir-church.m4a' }
+  },
+
+  // Background ambient sounds/music
+  music: {
+    'Puheensorina': { url: './audio/murmur.mp3'}
   }
 
 };
@@ -1445,6 +1450,17 @@ document.addEventListener('DOMContentLoaded', async function(e) {
       .text( k );
   }
 
+  // Add music
+  const eMusic = d3.select("#music");
+  for ( const [k,o] of Object.entries(site.music) ) {
+    eMusic.append("div")
+      .classed("command", true)
+      .attr("data-item","voice-background")
+      .attr("data-type","option")
+      .attr("data-voice-background",o.url)
+      .text( k );
+  }
+
   // Create the talking head avatar
   const nodeAvatar = document.getElementById('avatar');
   head = new TalkingHead( nodeAvatar, {
@@ -1973,9 +1989,14 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     e.classed('selected',true);
   });
 
-  d3.select("[data-voice-gain]").on('input.command change.command keyup.command', function(ev) {
-    let gain = parseFloat( d3.select("[data-voice-gain]").property("value") );
-    head.setGain( gain );
+  d3.select("[data-voice-mixerbg]").on('input.command change.command keyup.command', function(ev) {
+    let gain = parseFloat( d3.select("[data-voice-mixerbg]").property("value") );
+    head.setMixerGain( null, gain );
+  });
+
+  d3.select("[data-voice-mixerspeech]").on('input.command change.command keyup.command', function(ev) {
+    let gain = parseFloat( d3.select("[data-voice-mixerspeech]").property("value") );
+    head.setMixerGain( gain, null );
   });
 
   d3.selectAll("[data-voice-reverb]").on('click.command', function(ev) {
@@ -1987,6 +2008,31 @@ document.addEventListener('DOMContentLoaded', async function(e) {
       head.setReverb(null);
     } else {
       head.setReverb(reverb);
+    }
+  });
+
+  d3.selectAll("[data-voice-background]").on('click.command', async function(ev) {
+    const e = d3.select(this);
+    d3.selectAll("[data-voice-background]").classed("selected",false);
+    e.classed('selected',true);
+    let background = e.attr('data-voice-background');
+    if ( background === 'NONE' ) {
+      head.playBackgroundAudio(null);
+    } else if ( background === 'FILE' ) {
+      let input = document.createElement('input');
+      input.type = 'file';
+      input.onchange = (ev2) => {
+        let file = ev2.target.files[0];
+        var reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = async readerEvent => {
+          let content = readerEvent.target.result;
+          head.playBackgroundAudio(content);
+        }
+      }
+      input.click();
+    } else {
+      head.playBackgroundAudio(background);
     }
   });
 
@@ -2111,13 +2157,13 @@ document.addEventListener('DOMContentLoaded', async function(e) {
       <div class="pages">
 
         <div class="row noselect nodrag">
-          <div class="command starttransparent" title="Tunne" data-show="right-avatar">
+          <div class="command starttransparent" title="Hahmo" data-show="right-avatar">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path fill-rule="evenodd" clip-rule="evenodd" d="M16 7C16 9.20914 14.2091 11 12 11C9.79086 11 8 9.20914 8 7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7ZM14 7C14 8.10457 13.1046 9 12 9C10.8954 9 10 8.10457 10 7C10 5.89543 10.8954 5 12 5C13.1046 5 14 5.89543 14 7Z" fill="currentColor" />
               <path d="M16 15C16 14.4477 15.5523 14 15 14H9C8.44772 14 8 14.4477 8 15V21H6V15C6 13.3431 7.34315 12 9 12H15C16.6569 12 18 13.3431 18 15V21H16V15Z" fill="currentColor" />
             </svg>
           </div>
-          <div class="command starttransparent" title="Animaatio" data-show="right-animation">
+          <div class="command starttransparent" title="Kamera" data-show="right-animation">
             <svg viewBox="-1 -1 26 26" xmlns="http://www.w3.org/2000/svg">
               <path fill-rule="evenodd" clip-rule="evenodd" d="M4 4.5V6.5H12V7.5H3C1.34315 7.5 0 8.84315 0 10.5V16.5C0 18.1569 1.34315 19.5 3 19.5H15C16.5731 19.5 17.8634 18.2892 17.9898 16.7487L24 17.5V9.5L17.9898 10.2513C17.8634 8.71078 16.5731 7.5 15 7.5H14V5.5C14 4.94772 13.5523 4.5 13 4.5H4ZM18 12.2656V14.7344L22 15.2344V11.7656L18 12.2656ZM16 10.5C16 9.94772 15.5523 9.5 15 9.5H3C2.44772 9.5 2 9.94772 2 10.5V16.5C2 17.0523 2.44772 17.5 3 17.5H15C15.5523 17.5 16 17.0523 16 16.5V10.5Z" fill="currentColor" />
             </svg>
@@ -2599,7 +2645,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
           </div>
 
           <div class="row">
-            <div class="text label">&Auml;&auml;ni</div>
+            <div class="text label">Puhe</div>
             <div class="column">
               <div class="rowWrap">
                 <div class="command selected" data-item="voice-type" data-type="option" data-voice-type="google">Google</div>
@@ -2620,9 +2666,9 @@ document.addEventListener('DOMContentLoaded', async function(e) {
               <div class="row">
                 <div class="command" data-item="voice-google-rate" data-range-reset="1">
                   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M18.6214 2.55029L21.4498 5.37872L20.0356 6.79293L17.2071 3.96451L18.6214 2.55029Z" fill="currentColor" />
-                    <path d="M12.8225 8.60055H10.8225V12.6005H12.8225V8.60055Z" fill="currentColor" />
-                    <path fill-rule="evenodd" clip-rule="evenodd" d="M5.18633 18.8137C8.70105 22.3285 14.3995 22.3285 17.9143 18.8137C21.429 15.299 21.429 9.60055 17.9143 6.08583C14.3995 2.57111 8.70105 2.57111 5.18633 6.08583C1.67161 9.60054 1.67161 15.299 5.18633 18.8137ZM6.60054 17.3995C9.33422 20.1332 13.7664 20.1332 16.5 17.3995C19.2337 14.6659 19.2337 10.2337 16.5 7.50004C13.7664 4.76637 9.33422 4.76637 6.60054 7.50004C3.86688 10.2337 3.86688 14.6659 6.60054 17.3995Z" fill="currentColor" />
+                    <path d="M13 7H11V17H13V7Z" fill="currentColor" />
+                    <path d="M5.99996 7.75732L7.41418 9.17154L5.58572 11L9.99996 11V13L5.58579 13L7.41418 14.8284L5.99996 16.2426L1.75732 12L5.99996 7.75732Z" fill="currentColor" />
+                    <path d="M18 16.2427L16.5858 14.8285L18.4143 13H14V11L18.4142 11L16.5858 9.17161L18 7.75739L22.2427 12L18 16.2427Z" fill="currentColor" />
                   </svg>
                 </div>
                 <input type="range" min="0.3" max="4" step="0.1" value="1" data-item="voice-google-rate" data-type="value" data-range="float" data-voice-google-rate="rate">
@@ -2631,7 +2677,9 @@ document.addEventListener('DOMContentLoaded', async function(e) {
               <div class="row">
                 <div class="command" data-item="voice-google-pitch" data-range-reset="0">
                   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path fill-rule="evenodd" clip-rule="evenodd" d="M12 8.95439L17.6352 7.82736C19.0102 7.55235 20 6.34501 20 4.94274C20 3.08637 18.3017 1.69406 16.4813 2.05813L12.4117 2.87206C11.0094 3.15252 10 4.38376 10 5.8138V13.8895C9.41165 13.5492 8.72857 13.3544 8 13.3544C5.79086 13.3544 4 15.1453 4 17.3544C4 19.5635 5.79086 21.3544 8 21.3544C10.2091 21.3544 12 19.5635 12 17.3544V8.95439ZM16.8736 4.01929L12.8039 4.83322C12.3365 4.92671 12 5.33712 12 5.8138V6.91479L17.2429 5.8662C17.6831 5.77816 18 5.39165 18 4.94274C18 4.34846 17.4563 3.90274 16.8736 4.01929ZM10 17.3544C10 16.2498 9.10457 15.3544 8 15.3544C6.89543 15.3544 6 16.2498 6 17.3544C6 18.459 6.89543 19.3544 8 19.3544C9.10457 19.3544 10 18.459 10 17.3544Z" fill="currentColor" />
+                    <path d="M7 11L7 13H17V11H7Z" fill="currentColor" />
+                    <path d="M7.75732 18L9.17154 16.5858L11 18.4143V14H13V18.4142L14.8284 16.5858L16.2426 18L12 22.2427L7.75732 18Z" fill="currentColor" />
+                    <path d="M16.2427 5.99996L14.8285 7.41418L13 5.58572V9.99996H11L11 5.58579L9.17161 7.41418L7.75739 5.99996L12 1.75732L16.2427 5.99996Z" fill="currentColor" />
                   </svg>
                 </div>
                 <input type="range" min="-20" max="20" step="1" value="0" data-item="voice-google-pitch" data-type="value" data-range="float" data-voice-google-pitch="pitch">
@@ -2658,18 +2706,39 @@ document.addEventListener('DOMContentLoaded', async function(e) {
             </div>
           </div>
           <div class="row">
-            <div class="text label">Voima</div>
+            <div class="text label">Tausta</div>
             <div class="column">
-              <div class="row">
-                <div class="command" data-item="voice-gain" data-range-reset="1">
-                  <svg viewBox="-2 -2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path fill-rule="evenodd" clip-rule="evenodd" d="M12 18.939C14.2091 18.939 16 17.1482 16 14.939C16 12.7299 14.2091 10.939 12 10.939C9.79086 10.939 8 12.7299 8 14.939C8 17.1482 9.79086 18.939 12 18.939ZM12 16.939C13.1046 16.939 14 16.0436 14 14.939C14 13.8345 13.1046 12.939 12 12.939C10.8954 12.939 10 13.8345 10 14.939C10 16.0436 10.8954 16.939 12 16.939Z" fill="currentColor" />
-                    <path d="M12 9.04401C13.1046 9.04401 14 8.14858 14 7.04401C14 5.93944 13.1046 5.04401 12 5.04401C10.8954 5.04401 10 5.93944 10 7.04401C10 8.14858 10.8954 9.04401 12 9.04401Z" fill="currentColor" />
-                    <path fill-rule="evenodd" clip-rule="evenodd" d="M7 1C5.34315 1 4 2.34315 4 4V20C4 21.6569 5.34315 23 7 23H17C18.6569 23 20 21.6569 20 20V4C20 2.34315 18.6569 1 17 1H7ZM17 3H7C6.44772 3 6 3.44772 6 4V20C6 20.5523 6.44772 21 7 21H17C17.5523 21 18 20.5523 18 20V4C18 3.44772 17.5523 3 17 3Z" fill="currentColor" />
+              <div id="music" class="rowWrap">
+                <div class="command" data-voice-background="FILE">
+                  <svg viewBox="-2 -2 28 28" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M4 1.5C2.89543 1.5 2 2.39543 2 3.5V4.5C2 4.55666 2.00236 4.61278 2.00698 4.66825C0.838141 5.07811 0 6.19118 0 7.5V19.5C0 21.1569 1.34315 22.5 3 22.5H21C22.6569 22.5 24 21.1569 24 19.5V7.5C24 5.84315 22.6569 4.5 21 4.5H11.874C11.4299 2.77477 9.86384 1.5 8 1.5H4ZM9.73244 4.5C9.38663 3.9022 8.74028 3.5 8 3.5H4V4.5H9.73244ZM3 6.5C2.44772 6.5 2 6.94772 2 7.5V19.5C2 20.0523 2.44772 20.5 3 20.5H21C21.5523 20.5 22 20.0523 22 19.5V7.5C22 6.94772 21.5523 6.5 21 6.5H3Z" fill="currentColor" />
                   </svg>
                 </div>
-                <input type="range" min="0" max="1" step="0.01" value="1" data-item="voice-gain" data-type="value" data-range="float" data-voice-gain="">
+                <div class="command selected" data-item="voice-background" data-type="option" data-voice-background="NONE">Hiljaisuus</div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="text label">Mikseri</div>
+            <div class="column">
+              <div class="row">
+                <div class="command" data-item="voice-mixerspeech" data-range-reset="1">
+                  <svg viewBox="-2 -2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M16 7C16 9.20914 14.2091 11 12 11C9.79086 11 8 9.20914 8 7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7ZM14 7C14 8.10457 13.1046 9 12 9C10.8954 9 10 8.10457 10 7C10 5.89543 10.8954 5 12 5C13.1046 5 14 5.89543 14 7Z" fill="currentColor" />
+                    <path d="M16 15C16 14.4477 15.5523 14 15 14H9C8.44772 14 8 14.4477 8 15V21H6V15C6 13.3431 7.34315 12 9 12H15C16.6569 12 18 13.3431 18 15V21H16V15Z" fill="currentColor" />
+                  </svg>
+                </div>
+                <input type="range" min="0" max="1" step="0.01" value="1" data-item="voice-mixerspeech" data-type="value" data-range="float" data-voice-mixerspeech="">
                 <div class="text">1</div>
+              </div>
+              <div class="row">
+                <div class="command" data-item="voice-mixerbg" data-range-reset="0.5">
+                  <svg viewBox="-2 -2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M12 8.95439L17.6352 7.82736C19.0102 7.55235 20 6.34501 20 4.94274C20 3.08637 18.3017 1.69406 16.4813 2.05813L12.4117 2.87206C11.0094 3.15252 10 4.38376 10 5.8138V13.8895C9.41165 13.5492 8.72857 13.3544 8 13.3544C5.79086 13.3544 4 15.1453 4 17.3544C4 19.5635 5.79086 21.3544 8 21.3544C10.2091 21.3544 12 19.5635 12 17.3544V8.95439ZM16.8736 4.01929L12.8039 4.83322C12.3365 4.92671 12 5.33712 12 5.8138V6.91479L17.2429 5.8662C17.6831 5.77816 18 5.39165 18 4.94274C18 4.34846 17.4563 3.90274 16.8736 4.01929ZM10 17.3544C10 16.2498 9.10457 15.3544 8 15.3544C6.89543 15.3544 6 16.2498 6 17.3544C6 18.459 6.89543 19.3544 8 19.3544C9.10457 19.3544 10 18.459 10 17.3544Z" fill="currentColor" />
+                  </svg>
+                </div>
+                <input type="range" min="0" max="1" step="0.01" value="0.5" data-item="voice-mixerbg" data-type="value" data-range="float" data-voice-mixerbg="">
+                <div class="text">0.5</div>
               </div>
             </div>
           </div>
