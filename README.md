@@ -10,21 +10,51 @@
 
 ### Introduction
 
-This is as a small side-project featuring a 3D talking head capable of speaking and lip-syncing in Finnish. The Talking Head supports [Ready Player Me](https://readyplayer.me/) full-body 3D avatars (GLB), [Mixamo](https://www.mixamo.com) animations (FBX), markdown text, and subtitles. It knows a set of emojis, which it can convert into facial expressions.
+This is as a small side-project featuring a 3D talking head capable of speaking
+and lip-syncing in Finnish. The Talking Head supports
+[Ready Player Me](https://readyplayer.me/) full-body 3D avatars (GLB),
+[Mixamo](https://www.mixamo.com) animations (FBX), markdown text, and subtitles.
+It knows a set of emojis, which it can convert into facial expressions.
 
-The class `TalkingHead` can be found in the module `./modules/talkinghead.mjs`. The class uses [Google Text-to-Speech API](https://cloud.google.com/text-to-speech), [ThreeJS](https://github.com/mrdoob/three.js/)/WebGL for 3D rendering, and [Marked](https://github.com/markedjs/marked) Markdown parser.
+The class `TalkingHead` can be found in the module `./modules/talkinghead.mjs`.
+The class uses [Google Text-to-Speech API](https://cloud.google.com/text-to-speech),
+[ThreeJS](https://github.com/mrdoob/three.js/)/WebGL for 3D rendering, and
+[Marked](https://github.com/markedjs/marked) Markdown parser.
 
-The included example app `index.html` shows how to integrate and use the class with [OpenAI API](https://openai.com) and [ElevenLabs WebSocket API](https://elevenlabs.io). You can use either GPT-3.5 or GPT-4. Background view examples are from [Virtual Backgrounds](https://virtualbackgrounds.site) and impulse responses (IR) audios for reverb effects are from [OpenAir](www.openairlib.net). See Appendix A for how to make your own free 3D avatar.
+The included example app `index.html` shows how to integrate and use the class
+with [OpenAI API](https://openai.com) and
+[ElevenLabs WebSocket API](https://elevenlabs.io). You can use either GPT-3.5
+or GPT-4. Background view examples are from
+[Virtual Backgrounds](https://virtualbackgrounds.site) and impulse responses
+(IR) audios for reverb effects are from [OpenAir](www.openairlib.net).
+See Appendix A for how to make your own free 3D avatar.
 
-**NOTE:** Google TTS, OpenAI, and ElevenLabs APIs are all paid services that require API keys. These API keys are not included, of course, and since it is NOT recommended to put API keys in any client-side code, the class/app calls these external services through proxies. Creating the needed API proxies is not in the scope of this project, but since there is not a lot you can do with the app without them, see Appendix B for how you might implement them in your own web server by using a JSON Web Token (JWT) Single Sign-On.
+**NOTE:** *Google TTS, OpenAI, and ElevenLabs APIs are all paid services that
+require API keys. These API keys are not included, of course, and since it is
+NOT recommended to put API keys in any client-side code, the class/app calls
+these external services through proxies. Creating the needed API proxies is
+not in the scope of this project, but since there is not a lot you can do with
+the app without them, see Appendix B for how you might implement them in your
+own web server by using a JSON Web Token (JWT) Single Sign-On.*
 
 
 ### Talking Head class
 
-Init parameter | Description
---- | ---
-`node` | DOM element for the Talking Head.
-`opt` | Object for global default options. Refer to the next table for options and defaults.
+In order to create an instance of the Talking Head, you need to provide it with
+a DOM element and a set of global options. If you want the avatar to speak,
+it needs the URL for your Google TTS proxy and a function from which to obtain
+the JSON Web Token needed to use that proxy (See Appendix B).
+
+```javascript
+// Create the talking head avatar
+const nodeAvatar = document.getElementById('avatar');
+head = new TalkingHead( nodeAvatar, {
+  ttsEndpoint: "./gtts/",
+  jwtGet: jwtGet
+});
+```
+
+The following table lists all the available options and their default values:
 
 Option | Description
 --- | ---
@@ -53,7 +83,27 @@ Option | Description
 `avatarMute`| Mute the avatar. This can be helpful option if you want to output subtitles without audio and lip-sync. Default is `false`.
 `markedOptions` | Options for Marked markdown parser. Default is `{ mangle:false, headerIds:false, breaks: true }`.
 
-The following table lists some of the key methods. See the source code for the rest.
+Once the instance has been created, you can load your avatar:
+
+```javascript
+try {
+  await head.showAvatar( {
+    url: './avatars/brunette.glb',
+    body: 'F',
+    avatarMood: 'neutral'
+  }, function(ev) {
+    if ( ev.lengthComputable ) {
+      let val = Math.round(ev.loaded/ev.total * 100 );
+      console.info(val+"% loaded");
+    }
+  });
+  head.speakText("Lataus onnistui hyvin!");
+} catch (error) {
+  console.log(error);
+}
+```
+
+The following table lists some of the key methods. See the source code for the rest:
 
 Method | Description
 --- | ---
@@ -77,16 +127,28 @@ Method | Description
 
 **Why only Finnish?**
 
-The primary reason is that Finnish is my native language, and I just happened to have a use case for a Finnish-speaking avatar. Finnish language is also very special in that it has a consistent one-to-one mapping between individual letters and phonemes/visemes. Achieving a similar level of lip-sync accuracy in English would likely demand an extensive English word database/vocabulary.
+The primary reason is that Finnish is my native language, and I just happened
+to have a use case for a Finnish-speaking avatar. Finnish language is also very
+special in that it has a consistent one-to-one mapping between individual
+letters and phonemes/visemes. Achieving a similar level of lip-sync accuracy
+in English would likely demand an extensive English word database/vocabulary.
 
 **Why Google TTS? Why not use the free Web Speech API?**
 
-Currently the starting times and the durations of individual visemes are calculated based on the length of the generated audio chunk. As far as I know, there is no easy way to get Web Speech API speech synthesis as an audio file or otherwise determine its duration in advance. At some point I tried to use the Web Speech API events for syncronization, but the results were not good. The ElevenLabs API returns the word-to-audio alignment information, which is great for this purpose!
+Currently the starting times and the durations of individual visemes are
+calculated based on the length of the generated audio chunk. As far as I know,
+there is no easy way to get Web Speech API speech synthesis as an audio file
+or otherwise determine its duration in advance. At some point I tried to use
+the Web Speech API events for syncronization, but the results were not good.
+Note that the ElevenLabs WebSocket API returns the word-to-audio
+alignment information, which is great for this purpose.
 
 
 ### See also
 
 [Finnish pronunciation](https://en.wiktionary.org/wiki/Appendix:Finnish_pronunciation), Wiktionary
+
+---
 
 ### Appendix A: Create Your Own 3D Avatar
 
@@ -96,6 +158,7 @@ Currently the starting times and the durations of individual visemes are calcula
 
 3. Use the URL to download the GLB file to your own web server.
 
+---
 
 ### Appendix B: Create API Proxies with JSON Web Token (JWT) Single Sign-On (SSO)
 
