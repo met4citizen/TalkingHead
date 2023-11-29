@@ -299,6 +299,18 @@
   .hidden { display: none; }
   .starttransparent { opacity: 0; }
 
+  /* blinking */
+  @-webkit-keyframes blinking { to { visibility: hidden } }
+  @keyframes blinking { to { visibility: hidden } }
+  .blink>:not(div):not(ol):not(ul):not(pre):last-child:after,
+  .blink>ol:last-child li:last-child:after,.blink>pre:last-child code:after,
+  .blink>ul:last-child li:last-child:after {
+    -webkit-animation: blinking 1s steps(5,start) infinite;
+    animation: blinking 1s steps(5,start) infinite; content: "▋";
+    margin-left: .25rem; vertical-align: baseline;
+  }
+
+
   /* Fonts */
   @font-face {
     font-family:"SansRegular";
@@ -381,6 +393,7 @@ const elevenTTSProxy = [
   "/v1/text-to-speech/",
   "/stream-input?model_id=eleven_multilingual_v2"
 ];
+
 
 
 // Site configuration
@@ -512,7 +525,6 @@ async function elevenSpeak(s,node=null) {
 
       // Speak audio
       if ( (r.isFinal || r.normalizedAlignment) && elevenOutputMsg ) {
-        elevenOutputMsg.audio = head.b64ChunksToArrayBuffer( elevenOutputMsg.audio );
         head.speakAudio( elevenOutputMsg, node ? addText.bind(null,node) : null );
         elevenOutputMsg = null;
       }
@@ -530,7 +542,7 @@ async function elevenSpeak(s,node=null) {
 
         // Add audio content to message
         if ( r.audio &&  elevenOutputMsg ) {
-          elevenOutputMsg.audio.push( r.audio );
+          elevenOutputMsg.audio.push( head.b64ToArrayBuffer( r.audio ) );
         }
       }
     };
@@ -551,9 +563,11 @@ async function elevenSpeak(s,node=null) {
     };
   } else {
     let msg = {
-      "text": s,
-      "try_trigger_generation": true,
+      "text": s
     };
+    if ( s.length ) {
+      msg["try_trigger_generation"] = true;
+    }
     if (elevenSocket.readyState === 1) { // OPEN
       elevenSocket.send(JSON.stringify(msg))
     } else if ( elevenSocket.readyState === 0 ) { // CONNECTING
@@ -597,12 +611,22 @@ function cfg(key,value) {
     }, CFG.sessions[CFG.session] );
   }
 }
+
+// Load settings
+try {
+  let json = localStorage.getItem('talkinghead');
+  const config = (json ? JSON.parse(json) : CFG);
+} catch(error) {
+  alert("Invalid JSON settings");
+  console.error(error);
+}
+
 window.cfg = cfg;
 
 // Save config to localStorage and show active session config
 function saveConfig() {
   let json = JSON.stringify(CFG);
-  localStorage.setItem("cfg", json);
+  localStorage.setItem("talkinghead", json);
   json = JSON.stringify( cfg() );
   d3.select("#json").property("value", json );
 }
@@ -610,7 +634,7 @@ function saveConfig() {
 // Load config for the given session
 function loadConfig(session = null) {
   try {
-    let json = localStorage.getItem('cfg');
+    let json = localStorage.getItem('talkinghead');
     const config = (json ? JSON.parse(json) : CFG);
     if ( config && config.hasOwnProperty("session") && config.hasOwnProperty("sessions") && config.sessions.length ) {
       CFG = config;
@@ -711,7 +735,7 @@ function loadConfig(session = null) {
     }
   } catch(error) {
     alert("Invalid JSON settings");
-    console.error(error)
+    console.error(error);
   }
 }
 
@@ -976,6 +1000,11 @@ async function aiSendMessage(node,msgs) {
     if ( elevenSocket ) {
       elevenSpeak("",null);
     }
+
+    // When this marker has been reached, stop blinking
+    head.speakMarker( () => {
+      d3.selectAll('.blink').classed("blink",false);
+    });
   }
 }
 
@@ -984,7 +1013,7 @@ async function aiSendMessage(node,msgs) {
 function addMessage(user = false) {
   const session = d3.select(".session.selected");
   const message = session.append("div");
-  message.classed("message", true).classed("user",user);
+  message.classed("message", true).classed("user",user).classed("blink",!user);
 
 
   // Add selection
@@ -1471,6 +1500,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     cameraView: 'full',
     avatarMood: 'neutral'
   });
+  window.head = head;
 
   // Follow double clicks
   document.body.addEventListener('dblclick', function(e) {
@@ -1510,15 +1540,18 @@ document.addEventListener('DOMContentLoaded', async function(e) {
       if ( head && text.length ) {
 
         const m = aiBuildMessage();
-        const flag = await aiModerateMessage(m);
+        let flag = aiModerateMessage(m);
 
-        if (flag) {
+        const nodeInput = addMessage(true);
+        nodeInput.dataset.input = text;
+        addText(nodeInput,text);
+        e.property("value","");
+
+        if ( await flag ) {
           console.info("Moderation flagged.");
+          d3.select(nodeInput.parentNode).classed("grayed", true );
+          d3.select(nodeInput.parentNode .select).classed("selected", true );
         } else {
-          const nodeInput = addMessage(true);
-          nodeInput.dataset.input = text;
-          addText(nodeInput,text);
-          e.property("value","");
           const nodeOutput = addMessage(false);
           aiSendMessage(nodeOutput,m);
         }
@@ -2645,6 +2678,19 @@ document.addEventListener('DOMContentLoaded', async function(e) {
           </div>
 
           <div class="row">
+            <div class="text label">Ambienssi</div>
+            <div class="column">
+              <div id="music" class="rowWrap">
+                <div class="command" data-voice-background="FILE">
+                  <svg viewBox="-2 -2 28 28" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M4 1.5C2.89543 1.5 2 2.39543 2 3.5V4.5C2 4.55666 2.00236 4.61278 2.00698 4.66825C0.838141 5.07811 0 6.19118 0 7.5V19.5C0 21.1569 1.34315 22.5 3 22.5H21C22.6569 22.5 24 21.1569 24 19.5V7.5C24 5.84315 22.6569 4.5 21 4.5H11.874C11.4299 2.77477 9.86384 1.5 8 1.5H4ZM9.73244 4.5C9.38663 3.9022 8.74028 3.5 8 3.5H4V4.5H9.73244ZM3 6.5C2.44772 6.5 2 6.94772 2 7.5V19.5C2 20.0523 2.44772 20.5 3 20.5H21C21.5523 20.5 22 20.0523 22 19.5V7.5C22 6.94772 21.5523 6.5 21 6.5H3Z" fill="currentColor" />
+                  </svg>
+                </div>
+                <div class="command selected" data-item="voice-background" data-type="option" data-voice-background="NONE">Hiljaisuus</div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
             <div class="text label">Puhe</div>
             <div class="column">
               <div class="rowWrap">
@@ -2706,21 +2752,17 @@ document.addEventListener('DOMContentLoaded', async function(e) {
             </div>
           </div>
           <div class="row">
-            <div class="text label">Tausta</div>
-            <div class="column">
-              <div id="music" class="rowWrap">
-                <div class="command" data-voice-background="FILE">
-                  <svg viewBox="-2 -2 28 28" xmlns="http://www.w3.org/2000/svg">
-                    <path fill-rule="evenodd" clip-rule="evenodd" d="M4 1.5C2.89543 1.5 2 2.39543 2 3.5V4.5C2 4.55666 2.00236 4.61278 2.00698 4.66825C0.838141 5.07811 0 6.19118 0 7.5V19.5C0 21.1569 1.34315 22.5 3 22.5H21C22.6569 22.5 24 21.1569 24 19.5V7.5C24 5.84315 22.6569 4.5 21 4.5H11.874C11.4299 2.77477 9.86384 1.5 8 1.5H4ZM9.73244 4.5C9.38663 3.9022 8.74028 3.5 8 3.5H4V4.5H9.73244ZM3 6.5C2.44772 6.5 2 6.94772 2 7.5V19.5C2 20.0523 2.44772 20.5 3 20.5H21C21.5523 20.5 22 20.0523 22 19.5V7.5C22 6.94772 21.5523 6.5 21 6.5H3Z" fill="currentColor" />
-                  </svg>
-                </div>
-                <div class="command selected" data-item="voice-background" data-type="option" data-voice-background="NONE">Hiljaisuus</div>
-              </div>
-            </div>
-          </div>
-          <div class="row">
             <div class="text label">Mikseri</div>
             <div class="column">
+              <div class="row">
+                <div class="command" data-item="voice-mixerbg" data-range-reset="0.5">
+                  <svg viewBox="-2 -2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M12 8.95439L17.6352 7.82736C19.0102 7.55235 20 6.34501 20 4.94274C20 3.08637 18.3017 1.69406 16.4813 2.05813L12.4117 2.87206C11.0094 3.15252 10 4.38376 10 5.8138V13.8895C9.41165 13.5492 8.72857 13.3544 8 13.3544C5.79086 13.3544 4 15.1453 4 17.3544C4 19.5635 5.79086 21.3544 8 21.3544C10.2091 21.3544 12 19.5635 12 17.3544V8.95439ZM16.8736 4.01929L12.8039 4.83322C12.3365 4.92671 12 5.33712 12 5.8138V6.91479L17.2429 5.8662C17.6831 5.77816 18 5.39165 18 4.94274C18 4.34846 17.4563 3.90274 16.8736 4.01929ZM10 17.3544C10 16.2498 9.10457 15.3544 8 15.3544C6.89543 15.3544 6 16.2498 6 17.3544C6 18.459 6.89543 19.3544 8 19.3544C9.10457 19.3544 10 18.459 10 17.3544Z" fill="currentColor" />
+                  </svg>
+                </div>
+                <input type="range" min="0" max="1" step="0.01" value="0.5" data-item="voice-mixerbg" data-type="value" data-range="float" data-voice-mixerbg="">
+                <div class="text">0.5</div>
+              </div>
               <div class="row">
                 <div class="command" data-item="voice-mixerspeech" data-range-reset="1">
                   <svg viewBox="-2 -2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -2730,15 +2772,6 @@ document.addEventListener('DOMContentLoaded', async function(e) {
                 </div>
                 <input type="range" min="0" max="1" step="0.01" value="1" data-item="voice-mixerspeech" data-type="value" data-range="float" data-voice-mixerspeech="">
                 <div class="text">1</div>
-              </div>
-              <div class="row">
-                <div class="command" data-item="voice-mixerbg" data-range-reset="0.5">
-                  <svg viewBox="-2 -2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path fill-rule="evenodd" clip-rule="evenodd" d="M12 8.95439L17.6352 7.82736C19.0102 7.55235 20 6.34501 20 4.94274C20 3.08637 18.3017 1.69406 16.4813 2.05813L12.4117 2.87206C11.0094 3.15252 10 4.38376 10 5.8138V13.8895C9.41165 13.5492 8.72857 13.3544 8 13.3544C5.79086 13.3544 4 15.1453 4 17.3544C4 19.5635 5.79086 21.3544 8 21.3544C10.2091 21.3544 12 19.5635 12 17.3544V8.95439ZM16.8736 4.01929L12.8039 4.83322C12.3365 4.92671 12 5.33712 12 5.8138V6.91479L17.2429 5.8662C17.6831 5.77816 18 5.39165 18 4.94274C18 4.34846 17.4563 3.90274 16.8736 4.01929ZM10 17.3544C10 16.2498 9.10457 15.3544 8 15.3544C6.89543 15.3544 6 16.2498 6 17.3544C6 18.459 6.89543 19.3544 8 19.3544C9.10457 19.3544 10 18.459 10 17.3544Z" fill="currentColor" />
-                  </svg>
-                </div>
-                <input type="range" min="0" max="1" step="0.01" value="0.5" data-item="voice-mixerbg" data-type="value" data-range="float" data-voice-mixerbg="">
-                <div class="text">0.5</div>
               </div>
             </div>
           </div>

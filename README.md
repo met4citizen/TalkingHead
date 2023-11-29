@@ -110,7 +110,8 @@ Method | Description
 `showAvatar(avatar, [onprogress=null])` | Load and show the specified avatar. The `avatar` object must include the `url` for GLB file. Optional properties are `body` for either male `M` or female `F` body form, `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood` and `avatarMute`.
 `setView(view, [opt])` | Set view. Supported views are `"full"`, `"upper"`  and `"head"`. Options `opt` can be used to set `cameraDistance`, `cameraX`, `cameraY`, `cameraRotateX`, `cameraRotateY`.
 `speakText(text, [opt={}], [onsubtitles=null], [excludes=[]])` | Add the `text` string to the speech queue. The text can contain face emojis. Options `opt` can be used to set text-specific `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood`, `avatarMute`. Optional callback function `onsubtitles` is called whenever a new subtitle is to be written with the parameter of the added string. The optional `excludes` is an array of [start,end] indices to be excluded from audio but to be included in the subtitles.
-`speakAudio(audio, [onsubtitles=null])` | Add the `audio` object to the speech queue. The audio object contains `audio` ArrayBuffer, characters in `chars` array, starting times of each character in milliseconds in `ts` array, and durations of each character in milliseconds in `ds` array.
+`speakAudio(audio, [onsubtitles=null])` | Add the `audio` object to the speech queue. The audio object contains ArrayBuffers in an `audio` array, characters in `chars` array, starting times for each character in milliseconds in `ts` array, and durations for each character in milliseconds in `ds` array.
+`speakMarker(onmarker)` | Add a marker to the speech queue. The callback function `onmarker` is called when the queue processes the event.
 `lookAt(x,y,t)` | Make the avatar's head turn to look at the screen position (`x`,`y`) for `t` milliseconds.
 `lookAtCamera(t)` | Make the avatar's head turn to look at the camera for `t` milliseconds.
 `setMood(mood)` | Set avatar mood.
@@ -198,7 +199,7 @@ RewriteMap jwtverify "prg:/etc/httpd/jwtverify" apache:apache
 <Location /openai/>
   RewriteCond ${jwtverify:%{http:Authorization}} !OK
   RewriteRule .+ - [F]
-  ProxyPass https://api.openai.com/ connectiontimeout=30 timeout=30 keepalive=on max=20 ttl=120 retry=5
+  ProxyPass https://api.openai.com/
   RequestHeader set Authorization "Bearer <insert-your-openai-api-key-here>"
 </Location>
 ```
