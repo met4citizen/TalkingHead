@@ -273,6 +273,9 @@
   #bottom textarea::placeholder { color: var(--colorUserText); opacity: 0.3; }
   #flag, #score { color: var(--colorToolbarPassive2); }
 
+  [data-image-type^='video/']:after {
+    content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' version='1.1' width='24' height='24' viewBox='-10 -10 68 68'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M43,42H5c-2.209,0-4-1.791-4-4V10c0-2.209,1.791-4,4-4h38c2.209,0,4,1.791,4,4v28 C47,40.209,45.209,42,43,42z M12,8H5c-1.104,0-2,0.896-2,2v2h9V8z M23,8h-9v4h9V8z M34,8h-9v4h9V8z M45,10c0-1.104-0.896-2-2-2h-7v4 h9l0,0V10z M45,14L45,14H3v20h42l0,0V14z M45,36L45,36h-9v4h-2v-4h-9v4h-2v-4h-9v4h-2v-4H3v2c0,1.104,0.896,2,2,2h38 c1.104,0,2-0.896,2-2V36z M21.621,29.765C21.449,29.904,21.238,30,21,30c-0.553,0-1-0.447-1-1V19c0-0.552,0.447-1,1-1 c0.213,0,0.4,0.082,0.563,0.196l7.771,4.872C29.72,23.205,30,23.566,30,24c0,0.325-0.165,0.601-0.405,0.783L21.621,29.765z' fill='gray'%3E%3C/path%3E%3C/svg%3E");
+  }
 
   /* Misc */
   .text.selected, .command.selected, .screen:active, .command:active,
@@ -391,9 +394,8 @@ const googleTTSProxy = "/gtts/";
 const elevenTTSProxy = [
   "wss://" + window.location.host + "/elevenlabs/",
   "/v1/text-to-speech/",
-  "/stream-input?model_id=eleven_multilingual_v2"
+  "/stream-input?model_id=eleven_multilingual_v2&output_format=pcm_22050"
 ];
-
 
 
 // Site configuration
@@ -406,6 +408,28 @@ const site = {
       body: 'F',
       avatarMood: 'neutral'
     }
+  },
+
+  // Google voices
+  googleVoices: {
+    "fi-F": { id: "fi-FI-Standard-A" },
+    "lv-M": { id: "lv-LV-Standard-A" },
+    "lt-M": { id: "lt-LT-Standard-A" },
+    "en-F": { id: "en-GB-Standard-A" },
+    "en-M": { id: "en-GB-Standard-D" }
+  },
+
+  // ElevenLab voices
+  elevenVoices: {
+    "Bella": { id: "EXAVITQu4vr4xnSDxMaL" },
+    "Elli": { id: "MF3mGyEYCl7XYWbV9V6O" },
+    "Rachel": { id: "21m00Tcm4TlvDq8ikWAM" },
+    "Adam": { id: "pNInz6obpgDQGcFmaJgB" },
+    "Antoni": { id: "ErXwobaYiN019PkySvjV" },
+    "Arnold": { id: "VR6AewLTigWG4xSOukaG" },
+    "Domi": { id: "AZnzlk1XvdvUeBnXmlld" },
+    "Josh": { id: "TxGEqnHWrfWFTfGW9XjX" },
+    "Sam": { id: "yoZ06aMxZJJ28mfd3POQ" }
   },
 
   // Preset views
@@ -449,6 +473,9 @@ let openaiController = null;
 const elevenBOS = {
   "text": " ",
   "voice_settings": { "stability": 0.8, "similarity_boost": true },
+  "generation_config": {
+    "chunk_length_schedule": [500,500,500,500]
+  },
 };
 let elevenSocket = null;
 let elevenInputMsgs = null;
@@ -1056,10 +1083,20 @@ function addMessage(user = false) {
     toolbarRight.append("div")
       .classed("command", true)
       .on('click', function(ev) {
-        let e = d3.select(this);
-        let mode = !e.classed("selected");
-        e.classed("selected", mode );
-        d3.select(this.parentNode.parentNode).classed("grayed", mode );
+        const e = d3.select(this.parentNode.parentNode);
+        let text = e.attr("data-output");
+        if ( text && text.length ) {
+          if ( cfg('voice-type') === 'eleven' ) {
+            elevenSpeak( text + " " );
+            elevenSpeak( "" );
+          } else {
+            head.speakText( text, {
+              ttsVoice: cfg('voice-google-id'),
+              ttsRate: parseFloat( cfg('voice-google-rate') ),
+              ttsPitch: parseFloat( cfg('voice-google-pitch') )
+            } );
+          }
+        }
       })
       .html(svgSpeak);
 
@@ -1322,34 +1359,39 @@ function headLoaded() {
 
 // Update progress bar
 let progressTimeout;
-function progressShow() {
+function progressUpdate(ev) {
   if ( progressTimeout ) {
     clearTimeout(progressTimeout);
     progressTimeout = null;
+  } else {
+    d3.select("#loading").style("display","block");
   }
-  d3.select("#loading").style("display","block");
-  progressUpdate( { lengthComputable: true, loaded: 0, total: 1 } );
-}
-
-function progressUpdate(ev) {
   if ( ev.lengthComputable ) {
     let val = Math.round(ev.loaded/ev.total * 100 );
     d3.select("#loading-top").style("clip-path", "inset(0 " + (100-val) + "% 0 0)");
     d3.selectAll("#loading-value").text( val + "%" );
   } else {
+    d3.select("#loading-top").style("clip-path", "inset(0 0 0 0)");
     d3.selectAll("#loading-value").text( "" + ev.loaded );
-  }
-}
-
-function progressHide() {
-  if ( progressTimeout ) {
-    clearTimeout(progressTimeout);
-    progressTimeout = null;
   }
   progressTimeout = setTimeout( () => {
     d3.select("#loading").style("display","none");
     progressTimeout = null;
   }, 1000);
+}
+
+// Update progress bar using media loading progress
+function progressMedia() {
+  let bf = this.buffered;
+  let dur = this.duration;
+  let state = this.readyState;
+  if ( bf && bf.length && !Number.isNaN(dur) && dur < Infinity && state > 0 && state < 4) {
+    progressUpdate( {
+      loaded: bf.end(bf.length-1) - bf.start(bf.length-1),
+      total: dur,
+      lengthComputable: (dur > 0)
+    });
+  }
 }
 
 function errorShow(error) {
@@ -1438,6 +1480,32 @@ document.addEventListener('DOMContentLoaded', async function(e) {
       .text( k );
   }
 
+  // Add Google voices
+  const eGoogleVoices = d3.select("#googlevoices");
+  for ( const [i,k] of Object.entries(Object.keys(site.googleVoices)) ) {
+    let o = site.googleVoices[k];
+    eGoogleVoices.append("div")
+      .classed("command", true)
+      .classed("selected", i === 0 )
+      .attr("data-item","voice-google-id")
+      .attr("data-type","option")
+      .attr("data-voice-google-id",o.id)
+      .text( k );
+  }
+
+  // Add ElevenLabs voices
+  const eElevenVoices = d3.select("#elevenvoices");
+  for ( const [i,k] of Object.entries(Object.keys(site.elevenVoices)) ) {
+    let o = site.elevenVoices[k];
+    eElevenVoices.append("div")
+      .classed("command", true)
+      .classed("selected", i === 0 )
+      .attr("data-item","voice-eleven-id")
+      .attr("data-type","option")
+      .attr("data-voice-eleven-id",o.id)
+      .text( k );
+  }
+
   // Add views
   const eViews = d3.select("#views");
   for ( const [k,o] of Object.entries(site.views) ) {
@@ -1480,9 +1548,15 @@ document.addEventListener('DOMContentLoaded', async function(e) {
   }
 
   // Add music
-  const eMusic = d3.select("#music");
+  const eMusicLeft = d3.select("#l-music");
+  const eMusicRight = d3.select("#r-music");
   for ( const [k,o] of Object.entries(site.music) ) {
-    eMusic.append("div")
+    eMusicLeft.append("div")
+      .classed("command", true)
+      .attr("data-voice-background",o.url)
+      .text( k );
+
+    eMusicRight.append("div")
       .classed("command", true)
       .attr("data-item","voice-background")
       .attr("data-type","option")
@@ -1507,6 +1581,9 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     e = e || window.event;
     head.lookAt(e.clientX,e.clientY,500);
   });
+
+  // Media progress
+  d3.select("#video").node().addEventListener("progress", progressMedia);
 
   // Auto resize textarea
   d3.selectAll("textarea").on("input.resize change.resize keyup.resize paste.resize", function(e) {
@@ -1646,17 +1723,13 @@ document.addEventListener('DOMContentLoaded', async function(e) {
           reader.onload = async readerEvent => {
             let content = readerEvent.target.result;
             d3.selectAll("[data-pose='" + pose + "']").classed("selected",repeat);
-            progressShow();
-            await head.playPose( content, progressUpdate, (repeat ? 600 : 5) );
-            progressHide();
+            head.playPose( content, progressUpdate, (repeat ? 600 : 5) );
           }
         }
         input.click();
       } else {
         d3.selectAll("[data-pose='" + pose + "']").classed("selected",repeat);
-        progressShow();
-        await head.playPose( pose, progressUpdate, (repeat ? 600 : 5) );
-        progressHide();
+        head.playPose( pose, progressUpdate, (repeat ? 600 : 5) );
       }
     }
   });
@@ -1680,17 +1753,13 @@ document.addEventListener('DOMContentLoaded', async function(e) {
           reader.onload = async readerEvent => {
             let content = readerEvent.target.result;
             d3.selectAll("[data-animation='" + animation + "']").classed("selected",repeat);
-            progressShow();
-            await head.playAnimation( content, progressUpdate, (repeat ? Infinity : 1) );
-            progressHide();
+            head.playAnimation( content, progressUpdate, (repeat ? Infinity : 1) );
           }
         }
         input.click();
       } else {
         d3.selectAll("[data-animation='" + animation + "']").classed("selected",repeat);
-        progressShow();
-        await head.playAnimation( animation, progressUpdate, (repeat ? Infinity : 1) );
-        progressHide();
+        head.playAnimation( animation, progressUpdate, (repeat ? Infinity : 1) );
       }
     }
   });
@@ -1842,14 +1911,12 @@ document.addEventListener('DOMContentLoaded', async function(e) {
         reader.readAsDataURL(file);
         reader.onload = async readerEvent => {
           d3.selectAll("[data-pose],[data-animation],#pause").classed("selected",false);
-          progressShow();
           const o = {
             url: readerEvent.target.result,
             body: cfg('avatar-body')
           };
           try {
             await head.showAvatar( o, progressUpdate );
-            progressHide();
             d3.select("[data-camera-frame].selected").dispatch('click');
           } catch(error) {
             errorShow(error);
@@ -1860,14 +1927,12 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     } else if ( avatar === 'URL' ) {
       let url = cfg('avatar-url');
       d3.selectAll("[data-pose],[data-animation],#pause").classed("selected",false);
-      progressShow();
       const o = {
         url: url,
         body: cfg('avatar-body')
       };
       try {
         await head.showAvatar( o, progressUpdate );
-        progressHide();
         d3.select("[data-camera-frame].selected").dispatch('click');
       } catch(error) {
         errorShow(error);
@@ -1875,10 +1940,8 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     } else {
       const name = e.attr('data-avatar-name');
       d3.selectAll("[data-pose],[data-animation],#pause").classed("selected",false);
-      progressShow();
       try {
         await head.showAvatar( site.avatars[name], progressUpdate );
-        progressHide();
         d3.select("[data-camera-frame].selected").dispatch('click');
       } catch(error) {
         errorShow(error);
@@ -2047,8 +2110,8 @@ document.addEventListener('DOMContentLoaded', async function(e) {
   d3.selectAll("[data-voice-background]").on('click.command', async function(ev) {
     const e = d3.select(this);
     d3.selectAll("[data-voice-background]").classed("selected",false);
-    e.classed('selected',true);
     let background = e.attr('data-voice-background');
+    d3.selectAll("[data-voice-background='" + background + "']").classed("selected",true);
     if ( background === 'NONE' ) {
       head.playBackgroundAudio(null);
     } else if ( background === 'FILE' ) {
@@ -2148,9 +2211,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
   });
 
   try {
-    progressShow();
     await head.showAvatar( Object.values(site.avatars)[0], progressUpdate);
-    progressHide();
     headLoaded();
   } catch (error) {
     errorShow(error);
@@ -2199,6 +2260,11 @@ document.addEventListener('DOMContentLoaded', async function(e) {
           <div class="command starttransparent" title="Kamera" data-show="right-animation">
             <svg viewBox="-1 -1 26 26" xmlns="http://www.w3.org/2000/svg">
               <path fill-rule="evenodd" clip-rule="evenodd" d="M4 4.5V6.5H12V7.5H3C1.34315 7.5 0 8.84315 0 10.5V16.5C0 18.1569 1.34315 19.5 3 19.5H15C16.5731 19.5 17.8634 18.2892 17.9898 16.7487L24 17.5V9.5L17.9898 10.2513C17.8634 8.71078 16.5731 7.5 15 7.5H14V5.5C14 4.94772 13.5523 4.5 13 4.5H4ZM18 12.2656V14.7344L22 15.2344V11.7656L18 12.2656ZM16 10.5C16 9.94772 15.5523 9.5 15 9.5H3C2.44772 9.5 2 9.94772 2 10.5V16.5C2 17.0523 2.44772 17.5 3 17.5H15C15.5523 17.5 16 17.0523 16 16.5V10.5Z" fill="currentColor" />
+            </svg>
+          </div>
+          <div class="command starttransparent" title="Audio" data-show="right-audio">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M12 8.95439L17.6352 7.82736C19.0102 7.55235 20 6.34501 20 4.94274C20 3.08637 18.3017 1.69406 16.4813 2.05813L12.4117 2.87206C11.0094 3.15252 10 4.38376 10 5.8138V13.8895C9.41165 13.5492 8.72857 13.3544 8 13.3544C5.79086 13.3544 4 15.1453 4 17.3544C4 19.5635 5.79086 21.3544 8 21.3544C10.2091 21.3544 12 19.5635 12 17.3544V8.95439ZM16.8736 4.01929L12.8039 4.83322C12.3365 4.92671 12 5.33712 12 5.8138V6.91479L17.2429 5.8662C17.6831 5.77816 18 5.39165 18 4.94274C18 4.34846 17.4563 3.90274 16.8736 4.01929ZM10 17.3544C10 16.2498 9.10457 15.3544 8 15.3544C6.89543 15.3544 6 16.2498 6 17.3544C6 18.459 6.89543 19.3544 8 19.3544C9.10457 19.3544 10 18.459 10 17.3544Z" fill="currentColor" />
             </svg>
           </div>
           <div class="filler"></div>
@@ -2305,6 +2371,20 @@ document.addEventListener('DOMContentLoaded', async function(e) {
               <div id="pause" class="command">Pys&auml;ytyskuva</div>
               <div id="autorotate" class="command">Panorointi</div>
               <div id="slowdown" class="command">Hidastus</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="right-audio" class="page noselect nodrag hidden">
+          <div class="row">
+            <div class="text label">Ambienssi</div>
+            <div id="l-music" class="rowWrap">
+              <div class="command" data-voice-background="FILE">
+                <svg viewBox="-2 -2 28 28" xmlns="http://www.w3.org/2000/svg">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M4 1.5C2.89543 1.5 2 2.39543 2 3.5V4.5C2 4.55666 2.00236 4.61278 2.00698 4.66825C0.838141 5.07811 0 6.19118 0 7.5V19.5C0 21.1569 1.34315 22.5 3 22.5H21C22.6569 22.5 24 21.1569 24 19.5V7.5C24 5.84315 22.6569 4.5 21 4.5H11.874C11.4299 2.77477 9.86384 1.5 8 1.5H4ZM9.73244 4.5C9.38663 3.9022 8.74028 3.5 8 3.5H4V4.5H9.73244ZM3 6.5C2.44772 6.5 2 6.94772 2 7.5V19.5C2 20.0523 2.44772 20.5 3 20.5H21C21.5523 20.5 22 20.0523 22 19.5V7.5C22 6.94772 21.5523 6.5 21 6.5H3Z" fill="currentColor" />
+                </svg>
+              </div>
+              <div class="command selected" data-voice-background="NONE">Hiljaisuus</div>
             </div>
           </div>
         </div>
@@ -2680,8 +2760,8 @@ document.addEventListener('DOMContentLoaded', async function(e) {
           <div class="row">
             <div class="text label">Ambienssi</div>
             <div class="column">
-              <div id="music" class="rowWrap">
-                <div class="command" data-voice-background="FILE">
+              <div id="r-music" class="rowWrap">
+                <div class="command" data-item="voice-background" data-type="option" data-voice-background="FILE">
                   <svg viewBox="-2 -2 28 28" xmlns="http://www.w3.org/2000/svg">
                     <path fill-rule="evenodd" clip-rule="evenodd" d="M4 1.5C2.89543 1.5 2 2.39543 2 3.5V4.5C2 4.55666 2.00236 4.61278 2.00698 4.66825C0.838141 5.07811 0 6.19118 0 7.5V19.5C0 21.1569 1.34315 22.5 3 22.5H21C22.6569 22.5 24 21.1569 24 19.5V7.5C24 5.84315 22.6569 4.5 21 4.5H11.874C11.4299 2.77477 9.86384 1.5 8 1.5H4ZM9.73244 4.5C9.38663 3.9022 8.74028 3.5 8 3.5H4V4.5H9.73244ZM3 6.5C2.44772 6.5 2 6.94772 2 7.5V19.5C2 20.0523 2.44772 20.5 3 20.5H21C21.5523 20.5 22 20.0523 22 19.5V7.5C22 6.94772 21.5523 6.5 21 6.5H3Z" fill="currentColor" />
                   </svg>
@@ -2702,12 +2782,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
           <div id="voice-google" class="row">
             <div class="text label"></div>
             <div class="column">
-              <div class="rowWrap">
-                <div class="command selected" data-item="voice-google-id" data-type="option" data-voice-google-id="fi-FI-Standard-A">fi-F</div>
-                <div class="command" data-item="voice-google-id" data-type="option" data-voice-google-id="en-GB-Standard-A">en-F</div>
-                <div class="command" data-item="voice-google-id" data-type="option" data-voice-google-id="en-GB-Standard-D">en-M</div>
-                <div class="command" data-item="voice-google-id" data-type="option" data-voice-google-id="lv-LV-Standard-A">lv-M</div>
-                <div class="command" data-item="voice-google-id" data-type="option" data-voice-google-id="lt-LT-Standard-A">lt-M</div>
+              <div id="googlevoices" class="rowWrap">
               </div>
               <div class="row">
                 <div class="command" data-item="voice-google-rate" data-range-reset="1">
@@ -2736,18 +2811,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
           <div id="voice-eleven" class="row">
             <div class="text label"></div>
             <div class="column">
-              <div class="rowWrap">
-                <div class="command selected" data-item="voice-eleven-id" data-type="option" data-voice-eleven-id="3jYBN5XwAVc3mSLFhrDi">Ada</div>
-                <div class="command" data-item="voice-eleven-id" data-type="option" data-voice-eleven-id="EXAVITQu4vr4xnSDxMaL">Bella</div>
-                <div class="command" data-item="voice-eleven-id" data-type="option" data-voice-eleven-id="MF3mGyEYCl7XYWbV9V6O">Elli</div>
-                <div class="command" data-item="voice-eleven-id" data-type="option" data-voice-eleven-id="21m00Tcm4TlvDq8ikWAM">Rachel</div>
-                <div class="command" data-item="voice-eleven-id" data-type="option" data-voice-eleven-id="pNInz6obpgDQGcFmaJgB">Adam</div>
-                <div class="command" data-item="voice-eleven-id" data-type="option" data-voice-eleven-id="ErXwobaYiN019PkySvjV">Antoni</div>
-                <div class="command" data-item="voice-eleven-id" data-type="option" data-voice-eleven-id="VR6AewLTigWG4xSOukaG">Arnold</div>
-                <div class="command" data-item="voice-eleven-id" data-type="option" data-voice-eleven-id="AZnzlk1XvdvUeBnXmlld">Domi</div>
-                <div class="command" data-item="voice-eleven-id" data-type="option" data-voice-eleven-id="mJ2f4JDL6eqjLtSa7T4U">Jack</div>
-                <div class="command" data-item="voice-eleven-id" data-type="option" data-voice-eleven-id="TxGEqnHWrfWFTfGW9XjX">Josh</div>
-                <div class="command" data-item="voice-eleven-id" data-type="option" data-voice-eleven-id="yoZ06aMxZJJ28mfd3POQ">Sam</div>
+              <div id="elevenvoices" class="rowWrap">
               </div>
             </div>
           </div>
