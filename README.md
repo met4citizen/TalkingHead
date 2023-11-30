@@ -2,11 +2,15 @@
 
 **UNDER CONSTRUCTION**
 
+---
+
 ### Screenshots
 
 <img src="screenshot.jpg" width="512"><br/>
 
 <img src="screenshot2.jpg" width="512"><br/>
+
+---
 
 ### Introduction
 
@@ -22,11 +26,11 @@ The class uses [Google Text-to-Speech API](https://cloud.google.com/text-to-spee
 [Marked](https://github.com/markedjs/marked) Markdown parser.
 
 The included example app `index.html` shows how to integrate and use the class
-with [OpenAI API](https://openai.com) and
-[ElevenLabs WebSocket API](https://elevenlabs.io). You can use either GPT-3.5
-or GPT-4. Background view examples are from
+with [ElevenLabs WebSocket API](https://elevenlabs.io) (experimental) and
+[OpenAI API](https://openai.com). You can use either GPT-3.5 or GPT-4.
+Background view examples are from
 [Virtual Backgrounds](https://virtualbackgrounds.site) and impulse responses
-(IR) audios for reverb effects are from [OpenAir](www.openairlib.net).
+(IR) for reverb effects are from [OpenAir](www.openairlib.net).
 See Appendix A for how to make your own free 3D avatar.
 
 **NOTE:** *Google TTS, OpenAI, and ElevenLabs APIs are all paid services that
@@ -37,6 +41,7 @@ not in the scope of this project, but since there is not a lot you can do with
 the app without them, see Appendix B for how you might implement them in your
 own web server by using a JSON Web Token (JWT) Single Sign-On.*
 
+---
 
 ### Talking Head class
 
@@ -110,7 +115,7 @@ Method | Description
 `showAvatar(avatar, [onprogress=null])` | Load and show the specified avatar. The `avatar` object must include the `url` for GLB file. Optional properties are `body` for either male `M` or female `F` body form, `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood` and `avatarMute`.
 `setView(view, [opt])` | Set view. Supported views are `"full"`, `"upper"`  and `"head"`. Options `opt` can be used to set `cameraDistance`, `cameraX`, `cameraY`, `cameraRotateX`, `cameraRotateY`.
 `speakText(text, [opt={}], [onsubtitles=null], [excludes=[]])` | Add the `text` string to the speech queue. The text can contain face emojis. Options `opt` can be used to set text-specific `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood`, `avatarMute`. Optional callback function `onsubtitles` is called whenever a new subtitle is to be written with the parameter of the added string. The optional `excludes` is an array of [start,end] indices to be excluded from audio but to be included in the subtitles.
-`speakAudio(audio, [onsubtitles=null])` | Add the `audio` object to the speech queue. The audio object contains ArrayBuffers in an `audio` array, characters in `chars` array, starting times for each character in milliseconds in `ts` array, and durations for each character in milliseconds in `ds` array.
+`speakAudio(audio, [onsubtitles=null])` | Add the `audio` object to the speech queue. This method was added to support external TTS services such as ElevenLabs WebSocket API. The audio object contains ArrayBuffer chunks in `audio` array, characters in `chars` array, starting times for each character in milliseconds in `ts` array, and durations for each character in milliseconds in `ds` array. As of now, the only supported format is PCM signed 16bit little endian 22050Hz.
 `speakMarker(onmarker)` | Add a marker to the speech queue. The callback function `onmarker` is called when the queue processes the event.
 `lookAt(x,y,t)` | Make the avatar's head turn to look at the screen position (`x`,`y`) for `t` milliseconds.
 `lookAtCamera(t)` | Make the avatar's head turn to look at the camera for `t` milliseconds.
@@ -123,6 +128,99 @@ Method | Description
 `start` | Start/re-start the Talking Head animation loop.
 `stop` | Stop the Talking Head animation loop.
 
+---
+
+### The example app
+
+In order to configure and use the example app `index.html` do the following:
+
+1. Copy the project to your own server.
+
+2. Create the needed API proxies as described in Appendix B and check/update your endpoint/proxy configuration in `index.html`:
+
+```javascript
+// API endpoints/proxys
+const jwtEndpoint = "/app/jwt/get"; // Get JSON Web Token for Single Sign-On
+const openaiChatCompletionsProxy = "/openai/v1/chat/completions";
+const openaiModerationsProxy = "/openai/v1/moderations";
+const googleTTSProxy = "/gtts/";
+const elevenTTSProxy = [
+  "wss://" + window.location.host + "/elevenlabs/",
+  "/v1/text-to-speech/",
+  "/stream-input?model_id=eleven_multilingual_v2&output_format=pcm_22050"
+];
+```
+
+3. Add you own background images, videos, audio files, avatars etc. in the directory structure and update/add your site configuration accordingly:
+
+```javascript
+// Site configuration
+const site = {
+
+  // Preset avatars
+  avatars: {
+    'Brunetti': {
+      url: './avatars/brunette.glb',
+      body: 'F',
+      avatarMood: 'neutral'
+    }
+  },
+
+  // Google voices
+  googleVoices: {
+    "fi-F": { id: "fi-FI-Standard-A" },
+    "lv-M": { id: "lv-LV-Standard-A" },
+    "lt-M": { id: "lt-LT-Standard-A" },
+    "en-F": { id: "en-GB-Standard-A" },
+    "en-M": { id: "en-GB-Standard-D" }
+  },
+
+  // ElevenLab voices
+  elevenVoices: {
+    "Bella": { id: "EXAVITQu4vr4xnSDxMaL" },
+    "Elli": { id: "MF3mGyEYCl7XYWbV9V6O" },
+    "Rachel": { id: "21m00Tcm4TlvDq8ikWAM" },
+    "Adam": { id: "pNInz6obpgDQGcFmaJgB" },
+    "Antoni": { id: "ErXwobaYiN019PkySvjV" },
+    "Arnold": { id: "VR6AewLTigWG4xSOukaG" },
+    "Domi": { id: "AZnzlk1XvdvUeBnXmlld" },
+    "Josh": { id: "TxGEqnHWrfWFTfGW9XjX" },
+    "Sam": { id: "yoZ06aMxZJJ28mfd3POQ" }
+  },
+
+  // Preset views
+  views: {
+    'TohtoriOuto': { url: './views/strange.jpg', type: 'image/jpg' },
+    'Matrix': { url: './views/matrix.mp4', type: 'video/mp4' }
+  },
+
+  // Preset poses (in addition to internal poses)
+  poses: {
+    'Tanssi': { url: './poses/dance.fbx' }
+  },
+
+  // Preset animations
+  animations: {
+    'Kävely': { url: './animations/walking.fbx' }
+  },
+
+  // Impulse responses
+  impulses: {
+    'Huone': { url: './audio/ir-room.m4a' },
+    'Kellari': { url: './audio/ir-basement.m4a' },
+    'Metsä': { url: './audio/ir-forest.m4a' },
+    'Kirkko': { url: './audio/ir-church.m4a' }
+  },
+
+  // Background ambient sounds/music
+  music: {
+    'Puheensorina': { url: './audio/murmur.mp3'}
+  }
+
+};
+```
+
+---
 
 ### FAQ
 
@@ -144,6 +242,7 @@ the Web Speech API events for syncronization, but the results were not good.
 Note that the ElevenLabs WebSocket API returns the word-to-audio
 alignment information, which is great for this purpose.
 
+---
 
 ### See also
 
@@ -192,7 +291,7 @@ RewriteEngine On
 RewriteMap jwtverify "prg:/etc/httpd/jwtverify" apache:apache
 ```
 
-4. Make a forward proxy for each service in which you add the required API key and protect the proxy with the JWT token verifier. Below is an example config for OpenAI API proxy using Apache 2.4 web server.
+4. Make a forward proxy for each service in which you add the required API key and protect the proxy with the JWT token verifier. Below is an example config for OpenAI API proxy using Apache 2.4 web server. Google TTS proxy would follow the same pattern passing the request to `https://eu-texttospeech.googleapis.com/v1/text:synthesize` (in EU).
 
 ```apacheconf
 # OpenAI API
@@ -200,11 +299,12 @@ RewriteMap jwtverify "prg:/etc/httpd/jwtverify" apache:apache
   RewriteCond ${jwtverify:%{http:Authorization}} !OK
   RewriteRule .+ - [F]
   ProxyPass https://api.openai.com/
+  ProxyPassReverse  https://api.openai.com/
   RequestHeader set Authorization "Bearer <insert-your-openai-api-key-here>"
 </Location>
 ```
 
-**NOTE:** The app also uses ElevenLabs' WebSockets API, and by using browser JavaScript you can't add authentication headers when opening a new WebSocket connection. In the app this problem is solved by including the JWT token as a part of the request URL. The downside is that the token might end up in server log files. However, this is typically not a problem as long as you are using HTTPS/SSL and the expiration time of the token is not too long. Below is an example of how you might implement a WebSocket proxy in Apache 2.4:
+**NOTE:** The example app also uses ElevenLabs' WebSockets API, and by using browser JavaScript you can't add authentication headers when opening a new WebSocket connection. In the app this problem is solved by including the JWT token as a part of the request URL. The downside is that the token might end up in server log files. However, this is typically not a problem as long as you are using HTTPS/SSL and the expiration time of the token is not too long. Below is an example of how you might implement a WebSocket proxy in Apache 2.4:
 
 ```apacheconf
 # ElevenLabs Text-to-speech API

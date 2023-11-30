@@ -577,6 +577,45 @@ class TalkingHead {
   }
 
   /**
+  * Concatenate an array of ArrayBuffers.
+  * @param {ArrayBuffer[]} bufs Array of ArrayBuffers
+  * @return {ArrayBuffer} Concatenated ArrayBuffer
+  */
+  concatArrayBuffers(bufs) {
+    let len = 0;
+    for( let i=0; i<bufs.length; i++ ) {
+      len += bufs[i].byteLength;
+    }
+    let buf = new ArrayBuffer(len);
+    let arr = new Uint8Array(buf);
+    let p = 0;
+    for( let i=0; i<bufs.length; i++ ) {
+      arr.set( new Uint8Array(bufs[i]), p);
+      p += bufs[i].byteLength;
+    }
+    return buf;
+  }
+
+
+  /**
+  * Convert PCM buffer to AudioBuffer.
+  * NOTE: Only signed 16bit little endian 22050Hz sample rate supported.
+  * @param {ArrayBuffer} buf PCM buffer
+  * @return {AudioBuffer} AudioBuffer
+  */
+  pcmToAudioBuffer(buf) {
+    const arr = new Int16Array(buf);
+    const floats = new Float32Array(arr.length);
+    for( let i=0; i<arr.length; i++ ) {
+      floats[i] = (arr[i] >= 0x8000) ? -(0x10000 - arr[i]) / 0x8000 : arr[i] / 0x7FFF;
+    }
+    const audio = this.audioCtx.createBuffer(1, floats.length, 22050 );
+    audio.copyToChannel( floats, 0 , 0 );
+    return audio;
+  }
+
+
+  /**
   * Convert internal notation to THREE objects.
   * NOTE: All rotations are converted to quaternions.
   * @param {Object} p Pose
@@ -1797,38 +1836,17 @@ class TalkingHead {
     if ( this.audioPlaylist.length ) {
       const item = this.audioPlaylist.shift();
 
+      // AudioBuffer
       let audio;
       if ( Array.isArray(item.audio) ) {
-
-        // Audio is a list of ArrayBuffers
-        let audios = [];
-        let totalLength = 0;
-        let numChannels = 0;
-        for( let i=0; i<item.audio.length; i++ ) {
-          let buf = await this.audioCtx.decodeAudioData( item.audio[i] );
-          totalLength += buf.length;
-          if ( buf.numberOfChannels > numChannels) {
-            numChannels = buf.numberOfChannels;
-          }
-          audios.push( buf );
-        }
-
-        // Concat audio buffers
-        audio = this.audioCtx.createBuffer( numChannels, totalLength, this.audioCtx.sampleRate );
-        let offset = 0;
-        audios.forEach( x => {
-          for (let i = 0; i < x.numberOfChannels; i++) {
-            audio.getChannelData(i).set(x.getChannelData(i), offset);
-          }
-          offset += x.length;
-        });
-
+        // Convert from PCM samples
+        let buf = this.concatArrayBuffers( item.audio );
+        audio = this.pcmToAudioBuffer(buf);
       } else {
-
-        // Audio is already an Audio Buffer
         audio = item.audio;
       }
 
+      // Create audio source
       this.audioSpeechSource = this.audioCtx.createBufferSource();
       this.audioSpeechSource.buffer = audio;
       this.audioSpeechSource.playbackRate.value = 1 / this.animSlowdownRate;
@@ -1848,6 +1866,7 @@ class TalkingHead {
         });
       }
 
+      // Play
       this.audioSpeechSource.start(0);
 
     } else {
@@ -2115,11 +2134,11 @@ class TalkingHead {
     let rotArmY = Math.random() / 2;
     let rotArmZ = - Math.random() / 2;
     let rotForeArmX = Math.random() / 2;
-    let rotForeArmY = Math.random() / 2;
+    let rotForeArmY = Math.random() / 4;
     let rotForeArmZ = Math.random() / 2;
-    let rotHandX = - Math.random();
-    let rotHandY = Math.random() - 0.5;
-    let rotHandZ = Math.random();
+    let rotHandX = - Math.random() / 2;
+    let rotHandY = Math.random() /2 - 0.5;
+    let rotHandZ = Math.random() / 2;
     let dampL = 1 + Math.random();
     let dampR = 1 + Math.random();
 
@@ -2127,7 +2146,7 @@ class TalkingHead {
     for( let i=0; i<1; i++ ) {
       dt.push( 100 + Math.round( Math.random() * 500 ) );
       moveto.push( {
-        duration: 1000,
+        duration: 500,
         props: this.propsToThreeObjects( {
           'RightArm.rotation': {
             x: 1.5 - rotArmX / dampR + delta(),
