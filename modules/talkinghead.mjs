@@ -63,6 +63,7 @@ class TalkingHead {
       ttsRate: 0.95,
       ttsPitch: 0,
       ttsVolume: 0,
+      pcmSampleRate: 22050,
       modelPixelRatio: 1,
       modelFPS: 30,
       cameraView: 'full',
@@ -599,7 +600,7 @@ class TalkingHead {
 
   /**
   * Convert PCM buffer to AudioBuffer.
-  * NOTE: Only signed 16bit little endian 22050Hz sample rate supported.
+  * NOTE: Only signed 16bit little endian supported.
   * @param {ArrayBuffer} buf PCM buffer
   * @return {AudioBuffer} AudioBuffer
   */
@@ -609,7 +610,7 @@ class TalkingHead {
     for( let i=0; i<arr.length; i++ ) {
       floats[i] = (arr[i] >= 0x8000) ? -(0x10000 - arr[i]) / 0x8000 : arr[i] / 0x7FFF;
     }
-    const audio = this.audioCtx.createBuffer(1, floats.length, 22050 );
+    const audio = this.audioCtx.createBuffer(1, floats.length, this.opt.pcmSampleRate );
     audio.copyToChannel( floats, 0 , 0 );
     return audio;
   }
@@ -1742,7 +1743,7 @@ class TalkingHead {
     this.audioBackgroundSource.playbackRate.value = 1 / this.animSlowdownRate;
     this.audioBackgroundSource.connect(this.audioBackgroundGainNode);
     this.audioBackgroundSource.start(0);
-    
+
   }
 
   /**

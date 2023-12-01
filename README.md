@@ -73,6 +73,7 @@ Option | Description
 `ttsVolume` | Google text-to-speech volume gain (in dB) in the range [-96.0, 16.0]. Default is `0`.
 `ttsTrimStart` | Trim the viseme sequence start relative to the beginning of the audio (shift in milliseconds). Default is `0`.
 `ttsTrimEnd`| Trim the viseme sequence end relative to the end of the audio (shift in milliseconds). Default is `300`.
+`pcmSampleRate` | PCM (signed 16bit little endian) sample rate used in `speakAudio` in Hz. Default is `22050`.
 `modelPixelRatio` | Sets the device's pixel ratio. Default is `1`.
 `modelFPS` | Frames per second. Default is `30`.
 `cameraView` | Initial view. Supported views are `"full"`, `"upper"`  and `"head"`. Default is `"full"`.
@@ -115,7 +116,7 @@ Method | Description
 `showAvatar(avatar, [onprogress=null])` | Load and show the specified avatar. The `avatar` object must include the `url` for GLB file. Optional properties are `body` for either male `M` or female `F` body form, `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood` and `avatarMute`.
 `setView(view, [opt])` | Set view. Supported views are `"full"`, `"upper"`  and `"head"`. Options `opt` can be used to set `cameraDistance`, `cameraX`, `cameraY`, `cameraRotateX`, `cameraRotateY`.
 `speakText(text, [opt={}], [onsubtitles=null], [excludes=[]])` | Add the `text` string to the speech queue. The text can contain face emojis. Options `opt` can be used to set text-specific `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood`, `avatarMute`. Optional callback function `onsubtitles` is called whenever a new subtitle is to be written with the parameter of the added string. The optional `excludes` is an array of [start,end] indices to be excluded from audio but to be included in the subtitles.
-`speakAudio(audio, [onsubtitles=null])` | Add the `audio` object to the speech queue. This method was added to support external TTS services such as ElevenLabs WebSocket API. The audio object contains ArrayBuffer chunks in `audio` array, characters in `chars` array, starting times for each character in milliseconds in `ts` array, and durations for each character in milliseconds in `ds` array. As of now, the only supported format is PCM signed 16bit little endian 22050Hz.
+`speakAudio(audio, [onsubtitles=null])` | Add the `audio` object to the speech queue. This method was added to support external TTS services such as ElevenLabs WebSocket API. The audio object contains ArrayBuffer chunks in `audio` array, characters in `chars` array, starting times for each character in milliseconds in `ts` array, and durations for each character in milliseconds in `ds` array. As of now, the only supported format is PCM signed 16bit little endian.
 `speakMarker(onmarker)` | Add a marker to the speech queue. The callback function `onmarker` is called when the queue processes the event.
 `lookAt(x,y,t)` | Make the avatar's head turn to look at the screen position (`x`,`y`) for `t` milliseconds.
 `lookAtCamera(t)` | Make the avatar's head turn to look at the camera for `t` milliseconds.
@@ -152,9 +153,9 @@ const elevenTTSProxy = [
 ];
 ```
 
-3.(Optional) The example app's UI supports both Finnish (default) and English. If you want to add another language, you need to add an another entry to the `i18n` object. Note, however, that the Talking Head class only supports lip-sync in Finnish (see the FAQ).
+3. The example app's UI supports both Finnish (default) and English. If you want to add another language, you need to add an another entry to the `i18n` object. Note that this support is only for UI. The Talking Head class only supports lip-sync in Finnish (see the FAQ).
 
-4. Add you own background images, videos, audio files, avatars etc. in the directory structure and update/add your site configuration accordingly. The keys are in English, but the entries can include translations to one or more languages.
+4. Add you own background images, videos, audio files, avatars etc. in the directory structure and update your site configuration accordingly. The keys are in English, but the entries can include translations to other languages.
 
 ```javascript
 // Site configuration
