@@ -939,10 +939,40 @@ class TalkingHead {
   */
   setPoseFromTemplate(t) {
 
-    if ( this.poseCurrentTemplate === t ) {
+    if ( this.poseTarget && this.poseTarget.template && ((this.poseTarget.template.standing && t.lying) || (this.poseTarget.template.lying && t.standing)) ) {
+
+      // Create an intermediate pose
+      let intermediate = this.poseTemplates['oneknee'];
+      this.poseTarget = this.poseFactory( intermediate );
+
+      // Templates have the weight on left leg, so switch if necessary
+      if ( !this.poseWeightOnLeft ) {
+        this.poseTarget.props = this.mirrorPose( this.poseTarget.props );
+      }
+
+      // Make sure deltas are included in the target
+      Object.keys(this.poseDelta.props).forEach( key => {
+        if ( !this.poseTarget.props.hasOwnProperty(key) ) {
+          this.poseTarget.props[key] = this.poseBase.props[key].clone();
+        }
+      });
+
+      this.poseCurrentTemplate = intermediate;
+
+      this.posePeriod = 1000;
+      this.poseTime = this.animClock + this.animFrameDur;
+
+      setTimeout( () => {
+        this.setPoseFromTemplate(t);
+      }, 1000);
+
+    } else if ( this.poseCurrentTemplate === t ) {
 
       // Same pose, shift weight
       this.poseTarget.props = this.mirrorPose( this.poseTarget.props );
+
+      this.posePeriod = t.duration || 2000;
+      this.poseTime = this.animClock + this.animFrameDur;
 
     } else {
 
@@ -962,10 +992,11 @@ class TalkingHead {
       });
 
       this.poseCurrentTemplate = t;
+
+      this.posePeriod = t.duration || 2000;
+      this.poseTime = this.animClock + this.animFrameDur;
     }
 
-    this.posePeriod = t.duration || 2000;
-    this.poseTime = this.animClock + this.animFrameDur;
   }
 
   /**
@@ -1695,26 +1726,31 @@ class TalkingHead {
 
   /**
   * Play background audio.
-  * @param {string} [url=null] URL for the audio, stop if null.
+  * @param {string} url URL for the audio, stop if null.
   */
-  async playBackgroundAudio( url=null ) {
-    if ( url ) {
-      // Fetch and play audio in a loop
-      let response = await fetch(url);
-      let arraybuffer = await response.arrayBuffer();
-      try { this.audioBackgroundSource.stop(); } catch(error) {}
-      this.audioBackgroundSource.disconnect();
-      this.audioBackgroundSource = this.audioCtx.createBufferSource();
-      this.audioBackgroundSource.loop = true;
-      this.audioBackgroundSource.buffer = await this.audioCtx.decodeAudioData(arraybuffer);
-      this.audioBackgroundSource.playbackRate.value = 1 / this.animSlowdownRate;
-      this.audioBackgroundSource.connect(this.audioBackgroundGainNode);
-      this.audioBackgroundSource.start(0);
-    } else {
-      // Stop background audio
-      try { this.audioBackgroundSource.stop(); } catch(error) {}
-      this.audioBackgroundSource.disconnect();
-    }
+  async playBackgroundAudio( url ) {
+
+    // Fetch audio
+    let response = await fetch(url);
+    let arraybuffer = await response.arrayBuffer();
+
+    // Play audio in a loop
+    this.stopBackgroundAudio()
+    this.audioBackgroundSource = this.audioCtx.createBufferSource();
+    this.audioBackgroundSource.loop = true;
+    this.audioBackgroundSource.buffer = await this.audioCtx.decodeAudioData(arraybuffer);
+    this.audioBackgroundSource.playbackRate.value = 1 / this.animSlowdownRate;
+    this.audioBackgroundSource.connect(this.audioBackgroundGainNode);
+    this.audioBackgroundSource.start(0);
+    
+  }
+
+  /**
+  * Stop background audio.
+  */
+  stopBackgroundAudio() {
+    try { this.audioBackgroundSource.stop(); } catch(error) {}
+    this.audioBackgroundSource.disconnect();
   }
 
   /**
@@ -2101,10 +2137,18 @@ class TalkingHead {
     roty = Math.min(0.8,Math.max(-0.8,roty));
 
     // Randomize head/eyes ratio
-    let drotx = (Math.random() - 0.5) / 5;
-    let droty = (Math.random() - 0.5) / 5;
+    let drotx = (Math.random() - 0.5) / 4;
+    let droty = (Math.random() - 0.5) / 4;
 
     if ( t ) {
+
+      // Remove old, if any
+      let old = this.animQueue.findIndex( y => y.template.name === 'lookat' );
+      if ( old !== -1 ) {
+        this.animQueue.splice(old, 1);
+      }
+
+      // Add new anim
       const templateLookAt = {
         name: 'lookat',
         dt: [750,t],
@@ -2112,7 +2156,10 @@ class TalkingHead {
           headRotateX: [ rotx + drotx ],
           headRotateY: [ roty + droty ],
           eyesRotateX: [ - 3 * drotx + 0.1 ],
-          eyesRotateY: [ - 5 * droty ]
+          eyesRotateY: [ - 5 * droty ],
+          browInnerUp: [[0,0.7]],
+          mouthLeft: [[0,0.7]],
+          mouthRight: [[0,0.7]]
         }
       };
       this.animQueue.push( this.animFactory( templateLookAt ) );
@@ -2325,10 +2372,18 @@ class TalkingHead {
         });
 
         // Add to clips
+        const newPose = { props: props };
+        if ( props['Hips.position'] ) {
+          if ( props['Hips.position'].y < 0.5 ) {
+            newPose.lying = true;
+          } else {
+            newPose.standing = true;
+          }
+        }
         this.animClips.push({
           url: url+'-'+ndx,
           clip: anim,
-          pose: { props: props }
+          pose: newPose
         });
 
         // Play
@@ -2414,11 +2469,17 @@ class TalkingHead {
         });
 
         // Add to pose
+        const newPose = { props: props };
+        if ( props['Hips.position'] ) {
+          if ( props['Hips.position'].y < 0.5 ) {
+            newPose.lying = true;
+          } else {
+            newPose.standing = true;
+          }
+        }
         this.animPoses.push({
           url: url+'-'+ndx,
-          pose: {
-            props: props
-          }
+          pose: newPose
         });
 
         // Play
