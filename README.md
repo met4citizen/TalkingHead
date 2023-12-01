@@ -120,7 +120,8 @@ Method | Description
 `lookAt(x,y,t)` | Make the avatar's head turn to look at the screen position (`x`,`y`) for `t` milliseconds.
 `lookAtCamera(t)` | Make the avatar's head turn to look at the camera for `t` milliseconds.
 `setMood(mood)` | Set avatar mood.
-`playBackgroundAudio( [url=null] )` | Play background audio such as ambient sounds/music in a loop. If the `url` is null, stop playing.
+`playBackgroundAudio(url)` | Play background audio such as ambient sounds/music in a loop.
+`stopBackgroundAudio()` | Stop playing the background audio.
 `playAnimation(url, [onprogress=null], [repeat=1], [ndx=0], [scale=0.01])` | Play Mixamo animation file. Repeat `repeat` times. If the FBX file includes several animations, the parameter `ndx` specifies the index. Since Mixamo rigs have a scale 100 and RPM a scale 1, the `scale` factor can be used to scale the positions.
 `stopAnimation()` | Stop the current animation started by `playAnimation`.
 `playPose(url, [onprogress=null], [dur=5], [ndx=0], [scale=0.01])` | Play the initial pose of a Mixamo animation file for `dur` seconds. If the FBX file includes several animations, the parameter `ndx` specifies the index. Since Mixamo rigs have a scale 100 and RPM a scale 1, the `scale` factor can be used to scale the positions.
@@ -151,7 +152,9 @@ const elevenTTSProxy = [
 ];
 ```
 
-3. Add you own background images, videos, audio files, avatars etc. in the directory structure and update/add your site configuration accordingly:
+3.(Optional) The example app's UI supports both Finnish (default) and English. If you want to add another language, you need to add an another entry to the `i18n` object. Note, however, that the Talking Head class only supports lip-sync in Finnish (see the FAQ).
+
+4. Add you own background images, videos, audio files, avatars etc. in the directory structure and update/add your site configuration accordingly. The keys are in English, but the entries can include translations to one or more languages.
 
 ```javascript
 // Site configuration
@@ -159,10 +162,11 @@ const site = {
 
   // Preset avatars
   avatars: {
-    'Brunetti': {
+    'Brunette': {
       url: './avatars/brunette.glb',
       body: 'F',
-      avatarMood: 'neutral'
+      avatarMood: 'neutral',
+      fi: 'Brunetti'
     }
   },
 
@@ -190,31 +194,31 @@ const site = {
 
   // Preset views
   views: {
-    'TohtoriOuto': { url: './views/strange.jpg', type: 'image/jpg' },
+    'DrStrange': { url: './views/strange.jpg', type: 'image/jpg', fi: 'TohtoriOuto' },
     'Matrix': { url: './views/matrix.mp4', type: 'video/mp4' }
   },
 
   // Preset poses (in addition to internal poses)
   poses: {
-    'Tanssi': { url: './poses/dance.fbx' }
+    'Dance': { url: './poses/dance.fbx', fi: 'Tanssi' }
   },
 
   // Preset animations
   animations: {
-    'Kävely': { url: './animations/walking.fbx' }
+    'Walking': { url: './animations/walking.fbx', fi: 'Kävely' }
   },
 
   // Impulse responses
   impulses: {
-    'Huone': { url: './audio/ir-room.m4a' },
-    'Kellari': { url: './audio/ir-basement.m4a' },
-    'Metsä': { url: './audio/ir-forest.m4a' },
-    'Kirkko': { url: './audio/ir-church.m4a' }
+    'Room': { url: './audio/ir-room.m4a', fi: 'Huone' },
+    'Basement': { url: './audio/ir-basement.m4a', fi: 'Kellari' },
+    'Forest': { url: './audio/ir-forest.m4a', fi: 'Metsä' },
+    'Church': { url: './audio/ir-church.m4a', fi: 'Kirkko' }
   },
 
   // Background ambient sounds/music
   music: {
-    'Puheensorina': { url: './audio/murmur.mp3'}
+    'Murmur': { url: './audio/murmur.mp3', fi: 'Puheensorina'}
   }
 
 };

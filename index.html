@@ -274,7 +274,7 @@
   #flag, #score { color: var(--colorToolbarPassive2); }
 
   [data-image-type^='video/']:after {
-    content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' version='1.1' width='24' height='24' viewBox='-10 -10 68 68'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M43,42H5c-2.209,0-4-1.791-4-4V10c0-2.209,1.791-4,4-4h38c2.209,0,4,1.791,4,4v28 C47,40.209,45.209,42,43,42z M12,8H5c-1.104,0-2,0.896-2,2v2h9V8z M23,8h-9v4h9V8z M34,8h-9v4h9V8z M45,10c0-1.104-0.896-2-2-2h-7v4 h9l0,0V10z M45,14L45,14H3v20h42l0,0V14z M45,36L45,36h-9v4h-2v-4h-9v4h-2v-4h-9v4h-2v-4H3v2c0,1.104,0.896,2,2,2h38 c1.104,0,2-0.896,2-2V36z M21.621,29.765C21.449,29.904,21.238,30,21,30c-0.553,0-1-0.447-1-1V19c0-0.552,0.447-1,1-1 c0.213,0,0.4,0.082,0.563,0.196l7.771,4.872C29.72,23.205,30,23.566,30,24c0,0.325-0.165,0.601-0.405,0.783L21.621,29.765z' fill='gray'%3E%3C/path%3E%3C/svg%3E");
+    content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' version='1.1' width='16' height='16' viewBox='-10 -10 58 58'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M43,42H5c-2.209,0-4-1.791-4-4V10c0-2.209,1.791-4,4-4h38c2.209,0,4,1.791,4,4v28 C47,40.209,45.209,42,43,42z M12,8H5c-1.104,0-2,0.896-2,2v2h9V8z M23,8h-9v4h9V8z M34,8h-9v4h9V8z M45,10c0-1.104-0.896-2-2-2h-7v4 h9l0,0V10z M45,14L45,14H3v20h42l0,0V14z M45,36L45,36h-9v4h-2v-4h-9v4h-2v-4h-9v4h-2v-4H3v2c0,1.104,0.896,2,2,2h38 c1.104,0,2-0.896,2-2V36z M21.621,29.765C21.449,29.904,21.238,30,21,30c-0.553,0-1-0.447-1-1V19c0-0.552,0.447-1,1-1 c0.213,0,0.4,0.082,0.563,0.196l7.771,4.872C29.72,23.205,30,23.566,30,24c0,0.325-0.165,0.601-0.405,0.783L21.621,29.765z' fill='gray'%3E%3C/path%3E%3C/svg%3E");
   }
 
   /* Misc */
@@ -403,10 +403,11 @@ const site = {
 
   // Preset avatars
   avatars: {
-    'Brunetti': {
+    'Brunette': {
       url: './avatars/brunette.glb',
       body: 'F',
-      avatarMood: 'neutral'
+      avatarMood: 'neutral',
+      fi: 'Brunetti'
     }
   },
 
@@ -434,34 +435,120 @@ const site = {
 
   // Preset views
   views: {
-    'TohtoriOuto': { url: './views/strange.jpg', type: 'image/jpg' },
+    'DrStrange': { url: './views/strange.jpg', type: 'image/jpg', fi: 'TohtoriOuto' },
     'Matrix': { url: './views/matrix.mp4', type: 'video/mp4' }
   },
 
   // Preset poses (in addition to internal poses)
   poses: {
-    'Tanssi': { url: './poses/dance.fbx' }
+    'Dance': { url: './poses/dance.fbx', fi: 'Tanssi' }
   },
 
   // Preset animations
   animations: {
-    'Kävely': { url: './animations/walking.fbx' }
+    'Walking': { url: './animations/walking.fbx', fi: 'Kävely' }
   },
 
   // Impulse responses
   impulses: {
-    'Huone': { url: './audio/ir-room.m4a' },
-    'Kellari': { url: './audio/ir-basement.m4a' },
-    'Metsä': { url: './audio/ir-forest.m4a' },
-    'Kirkko': { url: './audio/ir-church.m4a' }
+    'Room': { url: './audio/ir-room.m4a', fi: 'Huone' },
+    'Basement': { url: './audio/ir-basement.m4a', fi: 'Kellari' },
+    'Forest': { url: './audio/ir-forest.m4a', fi: 'Metsä' },
+    'Church': { url: './audio/ir-church.m4a', fi: 'Kirkko' }
   },
 
   // Background ambient sounds/music
   music: {
-    'Puheensorina': { url: './audio/murmur.mp3'}
+    'Murmur': { url: './audio/murmur.mp3', fi: 'Puheensorina'}
   }
 
 };
+
+// I18n internationalization
+const i18n = {
+
+  'en': {
+    'ai-system': 'System message.', 'ai-user1': 'User example #1',
+    'ai-ai1': 'AI response #1', 'ai-user2': 'User example #2',
+    'ai-ai2': 'AI response #2', 'Example1': 'Example #1', 'Example2': 'Example #2',
+    'theme-wide': 'Widescreen', 'theme-43': '4:3', 'theme-landscape': 'Landscape',
+    'theme-portrait': 'Portrait', 'voice-test': 'Speak', 'ai-stop': 'Stop',
+    'ai-user': 'User', 'input': 'Message.', 'en': 'English', 'fi': 'Finnish',
+    'Background': 'View'
+  },
+
+  'fi': {
+    'Avatar': 'Hahmo', 'Camera': 'Kamera', 'Audio': 'Ääni', 'Settings': 'Asetukset',
+    'Emotion': 'Hahmo', 'Neutral': 'Perus', 'Happy': 'Ilo', 'Angry': 'Viha', 'Sad': 'Suru',
+    'Fear': 'Pelko', 'Disgust': 'Inho', 'Love': 'Rakkaus', 'Sleep': 'Uni', 'Pose': 'Asento',
+    'Straight': 'Suora', 'Side': 'Keno', 'Hip': 'Lantio', 'Turn': 'Sivu', 'Back': 'Taka',
+    'Wide': 'Haara', 'Knee': 'Polvi', 'Kneel': 'Polvet', 'Bend': 'Perä', 'Sitting': 'Istuva',
+    'Action': 'Toiminta', 'Frame': 'Rajaus', 'Full': 'Kokovartalo', 'Upper': 'Yläosa',
+    'Head': 'Pää', 'Director': 'Ohjaus', 'Pause': 'Pysäytyskuva', 'Panning': 'Panorointi',
+    'Slow-motion': 'Hidastus', 'Ambience': 'Ambienssi', 'Silence': 'Hiljaisuus',
+    'Adventure': 'Seikkailu', 'Theme': 'Teema', 'Background': 'Tausta', 'Voice': 'Istuva',
+    'AI': 'Tekoäly', 'Emoji': 'Emojit', 'Title': 'Otsikko', 'Story': 'Tarina',
+    'ai-system': 'Järjestelmäviesti.', 'ai-user1': 'Käyttäjän syöte #1',
+    'ai-ai1': 'Tekoälyn vaste #1', 'ai-user2': 'Käyttäjän syöte #1',
+    'ai-ai2': 'Tekoälyn vaste #2', 'Example1': 'Esim #1', 'Example2': 'Esim #2',
+    'Dark': 'Tumma', 'Light': 'Vaalea', 'theme-wide': 'Laajakuva', 'theme-43': '4:3',
+    'theme-landscape': 'Vaaka', 'theme-portrait': 'Pysty', 'Empty': 'Tyhjä',
+    'Custom': 'Oma', 'Adjust': 'Säätö', 'Speech': 'Puhe', 'Silence': 'Hiljaisuus',
+    'Mixer': 'Mikseri', 'Space': 'Tila', 'Dry': 'Suora', 'voice-test': 'Äänitesti',
+    'Limits': 'Rajat', 'ai-stop': 'Stop', 'ai-user': 'Käyttäjä',
+    'input': 'Kirjoita viesti.', 'Name': 'Nimi', 'Language': 'Kieli',
+    'en': 'English', 'fi': 'Finnish', 'words': 'sanaa', 'dialogs': 'sanomaa'
+  }
+
+}
+
+function i18nTranslate(l) {
+  // Text
+  d3.selectAll("[data-i18n-text]").nodes().forEach( n => {
+    const e = d3.select(n);
+    const label = e.attr("data-i18n-text");
+    let text = label;
+    if ( i18n[l] && i18n[l][label] ) {
+      text = i18n[l][label];
+    }
+    e.text( text );
+  });
+
+  // Title
+  d3.selectAll("[data-i18n-title]").nodes().forEach( n => {
+    const e = d3.select(n);
+    const label = e.attr("data-i18n-title");
+    let title = label;
+    if ( i18n[l] && i18n[l][label] ) {
+      title = i18n[l][label];
+    }
+    e.attr( 'title', title );
+  });
+
+  // Placeholder
+  d3.selectAll("[data-i18n-placeholder]").nodes().forEach( n => {
+    const e = d3.select(n);
+    const label = e.attr("data-i18n-placeholder");
+    let placeholder = label;
+    if ( i18n[l] && i18n[l][label] ) {
+      placeholder = i18n[l][label];
+    }
+    e.attr( 'placeholder', placeholder );
+  });
+
+  // Site
+  d3.selectAll("[data-i18n-site]").nodes().forEach( n => {
+    const e = d3.select(n);
+    const label = e.attr("data-i18n-site");
+    const [section, ...rest] = label.split('-');
+    const item = rest.join('-');
+    let text = item;
+    if ( site[section] && site[section][item] && site[section][item][l] ) {
+      text = site[section][item][l];
+    }
+    e.text( text );
+  });
+}
 
 // Markdown configuration
 const markedOptions = { mangle:false, headerIds:false, breaks: true };
@@ -473,9 +560,9 @@ let openaiController = null;
 const elevenBOS = {
   "text": " ",
   "voice_settings": { "stability": 0.8, "similarity_boost": true },
-  "generation_config": {
+/*  "generation_config": {
     "chunk_length_schedule": [500,500,500,500]
-  },
+  }, */
 };
 let elevenSocket = null;
 let elevenInputMsgs = null;
@@ -642,11 +729,15 @@ function cfg(key,value) {
 // Load settings
 try {
   let json = localStorage.getItem('talkinghead');
-  const config = (json ? JSON.parse(json) : CFG);
+  CFG = (json ? JSON.parse(json) : CFG);
 } catch(error) {
   alert("Invalid JSON settings");
   console.error(error);
 }
+
+// Default UI language is Finnish
+let lang = CFG.lang || 'fi';
+CFG.lang = lang;
 
 window.cfg = cfg;
 
@@ -1460,6 +1551,16 @@ function testerGetLabel(mt,v) {
 // Page ready
 document.addEventListener('DOMContentLoaded', async function(e) {
 
+  // Add supported UI languages
+  const eLanguages = d3.select("#languages");
+  for ( const k of Object.keys(i18n) ) {
+    eLanguages.append("div")
+      .classed("command", true)
+      .classed("selected", k === lang )
+      .attr("data-lang",k)
+      .attr("data-i18n-text",k);
+  }
+
   // Add avatar links
   const eAvatarsRight = d3.select("#r-avatars");
   const eAvatarsLeft = d3.select("#l-avatars");
@@ -1471,13 +1572,13 @@ document.addEventListener('DOMContentLoaded', async function(e) {
       .attr("data-item","avatar-name")
       .attr("data-type","option")
       .attr("data-avatar-name", k )
-      .text( k );
+      .attr("data-i18n-site","avatars-"+k);
 
     eAvatarsLeft.append("div")
       .classed("command", true)
       .classed("selected", i === 0 )
       .attr("data-avatar-name", k )
-      .text( k );
+      .attr("data-i18n-site","avatars-"+k);
   }
 
   // Add Google voices
@@ -1490,7 +1591,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
       .attr("data-item","voice-google-id")
       .attr("data-type","option")
       .attr("data-voice-google-id",o.id)
-      .text( k );
+      .attr("data-i18n-site","googleVoices-"+k);
   }
 
   // Add ElevenLabs voices
@@ -1503,7 +1604,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
       .attr("data-item","voice-eleven-id")
       .attr("data-type","option")
       .attr("data-voice-eleven-id",o.id)
-      .text( k );
+      .attr("data-i18n-site","elevenVoices-"+k);
   }
 
   // Add views
@@ -1515,7 +1616,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
       .attr("data-type","option")
       .attr("data-image-type",o.type)
       .attr("data-view-image",o.url)
-      .text( k );
+      .attr("data-i18n-site","views-"+k);
   }
 
   // Add poses
@@ -1524,7 +1625,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     ePoses.append("div")
       .classed("command", true)
       .attr("data-pose",o.url)
-      .text( k );
+      .attr("data-i18n-site","poses-"+k);
   }
 
   // Add animations
@@ -1533,7 +1634,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     eAnimations.append("div")
       .classed("command", true)
       .attr("data-animation",o.url)
-      .text( k );
+      .attr("data-i18n-site","animations-"+k);
   }
 
   // Add impulse responses
@@ -1544,7 +1645,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
       .attr("data-item","voice-reverb")
       .attr("data-type","option")
       .attr("data-voice-reverb",o.url)
-      .text( k );
+      .attr("data-i18n-site","impulses-"+k);
   }
 
   // Add music
@@ -1554,15 +1655,18 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     eMusicLeft.append("div")
       .classed("command", true)
       .attr("data-voice-background",o.url)
-      .text( k );
+      .attr("data-i18n-site","music-"+k);
 
     eMusicRight.append("div")
       .classed("command", true)
       .attr("data-item","voice-background")
       .attr("data-type","option")
       .attr("data-voice-background",o.url)
-      .text( k );
+      .attr("data-i18n-site","music-"+k);
   }
+
+  // Translate to Finnish
+  i18nTranslate(lang);
 
   // Create the talking head avatar
   const nodeAvatar = document.getElementById('avatar');
@@ -1635,6 +1739,18 @@ document.addEventListener('DOMContentLoaded', async function(e) {
 
       }
     }
+  });
+
+  // Change UI language
+  d3.selectAll("[data-lang]").on('click.command', function(ev) {
+    const e = d3.select(this);
+    d3.selectAll("[data-lang]").classed('selected',false);
+    e.classed('selected',true);
+    lang = e.attr("data-lang");
+    i18nTranslate(lang);
+    d3.selectAll("[data-range]").dispatch("change");
+    CFG.lang = lang;
+    saveConfig();
   });
 
   // Speak test
@@ -1823,9 +1939,9 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     } else if ( type === 'radian' ) {
       v = n.value + ' rad';
     } else if ( type === 'word' ) {
-      v = n.value + ' sanaa';
+      v = n.value + ' ' + (( i18n[lang] && i18n[lang]['words'] ) ? i18n[lang]['words'] : 'words');
     } else if ( type === 'dialog' ) {
-      v = n.value + ' sanomaa';
+      v = n.value + ' ' + (( i18n[lang] && i18n[lang]['dialogs'] ) ? i18n[lang]['dialogs'] : 'dialogs');
     }
     n.nextElementSibling.textContent = v;
   });
@@ -2113,7 +2229,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     let background = e.attr('data-voice-background');
     d3.selectAll("[data-voice-background='" + background + "']").classed("selected",true);
     if ( background === 'NONE' ) {
-      head.playBackgroundAudio(null);
+      head.stopBackgroundAudio();
     } else if ( background === 'FILE' ) {
       let input = document.createElement('input');
       input.type = 'file';
@@ -2251,18 +2367,18 @@ document.addEventListener('DOMContentLoaded', async function(e) {
       <div class="pages">
 
         <div class="row noselect nodrag">
-          <div class="command starttransparent" title="Hahmo" data-show="right-avatar">
+          <div class="command starttransparent" data-i18n-title="Avatar" data-show="right-avatar">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path fill-rule="evenodd" clip-rule="evenodd" d="M16 7C16 9.20914 14.2091 11 12 11C9.79086 11 8 9.20914 8 7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7ZM14 7C14 8.10457 13.1046 9 12 9C10.8954 9 10 8.10457 10 7C10 5.89543 10.8954 5 12 5C13.1046 5 14 5.89543 14 7Z" fill="currentColor" />
               <path d="M16 15C16 14.4477 15.5523 14 15 14H9C8.44772 14 8 14.4477 8 15V21H6V15C6 13.3431 7.34315 12 9 12H15C16.6569 12 18 13.3431 18 15V21H16V15Z" fill="currentColor" />
             </svg>
           </div>
-          <div class="command starttransparent" title="Kamera" data-show="right-animation">
+          <div class="command starttransparent" data-i18n-title="Camera" data-show="right-animation">
             <svg viewBox="-1 -1 26 26" xmlns="http://www.w3.org/2000/svg">
               <path fill-rule="evenodd" clip-rule="evenodd" d="M4 4.5V6.5H12V7.5H3C1.34315 7.5 0 8.84315 0 10.5V16.5C0 18.1569 1.34315 19.5 3 19.5H15C16.5731 19.5 17.8634 18.2892 17.9898 16.7487L24 17.5V9.5L17.9898 10.2513C17.8634 8.71078 16.5731 7.5 15 7.5H14V5.5C14 4.94772 13.5523 4.5 13 4.5H4ZM18 12.2656V14.7344L22 15.2344V11.7656L18 12.2656ZM16 10.5C16 9.94772 15.5523 9.5 15 9.5H3C2.44772 9.5 2 9.94772 2 10.5V16.5C2 17.0523 2.44772 17.5 3 17.5H15C15.5523 17.5 16 17.0523 16 16.5V10.5Z" fill="currentColor" />
             </svg>
           </div>
-          <div class="command starttransparent" title="Audio" data-show="right-audio">
+          <div class="command starttransparent" data-i18n-title="Audio" data-show="right-audio">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path fill-rule="evenodd" clip-rule="evenodd" d="M12 8.95439L17.6352 7.82736C19.0102 7.55235 20 6.34501 20 4.94274C20 3.08637 18.3017 1.69406 16.4813 2.05813L12.4117 2.87206C11.0094 3.15252 10 4.38376 10 5.8138V13.8895C9.41165 13.5492 8.72857 13.3544 8 13.3544C5.79086 13.3544 4 15.1453 4 17.3544C4 19.5635 5.79086 21.3544 8 21.3544C10.2091 21.3544 12 19.5635 12 17.3544V8.95439ZM16.8736 4.01929L12.8039 4.83322C12.3365 4.92671 12 5.33712 12 5.8138V6.91479L17.2429 5.8662C17.6831 5.77816 18 5.39165 18 4.94274C18 4.34846 17.4563 3.90274 16.8736 4.01929ZM10 17.3544C10 16.2498 9.10457 15.3544 8 15.3544C6.89543 15.3544 6 16.2498 6 17.3544C6 18.459 6.89543 19.3544 8 19.3544C9.10457 19.3544 10 18.459 10 17.3544Z" fill="currentColor" />
             </svg>
@@ -2272,7 +2388,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
             Nimet&ouml;n
           </div>
           <div class="filler"></div>
-          <div class="command starttransparent" title="Asetukset" data-show="right-settings">
+          <div class="command starttransparent" data-i18n-title="Settings" data-show="right-settings">
             <svg viewBox="-2 -2 28 28" xmlns="http://www.w3.org/2000/svg">
               <path d="M2 6C2 5.44772 2.44772 5 3 5H21C21.5523 5 22 5.44772 22 6C22 6.55228 21.5523 7 21 7H3C2.44772 7 2 6.55228 2 6Z" fill="currentColor" />
               <path d="M2 12.0322C2 11.4799 2.44772 11.0322 3 11.0322H21C21.5523 11.0322 22 11.4799 22 12.0322C22 12.5845 21.5523 13.0322 21 13.0322H3C2.44772 13.0322 2 12.5845 2 12.0322Z" fill="currentColor" />
@@ -2283,7 +2399,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
 
         <div id="right-avatar" class="page noselect nodrag hidden">
           <div class="row">
-            <div class="text label">Hahmo</div>
+            <div class="text label" data-i18n-text="Avatar"></div>
             <div id="l-avatars" class="rowWrap">
               <div class="command" data-avatar-name="FILE">
                 <svg viewBox="-2 -2 28 28" xmlns="http://www.w3.org/2000/svg">
@@ -2300,7 +2416,20 @@ document.addEventListener('DOMContentLoaded', async function(e) {
             </div>
           </div>
           <div class="row">
-            <div class="text label">Asento</div>
+            <div class="text label" data-i18n-text="Emotion"></div>
+            <div class="rowWrap">
+              <div class="command" data-i18n-text="Neutral" data-mood="neutral">Perus</div>
+              <div class="command" data-i18n-text="Happy" data-mood="happy">Ilo</div>
+              <div class="command" data-i18n-text="Angry" data-mood="angry">Viha</div>
+              <div class="command" data-i18n-text="Sad" data-mood="sad">Suru</div>
+              <div class="command" data-i18n-text="Fear" data-mood="fear">Pelko</div>
+              <div class="command" data-i18n-text="Disgust" data-mood="disgust">Inho</div>
+              <div class="command" data-i18n-text="Love" data-mood="love">Rakkaus</div>
+              <div class="command" data-i18n-text="Sleep" data-mood="sleep">Uni</div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="text label" data-i18n-text="Pose"></div>
             <div id="poses" class="rowWrap">
               <div class="command" data-pose="FILE">
                 <svg viewBox="-2 -2 28 28" xmlns="http://www.w3.org/2000/svg">
@@ -2313,44 +2442,20 @@ document.addEventListener('DOMContentLoaded', async function(e) {
                   <path d="M10.1299 16.9999H19.1101V10.9999H17.1101V14.9999H10.1299V13.4019L5.62988 15.9999L10.1299 18.598V16.9999Z" fill="currentColor" />
                 </svg>
               </div>
-              <div class="command" data-pose="straight">Suora</div>
-              <div class="command" data-pose="side">Keno</div>
-              <div class="command" data-pose="hip">Lantio</div>
-              <div class="command" data-pose="turn">Sivu</div>
-              <div class="command" data-pose="back">Taka</div>
-              <div class="command" data-pose="wide">Haara</div>
-              <div class="command" data-pose="oneknee">Polvi</div>
-              <div class="command" data-pose="kneel">Polvet</div>
-              <div class="command" data-pose="bend">Per&auml;</div>
-              <div class="command" data-pose="sitting">Istuva</div>
+              <div class="command" data-i18n-text="Straight" data-pose="straight"></div>
+              <div class="command" data-i18n-text="Side" data-pose="side"></div>
+              <div class="command" data-i18n-text="Hip" data-pose="hip"></div>
+              <div class="command" data-i18n-text="Turn" data-pose="turn"></div>
+              <div class="command" data-i18n-text="Back" data-pose="back"></div>
+              <div class="command" data-i18n-text="Wide" data-pose="wide"></div>
+              <div class="command" data-i18n-text="Knee" data-pose="oneknee"></div>
+              <div class="command" data-i18n-text="Kneel" data-pose="kneel"></div>
+              <div class="command" data-i18n-text="Bend" data-pose="bend"></div>
+              <div class="command" data-i18n-text="Sitting" data-pose="sitting"></div>
             </div>
           </div>
           <div class="row">
-            <div class="text label">Tunne</div>
-            <div class="rowWrap">
-              <div class="command" data-mood="neutral">Perus</div>
-              <div class="command" data-mood="happy">Ilo</div>
-              <div class="command" data-mood="angry">Viha</div>
-              <div class="command" data-mood="sad">Suru</div>
-              <div class="command" data-mood="fear">Pelko</div>
-              <div class="command" data-mood="disgust">Inho</div>
-              <div class="command" data-mood="love">Rakkaus</div>
-              <div class="command" data-mood="sleep">Uni</div>
-            </div>
-          </div>
-        </div>
-
-        <div id="right-animation" class="page noselect nodrag hidden">
-          <div class="row">
-            <div class="text label">Rajaus</div>
-            <div class="rowWrap">
-              <div class="command" data-camera-frame="full">Kokovartalo</div>
-              <div class="command selected" data-camera-frame="upper">Yl&auml;osa</div>
-              <div class="command" data-camera-frame="head">P&auml;&auml;</div>
-            </div>
-          </div>
-          <div class="row">
-            <div class="text label">Toiminta</div>
+            <div class="text label" data-i18n-text="Action"></div>
             <div id="animations" class="rowWrap">
               <div class="command" data-animation="FILE">
                 <svg viewBox="-2 -2 28 28" xmlns="http://www.w3.org/2000/svg">
@@ -2365,26 +2470,37 @@ document.addEventListener('DOMContentLoaded', async function(e) {
               </div>
             </div>
           </div>
+        </div>
+
+        <div id="right-animation" class="page noselect nodrag hidden">
           <div class="row">
-            <div class="text label">Ohjaus</div>
+            <div class="text label" data-i18n-text="Frame"></div>
             <div class="rowWrap">
-              <div id="pause" class="command">Pys&auml;ytyskuva</div>
-              <div id="autorotate" class="command">Panorointi</div>
-              <div id="slowdown" class="command">Hidastus</div>
+              <div class="command" data-i18n-text="Full" data-camera-frame="full"></div>
+              <div class="command selected" data-i18n-text="Upper" data-camera-frame="upper"></div>
+              <div class="command" data-i18n-text="Head" data-camera-frame="head"></div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="text label" data-i18n-text="Director"></div>
+            <div class="rowWrap">
+              <div id="pause" class="command" data-i18n-text="Pause"></div>
+              <div id="autorotate" class="command" data-i18n-text="Panning"></div>
+              <div id="slowdown" class="command" data-i18n-text="Slow-motion"></div>
             </div>
           </div>
         </div>
 
         <div id="right-audio" class="page noselect nodrag hidden">
           <div class="row">
-            <div class="text label">Ambienssi</div>
+            <div class="text label" data-i18n-text="Ambience"></div>
             <div id="l-music" class="rowWrap">
               <div class="command" data-voice-background="FILE">
                 <svg viewBox="-2 -2 28 28" xmlns="http://www.w3.org/2000/svg">
                   <path fill-rule="evenodd" clip-rule="evenodd" d="M4 1.5C2.89543 1.5 2 2.39543 2 3.5V4.5C2 4.55666 2.00236 4.61278 2.00698 4.66825C0.838141 5.07811 0 6.19118 0 7.5V19.5C0 21.1569 1.34315 22.5 3 22.5H21C22.6569 22.5 24 21.1569 24 19.5V7.5C24 5.84315 22.6569 4.5 21 4.5H11.874C11.4299 2.77477 9.86384 1.5 8 1.5H4ZM9.73244 4.5C9.38663 3.9022 8.74028 3.5 8 3.5H4V4.5H9.73244ZM3 6.5C2.44772 6.5 2 6.94772 2 7.5V19.5C2 20.0523 2.44772 20.5 3 20.5H21C21.5523 20.5 22 20.0523 22 19.5V7.5C22 6.94772 21.5523 6.5 21 6.5H3Z" fill="currentColor" />
                 </svg>
               </div>
-              <div class="command selected" data-voice-background="NONE">Hiljaisuus</div>
+              <div class="command selected" data-i18n-text="Silence" data-voice-background="NONE"></div>
             </div>
           </div>
         </div>
@@ -2398,10 +2514,16 @@ document.addEventListener('DOMContentLoaded', async function(e) {
 
         <div id="right-settings" class="page noselect nodrag hidden">
 
+          <div class="row">
+            <div class="text label" data-i18n-text="Language"></div>
+            <div id="languages">
+            </div>
+          </div>
+
           <div id="top" class="vbar"></div>
 
           <div class="row">
-            <div class="text label">Seikkailu</div>
+            <div class="text label" data-i18n-text="Adventure"></div>
             <div id="directory" class="column fill">
               <div id="entry-0" class="entry row">
                 <div class="command fill selected" data-session="0">Nimet&ouml;n</div>
@@ -2435,21 +2557,21 @@ document.addEventListener('DOMContentLoaded', async function(e) {
           <div class="vbar"></div>
 
           <div class="rowWrap">
-            <div class="command" data-scroll="theme">Teema</div>
-            <div class="command" data-scroll="background">Tausta</div>
-            <div class="command" data-scroll="model">Hahmo</div>
-            <div class="command" data-scroll="camera">Kamera</div>
-            <div class="command" data-scroll="voice">&Auml;&auml;ni</div>
-            <div class="command" data-scroll="ai">Teko&auml;ly</div>
-            <div class="command" data-scroll="config">JSON</div>
-            <div class="command" data-scroll="tester">Emojit</div>
+            <div class="command" data-i18n-text="Theme" data-scroll="theme"></div>
+            <div class="command" data-i18n-text="Background" data-scroll="background"></div>
+            <div class="command" data-i18n-text="Avatar" data-scroll="model"></div>
+            <div class="command" data-i18n-text="Camera" data-scroll="camera"></div>
+            <div class="command" data-i18n-text="Audio" data-scroll="voice"></div>
+            <div class="command" data-i18n-text="AI" data-scroll="ai"></div>
+            <div class="command" data-i18n-text="JSON" data-scroll="config"></div>
+            <div class="command" data-i18n-text="Emoji" data-scroll="tester"></div>
           </div>
 
           <div class="vbar"></div>
 
           <div class="row">
-            <div class="text label">Otsikko</div>
-            <input class="fill" type="text" placeholder="Nimi" data-item="name" data-type="value">
+            <div class="text label" data-i18n-text="Title"></div>
+            <input class="fill" type="text" data-i18n-placeholder="Name" data-item="name" data-type="value">
             <div id="session-duplicate" class="command">
               <svg viewBox="-2 -2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M19 5H7V3H21V17H19V5Z" fill="currentColor" />
@@ -2469,24 +2591,24 @@ document.addEventListener('DOMContentLoaded', async function(e) {
           <div class="vbar"></div>
 
           <div class="row">
-            <div class="text label">Tarina</div>
-            <textarea placeholder="Järjestelmäviesti." rows="1" autocapitalize="sentences" data-item="ai-system" data-type="value" data-ai-system=""></textarea>
+            <div class="text label" data-i18n-text="Story"></div>
+            <textarea data-i18n-placeholder="ai-system" rows="1" autocapitalize="sentences" data-item="ai-system" data-type="value" data-ai-system=""></textarea>
           </div>
           <div class="row">
-            <div class="text label">Esim #1</div>
-            <textarea placeholder="Käyttäjän syöte #1" rows="1" autocapitalize="sentences" data-item="ai-user1" data-type="value" data-ai-user1=""></textarea>
-          </div>
-          <div class="row">
-            <div class="text label"></div>
-            <textarea placeholder="Tekoälyn vaste #1" rows="1" autocapitalize="sentences" data-item="ai-ai1" data-type="value" data-ai-ai1=""></textarea>
-          </div>
-          <div class="row">
-            <div class="text label">Esim #2</div>
-            <textarea placeholder="Käyttäjän syöte #2" rows="1" autocapitalize="sentences" data-item="ai-user2" data-type="value" data-ai-user2=""></textarea>
+            <div class="text label" data-i18n-text="Example1"></div>
+            <textarea data-i18n-placeholder="ai-user1" rows="1" autocapitalize="sentences" data-item="ai-user1" data-type="value" data-ai-user1=""></textarea>
           </div>
           <div class="row">
             <div class="text label"></div>
-            <textarea placeholder="Tekoälyn vaste #2" rows="1" autocapitalize="sentences" data-item="ai-ai2" data-type="value" data-ai-ai2=""></textarea>
+            <textarea data-i18n-placeholder="ai-ai1" rows="1" autocapitalize="sentences" data-item="ai-ai1" data-type="value" data-ai-ai1=""></textarea>
+          </div>
+          <div class="row">
+            <div class="text label" data-i18n-text="Example2"></div>
+            <textarea data-i18n-placeholder="ai-user2" rows="1" autocapitalize="sentences" data-item="ai-user2" data-type="value" data-ai-user2=""></textarea>
+          </div>
+          <div class="row">
+            <div class="text label"></div>
+            <textarea data-i18n-placeholder="ai-ai2" rows="1" autocapitalize="sentences" data-item="ai-ai2" data-type="value" data-ai-ai2=""></textarea>
           </div>
 
           <div id="theme" class="row">
@@ -2499,19 +2621,19 @@ document.addEventListener('DOMContentLoaded', async function(e) {
           </div>
 
           <div class="row">
-            <div class="text label">Teema</div>
+            <div class="text label" data-i18n-text="Theme"></div>
             <div class="column">
               <div class="rowWrap">
-                <div class="command selected" data-item="theme-brightness" data-type="option" data-theme-brightness="dark">Tumma</div>
-                <div class="command" data-item="theme-brightness" data-type="option" data-theme-brightness="light">Vaalea</div>
+                <div class="command selected" data-i18n-text="Dark" data-item="theme-brightness" data-type="option" data-theme-brightness="dark"></div>
+                <div class="command" data-i18n-text="Light" data-item="theme-brightness" data-type="option" data-theme-brightness="light"></div>
               </div>
               <div class="rowWrap">
-                <div class="command selected" data-item="theme-ratio" data-type="option" data-theme-ratio="wide">Laajakuva</div>
-                <div class="command" data-item="theme-ratio" data-type="option" data-theme-ratio="normal">4:3</div>
+                <div class="command selected" data-i18n-text="theme-wide" data-item="theme-ratio" data-type="option" data-theme-ratio="wide"></div>
+                <div class="command" data-i18n-text="theme-43" data-item="theme-ratio" data-type="option" data-theme-ratio="normal"></div>
               </div>
               <div class="rowWrap">
-                <div class="command selected" data-item="theme-layout" data-type="option" data-theme-layout="land">Vaaka</div>
-                <div class="command" data-item="theme-layout" data-type="option" data-theme-layout="port">Pysty</div>
+                <div class="command selected" data-i18n-text="theme-landscape" data-item="theme-layout" data-type="option" data-theme-layout="land"></div>
+                <div class="command" data-i18n-text="theme-portrait" data-item="theme-layout" data-type="option" data-theme-layout="port"></div>
               </div>
             </div>
           </div>
@@ -2526,15 +2648,15 @@ document.addEventListener('DOMContentLoaded', async function(e) {
           </div>
 
           <div class="row">
-            <div class="text label">Tausta</div>
+            <div class="text label" data-i18n-text="Background"></div>
             <div class="column">
               <div id="views" class="rowWrap">
-                <div class="command selected" data-item="view-image" data-type="option" data-view-image="NONE">TYHJ&Auml;</div>
+                <div class="command selected" data-i18n-text="Empty" data-item="view-image" data-type="option" data-view-image="NONE"></div>
               </div>
             </div>
           </div>
           <div class="row">
-            <div class="text label">Oma</div>
+            <div class="text label" data-i18n-text="Custom"></div>
             <div class="row fill">
               <div class="command" data-item="view-image" data-type="option" data-view-image="FILE">
                 <svg viewBox="-2 -2 28 28" xmlns="http://www.w3.org/2000/svg">
@@ -2552,7 +2674,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
             </div>
           </div>
           <div class="row">
-            <div class="text label">S&auml;&auml;t&ouml;</div>
+            <div class="text label" data-i18n-text="Adjust"></div>
             <div class="column">
               <div class="row">
                 <div class="command" data-item="view-brightness" data-range-reset="1">
@@ -2606,14 +2728,14 @@ document.addEventListener('DOMContentLoaded', async function(e) {
           </div>
 
           <div class="row">
-            <div class="text label">Hahmo</div>
+            <div class="text label" data-i18n-text="Avatar"></div>
             <div class="column">
               <div id="r-avatars" class="rowWrap">
               </div>
             </div>
           </div>
           <div class="row">
-            <div class="text label">Oma</div>
+            <div class="text label" data-i18n-text="Custom"></div>
             <div class="row fill">
               <div class="command" data-item="avatar-name" data-type="option" data-avatar-name="FILE">
                 <svg viewBox="-2 -2 28 28" xmlns="http://www.w3.org/2000/svg">
@@ -2641,7 +2763,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
             </div>
           </div>
           <div class="row">
-            <div class="text label">S&auml;&auml;t&ouml;</div>
+            <div class="text label" data-i18n-text="Adjust"></div>
             <div class="column">
               <div class="row">
                 <div class="command" data-item="avatar-brightness" data-range-reset="1">
@@ -2686,12 +2808,12 @@ document.addEventListener('DOMContentLoaded', async function(e) {
           </div>
 
           <div class="row">
-            <div class="text label">Kamera</div>
+            <div class="text label" data-i18n-text="Camera"></div>
             <div class="column">
               <div class="rowWrap">
-                <div class="command" data-item="camera-frame" data-type="option" data-camera-frame="full">Kokovartalo</div>
-                <div class="command selected" data-item="camera-frame" data-type="option" data-camera-frame="upper">Yl&auml;osa</div>
-                <div class="command" data-item="camera-frame" data-type="option" data-camera-frame="head">P&auml;&auml;</div>
+                <div class="command" data-i18n-text="Full" data-item="camera-frame" data-type="option" data-camera-frame="full"></div>
+                <div class="command selected" data-i18n-text="Upper" data-item="camera-frame" data-type="option" data-camera-frame="upper"></div>
+                <div class="command" data-i18n-text="Head" data-item="camera-frame" data-type="option" data-camera-frame="head"></div>
               </div>
               <div class="row">
                 <div class="command" data-item="camera-x" data-range-reset="0">
@@ -2758,7 +2880,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
           </div>
 
           <div class="row">
-            <div class="text label">Ambienssi</div>
+            <div class="text label" data-i18n-text="Ambience"></div>
             <div class="column">
               <div id="r-music" class="rowWrap">
                 <div class="command" data-item="voice-background" data-type="option" data-voice-background="FILE">
@@ -2766,12 +2888,12 @@ document.addEventListener('DOMContentLoaded', async function(e) {
                     <path fill-rule="evenodd" clip-rule="evenodd" d="M4 1.5C2.89543 1.5 2 2.39543 2 3.5V4.5C2 4.55666 2.00236 4.61278 2.00698 4.66825C0.838141 5.07811 0 6.19118 0 7.5V19.5C0 21.1569 1.34315 22.5 3 22.5H21C22.6569 22.5 24 21.1569 24 19.5V7.5C24 5.84315 22.6569 4.5 21 4.5H11.874C11.4299 2.77477 9.86384 1.5 8 1.5H4ZM9.73244 4.5C9.38663 3.9022 8.74028 3.5 8 3.5H4V4.5H9.73244ZM3 6.5C2.44772 6.5 2 6.94772 2 7.5V19.5C2 20.0523 2.44772 20.5 3 20.5H21C21.5523 20.5 22 20.0523 22 19.5V7.5C22 6.94772 21.5523 6.5 21 6.5H3Z" fill="currentColor" />
                   </svg>
                 </div>
-                <div class="command selected" data-item="voice-background" data-type="option" data-voice-background="NONE">Hiljaisuus</div>
+                <div class="command selected" data-i18n-text="Silence" data-item="voice-background" data-type="option" data-voice-background="NONE"></div>
               </div>
             </div>
           </div>
           <div class="row">
-            <div class="text label">Puhe</div>
+            <div class="text label" data-i18n-text="Speech"></div>
             <div class="column">
               <div class="rowWrap">
                 <div class="command selected" data-item="voice-type" data-type="option" data-voice-type="google">Google</div>
@@ -2816,7 +2938,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
             </div>
           </div>
           <div class="row">
-            <div class="text label">Mikseri</div>
+            <div class="text label" data-i18n-text="Mixer"></div>
             <div class="column">
               <div class="row">
                 <div class="command" data-item="voice-mixerbg" data-range-reset="0.5">
@@ -2840,17 +2962,15 @@ document.addEventListener('DOMContentLoaded', async function(e) {
             </div>
           </div>
           <div class="row">
-            <div class="text label">Tila</div>
+            <div class="text label" data-i18n-text="Space"></div>
             <div class="column">
               <div id="impulses" class="rowWrap">
-                <div class="command selected" data-item="voice-reverb" data-type="option" data-voice-reverb="NONE">Suora</div>
+                <div class="command selected" data-i18n-text="Dry" data-item="voice-reverb" data-type="option" data-voice-reverb="NONE"></div>
               </div>
             </div>
           </div>
           <div class="row">
-            <div class="text label">
-              &Auml;&auml;nitesti
-            </div>
+            <div class="text label" data-i18n-text="voice-test"></div>
             <div id="playtest" class="command">
               <svg viewBox="-2 -2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path fill-rule="evenodd" clip-rule="evenodd" d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21ZM12 23C18.0751 23 23 18.0751 23 12C23 5.92487 18.0751 1 12 1C5.92487 1 1 5.92487 1 12C1 18.0751 5.92487 23 12 23Z" fill="currentColor" />
@@ -2870,7 +2990,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
           </div>
 
           <div class="row">
-            <div class="text label">Teko&auml;ly</div>
+            <div class="text label" data-i18n-text="AI"></div>
             <div class="column">
               <div class="rowWrap">
                 <div class="command selected" data-item="ai-model" data-type="option" data-ai-model="gpt-3.5-turbo-1106">gpt-3.5-turbo-1106</div>
@@ -2908,7 +3028,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
             </div>
           </div>
           <div class="row">
-            <div class="text label">Rajat</div>
+            <div class="text label" data-i18n-text="Limits"></div>
             <div class="column">
               <div class="row">
                 <div class="command" data-item="ai-dialog" data-range-reset="4">
@@ -2943,11 +3063,11 @@ document.addEventListener('DOMContentLoaded', async function(e) {
             </div>
           </div>
           <div class="row">
-            <div class="text label">Stop</div>
+            <div class="text label" data-i18n-text="ai-stop"></div>
             <input type="text" placeholder="Avainsana" data-item="ai-stop" data-type="value" data-ai-stop="">
           </div>
           <div class="row">
-            <div class="text label">K&auml;ytt&auml;j&auml;</div>
+            <div class="text label" data-i18n-text="ai-user"></div>
             <input type="text" placeholder="Nimi" data-item="ai-user" data-type="value" data-ai-user="">
           </div>
 
@@ -2961,7 +3081,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
           </div>
 
           <div class="row">
-            <div class="text label">JSON</div>
+            <div class="text label" data-i18n-text="JSON"></div>
             <input id="json" type="text" placeholder="JSON">
           </div>
 
@@ -2975,19 +3095,19 @@ document.addEventListener('DOMContentLoaded', async function(e) {
           </div>
 
           <div class="row">
-            <div class="text label">Emoji</div>
+            <div class="text label" data-i18n-text="Emoji"></div>
             <div id="emojis" class="rowWrap">
             </div>
           </div>
 
           <div class="row">
-            <div class="text label">Morphs</div>
+            <div class="text label" data-i18n-text="Morphs"></div>
             <div id="morphs" class="column"></div>
           </div>
 
           <div class="row">
-            <div class="text label">Data</div>
-            <textarea id="morphdata" placeholder="Emoji data." rows="1"></textarea>
+            <div class="text label" data-i18n-text="Data"></div>
+            <textarea id="morphdata" rows="1"></textarea>
           </div>
 
           <div class="row">
@@ -3012,7 +3132,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
 
         <div class="page fill">
           <div class="row fill">
-            <textarea id="input" class="starttransparent" placeholder="Kirjoita viesti." autocapitalize="sentences"></textarea>
+            <textarea id="input" class="starttransparent"  data-i18n-placeholder="input" autocapitalize="sentences"></textarea>
           </div>
         </div>
 
