@@ -1827,7 +1827,7 @@ class TalkingHead {
 
           lipsyncAnim.push( {
             template: { name: 'viseme' },
-            ts: [ s - 25, s + 25, s + d + 50 ],
+            ts: [ s - 25, s + d, s + d + 50 ],
             vs: {
               ['viseme_'+viseme]: [null,(viseme === 'PP' || viseme === 'FF') ? 1 : 0.6,0]
             }
@@ -1947,7 +1947,7 @@ class TalkingHead {
 
       // Look at the camera
       this.lookAtCamera(500);
-      this.speakHands();
+      this.speakWithHands();
 
       // Make a playlist
       this.audioPlaylist.push({ anim: line.anim, audio: line.audio });
@@ -1999,7 +1999,7 @@ class TalkingHead {
           // Audio data
           const buf = this.b64ToArrayBuffer(data.audioContent);
           const audio = await this.audioCtx.decodeAudioData( buf );
-          this.speakHands();
+          this.speakWithHands();
 
           // Rescale based on the duration
           let d = 1000 * audio.duration; // Duration in ms
@@ -2171,7 +2171,7 @@ class TalkingHead {
   * Talk with hands.
   * @param {number} [delay=0] Delay in milliseconds
   */
-  speakHands(delay=0) {
+  speakWithHands(delay=0) {
 
     // Timeframe and hand movements
     const dt = [];
