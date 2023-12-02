@@ -1257,6 +1257,8 @@ function entrySelect() {
   d3.selectAll("[data-session]").classed('selected',false);
   e.classed('selected',true);
   loadConfig(id);
+  i18nTranslate();
+  d3.selectAll("[data-range]").dispatch("change");
 }
 
 // Move directory entry
