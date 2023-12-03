@@ -1827,7 +1827,7 @@ class TalkingHead {
 
           lipsyncAnim.push( {
             template: { name: 'viseme' },
-            ts: [ s - 25, s + d, s + d + 50 ],
+            ts: [ s - 25, s + 25, s + d + 25 ],
             vs: {
               ['viseme_'+viseme]: [null,(viseme === 'PP' || viseme === 'FF') ? 1 : 0.6,0]
             }
