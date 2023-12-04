@@ -829,7 +829,7 @@ class TalkingHead {
     this.camera.updateProjectionMatrix();
     this.renderer.setSize( this.nodeAvatar.clientWidth, this.nodeAvatar.clientHeight );
     this.controls.update();
-    this.render();
+    this.renderer.render( this.scene, this.camera );
   }
 
   /**
