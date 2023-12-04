@@ -134,8 +134,8 @@
   }
   .filler { visibility: hidden; pointer-events: none; }
   .command, .text {
-    display: inline-block; height: calc( 2rem + 2px); font-size: 1.4rem;
-    line-height: calc( 2rem + 2px); padding: 0 6px;
+    display: inline-flex; height: calc( 2rem + 2px); font-size: 1.4rem;
+    line-height: calc( 2rem + 2px); padding: 0 6px; gap: 12px;
     vertical-align: middle; text-align: left; font-family: "SansRegularCondensed";
     color: var(--colorToolbarPassive); white-space: nowrap; overflow: hidden;
   }
@@ -145,6 +145,7 @@
   .command { cursor: pointer; pointer-events: auto; }
   .command > svg, .text > svg {
     height: 2rem; width: 2rem; padding: 1px 0;
+    min-height: 2rem; min-width: 2rem;
   }
   .label {
     width: var(--widthLabel); flex-shrink: 0; color: var(--colorToolbarPassive2);
@@ -476,7 +477,7 @@ const i18n = {
     'Action': 'Toiminta', 'Frame': 'Rajaus', 'Full': 'Kokovartalo', 'Upper': 'Yläosa',
     'Head': 'Pää', 'Director': 'Ohjaus', 'Pause': 'Pysäytyskuva', 'Panning': 'Panorointi',
     'Slow-motion': 'Hidastus', 'Ambience': 'Ambienssi', 'Silence': 'Hiljaisuus',
-    'Scene': 'Kohtaus', 'Theme': 'Teema', 'Background': 'Tausta', 'Voice': 'Istuva',
+    'Scene': 'Kohtaus', 'Theme': 'Teema', 'Location': 'Paikka', 'Voice': 'Istuva',
     'AI': 'Tekoäly', 'Emoji': 'Emojit', 'Title': 'Otsikko', 'Story': 'Tarina',
     'ai-system': 'Järjestelmäviesti.', 'ai-user1': 'Käyttäjän syöte #1',
     'ai-ai1': 'Tekoälyn vaste #1', 'ai-user2': 'Käyttäjän syöte #1',
@@ -496,8 +497,7 @@ const i18n = {
     'ai-ai2': 'AI response #2', 'Example1': 'Example #1', 'Example2': 'Example #2',
     'theme-wide': 'Widescreen', 'theme-43': '4:3', 'theme-landscape': 'Landscape',
     'theme-portrait': 'Portrait', 'voice-test': 'Speak', 'ai-stop': 'Stop',
-    'ai-user': 'User', 'input': 'Message.', 'en': 'English', 'fi': 'Finnish',
-    'Background': 'View'
+    'ai-user': 'User', 'input': 'Message.', 'en': 'English', 'fi': 'Finnish'
   }
 
 }
@@ -750,16 +750,20 @@ try {
 window.cfg = cfg;
 
 // Save config to localStorage and show active session config
+let loadingConfig = false;
 function saveConfig() {
-  let json = JSON.stringify(CFG);
-  localStorage.setItem("talkinghead", json);
-  json = JSON.stringify( cfg() );
-  d3.select("#json").property("value", json );
+  if ( !loadingConfig ) {
+    let json = JSON.stringify(CFG);
+    localStorage.setItem("talkinghead", json);
+    json = JSON.stringify( cfg() );
+    d3.select("#json").property("value", json );
+  }
 }
 
 // Load config for the given session
 function loadConfig(session = null) {
   try {
+    loadingConfig = true;
     let json = localStorage.getItem('talkinghead');
     const config = (json ? JSON.parse(json) : CFG);
     if ( config && config.hasOwnProperty("session") && config.hasOwnProperty("sessions") && config.sessions.length ) {
@@ -767,7 +771,7 @@ function loadConfig(session = null) {
       if ( session !== null && session >= 0 && session < CFG.sessions.length ) {
         CFG.session = session;
         json = JSON.stringify(CFG);
-        localStorage.setItem("cfg", json);
+        localStorage.setItem("talkinghead", json);
       }
 
       // Populate sessions
@@ -828,30 +832,35 @@ function loadConfig(session = null) {
         }
       }
 
-      // Populate settings page
-      d3.selectAll("[data-item='view-url'],[data-item='avatar-url'],[data-item='avatar-body'],[data-item]").nodes().forEach( (n) => {
-        const e = d3.select(n);
-        const item = e.attr("data-item");
-        const type = e.attr("data-type");
-        let value = cfg( item );
-        if ( value !== undefined ) {
-          if ( type === 'option' ) {
-            if ( value === e.attr("data-"+item) ) {
-              e.dispatch("click");
+      // Populate settings page in specific order
+      [
+        "[data-item='view-url']", "[data-item='avatar-url']",
+        "[data-item='avatar-body']","[data-item]"
+      ].forEach( x => {
+        d3.selectAll(x).nodes().forEach( (n) => {
+          const e = d3.select(n);
+          const item = e.attr("data-item");
+          const type = e.attr("data-type");
+          const range = e.attr("data-range");
+          let value = cfg( item );
+          if ( value !== undefined ) {
+            if ( type === 'option' ) {
+              if ( value === e.attr("data-"+item) ) {
+                e.dispatch("click");
+              }
+            } else if ( type === 'value' ) {
+              e.property("value",value).dispatch("change");
             }
           } else {
-            e.property("value",value)
-              .dispatch("change");
-          }
-        } else {
-          if ( type === 'option' ) {
-            if ( e.classed("selected") ) {
-              e.dispatch("click");
+            if ( type === 'option' ) {
+              if ( e.classed("selected") ) {
+                e.dispatch("click");
+              }
+            } else {
+              e.dispatch("change");
             }
-          } else {
-            e.dispatch("change");
           }
-        }
+        });
       });
 
       // Populate other parts of UI,
@@ -868,6 +877,9 @@ function loadConfig(session = null) {
   } catch(error) {
     alert("Invalid JSON settings");
     console.error(error);
+  } finally {
+    loadingConfig = false;
+    saveConfig();
   }
 }
 
@@ -886,8 +898,8 @@ function aiBuildMessage() {
   const input = d3.select("#input");
   const messages = session.selectAll(".message:not(.grayed)");
 
-  const limitDialog = parseInt( cfg('ai-dialog') );
-  const limitInput = parseInt( cfg('ai-input') );
+  const limitDialog = cfg('ai-dialog');
+  const limitInput = cfg('ai-input');
   let dialogs = 0;
   let words = 0;
 
@@ -1013,10 +1025,10 @@ async function aiSendMessage(node,msgs) {
         const {role,content,name} = x;
         return (name ? {role,content,name} : {role,content});
       }),
-      temperature: parseFloat( cfg('ai-temperature') ),
-      presence_penalty: parseFloat( cfg('ai-presence') ),
-      frequency_penalty: parseFloat( cfg('ai-frequency') ),
-      max_tokens: parseInt( cfg('ai-output') ),
+      temperature: cfg('ai-temperature'),
+      presence_penalty: cfg('ai-presence'),
+      frequency_penalty: cfg('ai-frequency'),
+      max_tokens: cfg('ai-output'),
       stream: true
     };
     const stop = cfg('ai-stop');
@@ -1069,8 +1081,8 @@ async function aiSendMessage(node,msgs) {
                 } else {
                   head.speakText( tts, {
                     ttsVoice: cfg('voice-google-id'),
-                    ttsRate: parseFloat( cfg('voice-google-rate') ),
-                    ttsPitch: parseFloat( cfg('voice-google-pitch') )
+                    ttsRate: cfg('voice-google-rate'),
+                    ttsPitch: cfg('voice-google-pitch')
                   }, addText.bind(null,node) );
                 }
               }
@@ -1100,8 +1112,8 @@ async function aiSendMessage(node,msgs) {
                   } else {
                     head.speakText( s[i] + (m[i] || ''), {
                       ttsVoice: cfg('voice-google-id'),
-                      ttsRate: parseFloat( cfg('voice-google-rate') ),
-                      ttsPitch: parseFloat( cfg('voice-google-pitch') )
+                      ttsRate: cfg('voice-google-rate'),
+                      ttsPitch: cfg('voice-google-pitch')
                     }, addText.bind(null,node) );
                   }
                 }
@@ -1197,8 +1209,8 @@ function addMessage(user = false) {
           } else {
             head.speakText( text, {
               ttsVoice: cfg('voice-google-id'),
-              ttsRate: parseFloat( cfg('voice-google-rate') ),
-              ttsPitch: parseFloat( cfg('voice-google-pitch') )
+              ttsRate: cfg('voice-google-rate'),
+              ttsPitch: cfg('voice-google-pitch')
             } );
           }
         }
@@ -1247,7 +1259,6 @@ function addText(node,s) {
   });
   if ( onbottom ) nodeSessions.scrollTop = nodeSessions.scrollHeight;
 }
-window.trek = addText;
 
 // Select an directory entry
 function entrySelect() {
@@ -1333,6 +1344,8 @@ function entryMove() {
   // Save new configuration and load the session
   saveConfig();
   loadConfig(session);
+  i18nTranslate();
+  d3.selectAll("[data-range]").dispatch("change");
 }
 
 // Turn on effect
@@ -1455,8 +1468,6 @@ function headLoaded() {
       .html(testerGetLabel(mt,v));
   });
 
-  d3.select("#loading").style("display","none");
-
   setTimeout( () => {
     turnOnEffect();
     reconnectEffect();
@@ -1503,7 +1514,6 @@ function progressMedia() {
 
 function errorShow(error) {
   console.error(error);
-  progressHide();
 }
 
 function testerUpdateMorphData() {
@@ -1759,8 +1769,8 @@ document.addEventListener('DOMContentLoaded', async function(e) {
       } else {
         head.speakText( text, {
           ttsVoice: cfg('voice-google-id'),
-          ttsRate: parseFloat( cfg('voice-google-rate') ),
-          ttsPitch: parseFloat( cfg('voice-google-pitch') )
+          ttsRate: cfg('voice-google-rate'),
+          ttsPitch: cfg('voice-google-pitch')
         } );
       }
     }
@@ -1880,14 +1890,21 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     const e = d3.select(this);
     const item = e.attr("data-item");
     const type = e.attr("data-type");
+    const range = e.attr("data-range");
     let value;
     if ( type === "option" ) {
       value = e.attr("data-"+item);
-    } else {
-      value = e.property("value");
+    } else if ( type === "value" ) {
+      if ( range !== null ) {
+        value = parseFloat( e.property("value") );
+      } else {
+        value = e.property("value");
+      }
     }
-    cfg( item, value );
-    saveConfig();
+    if ( !loadingConfig && value !== undefined && cfg( item ) !== value ) {
+      cfg( item, value );
+      saveConfig();
+    }
   });
 
   // Change session
@@ -1910,9 +1927,9 @@ document.addEventListener('DOMContentLoaded', async function(e) {
   // Reset range
   d3.selectAll("[data-range-reset]").on('click.command', function(ev) {
     const e = d3.select(this);
-    const item = e.attr("data-item");
-    const value = e.attr("data-range-reset");
-    d3.select("[data-"+item+"]").property("value",value).dispatch("change");
+    const target = e.attr("data-target");
+    const value = parseFloat(e.attr("data-range-reset"));
+    d3.select("[data-"+target+"]").property("value",value).dispatch("change");
   });
 
   // Show value labels
@@ -2152,12 +2169,13 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     d3.selectAll("[data-camera-frame]").classed('selected',false);
     const camera = e.attr('data-camera-frame');
     d3.selectAll("[data-camera-frame='" + camera + "']").classed("selected",true);
-    const opt = {};
-    opt.cameraX = parseFloat( cfg("camera-x") );
-    opt.cameraY = parseFloat( cfg("camera-y") );
-    opt.cameraDistance = parseFloat( cfg("camera-d") );
-    opt.cameraRotateX = parseFloat( cfg("camera-rotx") );
-    opt.cameraRotateY = parseFloat( cfg("camera-roty]") );
+    const opt = {
+      cameraX: cfg("camera-x"),
+      cameraY: cfg("camera-y"),
+      cameraDistance: cfg("camera-d"),
+      cameraRotateX: cfg("camera-rotx"),
+      cameraRotateY: cfg("camera-roty")
+    };
     head.setView( camera, opt );
   });
 
@@ -2314,13 +2332,26 @@ document.addEventListener('DOMContentLoaded', async function(e) {
       CFG.sessions[CFG.session] = c;
       saveConfig();
       loadConfig();
+      i18nTranslate();
     } catch(error) {
       console.error(error);
     }
   });
 
   try {
-    await head.showAvatar( Object.values(site.avatars)[0], progressUpdate);
+
+    // Show last avatar
+    let o = {};
+    let name = cfg('avatar-name') || Object.values(site.avatars)[0].name;
+    if ( site.avatars.hasOwnProperty(name) ) {
+      o = site.avatars[name];
+    } else if ( name === 'URL' ) {
+      o.url = cfg('avatar-url');
+      o.body = cfg('avatar-body');
+    } else {
+      o =  Object.values(site.avatars)[0];
+    }
+    await head.showAvatar( o, progressUpdate);
     headLoaded();
   } catch (error) {
     errorShow(error);
@@ -2376,8 +2407,8 @@ document.addEventListener('DOMContentLoaded', async function(e) {
 
           <div class="filler"></div>
 
-          <div class="command starttransparent" data-i18n-title="Background" data-show="right-view">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <div class="command starttransparent" data-i18n-title="Location" data-show="right-view">
+            <svg viewBox="-1 -1 26 26" xmlns="http://www.w3.org/2000/svg">
               <path fill-rule="evenodd" clip-rule="evenodd" d="M7 7C5.34315 7 4 8.34315 4 10C4 11.6569 5.34315 13 7 13C8.65685 13 10 11.6569 10 10C10 8.34315 8.65685 7 7 7ZM6 10C6 9.44772 6.44772 9 7 9C7.55228 9 8 9.44772 8 10C8 10.5523 7.55228 11 7 11C6.44772 11 6 10.5523 6 10Z" fill="currentColor" />
               <path fill-rule="evenodd" clip-rule="evenodd" d="M3 3C1.34315 3 0 4.34315 0 6V18C0 19.6569 1.34315 21 3 21H21C22.6569 21 24 19.6569 24 18V6C24 4.34315 22.6569 3 21 3H3ZM21 5H3C2.44772 5 2 5.44772 2 6V18C2 18.5523 2.44772 19 3 19H7.31374L14.1924 12.1214C15.364 10.9498 17.2635 10.9498 18.435 12.1214L22 15.6863V6C22 5.44772 21.5523 5 21 5ZM21 19H10.1422L15.6066 13.5356C15.9971 13.145 16.6303 13.145 17.0208 13.5356L21.907 18.4217C21.7479 18.7633 21.4016 19 21 19Z" fill="currentColor" />
             </svg>
@@ -2406,7 +2437,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
           <div class="vbar"></div>
 
           <div class="row">
-            <div class="text label" data-i18n-text="Background"></div>
+            <div class="text label" data-i18n-text="Location"></div>
             <div class="column">
               <div id="views" class="rowWrap">
                 <div class="command" data-view-image="FILE">
@@ -2439,7 +2470,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
             <div class="text label" data-i18n-text="Adjust"></div>
             <div class="column">
               <div class="row">
-                <div class="command" data-item="view-brightness" data-range-reset="1">
+                <div class="command" data-target="view-brightness" data-range-reset="1">
                   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path fill-rule="evenodd" clip-rule="evenodd" d="M12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16ZM12 18C15.3137 18 18 15.3137 18 12C18 8.68629 15.3137 6 12 6C8.68629 6 6 8.68629 6 12C6 15.3137 8.68629 18 12 18Z" fill="currentColor" />
                     <path fill-rule="evenodd" clip-rule="evenodd" d="M11 0H13V4.06189C12.6724 4.02104 12.3387 4 12 4C11.6613 4 11.3276 4.02104 11 4.06189V0ZM7.0943 5.68018L4.22173 2.80761L2.80752 4.22183L5.6801 7.09441C6.09071 6.56618 6.56608 6.0908 7.0943 5.68018ZM4.06189 11H0V13H4.06189C4.02104 12.6724 4 12.3387 4 12C4 11.6613 4.02104 11.3276 4.06189 11ZM5.6801 16.9056L2.80751 19.7782L4.22173 21.1924L7.0943 18.3198C6.56608 17.9092 6.09071 17.4338 5.6801 16.9056ZM11 19.9381V24H13V19.9381C12.6724 19.979 12.3387 20 12 20C11.6613 20 11.3276 19.979 11 19.9381ZM16.9056 18.3199L19.7781 21.1924L21.1923 19.7782L18.3198 16.9057C17.9092 17.4339 17.4338 17.9093 16.9056 18.3199ZM19.9381 13H24V11H19.9381C19.979 11.3276 20 11.6613 20 12C20 12.3387 19.979 12.6724 19.9381 13ZM18.3198 7.0943L21.1923 4.22183L19.7781 2.80762L16.9056 5.6801C17.4338 6.09071 17.9092 6.56608 18.3198 7.0943Z" fill="currentColor" />
@@ -2449,7 +2480,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
                 <div class="text">100%</div>
               </div>
               <div class="row">
-                <div class="command" data-item="view-contrast" data-range-reset="1">
+                <div class="command" data-target="view-contrast" data-range-reset="1">
                   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M12 18C10.4633 18 9.06151 17.4223 8 16.4722C6.7725 15.3736 6 13.777 6 12C6 10.223 6.7725 8.62643 8 7.52779C9.06151 6.57771 10.4633 6 12 6V18Z" fill="currentColor" />
                     <path fill-rule="evenodd" clip-rule="evenodd" d="M2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12ZM12 20C7.58172 20 4 16.4183 4 12C4 7.58172 7.58172 4 12 4C16.4183 4 20 7.58172 20 12C20 16.4183 16.4183 20 12 20Z" fill="currentColor" />
@@ -2459,7 +2490,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
                 <div class="text">100%</div>
               </div>
               <div class="row">
-                <div class="command" data-item="view-saturate" data-range-reset="1">
+                <div class="command" data-target="view-saturate" data-range-reset="1">
                   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path fill-rule="evenodd" clip-rule="evenodd" d="M8.20348 2.00378C9.46407 2.00378 10.5067 3.10742 10.6786 4.54241L19.1622 13.0259L11.384 20.8041C10.2124 21.9757 8.31291 21.9757 7.14134 20.8041L2.8987 16.5615C1.72713 15.3899 1.72713 13.4904 2.8987 12.3188L5.70348 9.51404V4.96099C5.70348 3.32777 6.82277 2.00378 8.20348 2.00378ZM8.70348 4.96099V6.51404L7.70348 7.51404V4.96099C7.70348 4.63435 7.92734 4.36955 8.20348 4.36955C8.47963 4.36955 8.70348 4.63435 8.70348 4.96099ZM8.70348 10.8754V9.34247L4.31291 13.733C3.92239 14.1236 3.92239 14.7567 4.31291 15.1473L8.55555 19.3899C8.94608 19.7804 9.57924 19.7804 9.96977 19.3899L16.3337 13.0259L10.7035 7.39569V10.8754C10.7035 10.9184 10.7027 10.9612 10.7012 11.0038H8.69168C8.69941 10.9625 8.70348 10.9195 8.70348 10.8754Z" fill="currentColor" />
                     <path d="M16.8586 16.8749C15.687 18.0465 15.687 19.946 16.8586 21.1175C18.0302 22.2891 19.9297 22.2891 21.1013 21.1175C22.2728 19.946 22.2728 18.0465 21.1013 16.8749L18.9799 14.7536L16.8586 16.8749Z" fill="currentColor" />
@@ -2469,7 +2500,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
                 <div class="text">100%</div>
               </div>
               <div class="row">
-                <div class="command" data-item="view-blur" data-range-reset="0">
+                <div class="command" data-target="view-blur" data-range-reset="0">
                   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path fill-rule="evenodd" clip-rule="evenodd" d="M4.70834 15.4397C5.92663 16.2928 7.3222 16.7038 8.70461 16.7063C9.17977 18.0045 10.0433 19.1753 11.2616 20.0284C14.4284 22.2458 18.7932 21.4762 21.0107 18.3093C23.2281 15.1425 22.4585 10.7777 19.2916 8.56024C18.0734 7.70719 16.6778 7.29621 15.2954 7.29371C14.8202 5.99552 13.9567 4.82467 12.7384 3.97161C9.57158 1.75417 5.20676 2.52381 2.98931 5.69064C0.771871 8.85748 1.54151 13.2223 4.70834 15.4397ZM5.8555 13.8014C6.6016 14.3239 7.44081 14.6142 8.28736 14.6875C8.20112 13.1725 8.60464 11.6187 9.54254 10.2793C10.4804 8.9398 11.8025 8.0292 13.2556 7.59209C12.8972 6.82166 12.3374 6.13235 11.5913 5.60992C9.32924 4.02603 6.21151 4.57577 4.62762 6.8378C3.04373 9.09982 3.59347 12.2176 5.8555 13.8014ZM18.1445 10.1985C17.3984 9.67611 16.5592 9.38581 15.7126 9.31251C15.7989 10.8275 15.3953 12.3813 14.4574 13.7207C13.5195 15.0602 12.1975 15.9708 10.7444 16.4079C11.1028 17.1783 11.6626 17.8676 12.4087 18.3901C14.6707 19.9739 17.7885 19.4242 19.3724 17.1622C20.9562 14.9002 20.4065 11.7824 18.1445 10.1985Z" fill="currentColor" />
                   </svg>
@@ -2610,7 +2641,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
             <div class="text label" data-i18n-text="Adjust"></div>
             <div class="column">
               <div class="row">
-                <div class="command" data-item="avatar-brightness" data-range-reset="1">
+                <div class="command" data-target="avatar-brightness" data-range-reset="1">
                   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path fill-rule="evenodd" clip-rule="evenodd" d="M12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16ZM12 18C15.3137 18 18 15.3137 18 12C18 8.68629 15.3137 6 12 6C8.68629 6 6 8.68629 6 12C6 15.3137 8.68629 18 12 18Z" fill="currentColor" />
                     <path fill-rule="evenodd" clip-rule="evenodd" d="M11 0H13V4.06189C12.6724 4.02104 12.3387 4 12 4C11.6613 4 11.3276 4.02104 11 4.06189V0ZM7.0943 5.68018L4.22173 2.80761L2.80752 4.22183L5.6801 7.09441C6.09071 6.56618 6.56608 6.0908 7.0943 5.68018ZM4.06189 11H0V13H4.06189C4.02104 12.6724 4 12.3387 4 12C4 11.6613 4.02104 11.3276 4.06189 11ZM5.6801 16.9056L2.80751 19.7782L4.22173 21.1924L7.0943 18.3198C6.56608 17.9092 6.09071 17.4338 5.6801 16.9056ZM11 19.9381V24H13V19.9381C12.6724 19.979 12.3387 20 12 20C11.6613 20 11.3276 19.979 11 19.9381ZM16.9056 18.3199L19.7781 21.1924L21.1923 19.7782L18.3198 16.9057C17.9092 17.4339 17.4338 17.9093 16.9056 18.3199ZM19.9381 13H24V11H19.9381C19.979 11.3276 20 11.6613 20 12C20 12.3387 19.979 12.6724 19.9381 13ZM18.3198 7.0943L21.1923 4.22183L19.7781 2.80762L16.9056 5.6801C17.4338 6.09071 17.9092 6.56608 18.3198 7.0943Z" fill="currentColor" />
@@ -2620,7 +2651,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
                 <div class="text">100%</div>
               </div>
               <div class="row">
-                <div class="command" data-item="avatar-contrast" data-range-reset="1">
+                <div class="command" data-target="avatar-contrast" data-range-reset="1">
                   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M12 18C10.4633 18 9.06151 17.4223 8 16.4722C6.7725 15.3736 6 13.777 6 12C6 10.223 6.7725 8.62643 8 7.52779C9.06151 6.57771 10.4633 6 12 6V18Z" fill="currentColor" />
                     <path fill-rule="evenodd" clip-rule="evenodd" d="M2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12ZM12 20C7.58172 20 4 16.4183 4 12C4 7.58172 7.58172 4 12 4C16.4183 4 20 7.58172 20 12C20 16.4183 16.4183 20 12 20Z" fill="currentColor" />
@@ -2630,7 +2661,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
                 <div class="text">100%</div>
               </div>
               <div class="row">
-                <div class="command" data-item="avatar-saturate" data-range-reset="1">
+                <div class="command" data-target="avatar-saturate" data-range-reset="1">
                   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path fill-rule="evenodd" clip-rule="evenodd" d="M8.20348 2.00378C9.46407 2.00378 10.5067 3.10742 10.6786 4.54241L19.1622 13.0259L11.384 20.8041C10.2124 21.9757 8.31291 21.9757 7.14134 20.8041L2.8987 16.5615C1.72713 15.3899 1.72713 13.4904 2.8987 12.3188L5.70348 9.51404V4.96099C5.70348 3.32777 6.82277 2.00378 8.20348 2.00378ZM8.70348 4.96099V6.51404L7.70348 7.51404V4.96099C7.70348 4.63435 7.92734 4.36955 8.20348 4.36955C8.47963 4.36955 8.70348 4.63435 8.70348 4.96099ZM8.70348 10.8754V9.34247L4.31291 13.733C3.92239 14.1236 3.92239 14.7567 4.31291 15.1473L8.55555 19.3899C8.94608 19.7804 9.57924 19.7804 9.96977 19.3899L16.3337 13.0259L10.7035 7.39569V10.8754C10.7035 10.9184 10.7027 10.9612 10.7012 11.0038H8.69168C8.69941 10.9625 8.70348 10.9195 8.70348 10.8754Z" fill="currentColor" />
                     <path d="M16.8586 16.8749C15.687 18.0465 15.687 19.946 16.8586 21.1175C18.0302 22.2891 19.9297 22.2891 21.1013 21.1175C22.2728 19.946 22.2728 18.0465 21.1013 16.8749L18.9799 14.7536L16.8586 16.8749Z" fill="currentColor" />
@@ -2692,7 +2723,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
             <div class="text label" data-i18n-text="Adjust"></div>
             <div class="column">
               <div class="row">
-                <div class="command" data-item="camera-x" data-range-reset="0">
+                <div class="command" data-target="camera-x" data-range-reset="0">
                   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M13 7H11V17H13V7Z" fill="currentColor" />
                     <path d="M5.99996 7.75732L7.41418 9.17154L5.58572 11L9.99996 11V13L5.58579 13L7.41418 14.8284L5.99996 16.2426L1.75732 12L5.99996 7.75732Z" fill="currentColor" />
@@ -2703,7 +2734,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
                 <div class="text">0 m</div>
               </div>
               <div class="row">
-                <div class="command" data-item="camera-y" data-range-reset="0">
+                <div class="command" data-target="camera-y" data-range-reset="0">
                   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M7 11L7 13H17V11H7Z" fill="currentColor" />
                     <path d="M7.75732 18L9.17154 16.5858L11 18.4143V14H13V18.4142L14.8284 16.5858L16.2426 18L12 22.2427L7.75732 18Z" fill="currentColor" />
@@ -2714,7 +2745,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
                 <div class="text">0 m</div>
               </div>
               <div class="row">
-                <div class="command" data-item="camera-d" data-range-reset="0">
+                <div class="command" data-target="camera-d" data-range-reset="0">
                   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M3 3H9V5H5V9H3V3Z" fill="currentColor" />
                     <path d="M3 21H9V19H5V15H3V21Z" fill="currentColor" />
@@ -2726,7 +2757,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
                 <div class="text">0 m</div>
               </div>
               <div class="row">
-                <div class="command" data-item="camera-rotx" data-range-reset="0">
+                <div class="command" data-target="camera-rotx" data-range-reset="0">
                   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" transform="scale(0.7 1.2)">
                     <path d="M5.33929 4.46777H7.33929V7.02487C8.52931 6.08978 10.0299 5.53207 11.6607 5.53207C15.5267 5.53207 18.6607 8.66608 18.6607 12.5321C18.6607 16.3981 15.5267 19.5321 11.6607 19.5321C9.51025 19.5321 7.58625 18.5623 6.30219 17.0363L7.92151 15.8515C8.83741 16.8825 10.1732 17.5321 11.6607 17.5321C14.4222 17.5321 16.6607 15.2935 16.6607 12.5321C16.6607 9.77065 14.4222 7.53207 11.6607 7.53207C10.5739 7.53207 9.56805 7.87884 8.74779 8.46777L11.3393 8.46777V10.4678H5.33929V4.46777Z" fill="currentColor" />
                   </svg>
@@ -2735,7 +2766,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
                 <div class="text">0 rad</div>
               </div>
               <div class="row">
-                <div class="command" data-item="camera-roty" data-range-reset="0">
+                <div class="command" data-target="camera-roty" data-range-reset="0">
                   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" transform="scale(1.2 0.7)">
                     <path d="M13.1459 11.0499L12.9716 9.05752L15.3462 8.84977C14.4471 7.98322 13.2242 7.4503 11.8769 7.4503C9.11547 7.4503 6.87689 9.68888 6.87689 12.4503C6.87689 15.2117 9.11547 17.4503 11.8769 17.4503C13.6977 17.4503 15.2911 16.4771 16.1654 15.0224L18.1682 15.5231C17.0301 17.8487 14.6405 19.4503 11.8769 19.4503C8.0109 19.4503 4.87689 16.3163 4.87689 12.4503C4.87689 8.58431 8.0109 5.4503 11.8769 5.4503C13.8233 5.4503 15.5842 6.24474 16.853 7.52706L16.6078 4.72412L18.6002 4.5498L19.1231 10.527L13.1459 11.0499Z" fill="currentColor" />
                   </svg>
@@ -2783,7 +2814,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
               <div id="googlevoices" class="rowWrap">
               </div>
               <div class="row">
-                <div class="command" data-item="voice-google-rate" data-range-reset="1">
+                <div class="command" data-target="voice-google-rate" data-range-reset="1">
                   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M13 7H11V17H13V7Z" fill="currentColor" />
                     <path d="M5.99996 7.75732L7.41418 9.17154L5.58572 11L9.99996 11V13L5.58579 13L7.41418 14.8284L5.99996 16.2426L1.75732 12L5.99996 7.75732Z" fill="currentColor" />
@@ -2794,7 +2825,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
                 <div class="text">0</div>
               </div>
               <div class="row">
-                <div class="command" data-item="voice-google-pitch" data-range-reset="0">
+                <div class="command" data-target="voice-google-pitch" data-range-reset="0">
                   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M7 11L7 13H17V11H7Z" fill="currentColor" />
                     <path d="M7.75732 18L9.17154 16.5858L11 18.4143V14H13V18.4142L14.8284 16.5858L16.2426 18L12 22.2427L7.75732 18Z" fill="currentColor" />
@@ -2830,7 +2861,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
             <div class="text label" data-i18n-text="Mixer"></div>
             <div class="column">
               <div class="row">
-                <div class="command" data-item="voice-mixerbg" data-range-reset="0.5">
+                <div class="command" data-target="voice-mixerbg" data-range-reset="0.5">
                   <svg viewBox="-2 -2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path fill-rule="evenodd" clip-rule="evenodd" d="M12 8.95439L17.6352 7.82736C19.0102 7.55235 20 6.34501 20 4.94274C20 3.08637 18.3017 1.69406 16.4813 2.05813L12.4117 2.87206C11.0094 3.15252 10 4.38376 10 5.8138V13.8895C9.41165 13.5492 8.72857 13.3544 8 13.3544C5.79086 13.3544 4 15.1453 4 17.3544C4 19.5635 5.79086 21.3544 8 21.3544C10.2091 21.3544 12 19.5635 12 17.3544V8.95439ZM16.8736 4.01929L12.8039 4.83322C12.3365 4.92671 12 5.33712 12 5.8138V6.91479L17.2429 5.8662C17.6831 5.77816 18 5.39165 18 4.94274C18 4.34846 17.4563 3.90274 16.8736 4.01929ZM10 17.3544C10 16.2498 9.10457 15.3544 8 15.3544C6.89543 15.3544 6 16.2498 6 17.3544C6 18.459 6.89543 19.3544 8 19.3544C9.10457 19.3544 10 18.459 10 17.3544Z" fill="currentColor" />
                   </svg>
@@ -2839,7 +2870,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
                 <div class="text">0.5</div>
               </div>
               <div class="row">
-                <div class="command" data-item="voice-mixerspeech" data-range-reset="1">
+                <div class="command" data-target="voice-mixerspeech" data-range-reset="1">
                   <svg viewBox="-2 -2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path fill-rule="evenodd" clip-rule="evenodd" d="M16 7C16 9.20914 14.2091 11 12 11C9.79086 11 8 9.20914 8 7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7ZM14 7C14 8.10457 13.1046 9 12 9C10.8954 9 10 8.10457 10 7C10 5.89543 10.8954 5 12 5C13.1046 5 14 5.89543 14 7Z" fill="currentColor" />
                     <path d="M16 15C16 14.4477 15.5523 14 15 14H9C8.44772 14 8 14.4477 8 15V21H6V15C6 13.3431 7.34315 12 9 12H15C16.6569 12 18 13.3431 18 15V21H16V15Z" fill="currentColor" />
@@ -2962,7 +2993,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
                 <div class="command" data-item="ai-model" data-type="option" data-ai-model="gpt-4-1106-preview">gpt-4-1106-preview</div>
               </div>
               <div class="row">
-                <div class="command" data-item="ai-temperature" data-range-reset="1.0">
+                <div class="command" data-target="ai-temperature" data-range-reset="1.0">
                   <svg viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M336 972.8c-60.8-128-28.8-201.6 19.2-268.8 51.2-76.8 64-150.4 64-150.4s41.6 51.2 25.6 134.4c70.4-80 83.2-208 73.6-256 160 112 230.4 358.4 137.6 537.6 492.8-281.6 121.6-700.8 57.6-745.6 22.4 48 25.6 128-19.2 166.4-73.6-281.6-256-336-256-336 22.4 144-76.8 300.8-172.8 419.2-3.2-57.6-6.4-96-38.4-153.6-6.4 105.6-86.4 188.8-108.8 294.4C89.6 758.4 140.8 860.8 336 972.8L336 972.8z"  fill="currentColor" />
                   </svg>
@@ -2971,7 +3002,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
                 <div class="text">1.0</div>
               </div>
               <div class="row">
-                <div class="command" data-item="ai-presence" data-range-reset="0.0">
+                <div class="command" data-target="ai-presence" data-range-reset="0.0">
                   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M9.00967 5.12761H11.0097C12.1142 5.12761 13.468 5.89682 14.0335 6.8457L16.5089 11H21.0097C21.562 11 22.0097 11.4477 22.0097 12C22.0097 12.5523 21.562 13 21.0097 13H16.4138L13.9383 17.1543C13.3729 18.1032 12.0191 18.8724 10.9145 18.8724H8.91454L12.4138 13H5.42485L3.99036 15.4529H1.99036L4.00967 12L4.00967 11.967L2.00967 8.54712H4.00967L5.44417 11H12.5089L9.00967 5.12761Z" fill="currentColor" />
                   </svg>
@@ -2980,7 +3011,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
                 <div class="text">0.0</div>
               </div>
               <div class="row">
-                <div class="command" data-item="ai-frequency" data-range-reset="0.0">
+                <div class="command" data-target="ai-frequency" data-range-reset="0.0">
                   <svg viewBox="-2 -2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path fill-rule="evenodd" clip-rule="evenodd" d="M21.2635 2.29289C20.873 1.90237 20.2398 1.90237 19.8493 2.29289L18.9769 3.16525C17.8618 2.63254 16.4857 2.82801 15.5621 3.75165L4.95549 14.3582L10.6123 20.0151L21.2189 9.4085C22.1426 8.48486 22.338 7.1088 21.8053 5.99367L22.6777 5.12132C23.0682 4.7308 23.0682 4.09763 22.6777 3.70711L21.2635 2.29289ZM16.9955 10.8035L10.6123 17.1867L7.78392 14.3582L14.1671 7.9751L16.9955 10.8035ZM18.8138 8.98525L19.8047 7.99429C20.1953 7.60376 20.1953 6.9706 19.8047 6.58007L18.3905 5.16586C18 4.77534 17.3668 4.77534 16.9763 5.16586L15.9853 6.15683L18.8138 8.98525Z" fill="currentColor" />
                     <path d="M2 22.9502L4.12171 15.1717L9.77817 20.8289L2 22.9502Z" fill="currentColor" />
@@ -2995,7 +3026,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
             <div class="text label" data-i18n-text="Limits"></div>
             <div class="column">
               <div class="row">
-                <div class="command" data-item="ai-dialog" data-range-reset="4">
+                <div class="command" data-target="ai-dialog" data-range-reset="4">
                   <svg viewBox="-100 -100 1224 1224" xmlns="http://www.w3.org/2000/svg">
                     <path d="M170.65984 42.65984l682.65984 0q53.00224 0 90.50112 37.49888t37.49888 90.50112l0 469.34016q0 53.00224-37.49888 90.50112t-90.50112 37.49888l-341.34016 0-298.65984 213.34016 0-213.34016-42.65984 0q-53.00224 0-90.50112-37.49888t-37.49888-90.50112l0-469.34016q0-53.00224 37.49888-90.50112t90.50112-37.49888zM853.34016 128l-682.65984 0q-17.67424 0-30.16704 12.4928t-12.4928 30.16704l0 469.34016q0 17.67424 12.4928 30.16704t30.16704 12.4928l128 0 0 132.99712 185.99936-132.99712 368.66048 0q17.67424 0 30.16704-12.4928t12.4928-30.16704l0-469.34016q0-17.67424-12.4928-30.16704t-30.16704-12.4928z" fill="currentColor" />
                   </svg>
@@ -3004,7 +3035,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
                 <div class="text">4 sanomaa</div>
               </div>
               <div class="row">
-                <div class="command" data-item="ai-input" data-range-reset="2000">
+                <div class="command" data-target="ai-input" data-range-reset="2000">
                   <svg viewBox="-1 -1 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path fill-rule="evenodd" clip-rule="evenodd" d="M9 4C9 2.34315 10.3431 1 12 1C13.6569 1 15 2.34315 15 4V12C15 13.6569 13.6569 15 12 15C10.3431 15 9 13.6569 9 12V4ZM13 4V12C13 12.5523 12.5523 13 12 13C11.4477 13 11 12.5523 11 12V4C11 3.44772 11.4477 3 12 3C12.5523 3 13 3.44772 13 4Z" fill="currentColor" />
                     <path d="M18 12C18 14.973 15.8377 17.441 13 17.917V21H17V23H7V21H11V17.917C8.16229 17.441 6 14.973 6 12V9H8V12C8 14.2091 9.79086 16 12 16C14.2091 16 16 14.2091 16 12V9H18V12Z" fill="currentColor" />
@@ -3014,7 +3045,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
                 <div class="text">1000 sanaa</div>
               </div>
               <div class="row">
-                <div class="command" data-item="ai-output" data-range-reset="1000">
+                <div class="command" data-target="ai-output" data-range-reset="1000">
                   <svg viewBox="-2 -2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path fill-rule="evenodd" clip-rule="evenodd" d="M12 18.939C14.2091 18.939 16 17.1482 16 14.939C16 12.7299 14.2091 10.939 12 10.939C9.79086 10.939 8 12.7299 8 14.939C8 17.1482 9.79086 18.939 12 18.939ZM12 16.939C13.1046 16.939 14 16.0436 14 14.939C14 13.8345 13.1046 12.939 12 12.939C10.8954 12.939 10 13.8345 10 14.939C10 16.0436 10.8954 16.939 12 16.939Z" fill="currentColor" />
                     <path d="M12 9.04401C13.1046 9.04401 14 8.14858 14 7.04401C14 5.93944 13.1046 5.04401 12 5.04401C10.8954 5.04401 10 5.93944 10 7.04401C10 8.14858 10.8954 9.04401 12 9.04401Z" fill="currentColor" />
