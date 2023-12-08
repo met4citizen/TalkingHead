@@ -311,7 +311,7 @@ RewriteMap jwtverify "prg:/etc/httpd/jwtverify" apache:apache
 </Location>
 ```
 
-**NOTE:** The example app also uses ElevenLabs' WebSockets API, and by using browser JavaScript you can't add authentication headers when opening a new WebSocket connection. In the app this problem is solved by including the JWT token as a part of the request URL. The downside is that the token might end up in server log files. However, this is typically not a problem as long as you are using HTTPS/SSL and the token has an expiration time. Below is an example of how you might configure your WebSocket proxy in Apache 2.4:
+**NOTE:** The example app also uses ElevenLabs' WebSockets API, and by using browser JavaScript you can't add authentication headers when opening a new WebSocket connection. In the app this problem is solved by including the JWT token as a part of the request URL. The downside is that the token might end up in server log files. However, this is typically not a problem as long as you are controlling the proxy server, you are using HTTPS/SSL, and the token has an expiration time. Below is an example of how you might configure your WebSocket proxy in Apache 2.4:
 
 ```apacheconf
 # ElevenLabs Text-to-speech API

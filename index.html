@@ -1231,7 +1231,6 @@ function addMessage(user = false) {
       })
       .html(svgStop);
 
-    // New paragraph
     message.append('p');
 
   }
@@ -1607,7 +1606,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
   for ( const [i,k] of Object.entries(Object.keys(site.avatars)) ) {
     eAvatars.append("div")
       .classed("command", true)
-      .classed("selected", i === 0 )
+      .classed("selected", parseInt(i) === 0 )
       .attr("data-item","avatar-name")
       .attr("data-type","option")
       .attr("data-avatar-name", k )
@@ -1620,7 +1619,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     let o = site.googleVoices[k];
     eGoogleVoices.append("div")
       .classed("command", true)
-      .classed("selected", i === 0 )
+      .classed("selected", parseInt(i) === 0 )
       .attr("data-item","voice-google-id")
       .attr("data-type","option")
       .attr("data-voice-google-id",o.id)
@@ -1633,7 +1632,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     let o = site.elevenVoices[k];
     eElevenVoices.append("div")
       .classed("command", true)
-      .classed("selected", i === 0 )
+      .classed("selected", parseInt(i) === 0 )
       .attr("data-item","voice-eleven-id")
       .attr("data-type","option")
       .attr("data-voice-eleven-id",o.id)
@@ -1710,7 +1709,9 @@ document.addEventListener('DOMContentLoaded', async function(e) {
   // Follow double clicks
   document.body.addEventListener('dblclick', function(e) {
     e = e || window.event;
-    head.lookAt(e.clientX,e.clientY,500);
+    if ( !head.touchAt(e.clientX,e.clientY) ) {
+      head.lookAt(e.clientX,e.clientY,500)
+    }
   });
 
   // Media progress
