@@ -1231,9 +1231,9 @@ function addMessage(user = false) {
       })
       .html(svgStop);
 
-    message.append('p');
-
   }
+
+  message.append('p');
 
   const nodeSessions = d3.select("#right-sessions").node();
   nodeSessions.scrollTop = nodeSessions.scrollHeight;
