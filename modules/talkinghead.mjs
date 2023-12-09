@@ -163,23 +163,29 @@ class TalkingHead {
     });
 
     // Pose deltas
-    // NOTE: Deltas (x,y,z) are always Euler rotations despite the name!!
-    // NOTE: This should include all the used delta properties.
+    // NOTE: In this object (x,y,z) are always Euler rotations despite the name!!
+    // NOTE: This object should include all the used delta properties.
     this.poseDelta = {
       props: {
         'Hips.quaternion':{x:0, y:0, z:0},'Spine.quaternion':{x:0, y:0, z:0},
         'Spine1.quaternion':{x:0, y:0, z:0}, 'Neck.quaternion':{x:0, y:0, z:0},
-        'Head.quaternion':{x:0, y:0, z:0}, 'LeftUpLeg.quaternion':{x:0, y:0, z:0},
-        'RightUpLeg.quaternion':{x:0, y:0, z:0}, 'LeftLeg.quaternion':{x:0, y:0, z:0},
-        'RightLeg.quaternion':{x:0, y:0, z:0}, 'Spine1.scale':{x:0, y:0, z:0},
-        'Neck.scale':{x:0, y:0, z:0}, 'LeftArm.quaternion':{x:0, y:0, z:0},
-        'LeftForeArm.quaternion':{x:0, y:0, z:0}, 'LeftHand.quaternion':{x:0, y:0, z:0},
-        'RightArm.quaternion':{x:0, y:0, z:0}, 'RightForeArm.quaternion':{x:0, y:0, z:0},
-        'RightHand.quaternion':{x:0, y:0, z:0}, 'LeftArm.scale':{x:0, y:0, z:0},
+        'Head.quaternion':{x:0, y:0, z:0}, 'Spine1.scale':{x:0, y:0, z:0},
+        'Neck.scale':{x:0, y:0, z:0}, 'LeftArm.scale':{x:0, y:0, z:0},
         'RightArm.scale':{x:0, y:0, z:0}, 'LeftShoulder.position':{x:0, y:0, z:0},
         'RightShoulder.position':{x:0, y:0, z:0}
       }
     };
+    // Add legs, arms and hands
+    ['Left','Right'].forEach( x => {
+      ['Leg','UpLeg','Arm','ForeArm','Hand'].forEach( y => {
+        this.poseDelta.props[x+y+'.quaternion'] = {x:0, y:0, z:0};
+      });
+      ['HandThumb', 'HandIndex','HandMiddle','HandRing', 'HandPinky'].forEach( y => {
+        this.poseDelta.props[x+y+'1.quaternion'] = {x:0, y:0, z:0};
+        this.poseDelta.props[x+y+'2.quaternion'] = {x:0, y:0, z:0};
+        this.poseDelta.props[x+y+'3.quaternion'] = {x:0, y:0, z:0};
+      });
+    })
 
     // Dynamically pick up all the property names that we need in the code
     const names = new Set();
@@ -274,7 +280,7 @@ class TalkingHead {
         ]
       },
       'angry' : {
-        baseline: { eyesLookDown: 0.1, browDownLeft: 0.7, browDownRight: 0.7, jawForward: 0.3, mouthFrownLeft: 0.8, mouthFrownRight: 0.8, mouthRollLower: 0.3, mouthShrugLower: 0.4 },
+        baseline: { eyesLookDown: 0.1, browDownLeft: 0.7, browDownRight: 0.7, jawForward: 0.3, mouthFrownLeft: 0.8, mouthFrownRight: 0.8, mouthRollLower: 0.3, mouthShrugLower: 0.4, handFistLeft: 1, handFistRight: 1 },
         speech: { deltaRate: -0.2, deltaPitch: 0.2, deltaVolume: 0 },
         anims: [
           { name: 'breathing', delay: 500, dt: [ 1000,500,1000 ], vs: { chestInhale: [0.7,0.7,0] } },
@@ -415,7 +421,8 @@ class TalkingHead {
       '😊': { mood: 'happy', dt: [300,1000,1000], vs: {
         browInnerUp: [0.6], eyeSquintLeft: [1], eyeSquintRight: [1],
         mouthSmile: [0.7], noseSneerLeft: [0.7], noseSneerRight: [0.7],
-        handLeft: [null,{ x: 0.2, y: -0.1, z:0.1, d:1000 }, { d:1000 }]
+        handLeft: [null,{ x: 0.2, y: -0.1, z:0.1, d:1000 }, { d:1000 }],
+        handFistLeft: [0]
       } },
       '😇': { link:  '😊' },
       '😀': { mood: 'happy', dt: [300,2000], vs: { browInnerUp: [0.6], jawOpen: [0.1], mouthDimpleLeft: [0.2], mouthDimpleRight: [0.2], mouthOpen: [0.3], mouthPressLeft: [0.3], mouthPressRight: [0.3], mouthRollLower: [0.4], mouthShrugUpper: [0.4], mouthSmile: [0.7], mouthUpperUpLeft: [0.3], mouthUpperUpRight: [0.3], noseSneerLeft: [0.4], noseSneerRight: [0.4] }},
@@ -454,7 +461,8 @@ class TalkingHead {
         browDownLeft: [1], browOuterUpRight: [1], eyeSquintLeft: [0.6],
         mouthFrownLeft: [0.7], mouthFrownRight: [0.7], mouthLowerDownLeft: [0.3],
         mouthPressRight: [0.4], mouthPucker: [0.1], mouthRight: [0.5], mouthRollLower: [0.5],
-        mouthRollUpper: [0.2], handRight: [{ x: 0.1, y: 0.1, z:0.1, d:1000 }, { d:1000 }]
+        mouthRollUpper: [0.2], handRight: [{ x: 0.1, y: 0.1, z:0.1, d:1000 }, { d:1000 }],
+        handFistRight: [0.1]
       } },
       '👀': { dt: [500,1500], vs: { eyesRotateY: [-0.8] } },
 
@@ -1066,6 +1074,9 @@ class TalkingHead {
       return this.poseDelta.props['Head.quaternion'].y;
     } else if ( mt === 'headRotateZ' ) {
       return this.poseDelta.props['Head.quaternion'].z;
+    } else if ( mt.startsWith('handFist') ) {
+      const side = mt.substring(8);
+      return this.poseDelta.props[side+'HandMiddle1.quaternion'].x;
     } else if ( mt === 'chestInhale' ) {
       return this.poseDelta.props['Spine1.scale'].x * 20;
     } else {
@@ -1099,6 +1110,20 @@ class TalkingHead {
       this.poseDelta.props['Spine1.quaternion'].z = v/12;
       this.poseDelta.props['Spine.quaternion'].z = v/12;
       this.poseDelta.props['Hips.quaternion'].z = v/24;
+    } else if ( mt.startsWith('handFist') ) {
+      const side = mt.substring(8);
+      ['HandThumb', 'HandIndex','HandMiddle',
+      'HandRing', 'HandPinky'].forEach( (x,i) => {
+        if ( i === 0 ) {
+          this.poseDelta.props[side+x+'1.quaternion'].x = 0;
+          this.poseDelta.props[side+x+'2.quaternion'].z = (side === 'Left' ? -1 : 1) * v;
+          this.poseDelta.props[side+x+'3.quaternion'].z = (side === 'Left' ? -1 : 1) * v;
+        } else {
+          this.poseDelta.props[side+x+'1.quaternion'].x = v;
+          this.poseDelta.props[side+x+'2.quaternion'].x = 1.5 * v - 0.4;
+          this.poseDelta.props[side+x+'3.quaternion'].x = 1.5 * v - 0.2;
+        }
+      });
     } else if ( mt === 'chestInhale' ) {
       const scale = v/20;
       const d = { x: scale, y: (scale/2), z: (3 * scale) };
@@ -1142,7 +1167,7 @@ class TalkingHead {
     this.mood = this.animMoods[this.moodName];
 
     // Reset morph target baseline to 0
-    for( let mt of Object.keys(this.morphs[0].morphTargetDictionary) ) {
+    for( let mt of ["handFistLeft","handFistRight",...Object.keys(this.morphs[0].morphTargetDictionary)] ) {
       this.setBaselineValue( mt, this.mood.baseline.hasOwnProperty(mt) ? this.mood.baseline[mt] : 0 );
     }
 
@@ -1166,6 +1191,7 @@ class TalkingHead {
     return [
       'headRotateX', 'headRotateY', 'headRotateZ',
       'eyesRotateX', 'eyesRotateY', 'chestInhale',
+      'handFistLeft', 'handFistRight',
       ...Object.keys(this.morphs[0].morphTargetDictionary)
     ].sort();
   }
@@ -2249,7 +2275,7 @@ class TalkingHead {
 
 
   /**
-  * Touch at point (x,y).
+  * Set the closest hand to touch at (x,y).
   * @param {number} x X-coordinate relative to visual viewport
   * @param {number} y Y-coordinate relative to visual viewport
   * @return {Boolean} If true, (x,y) touch the avatar
@@ -2281,6 +2307,7 @@ class TalkingHead {
             { link: "LeftArm", minx: -1.5, maxx: 1.5, miny: 0, maxy: 0, minz: -1, maxz: 3 }
           ]
         }, target, false, 1000 );
+        this.setValue("handFistLeft",0);
       } else {
         this.ikSolve( {
           iterations: 20, root: "RightShoulder", effector: "RightHandMiddle1",
@@ -2290,6 +2317,7 @@ class TalkingHead {
             { link: "RightArm", minx: -1.5, maxx: 1.5, miny: 0, maxy: 0, minz: -1, maxz: 3 }
           ]
         }, target, false, 1000 );
+        this.setValue("handFistRight",0);
       }
     } else {
       ["LeftArm","LeftForeArm","LeftHand","RightArm","RightForeArm","RightHand"].forEach( x => {
@@ -2639,12 +2667,11 @@ class TalkingHead {
 
     // Reset IK setup positions and rotations
     const root = this.ikMesh.getObjectByName(ik.root);
-    if ( relative ) {
-      root.position.set(0,0,0);
-    } else {
-      root.position.setFromMatrixPosition( this.armature.getObjectByName(ik.root).matrixWorld );
-    }
+    root.position.setFromMatrixPosition( this.armature.getObjectByName(ik.root).matrixWorld );
     root.quaternion.setFromRotationMatrix( this.armature.getObjectByName(ik.root).matrixWorld );
+    if ( target && relative ) {
+      target.add( root.position );
+    }
     const effector = this.ikMesh.getObjectByName(ik.effector);
     const links = ik.links;
     links.forEach( x => {
