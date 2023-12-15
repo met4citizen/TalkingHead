@@ -854,9 +854,15 @@ function loadConfig(session = null) {
           } else {
             if ( type === 'option' ) {
               if ( e.classed("selected") ) {
+                cfg( item, e.attr("data-"+item) );
                 e.dispatch("click");
               }
             } else {
+              if ( range !== null ) {
+                cfg( item, parseFloat( e.property("value") ) );
+              } else {
+                cfg( item, e.property("value") );
+              }
               e.dispatch("change");
             }
           }
@@ -1230,7 +1236,6 @@ function addMessage(user = false) {
         }
       })
       .html(svgStop);
-
   }
 
   message.append('p');
