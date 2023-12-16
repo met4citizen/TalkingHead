@@ -155,11 +155,11 @@ const elevenTTSProxy = [
 
 3. The example app's UI supports both Finnish (default) and English. If you want to add another language, you need to add an another entry to the `i18n` object. Note that this support is only for UI. The Talking Head class only supports lip-sync in Finnish (see the FAQ).
 
-4. Add you own background images, videos, audio files, avatars etc. in the directory structure and update your site configuration accordingly. The keys are in English, but the entries can include translations to other languages.
+4. Add you own background images, videos, audio files, avatars etc. in the directory structure and update your site configuration `siteconfig.js` accordingly. The keys are in English, but the entries can include translations to other languages.
 
 ```javascript
 // Site configuration
-const site = {
+export const site = {
 
   // Preset avatars
   avatars: {
