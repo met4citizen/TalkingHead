@@ -251,7 +251,8 @@
     line-height: 2rem; resize: none; outline: none; color: var(--colorUserText);
     pointer-events: auto;
   }
-  #right textarea[data-item="ai-ai1"], #right textarea[data-item="ai-ai2"] {
+  #right textarea[data-item="ai-openai-ai1"], #right textarea[data-item="ai-openai-ai2"],
+  #right textarea[data-item="ai-gemini-ai1"], #right textarea[data-item="ai-gemini-ai2"] {
     color: var(--colorSystemText);
   }
   #right textarea::placeholder { color: inherit; opacity: 0.3; }
@@ -392,6 +393,7 @@ import { marked } from 'marked';
 const jwtEndpoint = "/app/jwt/get"; // Get JSON Web Token for Single Sign-On
 const openaiChatCompletionsProxy = "/openai/v1/chat/completions";
 const openaiModerationsProxy = "/openai/v1/moderations";
+const vertexaiChatCompletionsProxy = "/vertexai/";
 const googleTTSProxy = "/gtts/";
 const elevenTTSProxy = [
   "wss://" + window.location.host + "/elevenlabs/",
@@ -412,10 +414,10 @@ const i18n = {
     'Action': 'Toiminta', 'Frame': 'Rajaus', 'Full': 'Kokovartalo', 'Upper': 'Yläosa',
     'Head': 'Pää', 'Director': 'Ohjaus', 'Pause': 'Pysäytyskuva', 'Panning': 'Panorointi',
     'Slow-motion': 'Hidastus', 'Ambience': 'Ambienssi', 'Silence': 'Hiljaisuus',
-    'Scene': 'Kohtaus', 'Theme': 'Teema', 'Location': 'Paikka', 'Voice': 'Istuva',
-    'AI': 'Tekoäly', 'Emoji': 'Emojit', 'Title': 'Otsikko', 'Story': 'Tarina',
+    'Session': 'Sessio', 'Theme': 'Teema', 'Location': 'Paikka', 'Voice': 'Istuva',
+    'AI': 'Tekoäly', 'Emoji': 'Emojit', 'Title': 'Otsikko', 'System': 'Ohjeistus',
     'ai-system': 'Järjestelmäviesti.', 'ai-user1': 'Käyttäjän syöte #1',
-    'ai-ai1': 'Tekoälyn vaste #1', 'ai-user2': 'Käyttäjän syöte #1',
+    'ai-ai1': 'Tekoälyn vaste #1', 'ai-user2': 'Käyttäjän syöte #2',
     'ai-ai2': 'Tekoälyn vaste #2', 'Example1': 'Esim #1', 'Example2': 'Esim #2',
     'Dark': 'Tumma', 'Light': 'Vaalea', 'theme-wide': 'Laajakuva', 'theme-43': '4:3',
     'theme-landscape': 'Vaaka', 'theme-portrait': 'Pysty', 'Empty': 'Tyhjä',
@@ -484,7 +486,7 @@ function i18nTranslate(l) {
 const markedOptions = { mangle:false, headerIds:false, breaks: true };
 
 // Open AI configuration
-let openaiController = null;
+let aiController = null;
 
 // ElevenLabs configuration
 const elevenBOS = {
@@ -824,23 +826,23 @@ function loadConfig(session = null) {
   }
 }
 
-// Build outgoing message
-function aiBuildMessage() {
+// Build outgoing message for OpenAI
+function openaiBuildMessage() {
   const msgs = [];
 
   const systems = [
-    { sel: "[data-ai-system]", role: "system" },
-    { sel: "[data-ai-user1]", role: "user" },
-    { sel: "[data-ai-ai1]", role: "assistant" },
-    { sel: "[data-ai-user2]", role: "user" },
-    { sel: "[data-ai-ai2]", role: "assistant" }
+    { sel: "[data-ai-openai-system]", role: "system" },
+    { sel: "[data-ai-openai-user1]", role: "user" },
+    { sel: "[data-ai-openai-ai1]", role: "assistant" },
+    { sel: "[data-ai-openai-user2]", role: "user" },
+    { sel: "[data-ai-openai-ai2]", role: "assistant" }
   ];
   const session = d3.select(".session.selected");
   const input = d3.select("#input");
   const messages = session.selectAll(".message:not(.grayed)");
 
-  const limitDialog = cfg('ai-dialog');
-  const limitInput = cfg('ai-input');
+  const limitDialog = cfg('ai-openai-dialog');
+  const limitInput = cfg('ai-openai-input');
   let dialogs = 0;
   let words = 0;
 
@@ -888,7 +890,7 @@ function aiBuildMessage() {
 }
 
 // Moderate messages
-async function aiModerateMessage(msgs) {
+async function openaiModerateMessage(msgs) {
   // Known status
   let flag = msgs.reduce( (a,b) => ((b.n && b.n.dataset.flag !== undefined) ? ( a | (b.n.dataset.flag === 'true') ) : a ), false);
   let score = msgs.reduce( (a,b) => ((b.n && b.n.dataset.score !== undefined) ? Math.max( a, parseFloat(b.n.dataset.score) ) : a ), 0.0);
@@ -947,11 +949,11 @@ async function aiModerateMessage(msgs) {
 }
 
 // Send messages to OpenAI API and handle streamed response
-async function aiSendMessage(node,msgs) {
+async function openaiSendMessage(node,msgs) {
 
   // Create a new AbortController instance
-  openaiController = new AbortController();
-  const signal = openaiController.signal;
+  aiController = new AbortController();
+  const signal = aiController.signal;
 
   // Elements
   node.dataset.output = '';
@@ -966,17 +968,17 @@ async function aiSendMessage(node,msgs) {
         const {role,content,name} = x;
         return (name ? {role,content,name} : {role,content});
       }),
-      temperature: cfg('ai-temperature'),
-      presence_penalty: cfg('ai-presence'),
-      frequency_penalty: cfg('ai-frequency'),
-      max_tokens: cfg('ai-output'),
+      temperature: cfg('ai-openai-temperature'),
+      presence_penalty: cfg('ai-openai-presence'),
+      frequency_penalty: cfg('ai-openai-frequency'),
+      max_tokens: cfg('ai-openai-output'),
       stream: true
     };
-    const stop = cfg('ai-stop');
+    const stop = cfg('ai-openai-stop');
     if ( stop && stop.length ) {
       body.stop = [ stop ];
     }
-    const user = cfg('ai-user');
+    const user = cfg('ai-openai-user');
     if ( user && user.length ) {
       body.user = user;
     }
@@ -1018,9 +1020,9 @@ async function aiSendMessage(node,msgs) {
             if ( line === '[DONE]' ) {
               if ( tts.length ) {
                 if ( cfg('voice-type') === 'eleven' ) {
-                  elevenSpeak( tts + " ", node );
+                  elevenSpeak( tts.trimStart() + " ", node );
                 } else {
-                  head.speakText( tts, {
+                  head.speakText( tts.trimStart() + " ", {
                     ttsVoice: cfg('voice-google-id'),
                     ttsRate: cfg('voice-google-rate'),
                     ttsPitch: cfg('voice-google-pitch')
@@ -1052,7 +1054,7 @@ async function aiSendMessage(node,msgs) {
                   if ( cfg('voice-type') === 'eleven' ) {
                     elevenSpeak( s + " ", node );
                   } else {
-                    head.speakText( s, {
+                    head.speakText( s + " ", {
                       ttsVoice: cfg('voice-google-id'),
                       ttsRate: cfg('voice-google-rate'),
                       ttsPitch: cfg('voice-google-pitch')
@@ -1070,7 +1072,7 @@ async function aiSendMessage(node,msgs) {
       }
 
       // Moderate
-      let flag = await aiModerateMessage([{ content: node.dataset.output, n: node }]);
+      let flag = await openaiModerateMessage([{ content: node.dataset.output, n: node }]);
 
     } else {
       console.error( await res.text() );
@@ -1082,7 +1084,206 @@ async function aiSendMessage(node,msgs) {
     console.error(error);
     addText( node, ' [' + error + ']');
   } finally {
-    openaiController = null; // Reset the AbortController instance
+    aiController = null; // Reset the AbortController instance
+    if ( elevenSocket ) {
+      elevenSpeak("",null);
+    }
+
+    // When this marker has been reached, stop blinking
+    head.speakMarker( () => {
+      d3.selectAll('.blink').classed("blink",false);
+    });
+  }
+}
+
+// Build outgoing message for Google Gemini Pro
+function geminiBuildMessage() {
+  const msgs = [];
+
+  const systems = [
+    { sel: "[data-ai-gemini-user1]", role: "user" },
+    { sel: "[data-ai-gemini-ai1]", role: "model" },
+    { sel: "[data-ai-gemini-user2]", role: "user" },
+    { sel: "[data-ai-gemini-ai2]", role: "model" }
+  ];
+  const session = d3.select(".session.selected");
+  const input = d3.select("#input");
+  const messages = session.selectAll(".message:not(.grayed)");
+
+  const limitDialog = cfg('ai-gemini-dialog');
+  const limitInput = cfg('ai-gemini-input');
+  let dialogs = 0;
+  let words = 0;
+
+  // System messages
+  systems.forEach( x => {
+    const n = d3.select(x.sel).node();
+    if ( n.value && n.value.length ) {
+      if ( n.dataset.words ) {
+        words += parseInt( n.dataset.words );
+      } else {
+        let wc = nWords( n.value );
+        n.dataset.words = wc;
+        words += wc;
+      }
+      msgs.push( { n: n, role: x.role, content: n.value } );
+    }
+  });
+
+  // messages in reverse order
+  const revmsgs = [];
+  revmsgs.push( { n: input.node(), role: "user", content: input.property("value") } );
+  words += nWords( input.property("value") );
+  messages.nodes().reverse().forEach( (n) => {
+    if ( dialogs < limitDialog && words < limitInput ) {
+      if ( n.dataset.input ) {
+        revmsgs.push( { n: n, role: "user", content: n.dataset.input } );
+      } else if ( n.dataset.output ) {
+        revmsgs.push( { n: n, role: "model", content: n.dataset.output } );
+      }
+      if ( n.dataset.words ) {
+        words += parseInt( n.dataset.words );
+      } else {
+        let wc = nWords( n.value );
+        n.dataset.words = wc;
+        words += wc;
+      }
+      dialogs++;
+    }
+  });
+
+  // Build message
+  msgs.push( ...revmsgs.reverse() );
+
+  return msgs;
+}
+
+// Send messages to Vertex AI API and handle streamed response
+async function geminiSendMessage(node,msgs) {
+
+  // Create a new AbortController instance
+  aiController = new AbortController();
+  const signal = aiController.signal;
+
+  // Elements
+  node.dataset.output = '';
+  let tts = '';
+
+  // Chat completion
+  try {
+
+    // Make sure multiturn messages alternate between user and model
+    const messages = [];
+    let nextRole = 'user';
+    msgs.forEach( x => {
+      if ( x.role !== nextRole ) {
+        messages.push( { role: nextRole, "parts": { "text": "..." } } )
+      }
+      messages.push( { role: x.role, "parts": { "text": x.content } } );
+      nextRole = nextRole === 'user' ? 'model' : 'user';
+    });
+
+    // Message body
+    const body = {
+      contents: messages,
+      safetySettings: [
+        { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_ONLY_HIGH" },
+        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_ONLY_HIGH" },
+        { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" }
+      ],
+      generationConfig: {
+        temperature: cfg('ai-gemini-temperature'),
+        maxOutputTokens: cfg('ai-gemini-output'),
+        topP: cfg('ai-gemini-topp'),
+        topK: cfg('ai-gemini-topk'),
+        candidateCount: 1
+      }
+    };
+
+    // Stop
+    const stop = cfg('ai-gemini-stop');
+    if ( stop && stop.length ) {
+      body.generationConfig.stopSequences = [ stop ];
+    }
+
+    // Fetch the response from the Vertex AI API
+    const res = await fetch( vertexaiChatCompletionsProxy + cfg("ai-model") + ':streamGenerateContent', {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + await jwtGet()
+      },
+      body: JSON.stringify(body),
+      signal
+    });
+
+    if ( res.ok ) {
+
+      // Read the response as a stream of data
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+
+      while (true) {
+        const { done, value } = await reader.read();
+
+        // Parse partial JSON chunks
+        if ( value ) {
+          const chunk = decoder.decode(value);
+          const start = chunk.indexOf('{');
+          const end = chunk.lastIndexOf('}');
+          if ( start !== -1 && end !== -1 && start < end ) {
+            try {
+              const obj = JSON.parse('[' + chunk.substring(start,end+1) + ']');
+              if ( obj ) {
+                for( let i=0; i<obj.length; i++ ) {
+                  if ( obj[i].candidates ) {
+                    let c = obj[i].candidates[0].content.parts[0].text;
+                    node.dataset.markdown += c;
+                    tts += c;
+                  }
+                }
+              }
+            } catch(e) {
+              throw new Error( "Error JSON parsing line: " + e );
+            }
+          }
+        }
+
+        // Speak
+        let ndx = Math.max(tts.lastIndexOf('.'), tts.lastIndexOf('!'), tts.lastIndexOf('?'), tts.lastIndexOf('\n'));
+        if ( done || ndx !== -1 ) {
+          let s = done ? tts : tts.substring(0, ndx + 1);
+          if ( s && s.length ) {
+            tts = tts.substring(ndx + 1).trimStart();
+            if ( cfg('voice-type') === 'eleven' ) {
+              elevenSpeak( s + " ", node );
+            } else {
+              head.speakText( s + " ", {
+                ttsVoice: cfg('voice-google-id'),
+                ttsRate: cfg('voice-google-rate'),
+                ttsPitch: cfg('voice-google-pitch')
+              }, addText.bind(null,node) );
+            }
+          }
+        }
+
+        // We are done
+        if (done) break;
+
+      }
+
+    } else {
+      console.error( await res.text() );
+      throw new Error( json.error ? json.error.message : ''+res.status );
+    }
+
+  } catch (error) {
+    if ( signal.aborted ) error = "aborted";
+    console.error(error);
+    addText( node, ' [' + error + ']');
+  } finally {
+    aiController = null; // Reset the AbortController instance
     if ( elevenSocket ) {
       elevenSpeak("",null);
     }
@@ -1165,9 +1366,9 @@ function addMessage(user = false) {
       .on('click', function(ev) {
         head.stopSpeaking();
         // Abort the fetch request by calling abort() on the AbortController instance
-        if (openaiController) {
-          openaiController.abort();
-          openaiController = null;
+        if (aiController) {
+          aiController.abort();
+          aiController = null;
         }
       })
       .html(svgStop);
@@ -1680,21 +1881,33 @@ document.addEventListener('DOMContentLoaded', async function(e) {
       let text = e.property("value");
       if ( head && text.length ) {
 
-        const m = aiBuildMessage();
-        let flag = aiModerateMessage(m);
+        if ( cfg('ai-model').startsWith("gpt") ) {
+          const m = openaiBuildMessage();
+          let flag = openaiModerateMessage(m);
 
-        const nodeInput = addMessage(true);
-        nodeInput.dataset.input = text;
-        addText(nodeInput,text);
-        e.property("value","");
+          const nodeInput = addMessage(true);
+          nodeInput.dataset.input = text;
+          addText(nodeInput,text);
+          e.property("value","");
 
-        if ( await flag ) {
-          console.info("Moderation flagged.");
-          d3.select(nodeInput.parentNode).classed("grayed", true );
-          d3.select(nodeInput.parentNode .select).classed("selected", true );
-        } else {
+          if ( await flag ) {
+            console.info("Moderation flagged.");
+            d3.select(nodeInput.parentNode).classed("grayed", true );
+            d3.select(nodeInput.parentNode .select).classed("selected", true );
+          } else {
+            const nodeOutput = addMessage(false);
+            openaiSendMessage(nodeOutput,m);
+          }
+        } else if ( cfg('ai-model').startsWith("gemini") ) {
+          const m = geminiBuildMessage();
+
+          const nodeInput = addMessage(true);
+          nodeInput.dataset.input = text;
+          addText(nodeInput,text);
+          e.property("value","");
+
           const nodeOutput = addMessage(false);
-          aiSendMessage(nodeOutput,m);
+          geminiSendMessage(nodeOutput,m);
         }
 
       }
@@ -2217,6 +2430,8 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     const e = d3.select(this);
     d3.selectAll("[data-ai-model]").classed('selected',false);
     e.classed('selected',true);
+    d3.select("#ai-openai").style("display", (e.attr("data-ai-model").startsWith('gpt') ) ? "flex" : "none" );
+    d3.select("#ai-gemini").style("display", (e.attr("data-ai-model").startsWith('gemini') ) ? "flex" : "none" );
   });
 
   d3.select("#session-duplicate").on('click', function(ev) {
@@ -2246,16 +2461,16 @@ document.addEventListener('DOMContentLoaded', async function(e) {
   });
 
   d3.select("#flag").on("click", async function(ev) {
-    let msgs = aiBuildMessage();
-    let flag = await aiModerateMessage(msgs);
+    let msgs = openaiBuildMessage();
+    let flag = await openaiModerateMessage(msgs);
   });
 
   d3.select('#copy').on('click', function(ev) {
     const session = d3.select(".session.selected");
     const ms = [];
 
-    [ 'ai-system', 'ai-user1', 'ai-ai1',
-      'ai-user2', 'ai-ai2' ].forEach( x => {
+    [ 'ai-openai-system', 'ai-openai-user1', 'ai-openai-ai1',
+      'ai-openai-user2', 'ai-openai-ai2' ].forEach( x => {
       let p = cfg(x);
       if ( p && p.length ) ms.push(p);
     });
@@ -2346,12 +2561,11 @@ document.addEventListener('DOMContentLoaded', async function(e) {
 
         <div class="row noselect nodrag">
 
-          <div class="command starttransparent" data-i18n-title="Manuscript" data-show="right-scene">
+          <div class="command starttransparent" data-i18n-title="Manuscript" data-show="right-session">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path d="M7 18H17V16H7V18Z" fill="currentColor" />
-              <path d="M17 14H7V12H17V14Z" fill="currentColor" />
-              <path d="M7 10H11V8H7V10Z" fill="currentColor" />
-              <path fill-rule="evenodd" clip-rule="evenodd" d="M6 2C4.34315 2 3 3.34315 3 5V19C3 20.6569 4.34315 22 6 22H18C19.6569 22 21 20.6569 21 19V9C21 5.13401 17.866 2 14 2H6ZM6 4H13V9H19V19C19 19.5523 18.5523 20 18 20H6C5.44772 20 5 19.5523 5 19V5C5 4.44772 5.44772 4 6 4ZM15 4.10002C16.6113 4.4271 17.9413 5.52906 18.584 7H15V4.10002Z" fill="currentColor" />
+              <path d="M2 6C2 5.44772 2.44772 5 3 5H21C21.5523 5 22 5.44772 22 6C22 6.55228 21.5523 7 21 7H3C2.44772 7 2 6.55228 2 6Z" fill="currentColor" />
+              <path d="M2 12.0322C2 11.4799 2.44772 11.0322 3 11.0322H21C21.5523 11.0322 22 11.4799 22 12.0322C22 12.5845 21.5523 13.0322 21 13.0322H3C2.44772 13.0322 2 12.5845 2 12.0322Z" fill="currentColor" />
+              <path d="M3 17.0645C2.44772 17.0645 2 17.5122 2 18.0645C2 18.6167 2.44772 19.0645 3 19.0645H21C21.5523 19.0645 22 18.6167 22 18.0645C22 17.5122 21.5523 17.0645 21 17.0645H3Z" fill="currentColor" />
             </svg>
           </div>
 
@@ -2361,6 +2575,14 @@ document.addEventListener('DOMContentLoaded', async function(e) {
 
           <div class="filler"></div>
 
+          <div class="command starttransparent" data-i18n-title="Location" data-show="right-ai">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M7 18H17V16H7V18Z" fill="currentColor" />
+              <path d="M17 14H7V12H17V14Z" fill="currentColor" />
+              <path d="M7 10H11V8H7V10Z" fill="currentColor" />
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M6 2C4.34315 2 3 3.34315 3 5V19C3 20.6569 4.34315 22 6 22H18C19.6569 22 21 20.6569 21 19V9C21 5.13401 17.866 2 14 2H6ZM6 4H13V9H19V19C19 19.5523 18.5523 20 18 20H6C5.44772 20 5 19.5523 5 19V5C5 4.44772 5.44772 4 6 4ZM15 4.10002C16.6113 4.4271 17.9413 5.52906 18.584 7H15V4.10002Z" fill="currentColor" />
+            </svg>
+          </div>
           <div class="command starttransparent" data-i18n-title="Location" data-show="right-view">
             <svg viewBox="-1 -1 26 26" xmlns="http://www.w3.org/2000/svg">
               <path fill-rule="evenodd" clip-rule="evenodd" d="M7 7C5.34315 7 4 8.34315 4 10C4 11.6569 5.34315 13 7 13C8.65685 13 10 11.6569 10 10C10 8.34315 8.65685 7 7 7ZM6 10C6 9.44772 6.44772 9 7 9C7.55228 9 8 9.44772 8 10C8 10.5523 7.55228 11 7 11C6.44772 11 6 10.5523 6 10Z" fill="currentColor" />
@@ -2382,6 +2604,212 @@ document.addEventListener('DOMContentLoaded', async function(e) {
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path fill-rule="evenodd" clip-rule="evenodd" d="M12 8.95439L17.6352 7.82736C19.0102 7.55235 20 6.34501 20 4.94274C20 3.08637 18.3017 1.69406 16.4813 2.05813L12.4117 2.87206C11.0094 3.15252 10 4.38376 10 5.8138V13.8895C9.41165 13.5492 8.72857 13.3544 8 13.3544C5.79086 13.3544 4 15.1453 4 17.3544C4 19.5635 5.79086 21.3544 8 21.3544C10.2091 21.3544 12 19.5635 12 17.3544V8.95439ZM16.8736 4.01929L12.8039 4.83322C12.3365 4.92671 12 5.33712 12 5.8138V6.91479L17.2429 5.8662C17.6831 5.77816 18 5.39165 18 4.94274C18 4.34846 17.4563 3.90274 16.8736 4.01929ZM10 17.3544C10 16.2498 9.10457 15.3544 8 15.3544C6.89543 15.3544 6 16.2498 6 17.3544C6 18.459 6.89543 19.3544 8 19.3544C9.10457 19.3544 10 18.459 10 17.3544Z" fill="currentColor" />
             </svg>
+          </div>
+
+        </div>
+
+        <div id="right-ai" class="page noselect nodrag hidden">
+
+          <div class="vbar"></div>
+
+          <div class="row">
+            <div class="text label" data-i18n-text="AI"></div>
+            <div class="column">
+              <div class="rowWrap">
+                <div class="command selected" data-item="ai-model" data-type="option" data-ai-model="gpt-3.5-turbo">GPT-3.5-Turbo</div>
+                <div class="command" data-item="ai-model" data-type="option" data-ai-model="gpt-4">GPT-4</div>
+                <div class="command" data-item="ai-model" data-type="option" data-ai-model="gemini-pro">Gemini-pro</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="vbar"></div>
+
+          <div id="ai-openai" class="column">
+            <div class="row">
+              <div class="text label" data-i18n-text="System"></div>
+              <textarea data-i18n-placeholder="ai-system" rows="1" autocapitalize="sentences" data-item="ai-openai-system" data-type="value" data-ai-openai-system=""></textarea>
+            </div>
+            <div class="row">
+              <div class="text label" data-i18n-text="Example1"></div>
+              <textarea data-i18n-placeholder="ai-user1" rows="1" autocapitalize="sentences" data-item="ai-openai-user1" data-type="value" data-ai-openai-user1=""></textarea>
+            </div>
+            <div class="row">
+              <div class="text label"></div>
+              <textarea data-i18n-placeholder="ai-ai1" rows="1" autocapitalize="sentences" data-item="ai-openai-ai1" data-type="value" data-ai-openai-ai1=""></textarea>
+            </div>
+            <div class="row">
+              <div class="text label" data-i18n-text="Example2"></div>
+              <textarea data-i18n-placeholder="ai-user2" rows="1" autocapitalize="sentences" data-item="ai-openai-user2" data-type="value" data-ai-openai-user2=""></textarea>
+            </div>
+            <div class="row">
+              <div class="text label"></div>
+              <textarea data-i18n-placeholder="ai-ai2" rows="1" autocapitalize="sentences" data-item="ai-openai-ai2" data-type="value" data-ai-openai-ai2=""></textarea>
+            </div>
+
+            <div class="vbar"></div>
+
+            <div class="row">
+              <div class="text label" data-i18n-text="Adjust"></div>
+              <div class="column">
+                <div class="row">
+                  <div class="command" data-target="ai-openai-temperature" data-range-reset="1.0">
+                    <svg viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M336 972.8c-60.8-128-28.8-201.6 19.2-268.8 51.2-76.8 64-150.4 64-150.4s41.6 51.2 25.6 134.4c70.4-80 83.2-208 73.6-256 160 112 230.4 358.4 137.6 537.6 492.8-281.6 121.6-700.8 57.6-745.6 22.4 48 25.6 128-19.2 166.4-73.6-281.6-256-336-256-336 22.4 144-76.8 300.8-172.8 419.2-3.2-57.6-6.4-96-38.4-153.6-6.4 105.6-86.4 188.8-108.8 294.4C89.6 758.4 140.8 860.8 336 972.8L336 972.8z"  fill="currentColor" />
+                    </svg>
+                  </div>
+                  <input type="range" min="0" max="2" step="0.1" value="1.0" data-range="float" data-item="ai-openai-temperature" data-type="value" data-ai-openai-temperature="">
+                  <div class="text">1.0</div>
+                </div>
+                <div class="row">
+                  <div class="command" data-target="ai-openai-presence" data-range-reset="0.0">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M9.00967 5.12761H11.0097C12.1142 5.12761 13.468 5.89682 14.0335 6.8457L16.5089 11H21.0097C21.562 11 22.0097 11.4477 22.0097 12C22.0097 12.5523 21.562 13 21.0097 13H16.4138L13.9383 17.1543C13.3729 18.1032 12.0191 18.8724 10.9145 18.8724H8.91454L12.4138 13H5.42485L3.99036 15.4529H1.99036L4.00967 12L4.00967 11.967L2.00967 8.54712H4.00967L5.44417 11H12.5089L9.00967 5.12761Z" fill="currentColor" />
+                    </svg>
+                  </div>
+                  <input type="range" min="-1" max="2" step="0.1" value="0.0" data-range="float" data-item="ai-openai-presence" data-type="value" data-ai-openai-presence="">
+                  <div class="text">0.0</div>
+                </div>
+                <div class="row">
+                  <div class="command" data-target="ai-openai-frequency" data-range-reset="0.0">
+                    <svg viewBox="-2 -2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M21.2635 2.29289C20.873 1.90237 20.2398 1.90237 19.8493 2.29289L18.9769 3.16525C17.8618 2.63254 16.4857 2.82801 15.5621 3.75165L4.95549 14.3582L10.6123 20.0151L21.2189 9.4085C22.1426 8.48486 22.338 7.1088 21.8053 5.99367L22.6777 5.12132C23.0682 4.7308 23.0682 4.09763 22.6777 3.70711L21.2635 2.29289ZM16.9955 10.8035L10.6123 17.1867L7.78392 14.3582L14.1671 7.9751L16.9955 10.8035ZM18.8138 8.98525L19.8047 7.99429C20.1953 7.60376 20.1953 6.9706 19.8047 6.58007L18.3905 5.16586C18 4.77534 17.3668 4.77534 16.9763 5.16586L15.9853 6.15683L18.8138 8.98525Z" fill="currentColor" />
+                      <path d="M2 22.9502L4.12171 15.1717L9.77817 20.8289L2 22.9502Z" fill="currentColor" />
+                    </svg>
+                  </div>
+                  <input type="range" min="-2" max="2" step="0.1" value="0.0" data-range="float" data-item="ai-openai-frequency" data-type="value" data-ai-openai-frequency="">
+                  <div class="text">0.0</div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="text label" data-i18n-text="Limits"></div>
+              <div class="column">
+                <div class="row">
+                  <div class="command" data-target="ai-openai-dialog" data-range-reset="4">
+                    <svg viewBox="-100 -100 1224 1224" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M170.65984 42.65984l682.65984 0q53.00224 0 90.50112 37.49888t37.49888 90.50112l0 469.34016q0 53.00224-37.49888 90.50112t-90.50112 37.49888l-341.34016 0-298.65984 213.34016 0-213.34016-42.65984 0q-53.00224 0-90.50112-37.49888t-37.49888-90.50112l0-469.34016q0-53.00224 37.49888-90.50112t90.50112-37.49888zM853.34016 128l-682.65984 0q-17.67424 0-30.16704 12.4928t-12.4928 30.16704l0 469.34016q0 17.67424 12.4928 30.16704t30.16704 12.4928l128 0 0 132.99712 185.99936-132.99712 368.66048 0q17.67424 0 30.16704-12.4928t12.4928-30.16704l0-469.34016q0-17.67424-12.4928-30.16704t-30.16704-12.4928z" fill="currentColor" />
+                    </svg>
+                  </div>
+                  <input type="range" min="2" max="10" step="2" value="4" data-range="dialog" data-item="ai-openai-dialog" data-type="value" data-ai-openai-dialog="">
+                  <div class="text">4 sanomaa</div>
+                </div>
+                <div class="row">
+                  <div class="command" data-target="ai-openai-input" data-range-reset="2000">
+                    <svg viewBox="-1 -1 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M9 4C9 2.34315 10.3431 1 12 1C13.6569 1 15 2.34315 15 4V12C15 13.6569 13.6569 15 12 15C10.3431 15 9 13.6569 9 12V4ZM13 4V12C13 12.5523 12.5523 13 12 13C11.4477 13 11 12.5523 11 12V4C11 3.44772 11.4477 3 12 3C12.5523 3 13 3.44772 13 4Z" fill="currentColor" />
+                      <path d="M18 12C18 14.973 15.8377 17.441 13 17.917V21H17V23H7V21H11V17.917C8.16229 17.441 6 14.973 6 12V9H8V12C8 14.2091 9.79086 16 12 16C14.2091 16 16 14.2091 16 12V9H18V12Z" fill="currentColor" />
+                    </svg>
+                  </div>
+                  <input type="range" min="100" max="4000" step="100" value="2000" data-range="word" data-item="ai-openai-input" data-type="value" data-ai-openai-input="">
+                  <div class="text">1000 sanaa</div>
+                </div>
+                <div class="row">
+                  <div class="command" data-target="ai-openai-output" data-range-reset="1000">
+                    <svg viewBox="-2 -2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M12 18.939C14.2091 18.939 16 17.1482 16 14.939C16 12.7299 14.2091 10.939 12 10.939C9.79086 10.939 8 12.7299 8 14.939C8 17.1482 9.79086 18.939 12 18.939ZM12 16.939C13.1046 16.939 14 16.0436 14 14.939C14 13.8345 13.1046 12.939 12 12.939C10.8954 12.939 10 13.8345 10 14.939C10 16.0436 10.8954 16.939 12 16.939Z" fill="currentColor" />
+                      <path d="M12 9.04401C13.1046 9.04401 14 8.14858 14 7.04401C14 5.93944 13.1046 5.04401 12 5.04401C10.8954 5.04401 10 5.93944 10 7.04401C10 8.14858 10.8954 9.04401 12 9.04401Z" fill="currentColor" />
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M7 1C5.34315 1 4 2.34315 4 4V20C4 21.6569 5.34315 23 7 23H17C18.6569 23 20 21.6569 20 20V4C20 2.34315 18.6569 1 17 1H7ZM17 3H7C6.44772 3 6 3.44772 6 4V20C6 20.5523 6.44772 21 7 21H17C17.5523 21 18 20.5523 18 20V4C18 3.44772 17.5523 3 17 3Z" fill="currentColor" />
+                    </svg>
+                  </div>
+                  <input type="range" min="100" max="4000" step="100" value="1000" data-range="word" data-item="ai-openai-output" data-type="value" data-ai-openai-output="">
+                  <div class="text">2000 sanaa</div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="text label" data-i18n-text="ai-stop"></div>
+              <input type="text" placeholder="Avainsana" data-item="ai-openai-stop" data-type="value" data-ai-openai-stop="">
+            </div>
+            <div class="row">
+              <div class="text label" data-i18n-text="ai-user"></div>
+              <input type="text" placeholder="Nimi" data-item="ai-openai-user" data-type="value" data-ai-openai-user="">
+            </div>
+          </div>
+
+          <div id="ai-gemini" class="column">
+            <div class="row">
+              <div class="text label" data-i18n-text="Example1"></div>
+              <textarea data-i18n-placeholder="ai-user1" rows="1" autocapitalize="sentences" data-item="ai-gemini-user1" data-type="value" data-ai-gemini-user1=""></textarea>
+            </div>
+            <div class="row">
+              <div class="text label"></div>
+              <textarea data-i18n-placeholder="ai-ai1" rows="1" autocapitalize="sentences" data-item="ai-gemini-ai1" data-type="value" data-ai-gemini-ai1=""></textarea>
+            </div>
+            <div class="row">
+              <div class="text label" data-i18n-text="Example2"></div>
+              <textarea data-i18n-placeholder="ai-user2" rows="1" autocapitalize="sentences" data-item="ai-gemini-user2" data-type="value" data-ai-gemini-user2=""></textarea>
+            </div>
+            <div class="row">
+              <div class="text label"></div>
+              <textarea data-i18n-placeholder="ai-ai2" rows="1" autocapitalize="sentences" data-item="ai-gemini-ai2" data-type="value" data-ai-gemini-ai2=""></textarea>
+            </div>
+
+            <div class="vbar"></div>
+
+            <div class="row">
+              <div class="text label" data-i18n-text="Adjust"></div>
+              <div class="column">
+                <div class="row">
+                  <div class="command" data-target="ai-gemini-temperature" data-range-reset="1.0">
+                    <svg viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M336 972.8c-60.8-128-28.8-201.6 19.2-268.8 51.2-76.8 64-150.4 64-150.4s41.6 51.2 25.6 134.4c70.4-80 83.2-208 73.6-256 160 112 230.4 358.4 137.6 537.6 492.8-281.6 121.6-700.8 57.6-745.6 22.4 48 25.6 128-19.2 166.4-73.6-281.6-256-336-256-336 22.4 144-76.8 300.8-172.8 419.2-3.2-57.6-6.4-96-38.4-153.6-6.4 105.6-86.4 188.8-108.8 294.4C89.6 758.4 140.8 860.8 336 972.8L336 972.8z"  fill="currentColor" />
+                    </svg>
+                  </div>
+                  <input type="range" min="0" max="1" step="0.1" value="1.0" data-range="float" data-item="ai-gemini-temperature" data-type="value" data-ai-gemini-temperature="">
+                  <div class="text">1.0</div>
+                </div>
+                <div class="row">
+                  <div class="command" data-target="ai-gemini-topp" data-range-reset="1.0" style="display:block; text-align: center; width: 2rem;">P</div>
+                  <input type="range" min="0" max="1" step="0.05" value="1.0" data-range="float" data-item="ai-gemini-topp" data-type="value" data-ai-gemini-topp="">
+                  <div class="text">1.0</div>
+                </div>
+                <div class="row">
+                  <div class="command" data-target="ai-gemini-topk" data-range-reset="40" style="display:block; text-align: center; width: 2rem;">K</div>
+                  <input type="range" min="1" max="40" step="1" value="40" data-range="float" data-item="ai-gemini-topk" data-type="value" data-ai-gemini-topk="">
+                  <div class="text">40</div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="text label" data-i18n-text="Limits"></div>
+              <div class="column">
+                <div class="row">
+                  <div class="command" data-target="ai-gemini-dialog" data-range-reset="4">
+                    <svg viewBox="-100 -100 1224 1224" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M170.65984 42.65984l682.65984 0q53.00224 0 90.50112 37.49888t37.49888 90.50112l0 469.34016q0 53.00224-37.49888 90.50112t-90.50112 37.49888l-341.34016 0-298.65984 213.34016 0-213.34016-42.65984 0q-53.00224 0-90.50112-37.49888t-37.49888-90.50112l0-469.34016q0-53.00224 37.49888-90.50112t90.50112-37.49888zM853.34016 128l-682.65984 0q-17.67424 0-30.16704 12.4928t-12.4928 30.16704l0 469.34016q0 17.67424 12.4928 30.16704t30.16704 12.4928l128 0 0 132.99712 185.99936-132.99712 368.66048 0q17.67424 0 30.16704-12.4928t12.4928-30.16704l0-469.34016q0-17.67424-12.4928-30.16704t-30.16704-12.4928z" fill="currentColor" />
+                    </svg>
+                  </div>
+                  <input type="range" min="2" max="10" step="2" value="4" data-range="dialog" data-item="ai-gemini-dialog" data-type="value" data-ai-gemini-dialog="">
+                  <div class="text">4 sanomaa</div>
+                </div>
+                <div class="row">
+                  <div class="command" data-target="ai-gemini-input" data-range-reset="2000">
+                    <svg viewBox="-1 -1 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M9 4C9 2.34315 10.3431 1 12 1C13.6569 1 15 2.34315 15 4V12C15 13.6569 13.6569 15 12 15C10.3431 15 9 13.6569 9 12V4ZM13 4V12C13 12.5523 12.5523 13 12 13C11.4477 13 11 12.5523 11 12V4C11 3.44772 11.4477 3 12 3C12.5523 3 13 3.44772 13 4Z" fill="currentColor" />
+                      <path d="M18 12C18 14.973 15.8377 17.441 13 17.917V21H17V23H7V21H11V17.917C8.16229 17.441 6 14.973 6 12V9H8V12C8 14.2091 9.79086 16 12 16C14.2091 16 16 14.2091 16 12V9H18V12Z" fill="currentColor" />
+                    </svg>
+                  </div>
+                  <input type="range" min="100" max="4000" step="100" value="2000" data-range="word" data-item="ai-gemini-input" data-type="value" data-ai-gemini-input="">
+                  <div class="text">1000 sanaa</div>
+                </div>
+                <div class="row">
+                  <div class="command" data-target="ai-gemini-output" data-range-reset="1000">
+                    <svg viewBox="-2 -2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M12 18.939C14.2091 18.939 16 17.1482 16 14.939C16 12.7299 14.2091 10.939 12 10.939C9.79086 10.939 8 12.7299 8 14.939C8 17.1482 9.79086 18.939 12 18.939ZM12 16.939C13.1046 16.939 14 16.0436 14 14.939C14 13.8345 13.1046 12.939 12 12.939C10.8954 12.939 10 13.8345 10 14.939C10 16.0436 10.8954 16.939 12 16.939Z" fill="currentColor" />
+                      <path d="M12 9.04401C13.1046 9.04401 14 8.14858 14 7.04401C14 5.93944 13.1046 5.04401 12 5.04401C10.8954 5.04401 10 5.93944 10 7.04401C10 8.14858 10.8954 9.04401 12 9.04401Z" fill="currentColor" />
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M7 1C5.34315 1 4 2.34315 4 4V20C4 21.6569 5.34315 23 7 23H17C18.6569 23 20 21.6569 20 20V4C20 2.34315 18.6569 1 17 1H7ZM17 3H7C6.44772 3 6 3.44772 6 4V20C6 20.5523 6.44772 21 7 21H17C17.5523 21 18 20.5523 18 20V4C18 3.44772 17.5523 3 17 3Z" fill="currentColor" />
+                    </svg>
+                  </div>
+                  <input type="range" min="100" max="4000" step="100" value="1000" data-range="word" data-item="ai-gemini-output" data-type="value" data-ai-gemini-output="">
+                  <div class="text">2000 sanaa</div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="text label" data-i18n-text="ai-stop"></div>
+              <input type="text" placeholder="Avainsana" data-item="ai-gemini-stop" data-type="value" data-ai-gemini-stop="">
+            </div>
           </div>
 
         </div>
@@ -2856,12 +3284,12 @@ document.addEventListener('DOMContentLoaded', async function(e) {
           </div>
         </div>
 
-        <div id="right-scene" class="page noselect nodrag hidden">
+        <div id="right-session" class="page noselect nodrag hidden">
 
           <div class="vbar"></div>
 
           <div class="row">
-            <div class="text label" data-i18n-text="Scene"></div>
+            <div class="text label" data-i18n-text="Session"></div>
             <div id="directory" class="column fill">
               <div id="entry-0" class="entry row">
                 <div class="command fill selected" data-session="0">Nimet&ouml;n</div>
@@ -2911,113 +3339,6 @@ document.addEventListener('DOMContentLoaded', async function(e) {
                 <path d="M13 9H15V17H13V9Z" fill="currentColor" />
               </svg>
             </div>
-          </div>
-
-          <div class="vbar"></div>
-
-          <div class="row">
-            <div class="text label" data-i18n-text="Story"></div>
-            <textarea data-i18n-placeholder="ai-system" rows="1" autocapitalize="sentences" data-item="ai-system" data-type="value" data-ai-system=""></textarea>
-          </div>
-          <div class="row">
-            <div class="text label" data-i18n-text="Example1"></div>
-            <textarea data-i18n-placeholder="ai-user1" rows="1" autocapitalize="sentences" data-item="ai-user1" data-type="value" data-ai-user1=""></textarea>
-          </div>
-          <div class="row">
-            <div class="text label"></div>
-            <textarea data-i18n-placeholder="ai-ai1" rows="1" autocapitalize="sentences" data-item="ai-ai1" data-type="value" data-ai-ai1=""></textarea>
-          </div>
-          <div class="row">
-            <div class="text label" data-i18n-text="Example2"></div>
-            <textarea data-i18n-placeholder="ai-user2" rows="1" autocapitalize="sentences" data-item="ai-user2" data-type="value" data-ai-user2=""></textarea>
-          </div>
-          <div class="row">
-            <div class="text label"></div>
-            <textarea data-i18n-placeholder="ai-ai2" rows="1" autocapitalize="sentences" data-item="ai-ai2" data-type="value" data-ai-ai2=""></textarea>
-          </div>
-
-          <div class="vbar"></div>
-
-          <div class="row">
-            <div class="text label" data-i18n-text="AI"></div>
-            <div class="column">
-              <div class="rowWrap">
-                <div class="command selected" data-item="ai-model" data-type="option" data-ai-model="gpt-3.5-turbo-1106">gpt-3.5-turbo-1106</div>
-                <div class="command" data-item="ai-model" data-type="option" data-ai-model="gpt-3.5-turbo-0613">gpt-3.5-turbo-0613</div>
-                <div class="command" data-item="ai-model" data-type="option" data-ai-model="gpt-4-1106-preview">gpt-4-1106-preview</div>
-              </div>
-              <div class="row">
-                <div class="command" data-target="ai-temperature" data-range-reset="1.0">
-                  <svg viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M336 972.8c-60.8-128-28.8-201.6 19.2-268.8 51.2-76.8 64-150.4 64-150.4s41.6 51.2 25.6 134.4c70.4-80 83.2-208 73.6-256 160 112 230.4 358.4 137.6 537.6 492.8-281.6 121.6-700.8 57.6-745.6 22.4 48 25.6 128-19.2 166.4-73.6-281.6-256-336-256-336 22.4 144-76.8 300.8-172.8 419.2-3.2-57.6-6.4-96-38.4-153.6-6.4 105.6-86.4 188.8-108.8 294.4C89.6 758.4 140.8 860.8 336 972.8L336 972.8z"  fill="currentColor" />
-                  </svg>
-                </div>
-                <input type="range" min="0" max="2" step="0.1" value="1.0" data-range="float" data-item="ai-temperature" data-type="value" data-ai-temperature="">
-                <div class="text">1.0</div>
-              </div>
-              <div class="row">
-                <div class="command" data-target="ai-presence" data-range-reset="0.0">
-                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M9.00967 5.12761H11.0097C12.1142 5.12761 13.468 5.89682 14.0335 6.8457L16.5089 11H21.0097C21.562 11 22.0097 11.4477 22.0097 12C22.0097 12.5523 21.562 13 21.0097 13H16.4138L13.9383 17.1543C13.3729 18.1032 12.0191 18.8724 10.9145 18.8724H8.91454L12.4138 13H5.42485L3.99036 15.4529H1.99036L4.00967 12L4.00967 11.967L2.00967 8.54712H4.00967L5.44417 11H12.5089L9.00967 5.12761Z" fill="currentColor" />
-                  </svg>
-                </div>
-                <input type="range" min="-1" max="2" step="0.1" value="0.0" data-range="float" data-item="ai-presence" data-type="value" data-ai-presence="">
-                <div class="text">0.0</div>
-              </div>
-              <div class="row">
-                <div class="command" data-target="ai-frequency" data-range-reset="0.0">
-                  <svg viewBox="-2 -2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path fill-rule="evenodd" clip-rule="evenodd" d="M21.2635 2.29289C20.873 1.90237 20.2398 1.90237 19.8493 2.29289L18.9769 3.16525C17.8618 2.63254 16.4857 2.82801 15.5621 3.75165L4.95549 14.3582L10.6123 20.0151L21.2189 9.4085C22.1426 8.48486 22.338 7.1088 21.8053 5.99367L22.6777 5.12132C23.0682 4.7308 23.0682 4.09763 22.6777 3.70711L21.2635 2.29289ZM16.9955 10.8035L10.6123 17.1867L7.78392 14.3582L14.1671 7.9751L16.9955 10.8035ZM18.8138 8.98525L19.8047 7.99429C20.1953 7.60376 20.1953 6.9706 19.8047 6.58007L18.3905 5.16586C18 4.77534 17.3668 4.77534 16.9763 5.16586L15.9853 6.15683L18.8138 8.98525Z" fill="currentColor" />
-                    <path d="M2 22.9502L4.12171 15.1717L9.77817 20.8289L2 22.9502Z" fill="currentColor" />
-                  </svg>
-                </div>
-                <input type="range" min="-2" max="2" step="0.1" value="0.0" data-range="float" data-item="ai-frequency" data-type="value" data-ai-frequency="">
-                <div class="text">0.0</div>
-              </div>
-            </div>
-          </div>
-          <div class="row">
-            <div class="text label" data-i18n-text="Limits"></div>
-            <div class="column">
-              <div class="row">
-                <div class="command" data-target="ai-dialog" data-range-reset="4">
-                  <svg viewBox="-100 -100 1224 1224" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M170.65984 42.65984l682.65984 0q53.00224 0 90.50112 37.49888t37.49888 90.50112l0 469.34016q0 53.00224-37.49888 90.50112t-90.50112 37.49888l-341.34016 0-298.65984 213.34016 0-213.34016-42.65984 0q-53.00224 0-90.50112-37.49888t-37.49888-90.50112l0-469.34016q0-53.00224 37.49888-90.50112t90.50112-37.49888zM853.34016 128l-682.65984 0q-17.67424 0-30.16704 12.4928t-12.4928 30.16704l0 469.34016q0 17.67424 12.4928 30.16704t30.16704 12.4928l128 0 0 132.99712 185.99936-132.99712 368.66048 0q17.67424 0 30.16704-12.4928t12.4928-30.16704l0-469.34016q0-17.67424-12.4928-30.16704t-30.16704-12.4928z" fill="currentColor" />
-                  </svg>
-                </div>
-                <input type="range" min="2" max="10" step="2" value="4" data-range="dialog" data-item="ai-dialog" data-type="value" data-ai-dialog="">
-                <div class="text">4 sanomaa</div>
-              </div>
-              <div class="row">
-                <div class="command" data-target="ai-input" data-range-reset="2000">
-                  <svg viewBox="-1 -1 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path fill-rule="evenodd" clip-rule="evenodd" d="M9 4C9 2.34315 10.3431 1 12 1C13.6569 1 15 2.34315 15 4V12C15 13.6569 13.6569 15 12 15C10.3431 15 9 13.6569 9 12V4ZM13 4V12C13 12.5523 12.5523 13 12 13C11.4477 13 11 12.5523 11 12V4C11 3.44772 11.4477 3 12 3C12.5523 3 13 3.44772 13 4Z" fill="currentColor" />
-                    <path d="M18 12C18 14.973 15.8377 17.441 13 17.917V21H17V23H7V21H11V17.917C8.16229 17.441 6 14.973 6 12V9H8V12C8 14.2091 9.79086 16 12 16C14.2091 16 16 14.2091 16 12V9H18V12Z" fill="currentColor" />
-                  </svg>
-                </div>
-                <input type="range" min="100" max="4000" step="100" value="2000" data-range="word" data-item="ai-input" data-type="value" data-ai-input="">
-                <div class="text">1000 sanaa</div>
-              </div>
-              <div class="row">
-                <div class="command" data-target="ai-output" data-range-reset="1000">
-                  <svg viewBox="-2 -2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path fill-rule="evenodd" clip-rule="evenodd" d="M12 18.939C14.2091 18.939 16 17.1482 16 14.939C16 12.7299 14.2091 10.939 12 10.939C9.79086 10.939 8 12.7299 8 14.939C8 17.1482 9.79086 18.939 12 18.939ZM12 16.939C13.1046 16.939 14 16.0436 14 14.939C14 13.8345 13.1046 12.939 12 12.939C10.8954 12.939 10 13.8345 10 14.939C10 16.0436 10.8954 16.939 12 16.939Z" fill="currentColor" />
-                    <path d="M12 9.04401C13.1046 9.04401 14 8.14858 14 7.04401C14 5.93944 13.1046 5.04401 12 5.04401C10.8954 5.04401 10 5.93944 10 7.04401C10 8.14858 10.8954 9.04401 12 9.04401Z" fill="currentColor" />
-                    <path fill-rule="evenodd" clip-rule="evenodd" d="M7 1C5.34315 1 4 2.34315 4 4V20C4 21.6569 5.34315 23 7 23H17C18.6569 23 20 21.6569 20 20V4C20 2.34315 18.6569 1 17 1H7ZM17 3H7C6.44772 3 6 3.44772 6 4V20C6 20.5523 6.44772 21 7 21H17C17.5523 21 18 20.5523 18 20V4C18 3.44772 17.5523 3 17 3Z" fill="currentColor" />
-                  </svg>
-                </div>
-                <input type="range" min="100" max="4000" step="100" value="1000" data-range="word" data-item="ai-output" data-type="value" data-ai-output="">
-                <div class="text">2000 sanaa</div>
-              </div>
-            </div>
-          </div>
-          <div class="row">
-            <div class="text label" data-i18n-text="ai-stop"></div>
-            <input type="text" placeholder="Avainsana" data-item="ai-stop" data-type="value" data-ai-stop="">
-          </div>
-          <div class="row">
-            <div class="text label" data-i18n-text="ai-user"></div>
-            <input type="text" placeholder="Nimi" data-item="ai-user" data-type="value" data-ai-user="">
           </div>
 
           <div class="vbar"></div>

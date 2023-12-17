@@ -26,20 +26,22 @@ The class uses [Google Text-to-Speech API](https://cloud.google.com/text-to-spee
 [Marked](https://github.com/markedjs/marked) Markdown parser.
 
 The included example app `index.html` shows how to integrate and use the class
-with [ElevenLabs WebSocket API](https://elevenlabs.io) (experimental) and
-[OpenAI API](https://openai.com). You can use either GPT-3.5 or GPT-4.
+with [ElevenLabs WebSocket API](https://elevenlabs.io) (experimental),
+[OpenAI API](https://openai.com) and
+[Gemini Pro](https://cloud.google.com/vertex-ai) (pre-GA).
 Background view examples are from
-[Virtual Backgrounds](https://virtualbackgrounds.site) and impulse responses
-(IR) for reverb effects are from [OpenAir](www.openairlib.net).
+[Virtual Backgrounds](https://virtualbackgrounds.site) and impulse
+responses (IR) for reverb effects are from [OpenAir](www.openairlib.net).
 See Appendix A for how to make your own free 3D avatar.
 
-**NOTE:** *Google TTS, OpenAI, and ElevenLabs APIs are all paid services that
-require API keys. These API keys are not included, of course, and since it is
-NOT recommended to put API keys in any client-side code, the class/app calls
-these external services through proxies. Creating the needed API proxies is
-not in the scope of this project, but since there is not a lot you can do with
-the app without them, see Appendix B for how you might implement them in your
-own web server by using a JSON Web Token (JWT) Single Sign-On.*
+**NOTE:** *Google TTS, OpenAI, Vertex AI (Gemini) and ElevenLabs APIs are all
+paid services that require API keys. These API keys are not included and
+since it is NOT recommended to put API keys in any client-side code, the
+class/app calls these external services through proxies. Creating the needed
+API proxies is not in the scope of this project, but since there is not
+a lot you can do with the app without them, see Appendix B for how you might
+implement them in your own web server by using a JSON Web Token (JWT)
+Single Sign-On.*
 
 ---
 
@@ -145,6 +147,7 @@ In order to configure and use the example app `index.html` do the following:
 const jwtEndpoint = "/app/jwt/get"; // Get JSON Web Token for Single Sign-On
 const openaiChatCompletionsProxy = "/openai/v1/chat/completions";
 const openaiModerationsProxy = "/openai/v1/moderations";
+const vertexaiChatCompletionsProxy = "/vertexai/";
 const googleTTSProxy = "/gtts/";
 const elevenTTSProxy = [
   "wss://" + window.location.host + "/elevenlabs/",
@@ -301,7 +304,7 @@ RewriteMap jwtverify "prg:/etc/httpd/jwtverify" apache:apache
 ```apacheconf
 # OpenAI API
 <Location /openai/>
-  RewriteCond ${jwtverify:%{http:Authorization}} !OK
+  RewriteCond ${jwtverify:%{http:Authorization}} !=OK
   RewriteRule .+ - [F]
   ProxyPass https://api.openai.com/
   ProxyPassReverse  https://api.openai.com/
@@ -316,7 +319,7 @@ RewriteMap jwtverify "prg:/etc/httpd/jwtverify" apache:apache
 ```apacheconf
 # ElevenLabs Text-to-speech API
 <LocationMatch /elevenlabs/(?<jwt>[^/]+)/>
-  RewriteCond ${jwtverify:%{env:MATCH_JWT}} !OK
+  RewriteCond ${jwtverify:%{env:MATCH_JWT}} !=OK
   RewriteRule .+ - [F]
 
   RewriteCond %{HTTP:Connection} Upgrade [NC]
