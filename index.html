@@ -867,19 +867,26 @@ function openaiBuildMessage() {
   words += nWords( input.property("value") );
   messages.nodes().reverse().forEach( (n) => {
     if ( dialogs < limitDialog && words < limitInput ) {
-      if ( n.dataset.input ) {
-        revmsgs.push( { n: n, role: "user", content: n.dataset.input } );
-      } else if ( n.dataset.output ) {
-        revmsgs.push( { n: n, role: "assistant", content: n.dataset.output } );
+      let role;
+      let val;
+      if ( n.dataset.input && n.dataset.input.length ) {
+        role = "user";
+        val = n.dataset.input;
+      } else if ( n.dataset.output && n.dataset.output.length ) {
+        role = "assistant";
+        val = n.dataset.output;
       }
-      if ( n.dataset.words ) {
-        words += parseInt( n.dataset.words );
-      } else {
-        let wc = nWords( n.value );
-        n.dataset.words = wc;
-        words += wc;
+      if ( role && val ) {
+        revmsgs.push( { n: n, role: role, content: val } );
+        if ( n.dataset.words ) {
+          words += parseInt( n.dataset.words );
+        } else {
+          let wc = nWords( val );
+          n.dataset.words = wc;
+          words += wc;
+        }
+        dialogs++;
       }
-      dialogs++;
     }
   });
 
@@ -1020,9 +1027,9 @@ async function openaiSendMessage(node,msgs) {
             if ( line === '[DONE]' ) {
               if ( tts.length ) {
                 if ( cfg('voice-type') === 'eleven' ) {
-                  elevenSpeak( tts.trimStart() + " ", node );
+                  await elevenSpeak( tts.trimStart() + " ", node );
                 } else {
-                  head.speakText( tts.trimStart() + " ", {
+                  await head.speakText( tts.trimStart() + " ", {
                     ttsVoice: cfg('voice-google-id'),
                     ttsRate: cfg('voice-google-rate'),
                     ttsPitch: cfg('voice-google-pitch')
@@ -1052,9 +1059,9 @@ async function openaiSendMessage(node,msgs) {
                 if ( s && s.length ) {
                   tts = tts.substring(ndx + 1).trimStart();
                   if ( cfg('voice-type') === 'eleven' ) {
-                    elevenSpeak( s + " ", node );
+                    await elevenSpeak( s + " ", node );
                   } else {
-                    head.speakText( s + " ", {
+                    await head.speakText( s + " ", {
                       ttsVoice: cfg('voice-google-id'),
                       ttsRate: cfg('voice-google-rate'),
                       ttsPitch: cfg('voice-google-pitch')
@@ -1136,19 +1143,26 @@ function geminiBuildMessage() {
   words += nWords( input.property("value") );
   messages.nodes().reverse().forEach( (n) => {
     if ( dialogs < limitDialog && words < limitInput ) {
-      if ( n.dataset.input ) {
-        revmsgs.push( { n: n, role: "user", content: n.dataset.input } );
-      } else if ( n.dataset.output ) {
-        revmsgs.push( { n: n, role: "model", content: n.dataset.output } );
+      let role;
+      let val;
+      if ( n.dataset.input && n.dataset.input.length ) {
+        role = "user";
+        val = n.dataset.input;
+      } else if ( n.dataset.output && n.dataset.output.length ) {
+        role = "model";
+        val = n.dataset.output;
       }
-      if ( n.dataset.words ) {
-        words += parseInt( n.dataset.words );
-      } else {
-        let wc = nWords( n.value );
-        n.dataset.words = wc;
-        words += wc;
+      if ( role && val ) {
+        revmsgs.push( { n: n, role: role, content: val } );
+        if ( n.dataset.words ) {
+          words += parseInt( n.dataset.words );
+        } else {
+          let wc = nWords( val );
+          n.dataset.words = wc;
+          words += wc;
+        }
+        dialogs++;
       }
-      dialogs++;
     }
   });
 
@@ -1180,7 +1194,7 @@ async function geminiSendMessage(node,msgs) {
         messages.push( { role: nextRole, "parts": { "text": "..." } } )
       }
       messages.push( { role: x.role, "parts": { "text": x.content } } );
-      nextRole = nextRole === 'user' ? 'model' : 'user';
+      nextRole = x.role === 'user' ? 'model' : 'user';
     });
 
     // Message body
@@ -1257,9 +1271,9 @@ async function geminiSendMessage(node,msgs) {
           if ( s && s.length ) {
             tts = tts.substring(ndx + 1).trimStart();
             if ( cfg('voice-type') === 'eleven' ) {
-              elevenSpeak( s + " ", node );
+              await elevenSpeak( s + " ", node );
             } else {
-              head.speakText( s + " ", {
+              await head.speakText( s + " ", {
                 ttsVoice: cfg('voice-google-id'),
                 ttsRate: cfg('voice-google-rate'),
                 ttsPitch: cfg('voice-google-pitch')
