@@ -425,7 +425,8 @@ const i18n = {
     'Mixer': 'Mikseri', 'Space': 'Tila', 'Dry': 'Suora', 'voice-test': 'Äänitesti',
     'Limits': 'Rajat', 'ai-stop': 'Stop', 'ai-user': 'Käyttäjä',
     'input': 'Kirjoita viesti.', 'Name': 'Nimi', 'Language': 'Kieli',
-    'en': 'English', 'fi': 'Finnish', 'words': 'sanaa', 'dialogs': 'sanomaa'
+    'en': 'English', 'fi': 'Finnish', 'words': 'sanaa', 'dialogs': 'sanomaa',
+    'Manuscript': 'Käsikirjoitus'
   },
 
   'en': {
@@ -1652,7 +1653,7 @@ function progressUpdate(ev) {
     d3.select("#loading").style("display","block");
   }
   if ( ev.lengthComputable ) {
-    let val = Math.round(ev.loaded/ev.total * 100 );
+    let val = Math.min(100,Math.round(ev.loaded/ev.total * 100 ));
     d3.select("#loading-top").style("clip-path", "inset(0 " + (100-val) + "% 0 0)");
     d3.selectAll("#loading-value").text( val + "%" );
   } else {
@@ -2589,7 +2590,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
 
           <div class="filler"></div>
 
-          <div class="command starttransparent" data-i18n-title="Location" data-show="right-ai">
+          <div class="command starttransparent" data-i18n-title="Manuscript" data-show="right-ai">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path d="M7 18H17V16H7V18Z" fill="currentColor" />
               <path d="M17 14H7V12H17V14Z" fill="currentColor" />
