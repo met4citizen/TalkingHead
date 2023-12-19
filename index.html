@@ -2539,6 +2539,10 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     headLoaded();
   } catch (error) {
     errorShow(error);
+
+    // Backup plan: show the first avatar in site config
+    await head.showAvatar( Object.values(site.avatars)[0], progressUpdate);
+    headLoaded();
   }
 
 });
