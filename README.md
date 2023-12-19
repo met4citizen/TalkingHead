@@ -18,7 +18,7 @@ This is as a small side-project featuring a 3D talking head capable of speaking
 and lip-syncing in Finnish. The Talking Head supports
 [Ready Player Me](https://readyplayer.me/) full-body 3D avatars (GLB),
 [Mixamo](https://www.mixamo.com) animations (FBX), markdown text, and subtitles.
-It knows a set of emojis, which it can convert into facial expressions.
+It also knows a set of emojis, which it can convert into facial expressions.
 
 The class `TalkingHead` can be found in the module `./modules/talkinghead.mjs`.
 The class uses [Google Text-to-Speech API](https://cloud.google.com/text-to-speech),
@@ -28,20 +28,22 @@ The class uses [Google Text-to-Speech API](https://cloud.google.com/text-to-spee
 The included example app `index.html` shows how to integrate and use the class
 with [ElevenLabs WebSocket API](https://elevenlabs.io) (experimental),
 [OpenAI API](https://openai.com) and
-[Gemini Pro](https://cloud.google.com/vertex-ai) (pre-GA).
+[Gemini Pro API](https://cloud.google.com/vertex-ai) (pre-GA).
 Background view examples are from
 [Virtual Backgrounds](https://virtualbackgrounds.site) and impulse
 responses (IR) for reverb effects are from [OpenAir](www.openairlib.net).
 See Appendix A for how to make your own free 3D avatar.
 
-**NOTE:** *Google TTS, OpenAI, Vertex AI (Gemini) and ElevenLabs APIs are all
-paid services that require API keys. These API keys are not included and
-since it is NOT recommended to put API keys in any client-side code, the
-class/app calls these external services through proxies. Creating the needed
-API proxies is not in the scope of this project, but since there is not
-a lot you can do with the app without them, see Appendix B for how you might
-implement them in your own web server by using a JSON Web Token (JWT)
-Single Sign-On.*
+The class/app calls external paid services through API proxies. Creating
+the needed API proxies is not within the scope of this project.
+However, given the limited functionality without them, please refer
+to Appendix B for guidance on implementing them on your own web
+server using JSON Web Token (JWT) Single Sign-On.
+
+You can preview the example app's UI [here](https://met4citizen.github.io/TalkingHead/).
+Please note that since the API proxies for the text-to-speech and
+AI services are missing, the avatar does not speak or lip-sync, and
+you can't chat with it.
 
 ---
 
@@ -134,7 +136,7 @@ Method | Description
 
 ---
 
-### The example app
+### The Example App
 
 In order to configure and use the example app `index.html` do the following:
 
@@ -317,7 +319,7 @@ RewriteMap jwtverify "prg:/etc/httpd/jwtverify" apache:apache
 **NOTE:** The example app also uses ElevenLabs' WebSockets API, and by using browser JavaScript you can't add authentication headers when opening a new WebSocket connection. In the app this problem is solved by including the JWT token as a part of the request URL. The downside is that the token might end up in server log files. However, this is typically not a problem as long as you are controlling the proxy server, you are using HTTPS/SSL, and the token has an expiration time. Below is an example of how you might configure your WebSocket proxy in Apache 2.4:
 
 ```apacheconf
-# ElevenLabs Text-to-speech API
+# ElevenLabs Text-to-speech WebSocket API
 <LocationMatch /elevenlabs/(?<jwt>[^/]+)/>
   RewriteCond ${jwtverify:%{env:MATCH_JWT}} !=OK
   RewriteRule .+ - [F]
