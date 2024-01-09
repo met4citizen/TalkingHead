@@ -4,6 +4,10 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
+// Lip-sync implementations for different languages
+import { LipsyncFi } from './lipsync-fi.mjs';
+import { LipsyncEn } from './lipsync-en.mjs';
+
 /**
 * @class Talking Head speaking Finnish
 * @author Mika Suominen
@@ -15,6 +19,7 @@ class TalkingHead {
   * @typedef {Object} Avatar
   * @property {string} url URL for the GLB file
   * @property {string} [body] Body form 'M' or 'F'
+  * @property {string} [lipsyncLang] Lip-sync language, e.g. "fi"
   * @property {string} [ttsLang] Language name, e.g. "fi-FI"
   * @property {voice} [ttsVoice] Voice name.
   * @property {numeric} [ttsRate] Voice rate.
@@ -46,6 +51,14 @@ class TalkingHead {
   */
 
   /**
+  * Lip-sync object.
+  * @typedef {Object} Lipsync
+  * @property {string[]} visemes Oculus lip-sync visemes
+  * @property {number[]} times Starting times in relative units
+  * @property {number[]} durations Durations in relative units
+  */
+
+  /**
   * @constructor
   * @param {Object} node DOM element of the avatar
   * @param {Object} [opt=null] Global/default options
@@ -63,6 +76,7 @@ class TalkingHead {
       ttsRate: 0.95,
       ttsPitch: 0,
       ttsVolume: 0,
+      lipsyncLang: 'fi',
       pcmSampleRate: 22050,
       modelPixelRatio: 1,
       modelFPS: 30,
@@ -506,15 +520,16 @@ class TalkingHead {
     this.animTimeLast = 0;
     this.easing = this.sigmoidFactory(5); // Ease in and out
 
-    // Finnish letters to visemes. And yes, it is this simple in Finnish!
-    this.visemes = {
-      'a': 'aa', 'e': 'E', 'i': 'I', 'o': 'O', 'u': 'U', 'y': 'U', 'ä': 'aa',
-      'ö': 'O', 'b': 'PP', 'c': 'SS', 'd': 'DD', 'f': 'FF', 'g': 'kk',
-      'h': 'O', 'j': 'I', 'k': 'kk', 'l': 'nn', 'm': 'PP', 'n': 'nn',
-      'p': 'PP', 'q': 'kk', 'r': 'RR','s': 'SS', 't': 'DD', 'v': 'FF',
-      'w': 'FF', 'x': 'SS', 'z': 'SS', ' ': 'sil', ',': 'sil', '-': 'sil'
+    // Lip-sync
+    this.lipsync = {
+      'fi': new LipsyncFi(),
+      'en': new LipsyncEn()
     };
-    this.pauses = { ',': 3, '-':0.5 }; // Pauses in relative units to visemes
+    this.visemeNames = [
+      'aa', 'E', 'I', 'O', 'U', 'PP', 'SS', 'DD', 'FF', 'kk',
+      'nn', 'RR', 'DD', 'sil'
+    ];
+
 
     // Audio context and playlist
     this.audioCtx = new AudioContext();
@@ -1654,77 +1669,43 @@ class TalkingHead {
   }
 
   /**
-  * Reset all the visemes for lips.
+  * Reset all the visemes
   */
   resetLips() {
-    Object.values(this.visemes).forEach( x => {
+    this.visemeNames.forEach( x => {
       this.morphs.forEach( y => y.morphTargetInfluences[y.morphTargetDictionary['viseme_'+x]] );
     });
   }
 
   /**
-  * Convert the number string into Finnish words.
-  * @param {string} x Number string
-  * @return {string} The number in words in Finnish
+  * Preprocess text for tts/lipsync, including:
+  * - convert symbols/numbers to words
+  * - filter out characters that should be left unspoken
+  * @param {string} s Text
+  * @param {string} lang Language
+  * @return {string} Pre-processsed text.
   */
-  numberToFinnishWords(x) {
-    const w = [];
-    const dg = ['nolla', 'yksi', 'kaksi', 'kolme', 'neljä', 'viisi', 'kuusi',
-    'seitsemän', 'kahdeksan', 'yhdeksän', "kymmenen","yksitoista","kaksitoista",
-    "kolmetoista","neljätoista","viisitoista","kuusitoista",'seitsemäntoista',
-    'kahdeksantoista', 'yhdeksäntoista'];
-    let n = parseFloat(x);
-    if ( n === undefined ) return x;
-    let p = (n,z,w0,w1,w2) => {
-      if ( n < z ) return n;
-      const d = Math.floor(n/z);
-      w.push( w0 + ((d === 1) ? w1 : this.numberToFinnishWords(d.toString()) + w2) );
-      return n - d * z;
-    }
-    if ( n < 0 ) {
-      w.push('miinus ');
-      n = Math.abs(n);
-    }
-    n = p(n,1000000000,' ','miljardi',' miljardia');
-    n = p(n,1000000,' ','miljoona',' miljoonaa');
-    n = p(n,1000,'', 'tuhat','tuhatta');
-    n = p(n,100,' ','sata','sataa');
-    if ( n > 20 ) n = p(n,10,'','','kymmentä');
-    if ( n >= 1) {
-      let d = Math.floor(n);
-      w.push( dg[d] );
-      n -= d;
-    }
-    if ( n >= 0 && parseFloat(x) < 1) w.push( 'nolla' );
-    if ( n > 0 ) {
-      let d = (n % 1).toFixed(1) * 10;
-      if ( d > 0 ) w.push( ' pilkku ' + dg[d] );
-    }
-    return w.join('').trim();
+  lipsyncPreProcessText(s,lang) {
+    const o = this.lipsync[lang] || Object.values(this.lipsync)[0];
+    return o.preProcessText(s);
   }
-
 
   /**
-  * Convert symbols to Finnish words.
-  * @param {string} s String
+  * Convert words to Oculus LipSync Visemes.
+  * @param {string} w Word
+  * @param {string} lang Language
+  * @return {Lipsync} Lipsync object.
   */
-  symbolsToFinnishWords(s) {
-    return s.replace('/[#_*\'\":;]/g','')
-        .replaceAll('%',' prosenttia ')
-        .replaceAll('€',' euroa ')
-        .replaceAll('&',' ja ')
-        .replaceAll('+',' plus ')
-        .replace(/(\D)\1\1+/g, "$1$1") // max 2 repeating chars
-        .replaceAll('  ',' ') // Only one repeating space
-        .replace(/(\d)\,(\d)/g, '$1 pilkku $2') // Number separator
-        .replace(/\d+/g, this.numberToFinnishWords.bind(this)) // Numbers to words
-        .trim();
+  lipsyncWordsToVisemes(w,lang) {
+    const o = this.lipsync[lang] || Object.values(this.lipsync)[0];
+    return o.wordsToVisemes(w);
   }
+
 
   /**
   * Add text to the speech queue.
   * @param {string} s Text.
-  * @param {Options} [opt=null] Text-specific options for TTS language, voice, rate and pitch, mood and mute
+  * @param {Options} [opt=null] Text-specific options for lipsync/TTS language, voice, rate and pitch, mood and mute
   * @param {subtitlesfn} [onsubtitles=null] Callback when a subtitle is written
   * @param {number[][]} [excludes=null] Array of [start, end] index arrays to not speak
   */
@@ -1736,6 +1717,7 @@ class TalkingHead {
     const dividersWord = /[ !\.\?\n\p{Extended_Pictographic}]/ug;
     const speakables = /[\p{L}\p{N},]/ug;
     const emojis = /[\p{Extended_Pictographic}]/ug;
+    const lipsyncLang = opt.lipsyncLang || this.avatar.lipsyncLang || this.opt.lipsyncLang;
 
     let t = 0; // time counter
     let markdownWord = ''; // markdown word
@@ -1763,7 +1745,7 @@ class TalkingHead {
 
         // Add to text-to-speech sentence
         if ( textWord.length ) {
-          textWord = this.symbolsToFinnishWords(textWord);
+          textWord = this.lipsyncPreProcessText(textWord, lipsyncLang);
           textSentence += ' ' + textWord;
         }
 
@@ -1781,19 +1763,18 @@ class TalkingHead {
 
         // Push visemes to animation queue
         if ( textWord.length ) {
-          const chars = [...textWord];
-          for( let j=0; j<chars.length; j++ ) {
-            const viseme = this.visemes[chars[j].toLowerCase()];
-            if ( viseme ) {
+          const v = this.lipsyncWordsToVisemes(textWord, lipsyncLang);
+          if ( v && v.visemes && v.visemes.length ) {
+            for( let j=0; j<v.visemes.length; j++ ) {
               lipsyncAnim.push( {
                 template: { name: 'viseme' },
-                ts: [ t-0.5, t+0.5, t+1.5 ],
+                ts: [ t + v.times[j] - 0.5, t + v.times[j] + 0.5, t + v.times[j] + v.durations[j] + 0.5 ],
                 vs: {
-                  ['viseme_'+viseme]: [null,(viseme === 'PP' || viseme === 'FF') ? 1 : 0.6,0]
+                  ['viseme_'+v.visemes[j]]: [null,(v.visemes[j] === 'PP' || v.visemes[j] === 'FF') ? 0.9 : 0.6,0]
                 }
               });
-              t += this.pauses[chars[j]] || 1;
             }
+            t += v.times[ v.visemes.length-1 ] + v.durations[ v.visemes.length-1 ] + 0.5;
           }
           textWord = '';
         }
@@ -1918,59 +1899,54 @@ class TalkingHead {
 
   /**
   * Add audio to the speech queue.
-  * @param {Object} r Audio message { audio: [], chars: [], ts: [], ds: [] }
+  * @param {Object} r Audio message { audio: [], words: [], ts: [], ds: [] }
+  * @param {Options} [opt=null] Text-specific options for lipsyncLang
   * @param {subtitlesfn} [onsubtitles=null] Callback when a subtitle is written
   */
-  speakAudio(r, onsubtitles = null ) {
+  speakAudio(r, opt = null, onsubtitles = null ) {
+    opt = opt || {};
+    const lipsyncLang = opt.lipsyncLang || this.avatar.lipsyncLang || this.opt.lipsyncLang;
     const o = {};
 
-    if ( r.chars ) {
+    if ( r.words ) {
       let lipsyncAnim = [];
-      let word = '';
-      let sWord = 0;
-      for( let i=0; i<r.chars.length; i++ ) {
-        const c = r.chars[i];
-        const s = r.ts[i];
-        const d = r.ds[i];
+      for( let i=0; i<r.words.length; i++ ) {
+        const word = r.words[i];
+        const time = r.times[i];
+        const duration = r.durations[i];
 
-        // Subtitle
-        if ( onsubtitles ) {
-          word += c;
-          if ( c === ' ' ) {
+        if ( word.length ) {
+
+          // Subtitle
+          if ( onsubtitles ) {
             lipsyncAnim.push( {
               template: { name: 'subtitles' },
-              ts: [sWord],
+              ts: [time],
               vs: {
                 subtitles: word
               }
             });
-            word = '';
-            sWord = s;
           }
-        }
 
-        // Viseme
-        const viseme = this.visemes[c.toLowerCase()];
-        if ( viseme ) {
-
-          lipsyncAnim.push( {
-            template: { name: 'viseme' },
-            ts: [ s - d/2, s + d/2, s + d + d/2 ],
-            vs: {
-              ['viseme_'+viseme]: [null,(viseme === 'PP' || viseme === 'FF') ? 1 : 0.6,0]
+          // Visemes
+          const v = this.lipsyncWordsToVisemes(word, lipsyncLang);
+          if ( v && v.visemes && v.visemes.length ) {
+            const dTotal = v.times[ v.visemes.length-1 ] + v.durations[ v.visemes.length-1 ];
+            if ( dTotal > 0 ) {
+              for( let j=0; j<v.visemes.length; j++ ) {
+                const t = time + (v.times[j]/dTotal) * duration;
+                const d = (v.durations[j]/dTotal) * duration;
+                lipsyncAnim.push( {
+                  template: { name: 'viseme' },
+                  ts: [ t - d/2, t + d/2, t + d + d/2 ],
+                  vs: {
+                    ['viseme_'+v.visemes[j]]: [null,(v.visemes[j] === 'PP' || v.visemes[j] === 'FF') ? 0.9 : 0.6,0]
+                  }
+                });
+              }
             }
-          });
-        }
-      }
-
-      if ( word.length ) {
-        lipsyncAnim.push( {
-          template: { name: 'subtitles' },
-          ts: [ sWord ],
-          vs: {
-            subtitles: word
           }
-        });
+        }
       }
 
       if ( lipsyncAnim.length ) {

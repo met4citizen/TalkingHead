@@ -441,15 +441,15 @@ const i18n = {
 }
 
 // i18n
-// NOTE: Default UI language is Finnish
+// Default UI language is English
 
 function i18nWord(w,l) {
-  l = l || cfg('theme-lang') || 'fi';
+  l = l || cfg('theme-lang') || 'en';
   return (( i18n[l] && i18n[l][w] ) ? i18n[l][w] : w);
 }
 
 function i18nTranslate(l) {
-  l = l || cfg('theme-lang') || 'fi';
+  l = l || cfg('theme-lang') || 'en';
 
   // Text
   d3.selectAll("[data-i18n-text]").nodes().forEach( n => {
@@ -572,19 +572,37 @@ async function elevenSpeak(s,node=null) {
 
       // Speak audio
       if ( (r.isFinal || r.normalizedAlignment) && elevenOutputMsg ) {
-        head.speakAudio( elevenOutputMsg, node ? addText.bind(null,node) : null );
+        head.speakAudio( elevenOutputMsg, { lipsyncLang: cfg('voice-lipsync-lang') }, node ? addText.bind(null,node) : null );
         elevenOutputMsg = null;
       }
 
       if ( !r.isFinal ) {
         // New part
         if ( r.normalizedAlignment ) {
-          elevenOutputMsg = {
-            audio: [],
-            chars: r.normalizedAlignment.chars,
-            ts: r.normalizedAlignment.charStartTimesMs,
-            ds: r.normalizedAlignment.charDurationsMs
-          };
+          elevenOutputMsg = { audio: [], words: [], times: [], durations: [] };
+
+          // Parse chars to words
+          let word = '';
+          let time = 0;
+          let duration = 0;
+          for( let i=0; i<r.normalizedAlignment.chars.length; i++ ) {
+            if ( word.length === 0 ) time = r.normalizedAlignment.charStartTimesMs[i];
+            duration += r.normalizedAlignment.charDurationsMs[i];
+            if ( r.normalizedAlignment.chars[i] === ' ' ) {
+              elevenOutputMsg.words.push(word);
+              elevenOutputMsg.times.push(time);
+              elevenOutputMsg.durations.push(duration);
+              word = '';
+              duration = 0;
+            } else {
+              word += r.normalizedAlignment.chars[i];
+            }
+          }
+          if ( word.length ) {
+            elevenOutputMsg.words.push(word);
+            elevenOutputMsg.times.push(time);
+            elevenOutputMsg.durations.push(duration);
+          }
         }
 
         // Add audio content to message
@@ -635,23 +653,23 @@ let CFG = {
   session: 0,
   sessions : [
     {
-      name: "Nimetön 1",
-      theme: { lang: 'fi', brightness:"dark", ratio:"wide", layout:"port" },
+      name: "Nimetön",
+      theme: { lang: 'en', brightness:"dark", ratio:"wide", layout:"port" },
       view: { image: 'NONE' },
       avatar: {},
       camera: { frame: 'full' },
       ai: {},
-      voice: { background: "NONE", type: "google", google:{ id: "fi-FI-Standard-A"} }
+      voice: { background: "NONE", type: "google", google:{ id: "en-GB-Standard-A"}, lipsync:{ lang: 'en' } }
     },
     {
       name: "Nimetön 2",
 
-      theme: { lang: 'fi', brightness: "dark", ratio: "wide", layout: "land" },
+      theme: { lang: 'en', brightness: "dark", ratio: "wide", layout: "land" },
       view: { image: 'NONE' },
       avatar: {},
       camera: { frame: 'upper' },
       ai: {},
-      voice: { background: "NONE", type: "google", google:{ id: "fi-FI-Standard-A"} }
+      voice: { background: "NONE", type: "google", google:{ id: "en-GB-Standard-A"}, lipsync:{ lang: 'en' } }
     },
   ]
 };
@@ -1031,6 +1049,7 @@ async function openaiSendMessage(node,msgs) {
                   await elevenSpeak( tts.trimStart() + " ", node );
                 } else {
                   await head.speakText( tts.trimStart() + " ", {
+                    lipsyncLang: cfg('voice-lipsync-lang'),
                     ttsVoice: cfg('voice-google-id'),
                     ttsRate: cfg('voice-google-rate'),
                     ttsPitch: cfg('voice-google-pitch')
@@ -1063,6 +1082,7 @@ async function openaiSendMessage(node,msgs) {
                     await elevenSpeak( s + " ", node );
                   } else {
                     await head.speakText( s + " ", {
+                      lipsyncLang: cfg('voice-lipsync-lang'),
                       ttsVoice: cfg('voice-google-id'),
                       ttsRate: cfg('voice-google-rate'),
                       ttsPitch: cfg('voice-google-pitch')
@@ -1275,6 +1295,7 @@ async function geminiSendMessage(node,msgs) {
               await elevenSpeak( s + " ", node );
             } else {
               await head.speakText( s + " ", {
+                lipsyncLang: cfg('voice-lipsync-lang'),
                 ttsVoice: cfg('voice-google-id'),
                 ttsRate: cfg('voice-google-rate'),
                 ttsPitch: cfg('voice-google-pitch')
@@ -1367,6 +1388,7 @@ function addMessage(user = false) {
             elevenSpeak( "" );
           } else {
             head.speakText( text, {
+              lipsyncLang: cfg('voice-lipsync-lang'),
               ttsVoice: cfg('voice-google-id'),
               ttsRate: cfg('voice-google-rate'),
               ttsPitch: cfg('voice-google-pitch')
@@ -1950,6 +1972,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
         elevenSpeak( "" );
       } else {
         head.speakText( text, {
+          lipsyncLang: cfg('voice-lipsync-lang'),
           ttsVoice: cfg('voice-google-id'),
           ttsRate: cfg('voice-google-rate'),
           ttsPitch: cfg('voice-google-pitch')
@@ -2391,6 +2414,12 @@ document.addEventListener('DOMContentLoaded', async function(e) {
   d3.selectAll("[data-voice-eleven-id]").on('click.command', function(ev) {
     const e = d3.select(this);
     d3.selectAll("[data-voice-eleven-id]").classed('selected',false);
+    e.classed('selected',true);
+  });
+
+  d3.selectAll("[data-voice-lipsync-lang]").on('click.command', function(ev) {
+    const e = d3.select(this);
+    d3.selectAll("[data-voice-lipsync-lang]").classed('selected',false);
     e.classed('selected',true);
   });
 
@@ -2912,28 +2941,6 @@ document.addEventListener('DOMContentLoaded', async function(e) {
             </div>
           </div>
 
-          <div class="vbar"></div>
-
-          <div class="row">
-            <div class="text label" data-i18n-text="Theme"></div>
-            <div class="column">
-              <div id="languages" class="rowWrap">
-              </div>
-              <div class="rowWrap">
-                <div class="command selected" data-i18n-text="Dark" data-item="theme-brightness" data-type="option" data-theme-brightness="dark"></div>
-                <div class="command" data-i18n-text="Light" data-item="theme-brightness" data-type="option" data-theme-brightness="light"></div>
-              </div>
-              <div class="rowWrap">
-                <div class="command selected" data-i18n-text="theme-wide" data-item="theme-ratio" data-type="option" data-theme-ratio="wide"></div>
-                <div class="command" data-i18n-text="theme-43" data-item="theme-ratio" data-type="option" data-theme-ratio="normal"></div>
-              </div>
-              <div class="rowWrap">
-                <div class="command selected" data-i18n-text="theme-landscape" data-item="theme-layout" data-type="option" data-theme-layout="land"></div>
-                <div class="command" data-i18n-text="theme-portrait" data-item="theme-layout" data-type="option" data-theme-layout="port"></div>
-              </div>
-            </div>
-          </div>
-
         </div>
 
         <div id="right-avatar" class="page noselect nodrag hidden">
@@ -3246,6 +3253,15 @@ document.addEventListener('DOMContentLoaded', async function(e) {
             </div>
           </div>
           <div class="row">
+            <div class="text label" data-i18n-text="Lip-sync"></div>
+            <div class="column">
+              <div class="rowWrap">
+                <div class="command selected" data-i18n-text="en" data-item="voice-lipsync-lang" data-type="option" data-voice-lipsync-lang="en"></div>
+                <div class="command" data-i18n-text="fi" data-item="voice-lipsync-lang" data-type="option" data-voice-lipsync-lang="fi"></div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
             <div class="text label" data-i18n-text="voice-test"></div>
             <div id="playtest" class="command">
               <svg viewBox="-2 -2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -3357,6 +3373,26 @@ document.addEventListener('DOMContentLoaded', async function(e) {
                 <path d="M9 9H11V17H9V9Z" fill="currentColor" />
                 <path d="M13 9H15V17H13V9Z" fill="currentColor" />
               </svg>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="text label" data-i18n-text="Theme"></div>
+            <div class="column">
+              <div id="languages" class="rowWrap">
+              </div>
+              <div class="rowWrap">
+                <div class="command selected" data-i18n-text="Dark" data-item="theme-brightness" data-type="option" data-theme-brightness="dark"></div>
+                <div class="command" data-i18n-text="Light" data-item="theme-brightness" data-type="option" data-theme-brightness="light"></div>
+              </div>
+              <div class="rowWrap">
+                <div class="command selected" data-i18n-text="theme-wide" data-item="theme-ratio" data-type="option" data-theme-ratio="wide"></div>
+                <div class="command" data-i18n-text="theme-43" data-item="theme-ratio" data-type="option" data-theme-ratio="normal"></div>
+              </div>
+              <div class="rowWrap">
+                <div class="command selected" data-i18n-text="theme-landscape" data-item="theme-layout" data-type="option" data-theme-layout="land"></div>
+                <div class="command" data-i18n-text="theme-portrait" data-item="theme-layout" data-type="option" data-theme-layout="port"></div>
+              </div>
             </div>
           </div>
 
