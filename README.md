@@ -1,4 +1,4 @@
-# Talking Head (Finnish/3D)
+# Talking Head (3D)
 
 **UNDER CONSTRUCTION**
 
@@ -14,16 +14,26 @@
 
 ### Introduction
 
-This is as a small side-project featuring a 3D talking head capable of speaking
-and lip-syncing in Finnish. The Talking Head supports
+This is as a small side-project featuring a 3D talking head capable
+of speaking and lip-syncing. The Talking Head supports
 [Ready Player Me](https://readyplayer.me/) full-body 3D avatars (GLB),
 [Mixamo](https://www.mixamo.com) animations (FBX), markdown text, and subtitles.
 It also knows a set of emojis, which it can convert into facial expressions.
 
+At present, the lip-sync supports two languages: Finnish and English.
+The Finnish language is unique in that it exhibits a consistent
+one-to-one mapping between individual letters and phonemes/visemes [1].
+The process of converting English words to visemes is based on
+my variation of the NRL English Text to Phoneme algorithm, originally
+developed by Elovitz et al. in 1975 [2].
+
 The class `TalkingHead` can be found in the module `./modules/talkinghead.mjs`.
 The class uses [Google Text-to-Speech API](https://cloud.google.com/text-to-speech),
 [ThreeJS](https://github.com/mrdoob/three.js/)/WebGL for 3D rendering, and
-[Marked](https://github.com/markedjs/marked) Markdown parser.
+[Marked](https://github.com/markedjs/marked) Markdown parser. Lip-sync features
+has been separated into language specific modules `./modules/lipsync-fi.mjs`
+and `./modules/lipsync-en.mjs`. This makes adding a new lip-sync language
+a bit easier.
 
 The included example app `index.html` shows how to integrate and use the class
 with [ElevenLabs WebSocket API](https://elevenlabs.io) (experimental),
@@ -77,7 +87,7 @@ Option | Description
 `ttsVolume` | Google text-to-speech volume gain (in dB) in the range [-96.0, 16.0]. Default is `0`.
 `ttsTrimStart` | Trim the viseme sequence start relative to the beginning of the audio (shift in milliseconds). Default is `0`.
 `ttsTrimEnd`| Trim the viseme sequence end relative to the end of the audio (shift in milliseconds). Default is `300`.
-`lipsyncLang`| Lip-sync language. Currently 'en' and 'fi' are supported. Default is `fi`.
+`lipsyncLang`| Lip-sync language. Currently English `en` and `fi` are supported. Default is `fi`.
 `pcmSampleRate` | PCM (signed 16bit little endian) sample rate used in `speakAudio` in Hz. Default is `22050`.
 `modelPixelRatio` | Sets the device's pixel ratio. Default is `1`.
 `modelFPS` | Frames per second. Default is `30`.
@@ -108,7 +118,7 @@ try {
       console.info(val+"% loaded");
     }
   });
-  head.speakText("Lataus onnistui hyvin!");
+  head.speakText("Lataus onnistui hyvin!", { lipsyncLang: 'fi' } );
 } catch (error) {
   console.log(error);
 }
@@ -118,10 +128,10 @@ The following table lists some of the key methods. See the source code for the r
 
 Method | Description
 --- | ---
-`showAvatar(avatar, [onprogress=null])` | Load and show the specified avatar. The `avatar` object must include the `url` for GLB file. Optional properties are `body` for either male `M` or female `F` body form, `visemesLang`, `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood` and `avatarMute`.
+`showAvatar(avatar, [onprogress=null])` | Load and show the specified avatar. The `avatar` object must include the `url` for GLB file. Optional properties are `body` for either male `M` or female `F` body form, `lipsyncLang`, `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood` and `avatarMute`.
 `setView(view, [opt])` | Set view. Supported views are `"full"`, `"upper"`  and `"head"`. Options `opt` can be used to set `cameraDistance`, `cameraX`, `cameraY`, `cameraRotateX`, `cameraRotateY`.
 `speakText(text, [opt={}], [onsubtitles=null], [excludes=[]])` | Add the `text` string to the speech queue. The text can contain face emojis. Options `opt` can be used to set text-specific `lipsyncLang`, `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood`, `avatarMute`. Optional callback function `onsubtitles` is called whenever a new subtitle is to be written with the parameter of the added string. The optional `excludes` is an array of [start,end] indices to be excluded from audio but to be included in the subtitles.
-`speakAudio(audio, [onsubtitles=null])` | Add the `audio` object to the speech queue. This method was added to support external TTS services such as ElevenLabs WebSocket API. The audio object contains ArrayBuffer chunks in `audio` array, characters in `chars` array, starting times for each character in milliseconds in `ts` array, and durations for each character in milliseconds in `ds` array. As of now, the only supported format is PCM signed 16bit little endian.
+`speakAudio(audio, [opt={}], [onsubtitles=null])` | Add the `audio` object to the speech queue. This method was added to support external TTS services such as ElevenLabs WebSocket API. The audio object contains ArrayBuffer chunks in `audio` array, characters in `chars` array, starting times for each character in milliseconds in `ts` array, and durations for each character in milliseconds in `ds` array. As of now, the only supported format is PCM signed 16bit little endian. Options `opt` can be used to set text-specific `lipsyncLang`.
 `speakMarker(onmarker)` | Add a marker to the speech queue. The callback function `onmarker` is called when the queue processes the event.
 `lookAt(x,y,t)` | Make the avatar's head turn to look at the screen position (`x`,`y`) for `t` milliseconds.
 `lookAtCamera(t)` | Make the avatar's head turn to look at the camera for `t` milliseconds.
@@ -235,14 +245,6 @@ export const site = {
 
 ### FAQ
 
-**Why only Finnish?**
-
-The primary reason is that Finnish is my native language, and I just happened
-to have a use case for a Finnish-speaking avatar. Finnish language is also very
-special in that it has a consistent one-to-one mapping between individual
-letters and phonemes/visemes. Achieving a similar level of lip-sync accuracy
-in English would likely demand an extensive English word database/vocabulary.
-
 **Why Google TTS? Why not use the free Web Speech API?**
 
 Currently the starting times and the durations of individual visemes are
@@ -255,18 +257,23 @@ alignment information, which is great for this purpose.
 
 **Any future plans for the project?**
 
-This is a small side-project for me, so I don't have any big plans for it.
-That said, there are some companies that are currently developing
-text-to-avatar and text-to-animation features. If and when they get released
-as APIs, I will probably take a look at them and see if they can be integrated
-in some way to the project.
+This is just a small side-project for me, so I don't have any big
+plans for it. That said, there are several companies that are currently
+developing text-to-3D-avatar and text-to-3D-animation features. If and
+when they get released as APIs, I will probably take a look at them and see
+if they can be integrated in some way to the Talking Head.
 
 
 ---
 
 ### See also
 
-[Finnish pronunciation](https://en.wiktionary.org/wiki/Appendix:Finnish_pronunciation), Wiktionary
+[1] [Finnish pronunciation](https://en.wiktionary.org/wiki/Appendix:Finnish_pronunciation), Wiktionary
+
+[2] Elovitz, H. S., Johnson, R. W., McHugh, A., Shore, J. E., Automatic
+Translation of English Text to Phonetics by Means of Letter-to-Sound Rules
+(NRL Report 7948). Naval Research Laboratory (NRL).
+Washington, D. C., 1976. https://apps.dtic.mil/sti/pdfs/ADA021929.pdf
 
 ---
 
