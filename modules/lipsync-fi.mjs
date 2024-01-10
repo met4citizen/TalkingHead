@@ -19,8 +19,17 @@ class LipsyncFi {
       'w': 'FF', 'x': 'SS', 'z': 'SS'
     };
 
-    // Pauses in relative units to visemes
-    this.durations = { ' ': 1, ',': 3, '-':0.5 };
+    // Viseme durations in relative unit (1=average)
+    // TODO: Check for statistics for Finnish
+    this.visemeDurations = {
+      'aa': 1.3, 'E': 1.1, 'I': 0.9, 'O': 1.1, 'U': 0.9, 'PP': 1, 'SS': 1.3,
+      'TH': 0.8, 'DD': 0.9, 'FF': 1.1, 'kk': 0.8, 'nn': 0.9, 'RR': 1,
+      'DD': 0.9, 'sil': 1
+    };
+
+    // Pauses in relative units (1=average)
+    this.otherDurations = { ' ': 1, ',': 3, '-':0.5 };
+
   }
 
   /**
@@ -101,11 +110,10 @@ class LipsyncFi {
       if ( viseme ) {
         o.visemes.push(viseme);
         o.times.push(t);
-        let d = this.durations[chars[i]] || 1;
-        o.durations.push(d);
-        t += d;
+        o.durations.push( this.visemeDurations[viseme] || 1 );
+        t += this.visemeDurations[viseme] || 1;
       } else {
-        t += this.durations[chars[i]] || 0;
+        t += this.otherDurations[chars[i]] || 0;
       }
     }
 

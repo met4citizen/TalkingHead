@@ -45,7 +45,7 @@ class LipsyncEn {
       ],
 
       'E': [
-        "#:[E] =", "' ^:[E] =", " :[E] =I", "#[ED] =DD", "#:[E]D =",
+        "#:[E] =", "'^:[E] =", " :[E] =I", "#[ED] =DD", "#:[E]D =",
         "[EV]ER=E FF", "[E]^%=I", "[ERI]#=I RR I", "[ERI]=E RR I",
         "#:[ER]#=E", "[ER]#=E RR", "[ER]=E", " [EVEN]=I FF E nn",
         "#:[E]W=", "@[EW]=U", "[EW]=I U", "[E]O=I", "#:&[ES] =I SS",
@@ -110,7 +110,7 @@ class LipsyncEn {
         "[OUP]=U OO", "[OU]=aa", "[OY]=O", "[OING]=O I nn", "[OI]=O",
         "[OOR]=aa RR", "[OOK]=U kk", "[OOD]=U DD", "[OO]=U", "[O]E=O",
         "[O] =O", "[OA]=O", " [ONLY]=O nn nn I", " [ONCE]=FF aa nn SS",
-        "[ON ' T]=O nn DD", "C[O]N=aa", "[O]NG=aa", " ^:[O]N=aa",
+        "[ON'T]=O nn DD", "C[O]N=aa", "[O]NG=aa", " ^:[O]N=aa",
         "I[ON]=aa nn", "#:[ON] =aa nn", "#^[ON]=aa nn", "[O]ST =O",
         "[OF]^=aa FF", "[OTHER]=aa TH E", "[OSS] =aa SS", "#^:[OM]=aa PP",
         "[O]=aa"
@@ -135,7 +135,7 @@ class LipsyncEn {
         "#[S]#=SS", "[SAID]=SS E DD", "^[SION]=SS aa nn", "[S]S=",
         ".[S] =SS", "#:.E[S] =SS", "#^:##[S] =SS", "#^:#[S] =SS",
         "U[S] =SS", " :#[S] =SS", " [SCH]=SS kk", "[S]C+=",
-        "#[SM]=SS PP", "#[SN] '=SS aa nn", "[S]=SS"
+        "#[SM]=SS PP", "#[SN]'=SS aa nn", "[S]=SS"
       ],
 
       'T': [
@@ -162,7 +162,7 @@ class LipsyncEn {
       'W': [
         " [WERE]=FF E", "[WA]S=FF aa", "[WA]T=FF aa", "[WHERE]=FF E RR",
         "[WHAT]=FF aa DD", "[WHOL]=I O nn", "[WHO]=I U", "[WH]=FF",
-        "[WAR]=FF aa RR", "[WOR]^=F EF", "[WR]=RR", "[W]=FF"
+        "[WAR]=FF aa RR", "[WOR]^=FF E", "[WR]=RR", "[W]=FF"
       ],
 
       'X': [
@@ -226,8 +226,16 @@ class LipsyncEn {
       });
     });
 
-    // Pauses in relative units to visemes
-    this.durations = { ' ': 1, ',': 3, '-':0.5 };
+    // Viseme durations in relative unit (1=average)
+    // TODO: Check for statistics for English
+    this.visemeDurations = {
+      'aa': 1.3, 'E': 1.1, 'I': 0.9, 'O': 1.1, 'U': 0.9, 'PP': 1, 'SS': 1.3,
+      'TH': 0.8, 'DD': 0.9, 'FF': 1.1, 'kk': 0.8, 'nn': 0.9, 'RR': 1,
+      'DD': 0.9, 'sil': 1
+    };
+
+    // Pauses in relative units (1=average)
+    this.otherDurations = { ' ': 1, ',': 3, '-':0.5 };
 
     // English number words
     this.digits = ['oh', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
@@ -345,13 +353,13 @@ class LipsyncEn {
           if ( matches ) {
             rule.visemes.forEach( viseme => {
               if ( o.visemes.length && o.visemes[ o.visemes.length - 1 ] === viseme ) {
-                o.durations[ o.durations.length - 1 ] += 0.7;
-                t += 0.7;
+                o.durations[ o.durations.length - 1 ] += (0.7 * this.visemeDurations[viseme] || 1);
+                t += (0.7 * this.visemeDurations[viseme] || 1);
               } else {
                 o.visemes.push( viseme );
                 o.times.push(t);
-                o.durations.push(1);
-                t++;
+                o.durations.push( this.visemeDurations[viseme] || 1 );
+                t +=  this.visemeDurations[viseme] || 1;
               }
             })
             o.i += rule.move;
@@ -360,7 +368,7 @@ class LipsyncEn {
         }
       } else {
         o.i++;
-        t += this.durations[c] || 0;
+        t += this.otherDurations[c] || 0;
       }
     }
 
