@@ -182,12 +182,12 @@ class LipsyncEn {
 
     const ops = {
       '#': '[AEIOUY]+', // One or more vowels AEIOUY
-      "'": '[BCDFGHJKLMNPQRSTVWXZ]+', // One or more consonants BCDFGHJKLMNPQRSTVWXZ
-      '.': '[BDVGJLMNRWZ]+', // One voiced consonant BDVGJLMNRWZ
-      '$': '[BDVGJLMNRWZ][EI]', // One consonant followed by E or I
-      '%': '(ER|E|ES|ED|ING|ELY)', // One of ER, E, ES, ED, ING, ELY
-      '&': '([SCGZXJ]|CH|SH)', // One of S, C, G, Z, X, J, CH, SH
-      '@': '([TSRDLZNJ]|TH|CH|SH)', // One of T, S, R, D, L, Z, N, J, TH, CH, SH
+      // This one is not used: "'": '[BCDFGHJKLMNPQRSTVWXZ]+', // One or more consonants BCDFGHJKLMNPQRSTVWXZ
+      '.': '[BDVGJLMNRWZ]', // One voiced consonant BDVGJLMNRWZ
+      // This one is not used: '$': '[BDVGJLMNRWZ][EI]', // One consonant followed by E or I
+      '%': '(?:ER|E|ES|ED|ING|ELY)', // One of ER, E, ES, ED, ING, ELY
+      '&': '(?:[SCGZXJ]|CH|SH)', // One of S, C, G, Z, X, J, CH, SH
+      '@': '(?:[TSRDLZNJ]|TH|CH|SH)', // One of T, S, R, D, L, Z, N, J, TH, CH, SH
       '^': '[BCDFGHJKLMNPQRSTVWXZ]', // One consonant BCDFGHJKLMNPQRSTVWXZ
       '+': '[EIY]', // One of E, I, Y
       ':': '[BCDFGHJKLMNPQRSTVWXZ]*', // Zero or more consonants BCDFGHJKLMNPQRSTVWXZ
