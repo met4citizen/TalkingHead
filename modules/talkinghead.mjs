@@ -526,7 +526,7 @@ class TalkingHead {
       'en': new LipsyncEn()
     };
     this.visemeNames = [
-      'aa', 'E', 'I', 'O', 'U', 'PP', 'SS', 'DD', 'FF', 'kk',
+      'aa', 'E', 'I', 'O', 'U', 'PP', 'SS', 'TH', 'DD', 'FF', 'kk',
       'nn', 'RR', 'DD', 'sil'
     ];
 
