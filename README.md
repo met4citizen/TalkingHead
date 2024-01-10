@@ -31,9 +31,9 @@ The class `TalkingHead` can be found in the module `./modules/talkinghead.mjs`.
 The class uses [Google Text-to-Speech API](https://cloud.google.com/text-to-speech),
 [ThreeJS](https://github.com/mrdoob/three.js/)/WebGL for 3D rendering, and
 [Marked](https://github.com/markedjs/marked) Markdown parser. Lip-sync features
-has been separated into language specific modules `./modules/lipsync-fi.mjs`
-and `./modules/lipsync-en.mjs`. This makes adding a new lip-sync language
-a bit easier.
+have been divided into language-specific modules, e.g. `./modules/lipsync-fi.mjs`
+and `./modules/lipsync-en.mjs`. This separation simplifies the addition
+of new lip-sync languages.
 
 The included example app `index.html` shows how to integrate and use the class
 with [ElevenLabs WebSocket API](https://elevenlabs.io) (experimental),
@@ -87,7 +87,7 @@ Option | Description
 `ttsVolume` | Google text-to-speech volume gain (in dB) in the range [-96.0, 16.0]. Default is `0`.
 `ttsTrimStart` | Trim the viseme sequence start relative to the beginning of the audio (shift in milliseconds). Default is `0`.
 `ttsTrimEnd`| Trim the viseme sequence end relative to the end of the audio (shift in milliseconds). Default is `300`.
-`lipsyncLang`| Lip-sync language. Currently English `en` and `fi` are supported. Default is `fi`.
+`lipsyncLang`| Lip-sync language. Currently English `en` and Finnish `fi` are supported. Default is `fi`.
 `pcmSampleRate` | PCM (signed 16bit little endian) sample rate used in `speakAudio` in Hz. Default is `22050`.
 `modelPixelRatio` | Sets the device's pixel ratio. Default is `1`.
 `modelFPS` | Frames per second. Default is `30`.
@@ -169,7 +169,7 @@ const elevenTTSProxy = [
 ];
 ```
 
-3. The example app's UI supports both Finnish (default) and English. If you want to add another language, you need to add an another entry to the `i18n` object. Note that this support is only for UI. The Talking Head class only supports lip-sync in Finnish (see the FAQ).
+3. The example app's UI supports both Finnish (default) and English. If you want to add another language, you need to add an another entry to the `i18n` object.
 
 4. Add you own background images, videos, audio files, avatars etc. in the directory structure and update your site configuration `siteconfig.js` accordingly. The keys are in English, but the entries can include translations to other languages.
 
@@ -310,7 +310,7 @@ Washington, D. C., 1976. https://apps.dtic.mil/sti/pdfs/ADA021929.pdf
 </Directory>
 ```
 
-3. Make an [External Rewriting Program](https://httpd.apache.org/docs/2.4/rewrite/rewritemap.html#prg) script that verifies JSON Web Tokens. The script should return `OK` if the given token is not expired and its signature is valid. Start the script in Apache 2.4 config. (Note: User's don't use the verifier script directly, so put it in some internal directory, not under document root.)
+3. Make an [External Rewriting Program](https://httpd.apache.org/docs/2.4/rewrite/rewritemap.html#prg) script that verifies JSON Web Tokens. The script should return `OK` if the given token is not expired and its signature is valid. Start the script in Apache 2.4 config. User's don't use the verifier script directly, so put it in some internal directory, not under document root.
 
 ```apacheconf
 # JSON Web Token verifier
