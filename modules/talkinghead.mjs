@@ -1965,6 +1965,7 @@ class TalkingHead {
 
     if ( Object.keys(o).length ) {
       this.speechQueue.push(o);
+      this.speechQueue.push( { break: 300 } );
       this.startSpeaking();
     }
 
