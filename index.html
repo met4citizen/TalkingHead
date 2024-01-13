@@ -578,24 +578,24 @@ async function elevenSpeak(s,node=null) {
 
       if ( !r.isFinal ) {
         // New part
-        if ( r.normalizedAlignment ) {
+        if ( r.alignment ) {
           elevenOutputMsg = { audio: [], words: [], times: [], durations: [] };
 
           // Parse chars to words
           let word = '';
           let time = 0;
           let duration = 0;
-          for( let i=0; i<r.normalizedAlignment.chars.length; i++ ) {
-            if ( word.length === 0 ) time = r.normalizedAlignment.charStartTimesMs[i];
-            duration += r.normalizedAlignment.charDurationsMs[i];
-            if ( r.normalizedAlignment.chars[i] === ' ' ) {
-              elevenOutputMsg.words.push(word);
+          for( let i=0; i<r.alignment.chars.length; i++ ) {
+            if ( word.length === 0 ) time = r.alignment.charStartTimesMs[i];
+            if ( word.length && r.alignment.chars[i] === ' ' ) {
+              elevenOutputMsg.words.push( word );
               elevenOutputMsg.times.push(time);
               elevenOutputMsg.durations.push(duration);
               word = '';
               duration = 0;
             } else {
-              word += r.normalizedAlignment.chars[i];
+              duration += r.alignment.charDurationsMs[i];
+              word += r.alignment.chars[i];
             }
           }
           if ( word.length ) {

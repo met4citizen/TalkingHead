@@ -9,7 +9,7 @@ import { LipsyncFi } from './lipsync-fi.mjs';
 import { LipsyncEn } from './lipsync-en.mjs';
 
 /**
-* @class Talking Head speaking Finnish
+* @class Talking Head
 * @author Mika Suominen
 */
 class TalkingHead {
@@ -19,8 +19,8 @@ class TalkingHead {
   * @typedef {Object} Avatar
   * @property {string} url URL for the GLB file
   * @property {string} [body] Body form 'M' or 'F'
-  * @property {string} [lipsyncLang] Lip-sync language, e.g. "fi"
-  * @property {string} [ttsLang] Language name, e.g. "fi-FI"
+  * @property {string} [lipsyncLang] Lip-sync language, e.g. 'fi', 'en'
+  * @property {string} [ttsLang] Text-to-speech language, e.g. "fi-FI"
   * @property {voice} [ttsVoice] Voice name.
   * @property {numeric} [ttsRate] Voice rate.
   * @property {numeric} [ttsPitch] Voice pitch.
@@ -1923,7 +1923,7 @@ class TalkingHead {
               template: { name: 'subtitles' },
               ts: [time],
               vs: {
-                subtitles: word
+                subtitles: ' ' + word
               }
             });
           }
