@@ -1,7 +1,5 @@
 # Talking Head (3D)
 
-**UNDER CONSTRUCTION**
-
 ---
 
 ### Screenshots
@@ -21,10 +19,10 @@ of speaking and lip-syncing. The Talking Head supports
 It also knows a set of emojis, which it can convert into facial expressions.
 
 At present, the lip-sync supports two languages: Finnish and English.
-The Finnish language is unique in that it exhibits a consistent
+The Finnish language is rather unique in that it exhibits a consistent
 one-to-one mapping between individual letters and phonemes/visemes [1].
 The process of converting English words to visemes is based on
-my variation of the NRL English Text to Phoneme algorithm, originally
+my own variation of the NRL English Text to Phoneme algorithm, originally
 developed by Elovitz et al. in 1975 [2].
 
 The class `TalkingHead` can be found in the module `./modules/talkinghead.mjs`.
@@ -67,7 +65,7 @@ the JSON Web Token needed to use that proxy (See Appendix B).
 ```javascript
 // Create the talking head avatar
 const nodeAvatar = document.getElementById('avatar');
-head = new TalkingHead( nodeAvatar, {
+const head = new TalkingHead( nodeAvatar, {
   ttsEndpoint: "/gtts/",
   jwtGet: jwtGet
 });
