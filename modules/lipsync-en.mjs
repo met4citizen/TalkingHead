@@ -290,10 +290,10 @@ class LipsyncEn {
   }
 
   convert_tens(num){
-    if (num<10) return ones[num];
+    if (num<10) return this.ones[num];
     else if (num>=10 && num<20) return this.teens[num-10];
     else{
-      return this.tens[Math.floor(num/10)]+" "+ones[num%10];
+      return this.tens[Math.floor(num/10)]+" "+this.ones[num%10];
     }
   }
 
