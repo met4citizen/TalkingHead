@@ -2,11 +2,9 @@
 
 ---
 
-### Screenshots
+### Demo video
 
-<img src="screenshot.jpg" width="512"><br/>
-
-<img src="screenshot2.jpg" width="512"><br/>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/SfnqRnWKT40?si=WieZDpWYkvVR3bwL" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
 ---
 
