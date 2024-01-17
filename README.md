@@ -4,7 +4,7 @@
 
 ### Demo video
 
-[<img src="screenshot3.jpg" width="500"/>](https://www.youtube.com/embed/SfnqRnWKT40)
+[<img src="screenshot3.jpg" width="400"/>](https://youtu.be/SfnqRnWKT40)
 
 ---
 
