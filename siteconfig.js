@@ -33,6 +33,14 @@ export const site = {
     "Sam": { id: "yoZ06aMxZJJ28mfd3POQ" }
   },
 
+  // Microsoft voices
+  microsoftVoices: {
+    "fi-Selma": { lang: "fi-FI", id: "fi-FI-SelmaNeural" },
+    "fi-Harri": { lang: "fi-FI", id: "fi-FI-HarriNeural" },
+    "en-Jenny": { lang: "en-US", id: "en-US-JennyNeural" },
+    "en-Tony": { lang: "en-US", id: "en-US-TonyNeural" },
+  },
+
   // Preset views
   views: {
     'DrStrange': { url: './views/strange.jpg', type: 'image/jpg', fi: 'TohtoriOuto' },
