@@ -1,7 +1,5 @@
 # Talking Head (3D)
 
----
-
 ### Demo video
 
 [<img src="screenshot3.jpg" width="400"/>](https://youtu.be/SfnqRnWKT40)
@@ -11,7 +9,7 @@
 ### Introduction
 
 This is as a small side-project featuring a 3D talking head capable
-of speaking and lip-syncing. The Talking Head supports
+of speaking and lip-syncing in real-time. The Talking Head supports
 [Ready Player Me](https://readyplayer.me/) full-body 3D avatars (GLB),
 [Mixamo](https://www.mixamo.com) animations (FBX), markdown text, and subtitles.
 It also knows a set of emojis, which it can convert into facial expressions.
@@ -25,14 +23,15 @@ developed by Elovitz et al. in 1975 [2].
 
 The class `TalkingHead` can be found in the module `./modules/talkinghead.mjs`.
 The class uses [Google Text-to-Speech API](https://cloud.google.com/text-to-speech),
-[ThreeJS](https://github.com/mrdoob/three.js/)/WebGL for 3D rendering, and
+[ThreeJS](https://github.com/mrdoob/three.js/) / WebGL for 3D rendering, and
 [Marked](https://github.com/markedjs/marked) Markdown parser. Lip-sync features
 have been divided into language-specific modules, e.g. `./modules/lipsync-fi.mjs`
 and `./modules/lipsync-en.mjs`. This separation simplifies the addition
 of new lip-sync languages.
 
-The included example app `index.html` shows how to integrate and use the class
+The included example web app `index.html` shows how to integrate and use the class
 with [ElevenLabs WebSocket API](https://elevenlabs.io) (experimental),
+[Microsoft Azure speech services](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/text-to-speech),
 [OpenAI API](https://openai.com) and
 [Gemini Pro API](https://cloud.google.com/vertex-ai) (pre-GA).
 Background view examples are from
@@ -127,7 +126,7 @@ Method | Description
 `showAvatar(avatar, [onprogress=null])` | Load and show the specified avatar. The `avatar` object must include the `url` for GLB file. Optional properties are `body` for either male `M` or female `F` body form, `lipsyncLang`, `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood` and `avatarMute`.
 `setView(view, [opt])` | Set view. Supported views are `"full"`, `"upper"`  and `"head"`. Options `opt` can be used to set `cameraDistance`, `cameraX`, `cameraY`, `cameraRotateX`, `cameraRotateY`.
 `speakText(text, [opt={}], [onsubtitles=null], [excludes=[]])` | Add the `text` string to the speech queue. The text can contain face emojis. Options `opt` can be used to set text-specific `lipsyncLang`, `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood`, `avatarMute`. Optional callback function `onsubtitles` is called whenever a new subtitle is to be written with the parameter of the added string. The optional `excludes` is an array of [start,end] indices to be excluded from audio but to be included in the subtitles.
-`speakAudio(audio, [opt={}], [onsubtitles=null])` | Add the `audio` object to the speech queue. This method was added to support external TTS services such as ElevenLabs WebSocket API. The audio object contains ArrayBuffer chunks in `audio` array, characters in `chars` array, starting times for each character in milliseconds in `ts` array, and durations for each character in milliseconds in `ds` array. As of now, the only supported format is PCM signed 16bit little endian. Options `opt` can be used to set text-specific `lipsyncLang`.
+`speakAudio(audio, [opt={}], [onsubtitles=null])` | Add a new `audio` object to the speech queue. This method was added to support external TTS services such as ElevenLabs and Azure. The audio object contains ArrayBuffer chunks in `audio` array, words in `words` array, starting times for each words in milliseconds in `wtimes` array, and durations for each words in milliseconds in `wdurations` array. If the Oculus viseme IDs are know, they can be given in optional `visemes`, `vtimes` and `vdurations` arrays. NOTE: As of now, the only supported audio format is PCM signed 16bit little endian. Options `opt` can be used to set text-specific `lipsyncLang`.
 `speakMarker(onmarker)` | Add a marker to the speech queue. The callback function `onmarker` is called when the queue processes the event.
 `lookAt(x,y,t)` | Make the avatar's head turn to look at the screen position (`x`,`y`) for `t` milliseconds.
 `lookAtCamera(t)` | Make the avatar's head turn to look at the camera for `t` milliseconds.
@@ -203,6 +202,14 @@ export const site = {
     "Domi": { id: "AZnzlk1XvdvUeBnXmlld" },
     "Josh": { id: "TxGEqnHWrfWFTfGW9XjX" },
     "Sam": { id: "yoZ06aMxZJJ28mfd3POQ" }
+  },
+
+  // Microsoft voices
+  microsoftVoices: {
+    "fi-Selma": { lang: "fi-FI", id: "fi-FI-SelmaNeural" },
+    "fi-Harri": { lang: "fi-FI", id: "fi-FI-HarriNeural" },
+    "en-Jenny": { lang: "en-US", id: "en-US-JennyNeural"},
+    "en-Tony": { lang: "en-US", id: "en-US-TonyNeural" },
   },
 
   // Preset views

@@ -400,6 +400,7 @@ const elevenTTSProxy = [
   "/v1/text-to-speech/",
   "/stream-input?model_id=eleven_multilingual_v2&output_format=pcm_22050"
 ];
+const microsoftTTSProxy = "/mstts/";
 
 
 // I18n internationalization
@@ -423,8 +424,8 @@ const i18n = {
     'theme-landscape': 'Vaaka', 'theme-portrait': 'Pysty', 'Empty': 'Tyhjä',
     'Adjust': 'Säätö', 'Speech': 'Puhe', 'Silence': 'Hiljaisuus', 'Framing': 'Rajaus',
     'Mixer': 'Mikseri', 'Space': 'Tila', 'Dry': 'Suora', 'voice-test': 'Äänitesti',
-    'Limits': 'Rajat', 'ai-stop': 'Stop', 'ai-user': 'Käyttäjä',
-    'input': 'Kirjoita viesti.', 'Name': 'Nimi', 'Language': 'Kieli',
+    'Limits': 'Rajat', 'ai-stop': 'Stop', 'ai-stopword': 'Avainsana', 'ai-user': 'Käyttäjä',
+    'ai-username': 'Nimi', 'input': 'Kirjoita viesti.', 'Name': 'Nimi', 'Language': 'Kieli',
     'en': 'English', 'fi': 'Finnish', 'words': 'sanaa', 'dialogs': 'sanomaa',
     'Manuscript': 'Käsikirjoitus'
   },
@@ -432,10 +433,11 @@ const i18n = {
   'en': {
     'ai-system': 'System message.', 'ai-user1': 'User example #1',
     'ai-ai1': 'AI response #1', 'ai-user2': 'User example #2',
-    'ai-ai2': 'AI response #2', 'Example1': 'Example #1', 'Example2': 'Example #2',
+    'ai-ai2': 'AI response #2', 'Example1': 'Example-1', 'Example2': 'Example-2',
     'theme-wide': 'Widescreen', 'theme-43': '4:3', 'theme-landscape': 'Landscape',
     'theme-portrait': 'Portrait', 'voice-test': 'Speak', 'ai-stop': 'Stop',
-    'ai-user': 'User', 'input': 'Message.', 'en': 'English', 'fi': 'Finnish'
+    'ai-user': 'User', 'input': 'Message.', 'en': 'English', 'fi': 'Finnish',
+    'ai-stopword': 'Word', 'ai-username': 'Name'
   }
 
 }
@@ -579,7 +581,7 @@ async function elevenSpeak(s,node=null) {
       if ( !r.isFinal ) {
         // New part
         if ( r.alignment ) {
-          elevenOutputMsg = { audio: [], words: [], times: [], durations: [] };
+          elevenOutputMsg = { audio: [], words: [], wtimes: [], wdurations: [] };
 
           // Parse chars to words
           let word = '';
@@ -589,8 +591,8 @@ async function elevenSpeak(s,node=null) {
             if ( word.length === 0 ) time = r.alignment.charStartTimesMs[i];
             if ( word.length && r.alignment.chars[i] === ' ' ) {
               elevenOutputMsg.words.push( word );
-              elevenOutputMsg.times.push(time);
-              elevenOutputMsg.durations.push(duration);
+              elevenOutputMsg.wtimes.push(time);
+              elevenOutputMsg.wdurations.push(duration);
               word = '';
               duration = 0;
             } else {
@@ -600,8 +602,8 @@ async function elevenSpeak(s,node=null) {
           }
           if ( word.length ) {
             elevenOutputMsg.words.push(word);
-            elevenOutputMsg.times.push(time);
-            elevenOutputMsg.durations.push(duration);
+            elevenOutputMsg.wtimes.push(time);
+            elevenOutputMsg.wdurations.push(duration);
           }
         }
 
@@ -640,6 +642,60 @@ async function elevenSpeak(s,node=null) {
     }
   }
 }
+
+// Speak using Microsoft
+async function microsoftSpeak(s,node=null) {
+
+  // Parameters
+  const id = cfg("voice-microsoft-id");
+  const e = d3.select("[data-voice-microsoft-id='" + id + "']");
+  const lang = e.attr("data-voice-microsoft-lang");
+  const viseme = e.attr("data-voice-microsoft-viseme") === "true";
+
+  // POST object
+  // NOTE: Microsoft REST API does NOT support real-time viseme output
+  const o = {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/ssml+xml",
+      "X-Microsoft-OutputFormat": "raw-22050hz-16bit-mono-pcm",
+      "Authorization": "Bearer " + await jwtGet()
+    },
+    body: "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' " +
+      "xmlns:mstts='http://www.w3.org/2001/mstts' " +
+      "xml:lang='" + lang + "'>" +
+      "<voice name='" + id + "'>" +
+      ( viseme ? "<mstts:viseme type='redlips_front'/>" : "" ) +
+      s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;') +
+      "</voice>" +
+      "</speak>"
+  };
+
+  // Send request
+  try {
+    const res = await fetch( microsoftTTSProxy, o);
+    const data = await res.arrayBuffer();
+    if ( res.status === 200 && data ) {
+      const dur = ( data.byteLength / 2 / 22050 ) * 1000; // Duration in ms
+      head.speakAudio(
+        {
+          audio: [data],
+          words: [s],
+          wtimes: [0],
+          wdurations: [dur-600] // -600 ms is to fine-tune the end
+          },
+        {
+          lipsyncLang: cfg('voice-lipsync-lang')
+        },
+        node ? addText.bind(null,node) : null
+      );
+    }
+
+  } catch (error) {
+    console.error("Error:", error);
+  }
+}
+window.microsoftSpeak = microsoftSpeak;
 
 
 
@@ -1047,6 +1103,8 @@ async function openaiSendMessage(node,msgs) {
               if ( tts.length ) {
                 if ( cfg('voice-type') === 'eleven' ) {
                   await elevenSpeak( tts.trimStart() + " ", node );
+                } else if ( cfg('voice-type') === 'microsoft' ) {
+                  await microsoftSpeak( tts.trimStart() + " ", node );
                 } else {
                   await head.speakText( tts.trimStart() + " ", {
                     lipsyncLang: cfg('voice-lipsync-lang'),
@@ -1080,6 +1138,8 @@ async function openaiSendMessage(node,msgs) {
                   tts = tts.substring(ndx + 1).trimStart();
                   if ( cfg('voice-type') === 'eleven' ) {
                     await elevenSpeak( s + " ", node );
+                  } else if ( cfg('voice-type') === 'microsoft' ) {
+                    await microsoftSpeak( s + " ", node );
                   } else {
                     await head.speakText( s + " ", {
                       lipsyncLang: cfg('voice-lipsync-lang'),
@@ -1293,6 +1353,8 @@ async function geminiSendMessage(node,msgs) {
             tts = tts.substring(ndx + 1).trimStart();
             if ( cfg('voice-type') === 'eleven' ) {
               await elevenSpeak( s + " ", node );
+            } else if ( cfg('voice-type') === 'microsoft' ) {
+              await microsoftSpeak( s + " ", node );
             } else {
               await head.speakText( s + " ", {
                 lipsyncLang: cfg('voice-lipsync-lang'),
@@ -1386,6 +1448,8 @@ function addMessage(user = false) {
           if ( cfg('voice-type') === 'eleven' ) {
             elevenSpeak( text + " " );
             elevenSpeak( "" );
+          } else if ( cfg('voice-type') === 'microsoft' ) {
+            microsoftSpeak( text );
           } else {
             head.speakText( text, {
               lipsyncLang: cfg('voice-lipsync-lang'),
@@ -1449,6 +1513,30 @@ function addText(node,s) {
   }
   if ( onbottom ) nodeSessions.scrollTop = nodeSessions.scrollHeight;
 }
+
+// External speak
+async function speak(s) {
+  let node = addMessage(false);
+  if ( cfg('voice-type') === 'eleven' ) {
+    await elevenSpeak( s, node );
+    await elevenSpeak( "", node );
+  } else if ( cfg('voice-type') === 'microsoft' ) {
+    await microsoftSpeak( s, node );
+  } else {
+    await head.speakText( s, {
+      lipsyncLang: cfg('voice-lipsync-lang'),
+      ttsVoice: cfg('voice-google-id'),
+      ttsRate: cfg('voice-google-rate'),
+      ttsPitch: cfg('voice-google-pitch')
+    }, addText.bind(null,node) );
+  }
+
+  // When this marker has been reached, stop blinking
+  head.speakMarker( () => {
+    d3.selectAll('.blink').classed("blink",false);
+  });
+}
+window.talkingheadSpeak = speak;
 
 // Select an directory entry
 function entrySelect() {
@@ -1817,6 +1905,21 @@ document.addEventListener('DOMContentLoaded', async function(e) {
       .attr("data-i18n-site","elevenVoices-"+k);
   }
 
+  // Add Microsoft voices
+  const eMicrosoftVoices = d3.select("#microsoftvoices");
+  for ( const [i,k] of Object.entries(Object.keys(site.microsoftVoices)) ) {
+    let o = site.microsoftVoices[k];
+    eMicrosoftVoices.append("div")
+      .classed("command", true)
+      .classed("selected", parseInt(i) === 0 )
+      .attr("data-item","voice-microsoft-id")
+      .attr("data-type","option")
+      .attr("data-voice-microsoft-lang",o.lang)
+      .attr("data-voice-microsoft-id",o.id)
+      .attr("data-voice-microsoft-viseme", o.viseme )
+      .attr("data-i18n-site","microsoftVoices-"+k);
+  }
+
   // Add views
   const eViews = d3.select("#views");
   for ( const [k,o] of Object.entries(site.views) ) {
@@ -1970,6 +2073,8 @@ document.addEventListener('DOMContentLoaded', async function(e) {
       if ( cfg('voice-type') === 'eleven' ) {
         elevenSpeak( text + " " );
         elevenSpeak( "" );
+      } else if ( cfg('voice-type') === 'microsoft' ) {
+        microsoftSpeak( text );
       } else {
         head.speakText( text, {
           lipsyncLang: cfg('voice-lipsync-lang'),
@@ -2403,6 +2508,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     e.classed('selected',true);
     d3.select("#voice-google").style("display", (e.attr("data-voice-type") === 'google') ? "flex" : "none" );
     d3.select("#voice-eleven").style("display", (e.attr("data-voice-type") === 'eleven') ? "flex" : "none" );
+    d3.select("#voice-microsoft").style("display", (e.attr("data-voice-type") === 'microsoft') ? "flex" : "none" );
   });
 
   d3.selectAll("[data-voice-google-id]").on('click.command', function(ev) {
@@ -2414,6 +2520,12 @@ document.addEventListener('DOMContentLoaded', async function(e) {
   d3.selectAll("[data-voice-eleven-id]").on('click.command', function(ev) {
     const e = d3.select(this);
     d3.selectAll("[data-voice-eleven-id]").classed('selected',false);
+    e.classed('selected',true);
+  });
+
+  d3.selectAll("[data-voice-microsoft-id]").on('click.command', function(ev) {
+    const e = d3.select(this);
+    d3.selectAll("[data-voice-microsoft-id]").classed('selected',false);
     e.classed('selected',true);
   });
 
@@ -2767,11 +2879,11 @@ document.addEventListener('DOMContentLoaded', async function(e) {
             </div>
             <div class="row">
               <div class="text label" data-i18n-text="ai-stop"></div>
-              <input type="text" placeholder="Avainsana" data-item="ai-openai-stop" data-type="value" data-ai-openai-stop="">
+              <input type="text" data-i18n-placeholder="ai-stopword" data-item="ai-openai-stop" data-type="value" data-ai-openai-stop="">
             </div>
             <div class="row">
               <div class="text label" data-i18n-text="ai-user"></div>
-              <input type="text" placeholder="Nimi" data-item="ai-openai-user" data-type="value" data-ai-openai-user="">
+              <input type="text" data-i18n-placeholder="ai-username" data-item="ai-openai-user" data-type="value" data-ai-openai-user="">
             </div>
           </div>
 
@@ -3212,6 +3324,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
             <div class="column">
               <div class="rowWrap">
                 <div class="command selected" data-item="voice-type" data-type="option" data-voice-type="google">Google</div>
+                <div class="command" data-item="voice-type" data-type="option" data-voice-type="microsoft">Microsoft</div>
                 <div class="command" data-item="voice-type" data-type="option" data-voice-type="eleven">ElevenLabs</div>
               </div>
             </div>
@@ -3242,6 +3355,13 @@ document.addEventListener('DOMContentLoaded', async function(e) {
                 </div>
                 <input type="range" min="-20" max="20" step="1" value="0" data-item="voice-google-pitch" data-type="value" data-range="float" data-voice-google-pitch="pitch">
                 <div class="text">0</div>
+              </div>
+            </div>
+          </div>
+          <div id="voice-microsoft" class="row">
+            <div class="text label"></div>
+            <div class="column">
+              <div id="microsoftvoices" class="rowWrap">
               </div>
             </div>
           </div>

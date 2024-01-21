@@ -51,6 +51,18 @@ class TalkingHead {
   */
 
   /**
+  * Audio object.
+  * @typedef {Object} Audio
+  * @property {ArrayBuffer|ArrayBuffer[]} audio Audio buffer or array of buffers
+  * @property {string[]} words Words
+  * @property {number[]} wtimes Starting times of words
+  * @property {number[]} wdurations Durations of words
+  * @property {string[]} [visemes] Oculus lip-sync viseme IDs
+  * @property {number[]} [vtimes] Starting times of visemes
+  * @property {number[]} [vdurations] Durations of visemes
+  */
+
+  /**
   * Lip-sync object.
   * @typedef {Object} Lipsync
   * @property {string[]} visemes Oculus lip-sync visemes
@@ -1768,7 +1780,7 @@ class TalkingHead {
             for( let j=0; j<v.visemes.length; j++ ) {
               lipsyncAnim.push( {
                 template: { name: 'viseme' },
-                ts: [ t + v.times[j] - 0.5, t + v.times[j] + 0.5, t + v.times[j] + v.durations[j] + 0.5 ],
+                ts: [ t + v.times[j] - 0.6, t + v.times[j] + 0.5, t + v.times[j] + v.durations[j] + 0.5 ],
                 vs: {
                   ['viseme_'+v.visemes[j]]: [null,(v.visemes[j] === 'PP' || v.visemes[j] === 'FF') ? 0.9 : 0.6,0]
                 }
@@ -1899,7 +1911,7 @@ class TalkingHead {
 
   /**
   * Add audio to the speech queue.
-  * @param {Object} r Audio message { audio: [], words: [], ts: [], ds: [] }
+  * @param {Audio} r Audio message.
   * @param {Options} [opt=null] Text-specific options for lipsyncLang
   * @param {subtitlesfn} [onsubtitles=null] Callback when a subtitle is written
   */
@@ -1908,12 +1920,13 @@ class TalkingHead {
     const lipsyncLang = opt.lipsyncLang || this.avatar.lipsyncLang || this.opt.lipsyncLang;
     const o = {};
 
+
     if ( r.words ) {
       let lipsyncAnim = [];
       for( let i=0; i<r.words.length; i++ ) {
         const word = r.words[i];
-        const time = r.times[i];
-        const duration = r.durations[i];
+        const time = r.wtimes[i];
+        const duration = r.wdurations[i];
 
         if ( word.length ) {
 
@@ -1928,24 +1941,42 @@ class TalkingHead {
             });
           }
 
-          // Visemes
-          const v = this.lipsyncWordsToVisemes(word, lipsyncLang);
-          if ( v && v.visemes && v.visemes.length ) {
-            const dTotal = v.times[ v.visemes.length-1 ] + v.durations[ v.visemes.length-1 ];
-            if ( dTotal > 0 ) {
-              for( let j=0; j<v.visemes.length; j++ ) {
-                const t = time + (v.times[j]/dTotal) * duration;
-                const d = (v.durations[j]/dTotal) * duration;
-                lipsyncAnim.push( {
-                  template: { name: 'viseme' },
-                  ts: [ t - d/2, t + d/2, t + d + d/2 ],
-                  vs: {
-                    ['viseme_'+v.visemes[j]]: [null,(v.visemes[j] === 'PP' || v.visemes[j] === 'FF') ? 0.9 : 0.6,0]
-                  }
-                });
+          // If visemes were not specified, calculate them based on the word
+          if ( !r.visemes ) {
+            const v = this.lipsyncWordsToVisemes(word, lipsyncLang);
+            if ( v && v.visemes && v.visemes.length ) {
+              const dTotal = v.times[ v.visemes.length-1 ] + v.durations[ v.visemes.length-1 ];
+              if ( dTotal > 0 ) {
+                for( let j=0; j<v.visemes.length; j++ ) {
+                  const t = time + (v.times[j]/dTotal) * duration;
+                  const d = (v.durations[j]/dTotal) * duration;
+                  lipsyncAnim.push( {
+                    template: { name: 'viseme' },
+                    ts: [ t - 2*d/3, t + d/2, t + d + d/2 ],
+                    vs: {
+                      ['viseme_'+v.visemes[j]]: [null,(v.visemes[j] === 'PP' || v.visemes[j] === 'FF') ? 0.9 : 0.6,0]
+                    }
+                  });
+                }
               }
             }
           }
+        }
+      }
+
+      // If visemes were specifies, use them
+      if ( r.visemes ) {
+        for( let i=0; i<r.visemes.length; i++ ) {
+          const viseme = r.visemes[i];
+          const time = r.vtimes[i];
+          const duration = r.vdurations[i];
+          lipsyncAnim.push( {
+            template: { name: 'viseme' },
+            ts: [ time - 2 * duration/3, time + duration/2, time + duration + duration/2 ],
+            vs: {
+              ['viseme_'+viseme]: [null,(viseme === 'PP' || viseme === 'FF') ? 0.9 : 0.6,0]
+            }
+          });
         }
       }
 
@@ -2356,7 +2387,7 @@ class TalkingHead {
       links: [
         { link: "RightHand", minx: -0.5, maxx: 0.5, miny: -1, maxy: 1, minz: -0.5, maxz: 0.5 },
         { link: "RightForeArm", minx: -0.5, maxx: 1.5, miny: -1.5, maxy: 1.5, minz: -3, maxz: 0.5 },
-        { link: "RightArm", minx: -1.5, maxx: 1.5, miny: -1.5, maxy: 1.5, minz: -1, maxz: 3 }
+        { link: "RightArm" }
       ]
     }, new THREE.Vector3(
       this.gaussianRandom(-0.5,0),
