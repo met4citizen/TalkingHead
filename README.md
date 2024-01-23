@@ -1,8 +1,21 @@
 # Talking Head (3D)
 
-### Demo video
+### Demo videos
 
-[<img src="screenshot3.jpg" width="400"/>](https://youtu.be/SfnqRnWKT40)
+In the first video, I chat with Jenny and Harri. The close-up view
+allows you to evaluate the current accuracy of lip-sync in both English and Finnish.
+As settings I used GPT-3.5 and Microsoft text-to-speech.
+
+[<img src="screenshot4.jpg" width="350"/>](https://youtu.be/OA6LBZjkzJI)
+
+In the second video, Julia and I showcase you some of the features of
+the TalkingHead class/app including poses and animations. As voice settings
+I used Google TTS and the built-in viseme generation.
+
+[<img src="screenshot3.jpg" width="350"/>](https://youtu.be/SfnqRnWKT40)
+
+Both videos are real-time screen captures from a Chrome browser running
+the TalkingHead example web app without any post-processing.
 
 ---
 
@@ -14,24 +27,24 @@ of speaking and lip-syncing in real-time. The Talking Head supports
 [Mixamo](https://www.mixamo.com) animations (FBX), markdown text, and subtitles.
 It also knows a set of emojis, which it can convert into facial expressions.
 
-At present, the lip-sync supports two languages: Finnish and English.
-The Finnish language is rather unique in that it exhibits a consistent
-one-to-one mapping between individual letters and phonemes/visemes [1].
-The process of converting English words to visemes is based on
-my own variation of the NRL English Text to Phoneme algorithm, originally
-developed by Elovitz et al. in 1975 [2].
+You can integrate the TalkingHead class with all major text-to-speech services.
+If you use a TTS service capable of providing viseme with timestamps,
+such as Microsoft Azure Speech Services, you can achieve a highly accurate
+lip-sync across multiple languages. If you use a more affordable solution
+without visemes, such as Google TTS with four million free characters,
+you are limited to a less accurate built-in lip-sync for Finnish and English.
 
 The class `TalkingHead` can be found in the module `./modules/talkinghead.mjs`.
-The class uses [Google Text-to-Speech API](https://cloud.google.com/text-to-speech),
-[ThreeJS](https://github.com/mrdoob/three.js/) / WebGL for 3D rendering, and
-[Marked](https://github.com/markedjs/marked) Markdown parser. Lip-sync features
-have been divided into language-specific modules, e.g. `./modules/lipsync-fi.mjs`
-and `./modules/lipsync-en.mjs`. This separation simplifies the addition
-of new lip-sync languages.
+The class uses [ThreeJS](https://github.com/mrdoob/three.js/) / WebGL for 3D
+rendering, and [Marked](https://github.com/markedjs/marked) Markdown parser.
+As a fall-back TTS service, the class uses
+[Google Text-to-Speech REST API](https://cloud.google.com/text-to-speech)
+with language-specific lip-sync modules, e.g. `./modules/lipsync-fi.mjs`
+and `./modules/lipsync-en.mjs`.
 
-The included example web app `index.html` shows how to integrate and use the class
-with [ElevenLabs WebSocket API](https://elevenlabs.io) (experimental),
-[Microsoft Azure speech services](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/text-to-speech),
+The included example web app `index.html` shows how to integrate and use
+the class with [ElevenLabs WebSocket API](https://elevenlabs.io) (experimental),
+[Microsoft Azure speech SDK](https://github.com/microsoft/cognitive-services-speech-sdk-js),
 [OpenAI API](https://openai.com) and
 [Gemini Pro API](https://cloud.google.com/vertex-ai) (pre-GA).
 Background view examples are from
@@ -55,9 +68,10 @@ you can't chat with it.
 ### Talking Head class
 
 In order to create an instance of the Talking Head, you need to provide it with
-a DOM element and a set of global options. If you want the avatar to speak,
-it needs the URL for your Google TTS proxy and a function from which to obtain
-the JSON Web Token needed to use that proxy (See Appendix B).
+a DOM element and a set of global options. If you want to use the built-in
+Google TTS functionality, you need to give it your proxy endpoint and
+a function from which to obtain the JSON Web Token needed to use that
+proxy (See Appendix B).
 
 ```javascript
 // Create the talking head avatar
@@ -162,6 +176,10 @@ const elevenTTSProxy = [
   "/v1/text-to-speech/",
   "/stream-input?model_id=eleven_multilingual_v2&output_format=pcm_22050"
 ];
+const microsoftTTSProxy = [
+  "wss://" + window.location.host + "/mstts/",
+  "/cognitiveservices/websocket/v1"
+];
 ```
 
 3. The example app's UI supports both Finnish (default) and English. If you want to add another language, you need to add an another entry to the `i18n` object.
@@ -207,6 +225,7 @@ export const site = {
   // Microsoft voices
   microsoftVoices: {
     "fi-Selma": { lang: "fi-FI", id: "fi-FI-SelmaNeural" },
+    "fi-Noora": { lang: "fi-FI", id: "fi-FI-NooraNeural" },
     "fi-Harri": { lang: "fi-FI", id: "fi-FI-HarriNeural" },
     "en-Jenny": { lang: "en-US", id: "en-US-JennyNeural"},
     "en-Tony": { lang: "en-US", id: "en-US-TonyNeural" },
@@ -248,15 +267,14 @@ export const site = {
 
 ### FAQ
 
-**Why Google TTS? Why not use the free Web Speech API?**
+**Why not use the free Web Speech API?**
 
-Currently the starting times and the durations of individual visemes are
-calculated based on the length of the generated audio chunk. As far as I know,
-there is no easy way to get Web Speech API speech synthesis as an audio file
-or otherwise determine its duration in advance. At some point I tried to use
-the Web Speech API events for syncronization, but the results were not good.
-Note that the ElevenLabs WebSocket API returns the word-to-audio
-alignment information, which is great for this purpose.
+If the starting times and durations of individual visemes are not received,
+they are calculated based on the length of the generated audio chunks.
+As far as I know, there is no way to get Web Speech API speech synthesis
+as an audio file or otherwise determine its duration in advance.
+At some point I tried to use the Web Speech API events for syncronization,
+but the results were not good.
 
 **Any future plans for the project?**
 
@@ -264,7 +282,7 @@ This is just a small side-project for me, so I don't have any big
 plans for it. That said, there are several companies that are currently
 developing text-to-3D-avatar and text-to-3D-animation features. If and
 when they get released as APIs, I will probably take a look at them and see
-if they can be integrated in some way to the Talking Head.
+if they can be used/integrated in some way to the project.
 
 
 ---
@@ -321,7 +339,7 @@ RewriteEngine On
 RewriteMap jwtverify "prg:/etc/httpd/jwtverify" apache:apache
 ```
 
-4. Make a proxy for each service in which you add the required API key and protect the proxy with the JWT token verifier. Below is an example config for OpenAI API proxy using Apache 2.4 web server. Google TTS proxy would follow the same pattern passing the request to `https://eu-texttospeech.googleapis.com/v1/text:synthesize` (in EU).
+4. Make a proxy configuration for each service you want to use. Add the required API keys and protect the proxies with the JWT token verifier. Below are some example configs for Apache 2.4 web server. Note that when opening a WebSocket connection (ElevenLabs, Azure) you can't add authentication headers in browser JavaScript. This problem is solved here by including the JWT token as a part of the request URL. The downside is that the token might end up in server log files. This is typically not a problem as long as you are controlling the proxy server, you are using HTTPS/SSL, and the token has an expiration time.
 
 ```apacheconf
 # OpenAI API
@@ -334,20 +352,32 @@ RewriteMap jwtverify "prg:/etc/httpd/jwtverify" apache:apache
   ProxyPassReverseCookieDomain ".api.openai.com" ".<insert-your-proxy-domain-here>"
   RequestHeader set Authorization "Bearer <insert-your-openai-api-key-here>"
 </Location>
-```
 
-**NOTE:** The example app also uses ElevenLabs' WebSockets API, and by using browser JavaScript you can't add authentication headers when opening a new WebSocket connection. In the app this problem is solved by including the JWT token as a part of the request URL. The downside is that the token might end up in server log files. However, this is typically not a problem as long as you are controlling the proxy server, you are using HTTPS/SSL, and the token has an expiration time. Below is an example of how you might configure your WebSocket proxy in Apache 2.4:
+# Google TTS API
+<Location /gtts/>
+  RewriteCond ${jwtverify:%{http:Authorization}} !=OK
+  RewriteRule .+ - [F]
+  ProxyPass https://eu-texttospeech.googleapis.com/v1/text:synthesize?key=<insert-your-api-key-here> nocanon
+  RequestHeader unset Authorization
+</Location>
 
-```apacheconf
+# Microsoft Azure TTS WebSocket API (Speech SDK)
+<LocationMatch /mstts/(?<jwt>[^/]+)/>
+  RewriteCond ${jwtverify:%{env:MATCH_JWT}} !=OK
+  RewriteRule .+ - [F]
+  RewriteCond %{HTTP:Connection} Upgrade [NC]
+  RewriteCond %{HTTP:Upgrade} websocket [NC]
+  RewriteRule /mstts/[^/]+/(.+) "wss://<insert-your-region-here>.tts.speech.microsoft.com/$1" [P]
+  RequestHeader set "Ocp-Apim-Subscription-Key" <insert-your-subscription-key-here>
+</LocationMatch>
+
 # ElevenLabs Text-to-speech WebSocket API
 <LocationMatch /elevenlabs/(?<jwt>[^/]+)/>
   RewriteCond ${jwtverify:%{env:MATCH_JWT}} !=OK
   RewriteRule .+ - [F]
-
   RewriteCond %{HTTP:Connection} Upgrade [NC]
   RewriteCond %{HTTP:Upgrade} websocket [NC]
   RewriteRule /elevenlabs/[^/]+/(.+) "wss://api.elevenlabs.io/$1" [P]
-
   RequestHeader set "xi-api-key" "<add-your-elevenlabs-api-key-here>"
 </LocationMatch>
 ```

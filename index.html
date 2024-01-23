@@ -382,6 +382,7 @@
   }
 }
 </script>
+<script src="https://cdn.jsdelivr.net/npm/microsoft-cognitiveservices-speech-sdk@latest/distrib/browser/microsoft.cognitiveservices.speech.sdk.bundle-min.js"></script>
 
 <script type="module">
 import { site } from './siteconfig.js'
@@ -400,7 +401,10 @@ const elevenTTSProxy = [
   "/v1/text-to-speech/",
   "/stream-input?model_id=eleven_multilingual_v2&output_format=pcm_22050"
 ];
-const microsoftTTSProxy = "/mstts/";
+const microsoftTTSProxy = [
+  "wss://" + window.location.host + "/mstts/",
+  "/cognitiveservices/websocket/v1"
+];
 
 
 // I18n internationalization
@@ -644,59 +648,147 @@ async function elevenSpeak(s,node=null) {
 }
 
 // Speak using Microsoft
-async function microsoftSpeak(s,node=null) {
+let microsoftSynthesizer = null;
+const microsoftQueue= [];
 
-  // Parameters
-  const id = cfg("voice-microsoft-id");
-  const e = d3.select("[data-voice-microsoft-id='" + id + "']");
-  const lang = e.attr("data-voice-microsoft-lang");
-  const viseme = e.attr("data-voice-microsoft-viseme") === "true";
+async function microsoftSpeak(s, node=null) {
 
-  // POST object
-  // NOTE: Microsoft REST API does NOT support real-time viseme output
-  const o = {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/ssml+xml",
-      "X-Microsoft-OutputFormat": "raw-22050hz-16bit-mono-pcm",
-      "Authorization": "Bearer " + await jwtGet()
-    },
-    body: "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' " +
+  if ( s === null ) {
+    microsoftQueue.push( null );
+  } else {
+
+    // Voice config
+    const id = cfg("voice-microsoft-id");
+    const e = d3.select("[data-voice-microsoft-id='" + id + "']");
+    const lang = e.attr("data-voice-microsoft-lang");
+
+    // SSML
+    const ssml = "<speak version='1.0' " +
       "xmlns:mstts='http://www.w3.org/2001/mstts' " +
       "xml:lang='" + lang + "'>" +
       "<voice name='" + id + "'>" +
-      ( viseme ? "<mstts:viseme type='redlips_front'/>" : "" ) +
+      "<mstts:viseme type='redlips_front'/>" +
       s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;') +
       "</voice>" +
-      "</speak>"
-  };
+      "</speak>";
 
-  // Send request
-  try {
-    const res = await fetch( microsoftTTSProxy, o);
-    const data = await res.arrayBuffer();
-    if ( res.status === 200 && data ) {
-      const dur = ( data.byteLength / 2 / 22050 ) * 1000; // Duration in ms
-      head.speakAudio(
-        {
-          audio: [data],
-          words: [s],
-          wtimes: [0],
-          wdurations: [dur-600] // -600 ms is to fine-tune the end
-          },
-        {
-          lipsyncLang: cfg('voice-lipsync-lang')
-        },
-        node ? addText.bind(null,node) : null
-      );
-    }
+    microsoftQueue.push( {
+      ssml: ssml,
+      node: node,
+      speak: { audio: [], words: [], wtimes: [], wdurations: [], visemes: [], vtimes: [], vdurations: [] }
+     } );
+  }
 
-  } catch (error) {
-    console.error("Error:", error);
+  // If this was the first item, start the process
+  if ( microsoftQueue.length === 1 ) {
+    microsoftProcessQueue();
   }
 }
-window.microsoftSpeak = microsoftSpeak;
 
+async function microsoftProcessQueue() {
+
+  if ( microsoftQueue.length ) {
+
+    const job = microsoftQueue[0];
+
+    if ( job === null ) {
+      microsoftQueue.shift();
+      if ( microsoftQueue.length === 0 &&  microsoftSynthesizer ) {
+        microsoftSynthesizer.close();
+        microsoftSynthesizer = null;
+      }
+    } else {
+
+      // If we do not a speech synthesizer, create a new
+      if ( !microsoftSynthesizer ) {
+
+        // Create a new speech synthesizer
+        const endpoint = microsoftTTSProxy[0] + await jwtGet() + microsoftTTSProxy[1];
+        const config = window.SpeechSDK.SpeechConfig.fromEndpoint(endpoint);
+        config.setProperty("SpeechServiceConnection_Endpoint",endpoint);
+        config.speechSynthesisOutputFormat = window.SpeechSDK.SpeechSynthesisOutputFormat.Raw22050Hz16BitMonoPcm;
+        microsoftSynthesizer = new window.SpeechSDK.SpeechSynthesizer(config,null);
+
+        // Viseme conversion from Microsoft to Oculus
+        // TODO: Check this conversion again!
+        const visemeMap = [
+          "sil", 'aa', 'aa', 'O', 'E', // 0 - 4
+          'E', 'I', 'U', 'O', 'aa', // 5 - 9
+          'O', 'I', 'kk', 'RR', 'nn', // 10 - 14
+          'SS', 'SS', 'TH', 'FF', 'DD', // 15 - 19
+          'kk', 'PP' // 20 - 21
+        ];
+
+        // Process visemes
+        microsoftSynthesizer.visemeReceived = function(s, e) {
+          if ( microsoftQueue[0] && microsoftQueue[0].speak ) {
+            const o = microsoftQueue[0].speak;
+            const viseme = visemeMap[e.visemeId];
+            const time = e.audioOffset / 10000;
+
+            // Calculate the duration of the previous viseme
+            if ( o.vdurations.length ) {
+
+              if ( o.visemes[ o.visemes.length-1 ] === 0 ) {
+                o.visemes.pop();
+                o.vtimes.pop();
+                o.vdurations.pop();
+              } else {
+                // Remove silence
+                o.vdurations[ o.vdurations.length-1 ] = time - o.vtimes[ o.vdurations.length-1 ];
+              }
+            }
+
+
+
+            // Add this viseme
+            o.visemes.push( viseme );
+            o.vtimes.push( time );
+            o.vdurations.push( 75 ); // Duration will be fixed when the next viseme is received
+          }
+        };
+
+        // Process word boundaries and punctuations
+        microsoftSynthesizer.wordBoundary = function (s, e) {
+          if ( microsoftQueue[0] && microsoftQueue[0].speak ) {
+            const o = microsoftQueue[0].speak;
+            const word = e.text;
+            const time = e.audioOffset / 10000;
+            const duration = e.duration / 10000;
+
+            if ( e.boundaryType === "PunctuationBoundary" && o.words.length ) {
+              o.words[ o.words.length-1 ] += word;
+            } else if ( e.boundaryType === "WordBoundary" || e.boundaryType === "PunctuationBoundary" ) {
+              o.words.push( word );
+              o.wtimes.push( time );
+              o.wdurations.push( duration );
+            }
+          }
+        };
+      }
+
+      // Speak the SSML
+      microsoftSynthesizer.speakSsmlAsync(job.ssml,
+        function (result) {
+          if ( microsoftQueue[0] && microsoftQueue[0].speak ) {
+            if (result.reason === window.SpeechSDK.ResultReason.SynthesizingAudioCompleted) {
+              const job = microsoftQueue[0];
+              job.speak.audio.push( result.audioData );
+              head.speakAudio(job.speak, {}, job.node ? addText.bind(null,job.node) : null );
+            }
+            microsoftQueue.shift();
+            microsoftProcessQueue();
+          }
+        }, function (err) {
+          console.log(err);
+          microsoftQueue.shift();
+          microsoftProcessQueue();
+        }
+      );
+
+    }
+  }
+}
 
 
 // Number of words on a string.
@@ -1176,6 +1268,7 @@ async function openaiSendMessage(node,msgs) {
     if ( elevenSocket ) {
       elevenSpeak("",null);
     }
+    microsoftSpeak(null);
 
     // When this marker has been reached, stop blinking
     head.speakMarker( () => {
@@ -1385,6 +1478,7 @@ async function geminiSendMessage(node,msgs) {
     if ( elevenSocket ) {
       elevenSpeak("",null);
     }
+    microsoftSpeak(null);
 
     // When this marker has been reached, stop blinking
     head.speakMarker( () => {
@@ -1450,6 +1544,7 @@ function addMessage(user = false) {
             elevenSpeak( "" );
           } else if ( cfg('voice-type') === 'microsoft' ) {
             microsoftSpeak( text );
+            microsoftSpeak( null );
           } else {
             head.speakText( text, {
               lipsyncLang: cfg('voice-lipsync-lang'),
@@ -1522,6 +1617,7 @@ async function speak(s) {
     await elevenSpeak( "", node );
   } else if ( cfg('voice-type') === 'microsoft' ) {
     await microsoftSpeak( s, node );
+    await microsoftSpeak(null);
   } else {
     await head.speakText( s, {
       lipsyncLang: cfg('voice-lipsync-lang'),
@@ -2075,6 +2171,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
         elevenSpeak( "" );
       } else if ( cfg('voice-type') === 'microsoft' ) {
         microsoftSpeak( text );
+        microsoftSpeak( null );
       } else {
         head.speakText( text, {
           lipsyncLang: cfg('voice-lipsync-lang'),
