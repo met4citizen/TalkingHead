@@ -36,6 +36,7 @@ export const site = {
   // Microsoft voices
   microsoftVoices: {
     "fi-Selma": { lang: "fi-FI", id: "fi-FI-SelmaNeural" },
+    "fi-Noora": { lang: "fi-FI", id: "fi-FI-NooraNeural" },
     "fi-Harri": { lang: "fi-FI", id: "fi-FI-HarriNeural" },
     "en-Jenny": { lang: "en-US", id: "en-US-JennyNeural" },
     "en-Tony": { lang: "en-US", id: "en-US-TonyNeural" },
