@@ -2,15 +2,15 @@
 
 ### Demo videos
 
-In the first video, I chat with Jenny and Harri. The close-up view
-allows you to evaluate the current accuracy of lip-sync in both English and Finnish.
+In the first demo video, I chat with Jenny and Harri. The close-up view
+allows you to evaluate the accuracy of lip-sync in both English and Finnish.
 As settings I used GPT-3.5 and Microsoft text-to-speech.
 
 [<img src="screenshot4.jpg" width="350"/>](https://youtu.be/OA6LBZjkzJI)
 
 In the second video, Julia and I showcase you some of the features of
-the TalkingHead class/app including poses and animations. As voice settings
-I used Google TTS and the built-in viseme generation.
+the TalkingHead class/app including poses and animations. The voice settings
+were Google TTS with the built-in viseme generation.
 
 [<img src="screenshot3.jpg" width="350"/>](https://youtu.be/SfnqRnWKT40)
 
@@ -28,23 +28,23 @@ of speaking and lip-syncing in real-time. The Talking Head supports
 It also knows a set of emojis, which it can convert into facial expressions.
 
 You can integrate the TalkingHead class with all major text-to-speech services.
-If you use a TTS service capable of providing viseme with timestamps,
-such as Microsoft Azure Speech Services, you can achieve a highly accurate
-lip-sync across multiple languages. If you use a more affordable solution
-without visemes, such as Google TTS with four million free characters,
-you are limited to a less accurate built-in lip-sync for Finnish and English.
+If you use a TTS service that can provide visemes with timestamps,
+such as Microsoft Azure Speech Services, you can have accurate lip-sync across
+multiple languages. If you use a more affordable solution without visemes,
+such as Google TTS with four million free characters per month,
+you are limited to the built-in lip-sync support in Finnish and English.
 
 The class `TalkingHead` can be found in the module `./modules/talkinghead.mjs`.
 The class uses [ThreeJS](https://github.com/mrdoob/three.js/) / WebGL for 3D
 rendering, and [Marked](https://github.com/markedjs/marked) Markdown parser.
-As a fall-back TTS service, the class uses
-[Google Text-to-Speech REST API](https://cloud.google.com/text-to-speech)
-with language-specific lip-sync modules, e.g. `./modules/lipsync-fi.mjs`
+As a default built-in TTS service, the class uses
+[Google TTS](https://cloud.google.com/text-to-speech)
+with language-specific lip-sync modules `./modules/lipsync-fi.mjs`
 and `./modules/lipsync-en.mjs`.
 
 The included example web app `index.html` shows how to integrate and use
 the class with [ElevenLabs WebSocket API](https://elevenlabs.io) (experimental),
-[Microsoft Azure speech SDK](https://github.com/microsoft/cognitive-services-speech-sdk-js),
+[Microsoft Azure Speech SDK](https://github.com/microsoft/cognitive-services-speech-sdk-js),
 [OpenAI API](https://openai.com) and
 [Gemini Pro API](https://cloud.google.com/vertex-ai) (pre-GA).
 Background view examples are from
@@ -141,6 +141,7 @@ Method | Description
 `setView(view, [opt])` | Set view. Supported views are `"full"`, `"upper"`  and `"head"`. Options `opt` can be used to set `cameraDistance`, `cameraX`, `cameraY`, `cameraRotateX`, `cameraRotateY`.
 `speakText(text, [opt={}], [onsubtitles=null], [excludes=[]])` | Add the `text` string to the speech queue. The text can contain face emojis. Options `opt` can be used to set text-specific `lipsyncLang`, `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood`, `avatarMute`. Optional callback function `onsubtitles` is called whenever a new subtitle is to be written with the parameter of the added string. The optional `excludes` is an array of [start,end] indices to be excluded from audio but to be included in the subtitles.
 `speakAudio(audio, [opt={}], [onsubtitles=null])` | Add a new `audio` object to the speech queue. This method was added to support external TTS services such as ElevenLabs and Azure. The audio object contains ArrayBuffer chunks in `audio` array, words in `words` array, starting times for each words in milliseconds in `wtimes` array, and durations for each words in milliseconds in `wdurations` array. If the Oculus viseme IDs are know, they can be given in optional `visemes`, `vtimes` and `vdurations` arrays. NOTE: As of now, the only supported audio format is PCM signed 16bit little endian. Options `opt` can be used to set text-specific `lipsyncLang`.
+`speakBreak(t)` | Add a break of `t` milliseconds to the speech queue.
 `speakMarker(onmarker)` | Add a marker to the speech queue. The callback function `onmarker` is called when the queue processes the event.
 `lookAt(x,y,t)` | Make the avatar's head turn to look at the screen position (`x`,`y`) for `t` milliseconds.
 `lookAtCamera(t)` | Make the avatar's head turn to look at the camera for `t` milliseconds.
@@ -341,6 +342,7 @@ RewriteMap jwtverify "prg:/etc/httpd/jwtverify" apache:apache
 
 4. Make a proxy configuration for each service you want to use. Add the required API keys and protect the proxies with the JWT token verifier. Below are some example configs for Apache 2.4 web server. Note that when opening a WebSocket connection (ElevenLabs, Azure) you can't add authentication headers in browser JavaScript. This problem is solved here by including the JWT token as a part of the request URL. The downside is that the token might end up in server log files. This is typically not a problem as long as you are controlling the proxy server, you are using HTTPS/SSL, and the token has an expiration time.
 
+
 ```apacheconf
 # OpenAI API
 <Location /openai/>
@@ -357,7 +359,7 @@ RewriteMap jwtverify "prg:/etc/httpd/jwtverify" apache:apache
 <Location /gtts/>
   RewriteCond ${jwtverify:%{http:Authorization}} !=OK
   RewriteRule .+ - [F]
-  ProxyPass https://eu-texttospeech.googleapis.com/v1/text:synthesize?key=<insert-your-api-key-here> nocanon
+  ProxyPass https://eu-texttospeech.googleapis.com/v1beta1/text:synthesize?key=<insert-your-api-key-here> nocanon
   RequestHeader unset Authorization
 </Location>
 

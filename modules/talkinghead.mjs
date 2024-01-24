@@ -1727,14 +1727,14 @@ class TalkingHead {
     // Classifiers
     const dividersSentence = /[!\.\?\n\p{Extended_Pictographic}]/ug;
     const dividersWord = /[ !\.\?\n\p{Extended_Pictographic}]/ug;
-    const speakables = /[\p{L}\p{N},]/ug;
+    const speakables = /[\p{L}\p{N},'!\?]/ug;
     const emojis = /[\p{Extended_Pictographic}]/ug;
     const lipsyncLang = opt.lipsyncLang || this.avatar.lipsyncLang || this.opt.lipsyncLang;
 
-    let t = 0; // time counter
     let markdownWord = ''; // markdown word
     let textWord = ''; // text-to-speech word
-    let textSentence = ''; // text-to-speech sentence
+    let markId = 0; // SSML mark id
+    let textSentence = []; // text-to-speech sentence
     let lipsyncAnim = []; // lip-sync animation sequence
     const letters = [...s];
     for( let i=0; i<letters.length; i++ ) {
@@ -1758,14 +1758,18 @@ class TalkingHead {
         // Add to text-to-speech sentence
         if ( textWord.length ) {
           textWord = this.lipsyncPreProcessText(textWord, lipsyncLang);
-          textSentence += ' ' + textWord;
+          textSentence.push( {
+            mark: markId,
+            word: textWord
+          });
         }
 
         // Push subtitles to animation queue
         if ( markdownWord.length ) {
           lipsyncAnim.push( {
+            mark: markId,
             template: { name: 'subtitles' },
-            ts: [t-0.2],
+            ts: [-0.2],
             vs: {
               subtitles: markdownWord
             },
@@ -1777,18 +1781,21 @@ class TalkingHead {
         if ( textWord.length ) {
           const v = this.lipsyncWordsToVisemes(textWord, lipsyncLang);
           if ( v && v.visemes && v.visemes.length ) {
+            const d = v.times[ v.visemes.length-1 ] + v.durations[ v.visemes.length-1 ];
             for( let j=0; j<v.visemes.length; j++ ) {
+              const o =
               lipsyncAnim.push( {
+                mark: markId,
                 template: { name: 'viseme' },
-                ts: [ t + v.times[j] - 0.6, t + v.times[j] + 0.5, t + v.times[j] + v.durations[j] + 0.5 ],
+                ts: [ (v.times[j] - 0.6) / d, (v.times[j] + 0.5) / d, (v.times[j] + v.durations[j] + 0.5) / d ],
                 vs: {
                   ['viseme_'+v.visemes[j]]: [null,(v.visemes[j] === 'PP' || v.visemes[j] === 'FF') ? 0.9 : 0.6,0]
                 }
               });
             }
-            t += v.times[ v.visemes.length-1 ] + v.durations[ v.visemes.length-1 ] + 0.5;
           }
           textWord = '';
+          markId++;
         }
       }
 
@@ -1796,13 +1803,12 @@ class TalkingHead {
       if ( letters[i].match(dividersSentence) || isLast ) {
 
         // Send sentence to Text-to-speech queue
-        textSentence = textSentence.trim();
         if ( textSentence.length || (isLast && lipsyncAnim.length) ) {
           const o = {
             anim: lipsyncAnim
           };
           if ( opt.avatarMood ) o.mood = opt.avatarMood;
-          if ( !opt.axisZ ) o.text = textSentence;
+          if ( !opt.avatarMute ) o.text = textSentence;
           if ( onsubtitles ) o.onSubtitles = onsubtitles;
           if ( opt.ttsLang ) o.lang = opt.ttsLang;
           if ( opt.ttsVoice ) o.voice = opt.ttsVoice;
@@ -1812,9 +1818,9 @@ class TalkingHead {
           this.speechQueue.push(o);
 
           // Reset sentence and animation sequence
-          textSentence = '';
+          textSentence = [];
+          markId = 0;
           lipsyncAnim = [];
-          t = 0;
         }
 
         // Send emoji, if the divider was a known emoji
@@ -1834,6 +1840,15 @@ class TalkingHead {
     this.speechQueue.push( { break: 1000 } );
 
     // Start speaking (if not already)
+    this.startSpeaking();
+  }
+
+  /**
+  * Add a break to the speech queue.
+  * @param {numeric} t Duration in milliseconds.
+  */
+  async speakBreak(t) {
+    this.speechQueue.push( { break: t } );
     this.startSpeaking();
   }
 
@@ -2099,6 +2114,25 @@ class TalkingHead {
 
       // Spoken text
       try {
+        // Convert text to SSML
+        let ssml = "<speak>";
+        line.text.forEach( (x,i) => {
+          // Add mark
+          if (i > 0) {
+            ssml += " <mark name='" + x.mark + "'/>";
+          }
+
+          // Add word
+          ssml += x.word.replaceAll('&','&amp;')
+            .replaceAll('<','&lt;')
+            .replaceAll('>','&gt;')
+            .replaceAll('"','&quot;')
+            .replaceAll('\'','&apos;');
+
+        });
+        ssml += "</speak>";
+
+
         const o = {
           method: "POST",
           headers: {
@@ -2106,7 +2140,7 @@ class TalkingHead {
           },
           body: JSON.stringify({
             "input": {
-              "text": line.text
+              "ssml": ssml
             },
             "voice": {
               "languageCode": line.lang || this.avatar.ttsLang || this.opt.ttsLang,
@@ -2117,7 +2151,8 @@ class TalkingHead {
               "speakingRate": (line.rate || this.avatar.ttsRate || this.opt.ttsRate) + this.mood.speech.deltaRate,
               "pitch": (line.pitch || this.avatar.ttsPitch || this.opt.ttsPitch) + this.mood.speech.deltaPitch,
               "volumeGainDb": (line.volume || this.avatar.ttsVolume || this.opt.ttsVolume) + this.mood.speech.deltaVolume
-            }
+            },
+            "enableTimePointing": [ 1 ] // Timepoint information for mark tags
           })
         };
 
@@ -2127,7 +2162,6 @@ class TalkingHead {
         }
 
         const res = await fetch( this.opt.ttsEndpoint + (this.opt.ttsApikey ? "?key=" + this.opt.ttsApikey : ''), o);
-
         const data = await res.json();
 
         if ( res.status === 200 && data && data.audioContent ) {
@@ -2137,18 +2171,28 @@ class TalkingHead {
           const audio = await this.audioCtx.decodeAudioData( buf );
           this.speakWithHands();
 
-          // Rescale based on the duration
+          // Word-to-audio alignment
+          const timepoints = [ { mark: 0, time: 0 } ];
+          data.timepoints.forEach( (x,i) => {
+            const time = x.timeSeconds * 1000;
+            timepoints[i].duration = time - timepoints[i].time;
+            timepoints.push( {
+              mark: x.markName,
+              time: x.timeSeconds * 1000
+            });
+          });
           let d = 1000 * audio.duration; // Duration in ms
           if ( d > this.opt.ttsTrimEnd ) d = d - this.opt.ttsTrimEnd;
-          const lastElement = line.anim[ line.anim.length-1 ];
-          let t = lastElement.ts[ lastElement.ts.length-1 ] + 1;
+          timepoints[timepoints.length-1].duration = d - timepoints[timepoints.length-1].time;
+
+          // Re-set animation starting times and rescale durations
           line.anim.forEach( x => {
             for(let i=0; i<x.ts.length; i++) {
-              x.ts[i] = (x.ts[i] * d/t) + this.opt.ttsTrimStart;
+              x.ts[i] = timepoints[x.mark].time + (x.ts[i] * timepoints[x.mark].duration) + this.opt.ttsTrimStart;
             }
           });
 
-          // Make a playlist
+          // Add to the playlist
           this.audioPlaylist.push({ anim: line.anim, audio: audio });
           this.onSubtitles = line.onSubtitles || null;
           this.resetLips();
