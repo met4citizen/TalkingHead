@@ -1198,7 +1198,7 @@ async function openaiSendMessage(node,msgs) {
                 } else if ( cfg('voice-type') === 'microsoft' ) {
                   await microsoftSpeak( tts.trimStart() + " ", node );
                 } else {
-                  await head.speakText( tts.trimStart() + " ", {
+                  await head.speakText( tts.trimStart(), {
                     lipsyncLang: cfg('voice-lipsync-lang'),
                     ttsVoice: cfg('voice-google-id'),
                     ttsRate: cfg('voice-google-rate'),
@@ -1233,7 +1233,7 @@ async function openaiSendMessage(node,msgs) {
                   } else if ( cfg('voice-type') === 'microsoft' ) {
                     await microsoftSpeak( s + " ", node );
                   } else {
-                    await head.speakText( s + " ", {
+                    await head.speakText( s, {
                       lipsyncLang: cfg('voice-lipsync-lang'),
                       ttsVoice: cfg('voice-google-id'),
                       ttsRate: cfg('voice-google-rate'),
@@ -1449,7 +1449,7 @@ async function geminiSendMessage(node,msgs) {
             } else if ( cfg('voice-type') === 'microsoft' ) {
               await microsoftSpeak( s + " ", node );
             } else {
-              await head.speakText( s + " ", {
+              await head.speakText( s, {
                 lipsyncLang: cfg('voice-lipsync-lang'),
                 ttsVoice: cfg('voice-google-id'),
                 ttsRate: cfg('voice-google-rate'),

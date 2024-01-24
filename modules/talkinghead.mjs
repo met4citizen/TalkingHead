@@ -1726,42 +1726,47 @@ class TalkingHead {
 
     // Classifiers
     const dividersSentence = /[!\.\?\n\p{Extended_Pictographic}]/ug;
-    const dividersWord = /[ !\.\?\n\p{Extended_Pictographic}]/ug;
-    const speakables = /[\p{L}\p{N},'!\?]/ug;
+    const dividersWord = /[ ]/ug;
+    const speakables = /[\p{L}\p{N},.'!\?]/ug;
     const emojis = /[\p{Extended_Pictographic}]/ug;
     const lipsyncLang = opt.lipsyncLang || this.avatar.lipsyncLang || this.opt.lipsyncLang;
 
     let markdownWord = ''; // markdown word
     let textWord = ''; // text-to-speech word
     let markId = 0; // SSML mark id
-    let textSentence = []; // text-to-speech sentence
-    let lipsyncAnim = []; // lip-sync animation sequence
+    let ttsSentence = []; // Text-to-speech sentence
+    let lipsyncAnim = []; // Lip-sync animation sequence
     const letters = [...s];
     for( let i=0; i<letters.length; i++ ) {
       const isLast = i === (letters.length-1);
-
-      // Add letter to spoken word
-      if ( letters[i].match(speakables) ) {
-        if ( !excludes || excludes.every( x => (i < x[0]) || (i > x[1]) ) ) {
-          textWord += letters[i];
-        }
-      }
+      const isSpeakable = letters[i].match(speakables);
+      const isEndOfSentence = letters[i].match(dividersSentence);
+      const isEndOfWord = letters[i].match(dividersWord);
 
       // Add letter to subtitles
       if ( onsubtitles ) {
         markdownWord += letters[i];
       }
 
+      // Add letter to spoken word
+      if ( isSpeakable ) {
+        if ( !excludes || excludes.every( x => (i < x[0]) || (i > x[1]) ) ) {
+          textWord += letters[i];
+        }
+      }
+
       // Add words to sentence and animations
-      if ( letters[i].match(dividersWord) || isLast ) {
+      if ( isEndOfWord || isEndOfSentence || isLast ) {
 
         // Add to text-to-speech sentence
         if ( textWord.length ) {
           textWord = this.lipsyncPreProcessText(textWord, lipsyncLang);
-          textSentence.push( {
-            mark: markId,
-            word: textWord
-          });
+          if ( textWord.length ) {
+            ttsSentence.push( {
+              mark: markId,
+              word: textWord
+            });
+          }
         }
 
         // Push subtitles to animation queue
@@ -1800,25 +1805,28 @@ class TalkingHead {
       }
 
       // Process sentences
-      if ( letters[i].match(dividersSentence) || isLast ) {
+      if ( isEndOfSentence || isLast ) {
 
         // Send sentence to Text-to-speech queue
-        if ( textSentence.length || (isLast && lipsyncAnim.length) ) {
+        if ( ttsSentence.length || (isLast && lipsyncAnim.length) ) {
           const o = {
             anim: lipsyncAnim
           };
-          if ( opt.avatarMood ) o.mood = opt.avatarMood;
-          if ( !opt.avatarMute ) o.text = textSentence;
           if ( onsubtitles ) o.onSubtitles = onsubtitles;
-          if ( opt.ttsLang ) o.lang = opt.ttsLang;
-          if ( opt.ttsVoice ) o.voice = opt.ttsVoice;
-          if ( opt.ttsRate ) o.rate = opt.ttsRate;
-          if ( opt.ttsVoice ) o.pitch = opt.ttsPitch;
-          if ( opt.ttsVolume ) o.volume = opt.ttsVolume;
+          if ( ttsSentence.length && !opt.avatarMute ) {
+            o.text = ttsSentence;
+            if ( opt.avatarMood ) o.mood = opt.avatarMood;
+            if ( opt.ttsLang ) o.lang = opt.ttsLang;
+            if ( opt.ttsVoice ) o.voice = opt.ttsVoice;
+            if ( opt.ttsRate ) o.rate = opt.ttsRate;
+            if ( opt.ttsVoice ) o.pitch = opt.ttsPitch;
+            if ( opt.ttsVolume ) o.volume = opt.ttsVolume;
+          }
           this.speechQueue.push(o);
 
           // Reset sentence and animation sequence
-          textSentence = [];
+          ttsSentence = [];
+          textWord = '';
           markId = 0;
           lipsyncAnim = [];
         }
@@ -1832,7 +1840,6 @@ class TalkingHead {
           }
         }
 
-        this.speechQueue.push( { break: 300 } );
       }
 
     }
