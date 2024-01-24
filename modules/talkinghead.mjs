@@ -1774,7 +1774,7 @@ class TalkingHead {
           lipsyncAnim.push( {
             mark: markId,
             template: { name: 'subtitles' },
-            ts: [-0.2],
+            ts: [0],
             vs: {
               subtitles: markdownWord
             },
@@ -2183,10 +2183,7 @@ class TalkingHead {
           data.timepoints.forEach( (x,i) => {
             const time = x.timeSeconds * 1000;
             timepoints[i].duration = time - timepoints[i].time;
-            timepoints.push( {
-              mark: x.markName,
-              time: x.timeSeconds * 1000
-            });
+            timepoints.push( { mark: x.markName, time: time });
           });
           let d = 1000 * audio.duration; // Duration in ms
           if ( d > this.opt.ttsTrimEnd ) d = d - this.opt.ttsTrimEnd;
@@ -2194,8 +2191,11 @@ class TalkingHead {
 
           // Re-set animation starting times and rescale durations
           line.anim.forEach( x => {
-            for(let i=0; i<x.ts.length; i++) {
-              x.ts[i] = timepoints[x.mark].time + (x.ts[i] * timepoints[x.mark].duration) + this.opt.ttsTrimStart;
+            const timepoint = timepoints[x.mark];
+            if ( timepoint ) {
+              for(let i=0; i<x.ts.length; i++) {
+                x.ts[i] = timepoint.time + (x.ts[i] * timepoint.duration) + this.opt.ttsTrimStart;
+              }
             }
           });
 
