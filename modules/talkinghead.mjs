@@ -82,7 +82,7 @@ class TalkingHead {
       ttsEndpoint: null,
       ttsApikey: null,
       ttsTrimStart: 0,
-      ttsTrimEnd: 300,
+      ttsTrimEnd: 350,
       ttsLang: "fi-FI",
       ttsVoice: "fi-FI-Standard-A",
       ttsRate: 0.95,
@@ -2182,11 +2182,13 @@ class TalkingHead {
           const timepoints = [ { mark: 0, time: 0 } ];
           data.timepoints.forEach( (x,i) => {
             const time = x.timeSeconds * 1000;
-            timepoints[i].duration = time - timepoints[i].time;
+            let prevDuration = time - timepoints[i].time;
+            if ( prevDuration > 100 ) prevDuration - 100; // Trim out leading space
+            timepoints[i].duration = prevDuration;
             timepoints.push( { mark: x.markName, time: time });
           });
           let d = 1000 * audio.duration; // Duration in ms
-          if ( d > this.opt.ttsTrimEnd ) d = d - this.opt.ttsTrimEnd;
+          if ( d > this.opt.ttsTrimEnd ) d = d - this.opt.ttsTrimEnd; // Trim out silence at the end
           timepoints[timepoints.length-1].duration = d - timepoints[timepoints.length-1].time;
 
           // Re-set animation starting times and rescale durations
@@ -2245,6 +2247,7 @@ class TalkingHead {
   * Pause speaking.
   */
   pauseSpeaking() {
+    try { this.audioSpeechSource.stop(); } catch(error) {}
     this.audioPlaylist.length = 0;
     this.stateName = 'idle';
     this.isSpeaking = false;
@@ -2259,6 +2262,7 @@ class TalkingHead {
   * Stop speaking and clear the speech queue.
   */
   stopSpeaking() {
+    try { this.audioSpeechSource.stop(); } catch(error) {}
     this.audioPlaylist.length = 0;
     this.speechQueue.length = 0;
     this.animQueue = this.animQueue.filter( x  => x.template.name !== 'viseme' );
