@@ -229,11 +229,14 @@
   .message {
     position: relative; display: block; width: 100%; min-height: 2rem;
   }
+  .message * {
+    text-align:left; font-size: 1.4rem; line-height: 2rem;
+  }
   .message > * {
     display: block; padding: 0 calc(6rem + 8px) 0 calc(4rem + 4px);
-    color: var(--colorSystemText); text-align:left; font-size: 1.4rem;
-    line-height: 2rem; white-space: pre-line; z-index: 10;
+    color: var(--colorSystemText);  z-index: 10;
   }
+  .message ul, .message ol { margin: 0 0 0 2rem; }
   .message.user > * { color: var(--colorUserText); }
   .message > .toolbar-left {
     position: absolute; left:0; bottom:0; padding: 0;
@@ -312,7 +315,7 @@
   .blink>ul:last-child li:last-child:after {
     -webkit-animation: blinking 1s steps(5,start) infinite;
     animation: blinking 1s steps(5,start) infinite; content: "▋";
-    margin-left: .25rem; vertical-align: baseline;
+    margin-left: .25rem; vertical-align: baseline; white-space: nowrap;
   }
 
 
@@ -378,7 +381,7 @@
     "three/examples/": "https://cdn.jsdelivr.net/npm/three@0.149.0/examples/",
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.149.0/examples/jsm/",
     "dompurify": "https://cdn.jsdelivr.net/npm/dompurify@3.0.6/+esm",
-    "marked": "https://cdn.jsdelivr.net/npm/marked@9.0.3/+esm"
+    "marked": "https://cdn.jsdelivr.net/npm/marked@11.2.0/+esm"
   }
 }
 </script>
@@ -414,8 +417,6 @@ const i18n = {
     'Avatar': 'Hahmo', 'Camera': 'Kamera', 'Audio': 'Ääni', 'Manuscript': 'Käsikirjoitus',
     'Emotion': 'Tunne', 'Neutral': 'Perus', 'Happy': 'Ilo', 'Angry': 'Viha', 'Sad': 'Suru',
     'Fear': 'Pelko', 'Disgust': 'Inho', 'Love': 'Rakkaus', 'Sleep': 'Uni', 'Pose': 'Asento',
-    'Straight': 'Suora', 'Side': 'Keno', 'Hip': 'Lantio', 'Turn': 'Sivu', 'Back': 'Taka',
-    'Wide': 'Haara', 'Knee': 'Polvi', 'Kneel': 'Polvet', 'Bend': 'Perä', 'Sitting': 'Istuva',
     'Action': 'Toiminta', 'Frame': 'Rajaus', 'Full': 'Kokovartalo', 'Upper': 'Yläosa',
     'Head': 'Pää', 'Director': 'Ohjaus', 'Pause': 'Pysäytyskuva', 'Panning': 'Panorointi',
     'Slow-motion': 'Hidastus', 'Ambience': 'Ambienssi', 'Silence': 'Hiljaisuus',
@@ -490,7 +491,7 @@ function i18nTranslate(l) {
 }
 
 // Markdown configuration
-const markedOptions = { mangle:false, headerIds:false, breaks: true };
+const markedOptions = { gfm: true, breaks: true };
 
 // Open AI configuration
 let aiController = null;
@@ -499,24 +500,24 @@ let aiController = null;
 const elevenBOS = {
   "text": " ",
   "voice_settings": { "stability": 0.8, "similarity_boost": true },
-/*  "generation_config": {
+  "generation_config": {
     "chunk_length_schedule": [500,500,500,500]
-  }, */
+  }
 };
 let elevenSocket = null;
 let elevenInputMsgs = null;
 let elevenOutputMsg = null;
 
 // JSON Web Token (JWT)
-let jwt = ''; // Current token
 let jwtExpires = 0;
+let jwt = '';
 
 // Get JSON Web Token
 async function jwtGet() {
   const limit = Math.round(Date.now() / 1000) + 60;
   if ( jwtExpires < limit ) {
     try {
-      const o = await (await fetch( jwtEndpoint )).json();
+      const o = await (await fetch( jwtEndpoint, { cache: "no-store" } )).json();
       if ( o && o.jwt ) {
         const b64Url = o.jwt.split('.')[1];
         const b64 = b64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -626,7 +627,7 @@ async function elevenSpeak(s,node=null) {
     // Connection closed
     elevenSocket.onclose = function (event) {
       if ( event.wasClean) {
-        console.info(`Connection closed cleanly, code=${event.code}, reason=${event.reason}`);
+        // console.info(`Connection closed cleanly, code=${event.code}, reason=${event.reason}`);
       } else {
         console.warn('Connection died');
       }
@@ -993,6 +994,20 @@ function loadConfig(session = null) {
   }
 }
 
+function motion( action, pose, expression, mood ) {
+  try {
+    head.setMood(mood || 'neutral');
+  } catch(err) {}
+  if ( expression ) {
+    head.speakEmoji(expression);
+  }
+  if ( action && site.animations[action] ) {
+    head.playAnimation( site.animations[action].url, progressUpdate, site.animations[action].dur || 20 );
+  } else if ( pose && site.poses[pose] ) {
+    head.playPose( site.poses[pose].url, progressUpdate, site.poses[pose].dur || 60 );
+  }
+}
+
 // Build outgoing message for OpenAI
 function openaiBuildMessage() {
   const msgs = [];
@@ -1081,42 +1096,46 @@ async function openaiModerateMessage(msgs) {
   try {
     const res = await fetch( openaiModerationsProxy, {
       method: "POST",
+      mode: "cors",
       headers: {
         "Content-Type": "application/json",
         "Authorization": "Bearer " + await jwtGet()
       },
-      body: JSON.stringify({ input: text })
+      body: JSON.stringify({
+        input: text
+      })
     });
 
-    const data = await res.json();
-    // console.log(text,data);
+    if ( res.ok ) {
 
-    if ( res.status === 200 && data.results && data.results.length ) {
-      data.results.forEach( (x,i) => {
-        let flagtmp = Boolean( x.flagged );
-        let scoretmp = 0.0;
-        Object.keys(x.categories).forEach( key => {
-          scoretmp = Math.max( scoretmp, x.category_scores[key] );
+      const data = await res.json();
+
+      if ( data && data.results && data.results.length ) {
+        data.results.forEach( (x,i) => {
+          let flagtmp = Boolean( x.flagged );
+          let scoretmp = 0.0;
+          Object.keys(x.categories).forEach( key => {
+            scoretmp = Math.max( scoretmp, x.category_scores[key] );
+          });
+
+          if ( modMsgs[i].n ) {
+            modMsgs[i].n.dataset.flag = flagtmp;
+            modMsgs[i].n.dataset.score = scoretmp;
+          }
+
+          flag |= flagtmp;
+          score = Math.max(score,scoretmp);
         });
+      }
 
-        if ( modMsgs[i].n ) {
-          modMsgs[i].n.dataset.flag = flagtmp;
-          modMsgs[i].n.dataset.score = scoretmp;
-        }
-
-        flag |= flagtmp;
-        score = Math.max(score,scoretmp);
-      });
-
+      d3.select("#flag").classed("selected",flag);
+      d3.select("#score").text( "" + Math.round(100 * score) / 100 );
     } else {
-      console.error(res.status,data);
+      console.error("Error: Moderation API returned ", res.status);
     }
 
-    d3.select("#flag").classed("selected",flag);
-    d3.select("#score").text( "" + Math.round(100 * score) / 100 );
-
   } catch (error) {
-    console.error("Error:", error);
+    console.error("Error: Moderation API returned ", error);
   }
 
   return flag;
@@ -1128,10 +1147,6 @@ async function openaiSendMessage(node,msgs) {
   // Create a new AbortController instance
   aiController = new AbortController();
   const signal = aiController.signal;
-
-  // Elements
-  node.dataset.output = '';
-  let tts = '';
 
   // Chat completion
   try {
@@ -1156,84 +1171,136 @@ async function openaiSendMessage(node,msgs) {
     if ( user && user.length ) {
       body.user = user;
     }
-
-    // Fetch the response from the OpenAI API
-    const res = await fetch( openaiChatCompletionsProxy, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + await jwtGet()
-      },
-      body: JSON.stringify(body),
-      signal
-    });
-
-    if ( res.ok ) {
-
-      // Read the response as a stream of data
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder("utf-8");
-      let buf = new Uint8Array(512);
-      let ndx = 0;
-      let ns = -1; // Number of consecutive line break, -1=new chapter begins
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        for (let i = 0; i < value.byteLength; ++i) {
-          buf[ndx++] = value[i];
-          if ( ns === -1 ) {
-            // if ( value[i] === 42 ) person = 4; // asterisk
-            ns = 0;
-          }
-          ns = (value[i]===10) ? (ns + 1) : 0;
-          if ( ns == 2 ) {
-            let line = decoder.decode( buf.subarray(0, ndx - 2) );
-            if ( !line.startsWith('data: ') ) throw new Error('Expected "data:" prefix in: ' + line);
-            line = line.substring(6);
-            if ( line === '[DONE]' ) {
-              if ( tts.length ) {
-                if ( cfg('voice-type') === 'eleven' ) {
-                  await elevenSpeak( tts.trimStart() + " ", node );
-                } else if ( cfg('voice-type') === 'microsoft' ) {
-                  await microsoftSpeak( tts.trimStart() + " ", node );
-                } else {
-                  await head.speakText( tts.trimStart(), {
-                    lipsyncLang: cfg('voice-lipsync-lang'),
-                    ttsVoice: cfg('voice-google-id'),
-                    ttsRate: cfg('voice-google-rate'),
-                    ttsPitch: cfg('voice-google-pitch')
-                  }, addText.bind(null,node) );
+    const isMotionSelected = d3.select("#motion").classed("selected");
+    if ( isMotionSelected ) {
+      body.tools = [
+        {
+          "type": "function",
+          "function": {
+            "name": "move_body",
+            "description": "Set the action, still pose and/or mood of your avatar's body in virtual world",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": Object.keys(site.animations)
+                },
+                "stillpose": {
+                  "type": "string",
+                  "enum": Object.keys(site.poses)
+                },
+                /* "facialexpression": {
+                  "type": "string",
+                  "enum": Object.keys(head.animEmojis).map( x => {
+                    return x.split("").map((unit) => "\\u" + unit.charCodeAt(0).toString(16).padStart(4, "0")).join("");
+                  })
+                }, */
+                "mood": {
+                  "type": "string",
+                  "enum": Object.keys(head.animMoods)
                 }
-              }
-              break;
-            } else {
-              let obj;
-              try {
-                obj = JSON.parse(line);
-              } catch(e) {
-                throw new Error( "Error JSON parsing line: " + line );
-              }
-              if ( obj && obj.error ) throw new Error( obj.error.message || ''+res.status );
-              if ( obj && obj.choices && obj.choices[0] &&
-                obj.choices[0].delta && obj.choices[0].delta.content ) {
-                let c = obj.choices[0].delta.content;
-                node.dataset.output += c;
-                tts += c;
-              }
+                /* "custom-animation": {
+                  "type": "string",
+                  "description": "A short description of the custom movement, e.g. standing and waving left hand."
+                }*/
+              },
+              "required": []
+            }
+          }
+        }
+      ];
+      body.tool_choice = "auto";
+    }
 
-              // Speak
-              let ndx = Math.max(tts.lastIndexOf('.'), tts.lastIndexOf('!'), tts.lastIndexOf('?'), tts.lastIndexOf('\n'));
-              if ( ndx !== -1 ) {
-                let s = tts.substring(0, ndx + 1);
-                if ( s && s.length ) {
-                  tts = tts.substring(ndx + 1).trimStart();
+    // Elements
+    node.dataset.output = '';
+    let tts;
+    let fn;
+
+    do {
+
+      // Ready for either text response or a function call
+      tts = '';
+      fn = null;
+
+      // Fetch the response from the OpenAI API
+      const res = await fetch( openaiChatCompletionsProxy, {
+        method: "POST",
+        mode: "cors",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + await jwtGet()
+        },
+        body: JSON.stringify(body),
+        signal
+      });
+
+      if ( res.ok ) {
+
+        // Read the response as a stream of data
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let buf = new Uint8Array(512);
+        let ndx = 0;
+        let ns = -1; // Number of consecutive line break, -1=new chapter begins
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          for (let i = 0; i < value.byteLength; ++i) {
+            buf[ndx++] = value[i];
+            if ( ns === -1 ) ns = 0;
+            ns = (value[i]===10) ? (ns + 1) : 0;
+            if ( ns == 2 ) {
+              let line = decoder.decode( buf.subarray(0, ndx - 2) );
+              if ( !line.startsWith('data: ') ) throw new Error('Expected "data:" prefix in: ' + line);
+              line = line.substring(6);
+              if ( line === '[DONE]' ) {
+                if ( fn ) {
+                  console.log(fn);
+
+                  // Function call
+                  body.messages.push({
+                    role: "assistant",
+                    content: null,
+                    tool_calls: [
+                      {
+                        id: fn.id,
+                        type: "function",
+                        function: {
+                          name: fn.name,
+                          arguments: fn.arguments
+                        }
+                      }
+                    ]
+                  });
+
+                  // TODO: Call the function
+                  try {
+                    const m = JSON.parse(fn.arguments);
+                    motion(m.action, m.stillpose, m.facialexpression, m.mood);
+                  } catch(motionError) {
+                    console.error(motionError);
+                  }
+
+                  // Response
+                  body.messages.push({
+                    role: "tool",
+                    content: "",
+                    tool_call_id: fn.id
+                  });
+
+                  // Make sure we do not get abother function call
+                  body.tool_choice = "none";
+                }
+                if ( tts ) {
                   if ( cfg('voice-type') === 'eleven' ) {
-                    await elevenSpeak( s + " ", node );
+                    await elevenSpeak( tts.trimStart() + " ", node );
                   } else if ( cfg('voice-type') === 'microsoft' ) {
-                    await microsoftSpeak( s + " ", node );
+                    await microsoftSpeak( tts.trimStart() + " ", node );
                   } else {
-                    await head.speakText( s, {
+                    await head.speakText( tts.trimStart(), {
                       lipsyncLang: cfg('voice-lipsync-lang'),
                       ttsVoice: cfg('voice-google-id'),
                       ttsRate: cfg('voice-google-rate'),
@@ -1241,23 +1308,69 @@ async function openaiSendMessage(node,msgs) {
                     }, addText.bind(null,node) );
                   }
                 }
-              }
-            }
+                break;
+              } else {
+                let obj;
+                try {
+                  obj = JSON.parse(line);
+                } catch(e) {
+                  throw new Error( "Error JSON parsing line: " + line );
+                }
+                if ( obj && obj.error ) throw new Error( obj.error.message || ''+res.status );
+                if ( obj && obj.choices && obj.choices[0] && obj.choices[0].delta ) {
+                  const delta = obj.choices[0].delta;
+                  if ( delta.tool_calls ) {
+                    if ( !fn ) fn = { id: '', name: '', arguments: '' };
+                    fn.id += delta.tool_calls[0].id || '';
+                    fn.name += delta.tool_calls[0].function?.name || '';
+                    fn.arguments += delta.tool_calls[0].function?.arguments || '';
+                  }
+                  if ( delta.content ) {
+                    node.dataset.output += delta.content;
+                    tts += delta.content;
+                  }
+                }
 
-            // Continue
-            ndx = 0;
-            ns = -1;
+                // Speak
+                if ( tts ) {
+                  let idx = Math.max(tts.lastIndexOf('.'), tts.lastIndexOf('!'), tts.lastIndexOf('?'), tts.lastIndexOf('\n'));
+                  if ( idx !== -1 ) {
+                    let s = tts.substring(0, idx + 1);
+                    if ( s && s.length ) {
+                      tts = tts.substring(idx + 1).trimStart();
+                      if ( cfg('voice-type') === 'eleven' ) {
+                        await elevenSpeak( s + " ", node );
+                      } else if ( cfg('voice-type') === 'microsoft' ) {
+                        await microsoftSpeak( s + " ", node );
+                      } else {
+                        await head.speakText( s, {
+                          lipsyncLang: cfg('voice-lipsync-lang'),
+                          ttsVoice: cfg('voice-google-id'),
+                          ttsRate: cfg('voice-google-rate'),
+                          ttsPitch: cfg('voice-google-pitch')
+                        }, addText.bind(null,node) );
+                      }
+                    }
+                  }
+                }
+              }
+
+              // Continue
+              ndx = 0;
+              ns = -1;
+            }
           }
         }
+
+        // Moderate
+        let flag = await openaiModerateMessage([{ content: node.dataset.output, n: node }]);
+
+      } else {
+        console.error( await res.text() );
+        throw new Error( json.error ? json.error.message : ''+res.status );
       }
 
-      // Moderate
-      let flag = await openaiModerateMessage([{ content: node.dataset.output, n: node }]);
-
-    } else {
-      console.error( await res.text() );
-      throw new Error( json.error ? json.error.message : ''+res.status );
-    }
+    } while( fn ); // Repeat, if this iteration was a function call
 
   } catch (error) {
     if ( signal.aborted ) error = "aborted";
@@ -1398,6 +1511,7 @@ async function geminiSendMessage(node,msgs) {
     // Fetch the response from the Vertex AI API
     const res = await fetch( vertexaiChatCompletionsProxy + cfg("ai-model") + ':streamGenerateContent', {
       method: "POST",
+      mode: "cors",
       headers: {
         "Content-Type": "application/json",
         "Authorization": "Bearer " + await jwtGet()
@@ -1842,6 +1956,20 @@ function headLoaded() {
       .html(testerGetLabel(mt,v));
   });
 
+  // Unlock Web Audio API
+  if ( head.audioCtx.state === 'suspended' ) {
+    if ( 'ontouchstart' in window ) {
+      let unlockWebAudioAPI = function() {
+        head.audioCtx.resume().then( () => {
+          document.body.removeEventListener('touchstart', unlockWebAudioAPI);
+          document.body.removeEventListener('touchend', unlockWebAudioAPI);
+        });
+      };
+      document.body.addEventListener('touchstart', unlockWebAudioAPI, false);
+      document.body.addEventListener('touchend', unlockWebAudioAPI, false);
+    }
+  }
+
   setTimeout( () => {
     turnOnEffect();
     reconnectEffect();
@@ -2119,17 +2247,17 @@ document.addEventListener('DOMContentLoaded', async function(e) {
 
         if ( cfg('ai-model').startsWith("gpt") ) {
           const m = openaiBuildMessage();
-          let flag = openaiModerateMessage(m);
+          let flag = await openaiModerateMessage(m);
 
           const nodeInput = addMessage(true);
           nodeInput.dataset.input = text;
           addText(nodeInput,text);
           e.property("value","");
 
-          if ( await flag ) {
+          if ( flag ) {
             console.info("Moderation flagged.");
-            d3.select(nodeInput.parentNode).classed("grayed", true );
-            d3.select(nodeInput.parentNode .select).classed("selected", true );
+            d3.select(nodeInput).classed("grayed", true );
+            d3.select(nodeInput .select).classed("selected", true );
           } else {
             const nodeOutput = addMessage(false);
             openaiSendMessage(nodeOutput,m);
@@ -2281,13 +2409,13 @@ document.addEventListener('DOMContentLoaded', async function(e) {
           reader.onload = async readerEvent => {
             let content = readerEvent.target.result;
             d3.selectAll("[data-animation='" + animation + "']").classed("selected",repeat);
-            head.playAnimation( content, progressUpdate, (repeat ? Infinity : 1) );
+            head.playAnimation( content, progressUpdate, (repeat ? 300 : 7) );
           }
         }
         input.click();
       } else {
         d3.selectAll("[data-animation='" + animation + "']").classed("selected",repeat);
-        head.playAnimation( animation, progressUpdate, (repeat ? Infinity : 1) );
+        head.playAnimation( animation, progressUpdate, (repeat ? 300 : 7) );
       }
     }
   });
@@ -2606,6 +2734,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     d3.select("#voice-google").style("display", (e.attr("data-voice-type") === 'google') ? "flex" : "none" );
     d3.select("#voice-eleven").style("display", (e.attr("data-voice-type") === 'eleven') ? "flex" : "none" );
     d3.select("#voice-microsoft").style("display", (e.attr("data-voice-type") === 'microsoft') ? "flex" : "none" );
+    d3.select("#lipsync").style("display", (e.attr("data-voice-type") !== 'microsoft') ? "flex" : "none" );
   });
 
   d3.selectAll("[data-voice-google-id]").on('click.command', function(ev) {
@@ -2760,7 +2889,17 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     }
   });
 
+  // Motion (experimental)
+  d3.selectAll("#motion").on("click", function(ev) {
+    const e = d3.select(this);
+    const sel = e.classed("selected");
+    e.classed("selected", !sel );
+  });
+
   try {
+
+    // Get token
+    jwt = await jwtGet();
 
     // Show last avatar
     let o = {};
@@ -2818,7 +2957,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
 
         <div class="row noselect nodrag">
 
-          <div class="command starttransparent" data-i18n-title="Manuscript" data-show="right-session">
+          <div class="command starttransparent" data-i18n-title="Session" data-show="right-session">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path d="M2 6C2 5.44772 2.44772 5 3 5H21C21.5523 5 22 5.44772 22 6C22 6.55228 21.5523 7 21 7H3C2.44772 7 2 6.55228 2 6Z" fill="currentColor" />
               <path d="M2 12.0322C2 11.4799 2.44772 11.0322 3 11.0322H21C21.5523 11.0322 22 11.4799 22 12.0322C22 12.5845 21.5523 13.0322 21 13.0322H3C2.44772 13.0322 2 12.5845 2 12.0322Z" fill="currentColor" />
@@ -3222,16 +3361,6 @@ document.addEventListener('DOMContentLoaded', async function(e) {
                   <path fill-rule="evenodd" clip-rule="evenodd" d="M4 1.5C2.89543 1.5 2 2.39543 2 3.5V4.5C2 4.55666 2.00236 4.61278 2.00698 4.66825C0.838141 5.07811 0 6.19118 0 7.5V19.5C0 21.1569 1.34315 22.5 3 22.5H21C22.6569 22.5 24 21.1569 24 19.5V7.5C24 5.84315 22.6569 4.5 21 4.5H11.874C11.4299 2.77477 9.86384 1.5 8 1.5H4ZM9.73244 4.5C9.38663 3.9022 8.74028 3.5 8 3.5H4V4.5H9.73244ZM3 6.5C2.44772 6.5 2 6.94772 2 7.5V19.5C2 20.0523 2.44772 20.5 3 20.5H21C21.5523 20.5 22 20.0523 22 19.5V7.5C22 6.94772 21.5523 6.5 21 6.5H3Z" fill="currentColor" />
                 </svg>
               </div>
-              <div class="command" data-i18n-text="Straight" data-pose="straight"></div>
-              <div class="command" data-i18n-text="Side" data-pose="side"></div>
-              <div class="command" data-i18n-text="Hip" data-pose="hip"></div>
-              <div class="command" data-i18n-text="Turn" data-pose="turn"></div>
-              <div class="command" data-i18n-text="Back" data-pose="back"></div>
-              <div class="command" data-i18n-text="Wide" data-pose="wide"></div>
-              <div class="command" data-i18n-text="Knee" data-pose="oneknee"></div>
-              <div class="command" data-i18n-text="Kneel" data-pose="kneel"></div>
-              <div class="command" data-i18n-text="Bend" data-pose="bend"></div>
-              <div class="command" data-i18n-text="Sitting" data-pose="sitting"></div>
             </div>
           </div>
 
@@ -3469,7 +3598,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
               </div>
             </div>
           </div>
-          <div class="row">
+          <div id="lipsync" class="row">
             <div class="text label" data-i18n-text="Lip-sync"></div>
             <div class="column">
               <div class="rowWrap">
@@ -3650,6 +3779,11 @@ document.addEventListener('DOMContentLoaded', async function(e) {
           </div>
           <div id="score" class="text starttransparent" style="margin-left:-8px;">0</div>
           <div class="filler"></div>
+          <div id="motion" class="command starttransparent" data-i18n-title="Motion">
+            <svg viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
+              <path d="M 34.498047 3 C 32.014047 3 30 5.0150469 30 7.4980469 C 30 9.9830469 32.014047 12 34.498047 12 C 36.987047 12 39 9.9830469 39 7.4980469 C 39 5.0150469 36.987047 3 34.498047 3 z M 20 10 A 2 2 0 0 0 18.919922 10.316406 L 18.917969 10.316406 L 18.886719 10.322266 L 11.957031 15.294922 A 2 2 0 0 0 11 17 A 2 2 0 0 0 13 19 A 2 2 0 0 0 14.287109 18.527344 L 14.289062 18.529297 L 20.283203 14.21875 L 24.691406 15.619141 L 19.757812 23.660156 L 19.757812 23.664062 A 4 4 0 0 0 19 26 A 4 4 0 0 0 21.210938 29.572266 L 28.755859 34.226562 L 27.048828 43.009766 A 2.5 2.5 0 0 0 27 43.5 A 2.5 2.5 0 0 0 29.5 46 A 2.5 2.5 0 0 0 31.955078 43.962891 L 31.957031 43.962891 L 33.984375 33.289062 L 33.978516 33.273438 A 2 2 0 0 0 34 33 A 2 2 0 0 0 33.345703 31.523438 L 33.339844 31.507812 L 27.9375 26.720703 L 32.607422 17.486328 L 32.605469 17.482422 A 3 3 0 0 0 33 16 A 3 3 0 0 0 31.193359 13.248047 L 31.191406 13.244141 L 28.685547 11.849609 L 20.519531 10.066406 L 20.507812 10.068359 A 2 2 0 0 0 20 10 z M 34.212891 18.742188 L 31.972656 23.171875 L 33.181641 25.837891 L 33.193359 25.845703 C 33.513359 26.525703 34.199 27 35 27 L 42 27 C 43.105 27 44 26.105 44 25 C 44 23.895 43.105 23 42 23 L 36 23 L 34.212891 18.742188 z M 17.517578 28.414062 L 15.242188 32 L 7.5 32 C 6.119 32 5 33.119 5 34.5 C 5 35.881 6.119 37 7.5 37 L 15.931641 37 C 17.228641 37 18.445312 36.3705 19.195312 35.3125 L 21.480469 32.089844 C 20.653469 31.578844 20.055828 31.208125 20.048828 31.203125 C 18.904828 30.555125 18.031578 29.569062 17.517578 28.414062 z"  fill="currentColor"/>
+            </svg>
+          </div>
           <div id="copy" class="command starttransparent">
             <svg viewBox="-2 -2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M13 7H7V5H13V7Z" fill="currentColor" />
