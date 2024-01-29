@@ -82,7 +82,7 @@ class TalkingHead {
       ttsEndpoint: null,
       ttsApikey: null,
       ttsTrimStart: 0,
-      ttsTrimEnd: 350,
+      ttsTrimEnd: 400,
       ttsLang: "fi-FI",
       ttsVoice: "fi-FI-Standard-A",
       ttsRate: 0.95,
@@ -468,8 +468,8 @@ class TalkingHead {
       '😊': { mood: 'happy', dt: [300,1000,1000], vs: {
         browInnerUp: [0.6], eyeSquintLeft: [1], eyeSquintRight: [1],
         mouthSmile: [0.7], noseSneerLeft: [0.7], noseSneerRight: [0.7],
-        handLeft: [null,{ x: 0.2, y: -0.1, z:0.1, d:1000 }, { d:1000 }],
-        handFistLeft: [0]
+        /* handLeft: [null,{ x: 0.2, y: -0.1, z:0.1, d:1000 }, { d:1000 }],
+        handFistLeft: [0] */
       } },
       '😇': { link:  '😊' },
       '😀': { mood: 'happy', dt: [300,2000], vs: { browInnerUp: [0.6], jawOpen: [0.1], mouthDimpleLeft: [0.2], mouthDimpleRight: [0.2], mouthOpen: [0.3], mouthPressLeft: [0.3], mouthPressRight: [0.3], mouthRollLower: [0.4], mouthShrugUpper: [0.4], mouthSmile: [0.7], mouthUpperUpLeft: [0.3], mouthUpperUpRight: [0.3], noseSneerLeft: [0.4], noseSneerRight: [0.4] }},
@@ -532,7 +532,7 @@ class TalkingHead {
     this.animTimeLast = 0;
     this.easing = this.sigmoidFactory(5); // Ease in and out
 
-    // Lip-sync
+    // Lip-sync extensions
     this.lipsync = {
       'fi': new LipsyncFi(),
       'en': new LipsyncEn()
@@ -1833,12 +1833,14 @@ class TalkingHead {
 
         // Send emoji, if the divider was a known emoji
         if ( letters[i].match(emojis) ) {
-          let emoji = this.animEmojis[letters[i]];
+          const emoji = this.animEmojis[letters[i]];
           if ( emoji && emoji.link ) emoji = this.animEmojis[emoji.link];
           if ( emoji ) {
             this.speechQueue.push( { emoji: emoji } );
           }
         }
+
+        this.speechQueue.push( { break: 100 } );
 
       }
 
@@ -1847,6 +1849,19 @@ class TalkingHead {
     this.speechQueue.push( { break: 1000 } );
 
     // Start speaking (if not already)
+    this.startSpeaking();
+  }
+
+  /**
+  * Add emoji to speech queue.
+  * @param {string} e Emoji.
+  */
+  async speakEmoji(e) {
+    const emoji = this.animEmojis[e];
+    if ( emoji && emoji.link ) emoji = this.animEmojis[emoji.link];
+    if ( emoji ) {
+      this.speechQueue.push( { emoji: emoji } );
+    }
     this.startSpeaking();
   }
 
@@ -2026,10 +2041,26 @@ class TalkingHead {
 
   /**
   * Play audio playlist using Web Audio API.
+  * @param {boolean} [force=false] If true, forces to proceed
   */
-  async playAudio() {
+  async playAudio(force=false) {
+    if ( !this.armature || (this.isAudioPlaying && !force) ) return;
+    this.isAudioPlaying = true;
     if ( this.audioPlaylist.length ) {
       const item = this.audioPlaylist.shift();
+
+      // If Web Audio API is suspended, try to resume it
+      if ( this.audioCtx.state === "suspended" ) {
+        const resume = this.audioCtx.resume();
+        const timeout = new Promise((_r, rej) => setTimeout(() => rej("p2"), 500));
+        try {
+          await Promise.race([resume, timeout]);
+        } catch(e) {
+          console.log("Can't play audio. Web Audio API suspended.");
+          playAudio(true);
+          return;
+        }
+      }
 
       // AudioBuffer
       let audio;
@@ -2048,26 +2079,26 @@ class TalkingHead {
       this.audioSpeechSource.connect(this.audioSpeechGainNode);
       this.audioSpeechSource.addEventListener('ended', () => {
         this.audioSpeechSource.disconnect();
-        this.playAudio();
+        this.playAudio(true);
       }, { once: true });
 
       // Rescale lipsync and push to queue
+      const delay = 50;
       if ( item.anim ) {
         item.anim.forEach( x => {
           for(let i=0; i<x.ts.length; i++) {
-            x.ts[i] = this.animClock + x.ts[i];
+            x.ts[i] = this.animClock + x.ts[i] + delay;
           }
           this.animQueue.push(x);
         });
       }
 
       // Play
-      this.audioSpeechSource.start(0);
+      this.audioSpeechSource.start(delay/1000);
 
     } else {
-      this.stateName = 'idle';
-      this.isSpeaking = false;
-      this.startSpeaking();
+      this.isAudioPlaying = false;
+      this.startSpeaking(true);
     }
   }
 
@@ -2078,168 +2109,159 @@ class TalkingHead {
   */
   async startSpeaking( force = false ) {
     if ( !this.armature || (this.isSpeaking && !force) ) return;
-    if ( this.audioCtx.state === "suspended" ) {
-      this.audioCtx.resume();
-    }
     this.stateName = 'talking';
     this.isSpeaking = true;
-    if ( this.speechQueue.length === 0 ) {
-      this.stateName = 'idle';
-      this.isSpeaking = false;
-      return;
-    }
-    let line = this.speechQueue.shift();
-    if ( line.emoji ) {
+    if ( this.speechQueue.length ) {
+      let line = this.speechQueue.shift();
+      if ( line.emoji ) {
 
-      // Look at the camera
-      this.lookAtCamera(500);
+        // Look at the camera
+        this.lookAtCamera(500);
 
-      // Only emoji
-      let duration = line.emoji.dt.reduce((a,b) => a+b,0);
-      this.animQueue.push( this.animFactory( line.emoji ) );
-      setTimeout( this.startSpeaking.bind(this), duration/1.5, true );
-    } else if ( line.break ) {
-      // Break
-      setTimeout( this.startSpeaking.bind(this), line.break, true );
-    } else if ( line.audio ) {
+        // Only emoji
+        let duration = line.emoji.dt.reduce((a,b) => a+b,0);
+        this.animQueue.push( this.animFactory( line.emoji ) );
+        setTimeout( this.startSpeaking.bind(this), duration, true );
+      } else if ( line.break ) {
+        // Break
+        setTimeout( this.startSpeaking.bind(this), line.break, true );
+      } else if ( line.audio ) {
 
-      // Look at the camera
-      this.lookAtCamera(500);
-      this.speakWithHands();
+        // Look at the camera
+        this.lookAtCamera(500);
+        this.speakWithHands();
 
-      // Make a playlist
-      this.audioPlaylist.push({ anim: line.anim, audio: line.audio });
-      this.onSubtitles = line.onSubtitles || null;
-      this.resetLips();
-      if ( line.mood ) this.setMood( line.mood );
-      this.playAudio();
+        // Make a playlist
+        this.audioPlaylist.push({ anim: line.anim, audio: line.audio });
+        this.onSubtitles = line.onSubtitles || null;
+        this.resetLips();
+        if ( line.mood ) this.setMood( line.mood );
+        this.playAudio();
 
-    } else if ( line.text ) {
+      } else if ( line.text ) {
 
-      // Look at the camera
-      this.lookAtCamera(500);
+        // Look at the camera
+        this.lookAtCamera(500);
 
-      // Spoken text
-      try {
-        // Convert text to SSML
-        let ssml = "<speak>";
-        line.text.forEach( (x,i) => {
-          // Add mark
-          if (i > 0) {
-            ssml += " <mark name='" + x.mark + "'/>";
+        // Spoken text
+        try {
+          // Convert text to SSML
+          let ssml = "<speak>";
+          line.text.forEach( (x,i) => {
+            // Add mark
+            if (i > 0) {
+              ssml += " <mark name='" + x.mark + "'/>";
+            }
+
+            // Add word
+            ssml += x.word.replaceAll('&','&amp;')
+              .replaceAll('<','&lt;')
+              .replaceAll('>','&gt;')
+              .replaceAll('"','&quot;')
+              .replaceAll('\'','&apos;');
+
+          });
+          ssml += "</speak>";
+
+
+          const o = {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json; charset=utf-8"
+            },
+            body: JSON.stringify({
+              "input": {
+                "ssml": ssml
+              },
+              "voice": {
+                "languageCode": line.lang || this.avatar.ttsLang || this.opt.ttsLang,
+                "name": line.voice || this.avatar.ttsVoice || this.opt.ttsVoice
+              },
+              "audioConfig": {
+                "audioEncoding": this.ttsAudioEncoding,
+                "speakingRate": (line.rate || this.avatar.ttsRate || this.opt.ttsRate) + this.mood.speech.deltaRate,
+                "pitch": (line.pitch || this.avatar.ttsPitch || this.opt.ttsPitch) + this.mood.speech.deltaPitch,
+                "volumeGainDb": (line.volume || this.avatar.ttsVolume || this.opt.ttsVolume) + this.mood.speech.deltaVolume
+              },
+              "enableTimePointing": [ 1 ] // Timepoint information for mark tags
+            })
+          };
+
+          // JSON Web Token
+          if ( this.opt.jwtGet && typeof this.opt.jwtGet === "function" ) {
+            o.headers["Authorization"] = "Bearer " + await this.opt.jwtGet();
           }
 
-          // Add word
-          ssml += x.word.replaceAll('&','&amp;')
-            .replaceAll('<','&lt;')
-            .replaceAll('>','&gt;')
-            .replaceAll('"','&quot;')
-            .replaceAll('\'','&apos;');
+          const res = await fetch( this.opt.ttsEndpoint + (this.opt.ttsApikey ? "?key=" + this.opt.ttsApikey : ''), o);
+          const data = await res.json();
 
-        });
-        ssml += "</speak>";
+          if ( res.status === 200 && data && data.audioContent ) {
 
+            // Audio data
+            const buf = this.b64ToArrayBuffer(data.audioContent);
+            const audio = await this.audioCtx.decodeAudioData( buf );
+            this.speakWithHands();
 
-        const o = {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json; charset=utf-8"
-          },
-          body: JSON.stringify({
-            "input": {
-              "ssml": ssml
-            },
-            "voice": {
-              "languageCode": line.lang || this.avatar.ttsLang || this.opt.ttsLang,
-              "name": line.voice || this.avatar.ttsVoice || this.opt.ttsVoice
-            },
-            "audioConfig": {
-              "audioEncoding": this.ttsAudioEncoding,
-              "speakingRate": (line.rate || this.avatar.ttsRate || this.opt.ttsRate) + this.mood.speech.deltaRate,
-              "pitch": (line.pitch || this.avatar.ttsPitch || this.opt.ttsPitch) + this.mood.speech.deltaPitch,
-              "volumeGainDb": (line.volume || this.avatar.ttsVolume || this.opt.ttsVolume) + this.mood.speech.deltaVolume
-            },
-            "enableTimePointing": [ 1 ] // Timepoint information for mark tags
-          })
-        };
+            // Word-to-audio alignment
+            const timepoints = [ { mark: 0, time: 0 } ];
+            data.timepoints.forEach( (x,i) => {
+              const time = x.timeSeconds * 1000;
+              let prevDuration = time - timepoints[i].time;
+              if ( prevDuration > 150 ) prevDuration - 150; // Trim out leading space
+              timepoints[i].duration = prevDuration;
+              timepoints.push( { mark: parseInt(x.markName), time: time });
+            });
+            let d = 1000 * audio.duration; // Duration in ms
+            if ( d > this.opt.ttsTrimEnd ) d = d - this.opt.ttsTrimEnd; // Trim out silence at the end
+            timepoints[timepoints.length-1].duration = d - timepoints[timepoints.length-1].time;
 
-        // JSON Web Token
-        if ( this.opt.jwtGet && typeof this.opt.jwtGet === "function" ) {
-          o.headers["Authorization"] = "Bearer " + await this.opt.jwtGet();
-        }
-
-        const res = await fetch( this.opt.ttsEndpoint + (this.opt.ttsApikey ? "?key=" + this.opt.ttsApikey : ''), o);
-        const data = await res.json();
-
-        if ( res.status === 200 && data && data.audioContent ) {
-
-          // Audio data
-          const buf = this.b64ToArrayBuffer(data.audioContent);
-          const audio = await this.audioCtx.decodeAudioData( buf );
-          this.speakWithHands();
-
-          // Word-to-audio alignment
-          const timepoints = [ { mark: 0, time: 0 } ];
-          data.timepoints.forEach( (x,i) => {
-            const time = x.timeSeconds * 1000;
-            let prevDuration = time - timepoints[i].time;
-            if ( prevDuration > 100 ) prevDuration - 100; // Trim out leading space
-            timepoints[i].duration = prevDuration;
-            timepoints.push( { mark: x.markName, time: time });
-          });
-          let d = 1000 * audio.duration; // Duration in ms
-          if ( d > this.opt.ttsTrimEnd ) d = d - this.opt.ttsTrimEnd; // Trim out silence at the end
-          timepoints[timepoints.length-1].duration = d - timepoints[timepoints.length-1].time;
-
-          // Re-set animation starting times and rescale durations
-          line.anim.forEach( x => {
-            const timepoint = timepoints[x.mark];
-            if ( timepoint ) {
-              for(let i=0; i<x.ts.length; i++) {
-                x.ts[i] = timepoint.time + (x.ts[i] * timepoint.duration) + this.opt.ttsTrimStart;
+            // Re-set animation starting times and rescale durations
+            line.anim.forEach( x => {
+              const timepoint = timepoints[x.mark];
+              if ( timepoint ) {
+                for(let i=0; i<x.ts.length; i++) {
+                  x.ts[i] = timepoint.time + (x.ts[i] * timepoint.duration) + this.opt.ttsTrimStart;
+                }
               }
-            }
-          });
+            });
 
-          // Add to the playlist
-          this.audioPlaylist.push({ anim: line.anim, audio: audio });
-          this.onSubtitles = line.onSubtitles || null;
-          this.resetLips();
-          if ( line.mood ) this.setMood( line.mood );
-          this.playAudio();
+            // Add to the playlist
+            this.audioPlaylist.push({ anim: line.anim, audio: audio });
+            this.onSubtitles = line.onSubtitles || null;
+            this.resetLips();
+            if ( line.mood ) this.setMood( line.mood );
+            this.playAudio();
 
-        } else {
-          this.stateName = 'idle';
-          this.isSpeaking = false;
-          this.startSpeaking();
+          } else {
+            this.startSpeaking(true);
+          }
+        } catch (error) {
+          console.error("Error:", error);
+          this.startSpeaking(true);
         }
-      } catch (error) {
-        console.error("Error:", error);
-        this.stateName = 'idle';
-        this.isSpeaking = false;
-        this.startSpeaking();
-      }
-    } else if ( line.anim ) {
-      // Only subtitles
-      this.onSubtitles = line.onSubtitles || null;
-      this.resetLips();
-      if ( line.mood ) this.setMood( line.mood );
-      line.anim.forEach( (x,i) => {
-        for(let j=0; j<x.ts.length; j++) {
-          x.ts[j] = this.animClock  + 10 * i;
+      } else if ( line.anim ) {
+        // Only subtitles
+        this.onSubtitles = line.onSubtitles || null;
+        this.resetLips();
+        if ( line.mood ) this.setMood( line.mood );
+        line.anim.forEach( (x,i) => {
+          for(let j=0; j<x.ts.length; j++) {
+            x.ts[j] = this.animClock  + 10 * i;
+          }
+          this.animQueue.push(x);
+        });
+        setTimeout( this.startSpeaking.bind(this), 10 * line.anim.length, true );
+      } else if ( line.marker ) {
+        if ( typeof line.marker === "function" ) {
+          line.marker();
         }
-        this.animQueue.push(x);
-      });
-      setTimeout( this.startSpeaking.bind(this), 10 * line.anim.length, true );
-    } else if ( line.marker ) {
-      if ( typeof line.marker === "function" ) {
-        line.marker();
+        this.startSpeaking(true);
+      } else {
+        this.startSpeaking(true);
       }
-      this.startSpeaking(true);
     } else {
       this.stateName = 'idle';
       this.isSpeaking = false;
-      this.startSpeaking();
     }
   }
 
@@ -2251,6 +2273,7 @@ class TalkingHead {
     this.audioPlaylist.length = 0;
     this.stateName = 'idle';
     this.isSpeaking = false;
+    this.isAudioPlaying = false;
     this.animQueue = this.animQueue.filter( x  => x.template.name !== 'viseme' );
     if ( this.armature ) {
       this.resetLips();
@@ -2268,6 +2291,7 @@ class TalkingHead {
     this.animQueue = this.animQueue.filter( x  => x.template.name !== 'viseme' );
     this.stateName = 'idle';
     this.isSpeaking = false;
+    this.isAudioPlaying = false;
     if ( this.armature ) {
       this.resetLips();
       this.render();
@@ -2419,8 +2443,12 @@ class TalkingHead {
   /**
   * Talk with hands.
   * @param {number} [delay=0] Delay in milliseconds
+  * @param {number} [prob=1] Probability of hand movement
   */
-  speakWithHands(delay=0) {
+  speakWithHands(delay=0,prob=0.5) {
+
+    // Only if we are standing and not bending and probabilities match up
+    if ( this.mixer || !this.poseTarget.template.standing || this.poseTarget.template.bend || Math.random()>prob ) return;
 
     // Random targets for left hand
     this.ikSolve( {
@@ -2541,11 +2569,11 @@ class TalkingHead {
   * Play RPM/Mixamo animation clip.
   * @param {string} url URL to animation file FBX
   * @param {progressfn} [onprogress=null] Callback for progress
-  * @param {number} [repeat=1] Repetitions
+  * @param {number} [dur=10] Duration in seconds, but at least once
   * @param {number} [ndx=0] Index of the clip
   * @param {number} [scale=0.01] Position scale factor
   */
-  async playAnimation(url, onprogress=null, repeat=1, ndx=0, scale=0.01) {
+  async playAnimation(url, onprogress=null, dur=10, ndx=0, scale=0.01) {
     if ( !this.armature ) return;
 
     let item = this.animClips.find( x => x.url === url+'-'+ndx );
@@ -2570,6 +2598,7 @@ class TalkingHead {
       this.mixer.addEventListener( 'finished', this.stopAnimation.bind(this), { once: true });
 
       // Play action
+      const repeat = Math.ceil(dur / item.clip.duration);
       const action = this.mixer.clipAction(item.clip);
       action.setLoop( THREE.LoopRepeat, repeat );
       action.clampWhenFinished = true;
@@ -2619,7 +2648,7 @@ class TalkingHead {
         });
 
         // Play
-        this.playAnimation(url, onprogress, repeat, ndx, scale);
+        this.playAnimation(url, onprogress, dur, ndx, scale);
 
       } else {
         const msg = 'Animation ' + url + ' (ndx=' + ndx + ') not found';
@@ -2667,6 +2696,7 @@ class TalkingHead {
 
       this.poseName = url;
 
+      this.mixer = null;
       let anim = this.animQueue.find( x => x.template.name === 'pose' );
       if ( anim ) {
         anim.ts[0] = this.animClock + (dur * 1000) + 2000;
@@ -2768,37 +2798,37 @@ class TalkingHead {
 
     // Iterate
     if ( target ) {
-  		for ( let i = 0; i < iterations; i ++ ) {
-  			let rotated = false;
-  			for ( let j = 0, jl = links.length; j < jl; j ++ ) {
-  				const bone = links[j].bone;
-  				bone.matrixWorld.decompose( linkPos, invLinkQ, linkScale );
-  				invLinkQ.invert();
-  				effectorPos.setFromMatrixPosition( effector.matrixWorld );
-  				effectorVec.subVectors( effectorPos, linkPos );
-  				effectorVec.applyQuaternion( invLinkQ );
-  				effectorVec.normalize();
-  				targetVec.subVectors( target, linkPos );
-  				targetVec.applyQuaternion( invLinkQ );
-  				targetVec.normalize();
-  				let angle = targetVec.dot( effectorVec );
-  				if ( angle > 1.0 ) {
-  					angle = 1.0;
-  				} else if ( angle < - 1.0 ) {
-  					angle = - 1.0;
-  				}
-  				angle = Math.acos( angle );
-  				if ( angle < 1e-5 ) continue;
+      for ( let i = 0; i < iterations; i ++ ) {
+        let rotated = false;
+        for ( let j = 0, jl = links.length; j < jl; j ++ ) {
+          const bone = links[j].bone;
+          bone.matrixWorld.decompose( linkPos, invLinkQ, linkScale );
+          invLinkQ.invert();
+          effectorPos.setFromMatrixPosition( effector.matrixWorld );
+          effectorVec.subVectors( effectorPos, linkPos );
+          effectorVec.applyQuaternion( invLinkQ );
+          effectorVec.normalize();
+          targetVec.subVectors( target, linkPos );
+          targetVec.applyQuaternion( invLinkQ );
+          targetVec.normalize();
+          let angle = targetVec.dot( effectorVec );
+          if ( angle > 1.0 ) {
+            angle = 1.0;
+          } else if ( angle < - 1.0 ) {
+            angle = - 1.0;
+          }
+          angle = Math.acos( angle );
+          if ( angle < 1e-5 ) continue;
           if ( links[j].minAngle !== undefined && angle < links[j].minAngle ) {
-  					angle = links[j].minAngle;
-  				}
-  				if ( links[j].maxAngle !== undefined && angle > links[j].maxAngle ) {
-  					angle = links[j].maxAngle;
-  				}
-  				axis.crossVectors( effectorVec, targetVec );
-  				axis.normalize();
-  				q.setFromAxisAngle( axis, angle );
-  				bone.quaternion.multiply( q );
+            angle = links[j].minAngle;
+          }
+          if ( links[j].maxAngle !== undefined && angle > links[j].maxAngle ) {
+            angle = links[j].maxAngle;
+          }
+          axis.crossVectors( effectorVec, targetVec );
+          axis.normalize();
+          q.setFromAxisAngle( axis, angle );
+          bone.quaternion.multiply( q );
 
           // Constraints
           bone.rotation.setFromVector3( vector.setFromEuler( bone.rotation ).clamp( new THREE.Vector3(
@@ -2812,10 +2842,10 @@ class TalkingHead {
           )) );
 
           bone.updateMatrixWorld( true );
-  				rotated = true;
-  			}
-  			if ( !rotated ) break;
-  		}
+          rotated = true;
+        }
+        if ( !rotated ) break;
+      }
     }
 
     // Apply
