@@ -4,9 +4,9 @@
 
 Video | Description
 --- | ---
-<span style="display: block; width:200px">[<img src="screenshot4.jpg" width="200"/>](https://youtu.be/OA6LBZjkzJI)</span> | I chat with Jenny and Harri. The close-up view allows you to evaluate the accuracy of lip-sync in both English and Finnish. Using GPT-3.5 and Microsoft text-to-speech.
-[<img src="screenshot5.jpg" width="200"/>](https://youtu.be/fJrYGaGCAGo) | A short demo of how AI can control the avatar's movements. Using OpenAI's function calling and Google TTS with the built-in viseme generation.
-[<img src="screenshot3.jpg" width="200"/>](https://youtu.be/SfnqRnWKT40) | Julia and I showcase some of the features of the TalkingHead class/app including the settings, some poses and animations.
+<span style="display: block; width:400px">[<img src="screenshot4.jpg" width="400"/>](https://youtu.be/OA6LBZjkzJI)</span> | I chat with Jenny and Harri. The close-up view allows you to evaluate the accuracy of lip-sync in both English and Finnish. Using GPT-3.5 and Microsoft text-to-speech.
+[<img src="screenshot5.jpg" width="400"/>](https://youtu.be/fJrYGaGCAGo) | A short demo of how AI can control the avatar's movements. Using OpenAI's function calling and Google TTS with the built-in viseme generation.
+[<img src="screenshot3.jpg" width="400"/>](https://youtu.be/SfnqRnWKT40) | Julia and I showcase some of the features of the TalkingHead class/app including the settings, some poses and animations.
 
 *All videos are real-time screen captures from a Chrome browser running
 the TalkingHead example web app without any post-processing.*
