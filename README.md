@@ -2,20 +2,14 @@
 
 ### Demo videos
 
-In the first demo video, I chat with Jenny and Harri. The close-up view
-allows you to evaluate the accuracy of lip-sync in both English and Finnish.
-As settings I used GPT-3.5 and Microsoft text-to-speech.
+Video | Description
+--- | ---
+<span style="display: block; width:200px">[<img src="screenshot4.jpg" width="200"/>](https://youtu.be/OA6LBZjkzJI)</span> | I chat with Jenny and Harri. The close-up view allows you to evaluate the accuracy of lip-sync in both English and Finnish. Using GPT-3.5 and Microsoft text-to-speech.
+[<img src="screenshot5.jpg" width="200"/>](https://youtu.be/fJrYGaGCAGo) | A short demo of how AI can control the avatar's movements. Using OpenAI's function calling and Google TTS with the built-in viseme generation.
+[<img src="screenshot3.jpg" width="200"/>](https://youtu.be/SfnqRnWKT40) | Julia and I showcase some of the features of the TalkingHead class/app including the settings, some poses and animations.
 
-[<img src="screenshot4.jpg" width="350"/>](https://youtu.be/OA6LBZjkzJI)
-
-In the second video, Julia and I showcase you some of the features of
-the TalkingHead class/app including poses and animations. The voice settings
-were Google TTS with the built-in viseme generation.
-
-[<img src="screenshot3.jpg" width="350"/>](https://youtu.be/SfnqRnWKT40)
-
-Both videos are real-time screen captures from a Chrome browser running
-the TalkingHead example web app without any post-processing.
+*All videos are real-time screen captures from a Chrome browser running
+the TalkingHead example web app without any post-processing.*
 
 ---
 
@@ -32,7 +26,7 @@ If you use a TTS service that can provide visemes with timestamps,
 such as Microsoft Azure Speech Services, you can have accurate lip-sync across
 multiple languages. If you use a more affordable solution without visemes,
 such as Google TTS with four million free characters per month,
-you are limited to the built-in lip-sync support in Finnish and English.
+you are limited to the built-in lip-sync in Finnish and English.
 
 The class `TalkingHead` can be found in the module `./modules/talkinghead.mjs`.
 The class uses [ThreeJS](https://github.com/mrdoob/three.js/) / WebGL for 3D
@@ -141,6 +135,7 @@ Method | Description
 `setView(view, [opt])` | Set view. Supported views are `"full"`, `"upper"`  and `"head"`. Options `opt` can be used to set `cameraDistance`, `cameraX`, `cameraY`, `cameraRotateX`, `cameraRotateY`.
 `speakText(text, [opt={}], [onsubtitles=null], [excludes=[]])` | Add the `text` string to the speech queue. The text can contain face emojis. Options `opt` can be used to set text-specific `lipsyncLang`, `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood`, `avatarMute`. Optional callback function `onsubtitles` is called whenever a new subtitle is to be written with the parameter of the added string. The optional `excludes` is an array of [start,end] indices to be excluded from audio but to be included in the subtitles.
 `speakAudio(audio, [opt={}], [onsubtitles=null])` | Add a new `audio` object to the speech queue. This method was added to support external TTS services such as ElevenLabs and Azure. The audio object contains ArrayBuffer chunks in `audio` array, words in `words` array, starting times for each words in milliseconds in `wtimes` array, and durations for each words in milliseconds in `wdurations` array. If the Oculus viseme IDs are know, they can be given in optional `visemes`, `vtimes` and `vdurations` arrays. NOTE: As of now, the only supported audio format is PCM signed 16bit little endian. Options `opt` can be used to set text-specific `lipsyncLang`.
+`speakEmoji(e)` | Add an emoji `e` to the speech queue.
 `speakBreak(t)` | Add a break of `t` milliseconds to the speech queue.
 `speakMarker(onmarker)` | Add a marker to the speech queue. The callback function `onmarker` is called when the queue processes the event.
 `lookAt(x,y,t)` | Make the avatar's head turn to look at the screen position (`x`,`y`) for `t` milliseconds.
@@ -148,7 +143,7 @@ Method | Description
 `setMood(mood)` | Set avatar mood.
 `playBackgroundAudio(url)` | Play background audio such as ambient sounds/music in a loop.
 `stopBackgroundAudio()` | Stop playing the background audio.
-`playAnimation(url, [onprogress=null], [repeat=1], [ndx=0], [scale=0.01])` | Play Mixamo animation file. Repeat `repeat` times. If the FBX file includes several animations, the parameter `ndx` specifies the index. Since Mixamo rigs have a scale 100 and RPM a scale 1, the `scale` factor can be used to scale the positions.
+`playAnimation(url, [onprogress=null], [dur=10], [ndx=0], [scale=0.01])` | Play Mixamo animation file for `dur` seconds, but full rounds and at least once. If the FBX file includes several animations, the parameter `ndx` specifies the index. Since Mixamo rigs have a scale 100 and RPM a scale 1, the `scale` factor can be used to scale the positions.
 `stopAnimation()` | Stop the current animation started by `playAnimation`.
 `playPose(url, [onprogress=null], [dur=5], [ndx=0], [scale=0.01])` | Play the initial pose of a Mixamo animation file for `dur` seconds. If the FBX file includes several animations, the parameter `ndx` specifies the index. Since Mixamo rigs have a scale 100 and RPM a scale 1, the `scale` factor can be used to scale the positions.
 `stopPose()` | Stop the current pose started by `playPose`.
