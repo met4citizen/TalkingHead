@@ -48,8 +48,18 @@ export const site = {
     'Matrix': { url: './views/matrix.mp4', type: 'video/mp4' }
   },
 
-  // Preset poses (in addition to internal poses)
+  // Preset poses (includes internal poses)
   poses: {
+    'Straight': { url: "straight", fi: 'Suora' },
+    'Side': { url: "side", fi: 'Keno' },
+    'Hip': { url: "hip", fi: 'Lantio' },
+    'Turn': { url: "turn", fi: 'Sivu' },
+    'Back': { url: "back", fi: 'Taka' },
+    'Wide': { url: "wide", fi: 'Haara' },
+    'OneKnee': { url: "oneknee", fi: 'Polvi' },
+    'TwoKnees': { url: "kneel", fi: 'Polvet' },
+    'Bend': { url: "bend", fi: 'Perä' },
+    'Sitting': { url:"sitting", fi: 'Istuva' },
     'Dance': { url: './poses/dance.fbx', fi: 'Tanssi' }
   },
 
