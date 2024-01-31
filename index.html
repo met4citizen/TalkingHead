@@ -246,6 +246,7 @@
     position: absolute; right: 0; bottom:0; padding: 0;
     display: flex; row-gap: 0; column-gap: 4px;
   }
+  code { font-family: monospace; font-size: 1rem; }
   #directory div:first-child div[data-entry-move="up"] { visibility: hidden; }
   #directory div:last-child div[data-entry-move="down"] { visibility: hidden; }
   #right textarea {
@@ -432,7 +433,8 @@ const i18n = {
     'Limits': 'Rajat', 'ai-stop': 'Stop', 'ai-stopword': 'Avainsana', 'ai-user': 'Käyttäjä',
     'ai-username': 'Nimi', 'input': 'Kirjoita viesti.', 'Name': 'Nimi', 'Language': 'Kieli',
     'en': 'English', 'fi': 'Finnish', 'words': 'sanaa', 'dialogs': 'sanomaa',
-    'Manuscript': 'Käsikirjoitus'
+    'Manuscript': 'Käsikirjoitus', 'Exclude': 'Ohita', 'Italics': 'Kursiivi',
+    'Code': 'Koodi'
   },
 
   'en': {
@@ -949,7 +951,9 @@ function loadConfig(session = null) {
           const range = e.attr("data-range");
           let value = cfg( item );
           if ( value !== undefined ) {
-            if ( type === 'option' ) {
+            if ( type === 'boolean' ) {
+              e.classed( "selected", value )
+            } else if ( type === 'option' ) {
               if ( value === e.attr("data-"+item) ) {
                 e.dispatch("click");
               }
@@ -957,7 +961,9 @@ function loadConfig(session = null) {
               e.property("value",value).dispatch("change");
             }
           } else {
-            if ( type === 'option' ) {
+            if ( type === 'boolean' ) {
+              cfg( item, e.classed( "selected" ) );
+            } else if ( type === 'option' ) {
               if ( e.classed("selected") ) {
                 cfg( item, e.attr("data-"+item) );
                 e.dispatch("click");
@@ -992,6 +998,45 @@ function loadConfig(session = null) {
     loadingConfig = false;
     saveConfig();
   }
+}
+
+// Process string s for parts to exclude from speech/lip-sync
+// For continued stream of strings the previous state o can be given
+function excludesProcess(s,o=null) {
+
+  // If no previous rules and states, build rules based on user settings
+  if ( !o || !o.rules || !Array.isArray(o.rules) ) {
+    o = { rules: [] };
+    if ( cfg('voice-exclude-italics') ) {
+      o.rules.push( { separator: '*', open: false });
+    }
+    if ( cfg('voice-exclude-code') ) {
+      o.rules.push( { separator: '```', open: false });
+    }
+  }
+
+  // Excludes is an array of [start,end] index pairs
+  o.excludes = [];
+
+  // If there are rules, process them
+  o.rules.forEach( x => {
+    const parts = s.split(x.separator);
+    let i = 0;
+    parts.forEach( (y,j) => {
+      const isLast = (j === (parts.length - 1));
+      if ( x.open ) {
+        const start = i - (j===0 ? 0 : x.separator.length);
+        const end = i + y.length - 1 + (isLast ? x.separator.length : 0);
+        o.excludes.push( [start, end] ); // Exclude
+      }
+      if ( !isLast ) {
+        i += y.length + x.separator.length;
+        x.open = !x.open;
+      }
+    });
+  });
+
+  return o;
 }
 
 function motion( action, pose, expression, mood ) {
@@ -1244,6 +1289,7 @@ async function openaiSendMessage(node,msgs) {
         let buf = new Uint8Array(512);
         let ndx = 0;
         let ns = -1; // Number of consecutive line break, -1=new chapter begins
+        let exclude = null; // Exclude object
 
         while (true) {
           const { done, value } = await reader.read();
@@ -1258,7 +1304,6 @@ async function openaiSendMessage(node,msgs) {
               line = line.substring(6);
               if ( line === '[DONE]' ) {
                 if ( fn ) {
-                  console.log(fn);
 
                   // Function call
                   body.messages.push({
@@ -1276,7 +1321,7 @@ async function openaiSendMessage(node,msgs) {
                     ]
                   });
 
-                  // TODO: Call the function
+                  // Call the function
                   try {
                     const m = JSON.parse(fn.arguments);
                     motion(m.action, m.stillpose, m.facialexpression, m.mood);
@@ -1300,12 +1345,13 @@ async function openaiSendMessage(node,msgs) {
                   } else if ( cfg('voice-type') === 'microsoft' ) {
                     await microsoftSpeak( tts.trimStart() + " ", node );
                   } else {
-                    await head.speakText( tts.trimStart(), {
+                    exclude = excludesProcess(tts,exclude);
+                    await head.speakText( tts, {
                       lipsyncLang: cfg('voice-lipsync-lang'),
                       ttsVoice: cfg('voice-google-id'),
                       ttsRate: cfg('voice-google-rate'),
                       ttsPitch: cfg('voice-google-pitch')
-                    }, addText.bind(null,node) );
+                    }, addText.bind(null,node), exclude.excludes );
                   }
                 }
                 break;
@@ -1343,12 +1389,13 @@ async function openaiSendMessage(node,msgs) {
                       } else if ( cfg('voice-type') === 'microsoft' ) {
                         await microsoftSpeak( s + " ", node );
                       } else {
+                        exclude = excludesProcess(s,exclude);
                         await head.speakText( s, {
                           lipsyncLang: cfg('voice-lipsync-lang'),
                           ttsVoice: cfg('voice-google-id'),
                           ttsRate: cfg('voice-google-rate'),
                           ttsPitch: cfg('voice-google-pitch')
-                        }, addText.bind(null,node) );
+                        }, addText.bind(null,node), exclude.excludes );
                       }
                     }
                   }
@@ -1697,28 +1744,23 @@ function addText(node,s) {
   const nodeSessions = d3.select("#right-sessions").node();
   const onbottom = Math.abs( nodeSessions.scrollHeight - nodeSessions.scrollTop - nodeSessions.clientHeight) < 20;
   let last = node.lastElementChild;
-  let markdown = (last.dataset.markdown ? last.dataset.markdown : '') + s;
+  let markdown = (last.dataset.markdown || '') + s;
   let ndx = markdown.lastIndexOf('\n\n');
   if ( ndx === -1 ) {
     // Add to the existing paragraph
-    last.outerHTML = dompurify.sanitize(marked.parse( markdown, markedOptions ));
-    last = node.lastElementChild;
+    last.innerHTML = dompurify.sanitize(marked.parseInline( markdown, markedOptions ));
     last.dataset.markdown = markdown;
   } else {
     // First part into the existing paragraph
     let md = markdown.substring(0, ndx);
-    last.outerHTML = dompurify.sanitize(marked.parse( md, markedOptions ));
-    last = node.lastElementChild;
-    last.dataset.markdown = markdown;
+    last.innerHTML = dompurify.sanitize(marked.parseInline( md, markedOptions ));
+    last.dataset.markdown = md;
 
     // Last part into a new paragraph
-    markdown = markdown.substring(ndx + 2).trimStart();
+    md = markdown.substring(ndx + 2);
     last = node.appendChild( document.createElement('p') );
-    if ( markdown.length ) {
-      last.outerHTML = dompurify.sanitize(marked.parse( markdown, markedOptions ));
-      last = node.lastElementChild;
-      last.dataset.markdown = markdown;
-    }
+    last.innerHTML = dompurify.sanitize(marked.parseInline( md, markedOptions ));
+    last.dataset.markdown = md;
   }
   if ( onbottom ) nodeSessions.scrollTop = nodeSessions.scrollHeight;
 }
@@ -2301,12 +2343,13 @@ document.addEventListener('DOMContentLoaded', async function(e) {
         microsoftSpeak( text );
         microsoftSpeak( null );
       } else {
+        const exclude = excludesProcess(text);
         head.speakText( text, {
           lipsyncLang: cfg('voice-lipsync-lang'),
           ttsVoice: cfg('voice-google-id'),
           ttsRate: cfg('voice-google-rate'),
           ttsPitch: cfg('voice-google-pitch')
-        } );
+        }, null, exclude.excludes );
       }
     }
   });
@@ -2427,7 +2470,10 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     const type = e.attr("data-type");
     const range = e.attr("data-range");
     let value;
-    if ( type === "option" ) {
+    if ( type === 'boolean' ) {
+      value = !e.classed( "selected" );
+      e.classed( "selected", value );
+    } else if ( type === "option" ) {
       value = e.attr("data-"+item);
     } else if ( type === "value" ) {
       if ( range !== null ) {
@@ -2735,6 +2781,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     d3.select("#voice-eleven").style("display", (e.attr("data-voice-type") === 'eleven') ? "flex" : "none" );
     d3.select("#voice-microsoft").style("display", (e.attr("data-voice-type") === 'microsoft') ? "flex" : "none" );
     d3.select("#lipsync").style("display", (e.attr("data-voice-type") !== 'microsoft') ? "flex" : "none" );
+    d3.select("#excludes").style("display", (e.attr("data-voice-type") === 'google') ? "flex" : "none" );
   });
 
   d3.selectAll("[data-voice-google-id]").on('click.command', function(ev) {
@@ -3604,6 +3651,15 @@ document.addEventListener('DOMContentLoaded', async function(e) {
               <div class="rowWrap">
                 <div class="command selected" data-i18n-text="en" data-item="voice-lipsync-lang" data-type="option" data-voice-lipsync-lang="en"></div>
                 <div class="command" data-i18n-text="fi" data-item="voice-lipsync-lang" data-type="option" data-voice-lipsync-lang="fi"></div>
+              </div>
+            </div>
+          </div>
+          <div id="excludes" class="row">
+            <div class="text label" data-i18n-text="Exclude"></div>
+            <div class="column">
+              <div class="rowWrap">
+                <div class="command" data-i18n-text="Italics" data-item="voice-exclude-italics" data-type="boolean"></div>
+                <div class="command" data-i18n-text="Code" data-item="voice-exclude-code" data-type="boolean"></div>
               </div>
             </div>
           </div>
