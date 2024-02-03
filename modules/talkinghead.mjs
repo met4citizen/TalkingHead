@@ -101,6 +101,10 @@ class TalkingHead {
       cameraRotateEnable: true,
       cameraPanEnable: false,
       cameraZoomEnable: false,
+      lightAmbientColor: 0xFFFFFF,
+      lightAmbientIntensity: 2,
+      lightDirectColor: 0x8888aa,
+      lightDirectIntensity: 10,
       avatarMood: "neutral",
       avatarMute: false,
       markedOptions: { mangle:false, headerIds:false, breaks: true }
@@ -197,8 +201,7 @@ class TalkingHead {
         'Spine1.quaternion':{x:0, y:0, z:0}, 'Neck.quaternion':{x:0, y:0, z:0},
         'Head.quaternion':{x:0, y:0, z:0}, 'Spine1.scale':{x:0, y:0, z:0},
         'Neck.scale':{x:0, y:0, z:0}, 'LeftArm.scale':{x:0, y:0, z:0},
-        'RightArm.scale':{x:0, y:0, z:0}, 'LeftShoulder.position':{x:0, y:0, z:0},
-        'RightShoulder.position':{x:0, y:0, z:0}
+        'RightArm.scale':{x:0, y:0, z:0}
       }
     };
     // Add legs, arms and hands
@@ -593,13 +596,20 @@ class TalkingHead {
     this.renderer.setPixelRatio( this.opt.modelPixelRatio * window.devicePixelRatio );
     this.renderer.setSize(this.nodeAvatar.clientWidth, this.nodeAvatar.clientHeight);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-    this.renderer.outputEncoding = THREE.sRGBEncoding;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.useLegacyLights = false;
     this.renderer.shadowMap.enabled = false;
     this.nodeAvatar.appendChild( this.renderer.domElement );
-    this.camera = new THREE.PerspectiveCamera( 10, 1, 1, 2000 );
+    this.camera = new THREE.PerspectiveCamera( 10, this.nodeAvatar.clientWidth / this.nodeAvatar.clientHeight, 0.1, 2000 );
     this.scene = new THREE.Scene();
+    this.lightAmbient = new THREE.AmbientLight(
+      new THREE.Color( this.opt.lightAmbientColor ),
+      this.opt.lightAmbientIntensity
+    );
+    this.lightDirect = new THREE.DirectionalLight(
+      new THREE.Color( this.opt.lightDirectColor ),
+      this.opt.lightDirectIntensity
+    );
+    this.lightDirect.position.set(2, 3.2, -1.5);
     const pmremGenerator = new THREE.PMREMGenerator( this.renderer );
     pmremGenerator.compileEquirectangularShader();
     this.scene.environment = pmremGenerator.fromScene( new RoomEnvironment() ).texture;
@@ -836,22 +846,12 @@ class TalkingHead {
       }
     });
 
-    // Light 1
-    const light1 = new THREE.SpotLight( 0x2244cc, 4, 0, 0.1, 0.7 );
-    light1.castShadow = true;
-    light1.position.set(-3, 4, -1);
-    light1.target = this.armature.getObjectByName('Head');
-    this.scene.add( light1 );
-
-    // Light 2
-    const light2 = new THREE.SpotLight( 0x8888aa, 3, 0, 0.1, 0.5  );
-    light2.castShadow = true;
-    light2.position.set(2, 3.2, -1.5);
-    light2.target = this.armature.getObjectByName('Head');
-    this.scene.add( light2 );
-
     // Add avatar to scene
-    this.scene.add(this.armature);
+    this.scene.add(gltf.scene);
+
+    // Add lights
+    this.scene.add( this.lightAmbient );
+    this.scene.add( this.lightDirect );
 
     // Set pose, view and start animation
     if ( !this.viewName ) this.setView( this.opt.cameraView );
@@ -921,6 +921,27 @@ class TalkingHead {
     this.cameraStart = this.camera.position.clone();
     this.cameraClock = 0;
 
+  }
+
+  /**
+  * Change light colors and intensities.
+  * @param {Object} opt Options
+  */
+  setLighting(opt) {
+    opt = opt || {};
+
+    if ( opt.hasOwnProperty("lightAmbientColor") ) {
+      this.lightAmbient.color.set( new THREE.Color( opt.lightAmbientColor ) );
+    }
+    if ( opt.hasOwnProperty("lightAmbientIntensity") ) {
+      this.lightAmbient.intensity = opt.lightAmbientIntensity;
+    }
+    if ( opt.hasOwnProperty("lightDirectColor") ) {
+      this.lightDirect.color.set( new THREE.Color( opt.lightDirectColor ) );
+    }
+    if ( opt.hasOwnProperty("lightDirectIntensity") ) {
+      this.lightDirect.intensity = opt.lightDirectIntensity;
+    }
   }
 
   /**
@@ -1187,8 +1208,6 @@ class TalkingHead {
       this.poseDelta.props['Neck.scale'] = dneg;
       this.poseDelta.props['LeftArm.scale'] = dneg;
       this.poseDelta.props['RightArm.scale'] = dneg;
-      this.poseDelta.props['LeftShoulder.position'].y = v/150;
-      this.poseDelta.props['RightShoulder.position'].y = v/150;
     } else {
       if ( mt === 'eyesClosed' ) {
         this.setBaselineValue('eyesClosed',v);
@@ -1568,6 +1587,13 @@ class TalkingHead {
         for( let [mt,vs] of Object.entries(x.vs) ) {
           if ( mt === 'subtitles' ) {
             o[mt] = (o.hasOwnProperty(mt) ? o[mt] + vs : "" + vs);
+            delete x.vs[mt];
+          } else if ( mt === 'function' ) {
+            vs.forEach( fn => {
+              if ( fn && typeof fn === "function" ) {
+                fn();
+              }
+            });
             delete x.vs[mt];
           } else if ( mt === 'speak' ) {
             o[mt] = (o.hasOwnProperty(mt) ? o[mt] + ' ' + vs : "" + vs);
