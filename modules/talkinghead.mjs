@@ -101,10 +101,17 @@ class TalkingHead {
       cameraRotateEnable: true,
       cameraPanEnable: false,
       cameraZoomEnable: false,
-      lightAmbientColor: 0xFFFFFF,
+      lightAmbientColor: 0xffffff,
       lightAmbientIntensity: 2,
       lightDirectColor: 0x8888aa,
-      lightDirectIntensity: 10,
+      lightDirectIntensity: 30,
+      lightDirectPhi: 1,
+      lightDirectTheta: 2,
+      lightSpotIntensity: 0,
+      lightSpotColor: 0x3388ff,
+      lightSpotPhi: 0.1,
+      lightSpotTheta: 4,
+      lightSpotDispersion: 1,
       avatarMood: "neutral",
       avatarMute: false,
       markedOptions: { mangle:false, headerIds:false, breaks: true }
@@ -609,7 +616,13 @@ class TalkingHead {
       new THREE.Color( this.opt.lightDirectColor ),
       this.opt.lightDirectIntensity
     );
-    this.lightDirect.position.set(2, 3.2, -1.5);
+    this.lightSpot = new THREE.SpotLight(
+      new THREE.Color( this.opt.lightSpotColor ),
+      this.opt.lightSpotIntensity,
+      0,
+      this.opt.lightSpotDispersion
+    );
+    this.setLighting( this.opt );
     const pmremGenerator = new THREE.PMREMGenerator( this.renderer );
     pmremGenerator.compileEquirectangularShader();
     this.scene.environment = pmremGenerator.fromScene( new RoomEnvironment() ).texture;
@@ -852,6 +865,8 @@ class TalkingHead {
     // Add lights
     this.scene.add( this.lightAmbient );
     this.scene.add( this.lightDirect );
+    this.scene.add( this.lightSpot );
+    this.lightSpot.target = this.armature.getObjectByName('Head');
 
     // Set pose, view and start animation
     if ( !this.viewName ) this.setView( this.opt.cameraView );
@@ -930,17 +945,41 @@ class TalkingHead {
   setLighting(opt) {
     opt = opt || {};
 
+    // Ambient light
     if ( opt.hasOwnProperty("lightAmbientColor") ) {
       this.lightAmbient.color.set( new THREE.Color( opt.lightAmbientColor ) );
     }
     if ( opt.hasOwnProperty("lightAmbientIntensity") ) {
       this.lightAmbient.intensity = opt.lightAmbientIntensity;
+      this.lightAmbient.visible = (opt.lightAmbientIntensity !== 0);
     }
+
+    // Directional light
     if ( opt.hasOwnProperty("lightDirectColor") ) {
       this.lightDirect.color.set( new THREE.Color( opt.lightDirectColor ) );
     }
     if ( opt.hasOwnProperty("lightDirectIntensity") ) {
       this.lightDirect.intensity = opt.lightDirectIntensity;
+      this.lightDirect.visible = (opt.lightDirectIntensity !== 0);
+    }
+    if ( opt.hasOwnProperty("lightDirectPhi") && opt.hasOwnProperty("lightDirectTheta") ) {
+      this.lightDirect.position.setFromSphericalCoords(2, opt.lightDirectPhi, opt.lightDirectTheta);
+    }
+
+    // Spot light
+    if ( opt.hasOwnProperty("lightSpotColor") ) {
+      this.lightSpot.color.set( new THREE.Color( opt.lightSpotColor ) );
+    }
+    if ( opt.hasOwnProperty("lightSpotIntensity") ) {
+      this.lightSpot.intensity = opt.lightSpotIntensity;
+      this.lightSpot.visible = (opt.lightSpotIntensity !== 0);
+    }
+    if ( opt.hasOwnProperty("lightSpotPhi") && opt.hasOwnProperty("lightSpotTheta") ) {
+      this.lightSpot.position.setFromSphericalCoords( 2, opt.lightSpotPhi, opt.lightSpotTheta );
+      this.lightSpot.position.add( new THREE.Vector3(0,1.5,0) );
+    }
+    if ( opt.hasOwnProperty("lightSpotDispersion") ) {
+      this.lightSpot.angle = opt.lightSpotDispersion;
     }
   }
 
