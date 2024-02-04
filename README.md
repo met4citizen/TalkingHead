@@ -103,10 +103,17 @@ Option | Description
 `cameraRotateEnable` | If true, the user is allowed to rotate the 3D model. Default is `true`.
 `cameraPanEnable` | If true, the user is allowed to pan the 3D model. Default is `false`.
 `cameraZoomEnable` | If true, the user is allowed to zoom the 3D model. Default is `false`.
-`lightAmbientColor` | Ambient light color. The value can be a hexadecimal color or CSS-style string. Default is `0xFFFFFF`.
+`lightAmbientColor` | Ambient light color. The value can be a hexadecimal color or CSS-style string. Default is `0xffffff`.
 `lightAmbientIntensity` | Ambient light intensity. Default is `2`.
-`lightDirectColor` | Direct light color. The value can be a hexadecimal color or CSS-style string. Default is `0x8888aa`.
-`lightDirectIntensity` | Direct light intensity. Default is `10`.
+`lightDirectColor` | Direction light color. The value can be a hexadecimal color or CSS-style string. Default is `0x8888aa`.
+`lightDirectIntensity` | Direction light intensity. Default is `30`.
+`lightDirectPhi` | Direction light phi angle. Default is `0.1`.
+`lightDirectTheta` | Direction light theta angle. Default is `2`.
+`lightSpotColor` | Spot light color. The value can be a hexadecimal color or CSS-style string. Default is `0x3388ff`.
+`lightSpotIntensity` | Spot light intensity. Default is `0`.
+`lightSpotPhi` | Spot light phi angle. Default is `0.1`.
+`lightSpotTheta` | Spot light theta angle. Default is `4`.
+`lightSpotDispersion` | Spot light dispersion. Default is `1`.
 `avatarMood` | The mood of the avatar. Supported moods: `"neutral"`, `"happy"`, `"angry"`, `"sad"`, `"fear"`, `"disgust"`, `"love"`, `"sleep"`. Default is `"neutral"`.
 `avatarMute`| Mute the avatar. This can be helpful option if you want to output subtitles without audio and lip-sync. Default is `false`.
 `markedOptions` | Options for Marked markdown parser. Default is `{ mangle:false, headerIds:false, breaks: true }`.
@@ -136,8 +143,8 @@ The following table lists some of the key methods. See the source code for the r
 Method | Description
 --- | ---
 `showAvatar(avatar, [onprogress=null])` | Load and show the specified avatar. The `avatar` object must include the `url` for GLB file. Optional properties are `body` for either male `M` or female `F` body form, `lipsyncLang`, `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood` and `avatarMute`.
-`setView(view, [opt])` | Set view. Supported views are `"full"`, `"upper"`  and `"head"`. The `opt` object can be used to set `cameraDistance`, `cameraX`, `cameraY`, `cameraRotateX`, `cameraRotateY`..
-`setLighting(opt)` | Change lighting settings. The `opt` object can be used to set `lightAmbientColor`, `lightAmbientIntensity`, `lightDirectColor`, `lightDirectIntensity`.
+`setView(view, [opt])` | Set view. Supported views are `"full"`, `"upper"`  and `"head"`. The `opt` object can be used to set `cameraDistance`, `cameraX`, `cameraY`, `cameraRotateX`, `cameraRotateY`.
+`setLighting(opt)` | Change lighting settings. The `opt` object can be used to set `lightAmbientColor`, `lightAmbientIntensity`, `lightDirectColor`, `lightDirectIntensity`, `lightDirectPhi`, `lightDirectTheta`, `lightSpotColor`, `lightSpotIntensity`, `lightSpotPhi`, `lightSpotTheta`, `lightSpotDispersion`.
 `speakText(text, [opt={}], [onsubtitles=null], [excludes=[]])` | Add the `text` string to the speech queue. The text can contain face emojis. Options `opt` can be used to set text-specific `lipsyncLang`, `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood`, `avatarMute`. Optional callback function `onsubtitles` is called whenever a new subtitle is to be written with the parameter of the added string. The optional `excludes` is an array of [start,end] indices to be excluded from audio but to be included in the subtitles.
 `speakAudio(audio, [opt={}], [onsubtitles=null])` | Add a new `audio` object to the speech queue. This method was added to support external TTS services such as ElevenLabs and Azure. The audio object contains ArrayBuffer chunks in `audio` array, words in `words` array, starting times for each words in milliseconds in `wtimes` array, and durations for each words in milliseconds in `wdurations` array. If the Oculus viseme IDs are know, they can be given in optional `visemes`, `vtimes` and `vdurations` arrays. NOTE: As of now, the only supported audio format is PCM signed 16bit little endian. The `opt` object can be used to set text-specific `lipsyncLang` in cases when the visemes are not specified.
 `speakEmoji(e)` | Add an emoji `e` to the speech queue.
