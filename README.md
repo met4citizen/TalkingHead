@@ -93,7 +93,7 @@ Option | Description
 `lipsyncLang`| Lip-sync language. Currently English `en` and Finnish `fi` are supported. Default is `fi`.
 `pcmSampleRate` | PCM (signed 16bit little endian) sample rate used in `speakAudio` in Hz. Default is `22050`.
 `modelPixelRatio` | Sets the device's pixel ratio. Default is `1`.
-`modelFPS` | Frames per second. Default is `30`.
+`modelFPS` | Frames per second. Note that actual frame will be lower than the set value. Default is `30`.
 `cameraView` | Initial view. Supported views are `"full"`, `"upper"`  and `"head"`. Default is `"full"`.
 `cameraDistance` | Camera distance offset for initial view in meters. Default is `0`.
 `cameraX` | Camera position offset in X direction in meters. Default is `0`.
@@ -117,6 +117,8 @@ Option | Description
 `avatarMood` | The mood of the avatar. Supported moods: `"neutral"`, `"happy"`, `"angry"`, `"sad"`, `"fear"`, `"disgust"`, `"love"`, `"sleep"`. Default is `"neutral"`.
 `avatarMute`| Mute the avatar. This can be helpful option if you want to output subtitles without audio and lip-sync. Default is `false`.
 `markedOptions` | Options for Marked markdown parser. Default is `{ mangle:false, headerIds:false, breaks: true }`.
+`statsNode` | Parent DOM element for the three.js stats display. If `null`, don't use. Default is `null`.
+`statsStyle` | CSS style for the stats element. If `null`, use the three.js default style. Default is `null`.
 
 Once the instance has been created, you can load your avatar:
 
@@ -277,12 +279,19 @@ export const site = {
 
 **Why not use the free Web Speech API?**
 
-If the starting times and durations of individual visemes are not received,
-they are calculated based on the length of the generated audio chunks.
-As far as I know, there is no way to get Web Speech API speech synthesis
-as an audio file or otherwise determine its duration in advance.
-At some point I tried to use the Web Speech API events for syncronization,
-but the results were not good.
+The free Web Speech API can't provide word-to-audio timestamps, which are
+essential for accurate lip-sync. As far as I know, there is no way even to
+get Web Speech API speech synthesis as an audio file or determine its
+duration in advance. At some point I tried to use the Web Speech API
+events for syncronization, but the results were not good.
+
+**I would like to have lip-sync support for language X.**
+
+You have two options. First, you can implement a word-to-viseme
+class similar to those that currently exist for English and Finnish.
+Alternatively, you can check if Microsoft Azure TTS can provide visemes
+for your language and use Microsoft Speech API integration (speakAudio)
+instead of Google TTS and the built-in lip-sync (speakText).
 
 **Any future plans for the project?**
 

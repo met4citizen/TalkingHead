@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import Stats from 'three/addons/libs/stats.module.js';
 
 // Lip-sync implementations for different languages
 import { LipsyncFi } from './lipsync-fi.mjs';
@@ -114,10 +115,20 @@ class TalkingHead {
       lightSpotDispersion: 1,
       avatarMood: "neutral",
       avatarMute: false,
-      markedOptions: { mangle:false, headerIds:false, breaks: true }
+      markedOptions: { mangle:false, headerIds:false, breaks: true },
+      statsNode: null,
+      statsStyle: null
     };
     Object.assign( this.opt, opt || {} );
 
+    // Statistics
+    if ( this.opt.statsNode ) {
+      this.stats = new Stats();
+      if ( this.opt.statsStyle ) {
+        this.stats.dom.style.cssText = this.opt.statsStyle;
+      }
+      this.opt.statsNode.appendChild( this.stats.dom );
+    }
 
     // Pose templates
     // NOTE: The body weight on each pose should be on left foot
@@ -1598,10 +1609,21 @@ class TalkingHead {
     this.animClock += dt;
     this.animTimeLast = t;
 
+    // Statistics start
+    if ( this.stats ) {
+      this.stats.begin();
+    }
+
     // Randomize facial expression
-    const randomizedMs = this.randomized[ Math.floor( Math.random() * this.randomized.length ) ];
-    const randomizedV = (this.mood.baseline[randomizedMs] || 0) + Math.random()/5;
-    this.setBaselineValue(randomizedMs, randomizedV);
+    if ( this.viewName !== 'full' ) {
+      const randomizedMs = this.randomized[ Math.floor( Math.random() * this.randomized.length ) ];
+      const v = this.getValue(randomizedMs);
+      const vb = this.getBaselineValue(randomizedMs);
+      if ( v === vb ) {
+        const randomizedV = (this.mood.baseline[randomizedMs] || 0) + Math.random()/5;
+        this.setBaselineValue(randomizedMs, randomizedV);
+      }
+    }
 
     // Start from baseline
     const o = {};
@@ -1763,6 +1785,11 @@ class TalkingHead {
 
     // Autorotate
     if ( this.controls.autoRotate ) this.controls.update();
+
+    // Statistics end
+    if ( this.stats ) {
+      this.stats.end();
+    }
 
     this.render();
 
