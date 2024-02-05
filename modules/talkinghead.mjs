@@ -1775,11 +1775,27 @@ class TalkingHead {
     hips.position.z -= (ltoePos.z+rtoePos.z)/2;
 
     // Camera
-    if ( this.cameraClock !== null && this.cameraClock < 2000 ) {
+    if ( this.cameraClock !== null && this.cameraClock < 1000 ) {
       this.cameraClock += dt;
-      if ( this.cameraClock > 2000 ) this.cameraClock = 2000;
-      this.camera.position.copy( this.cameraStart.lerp( this.cameraEnd, this.cameraClock / 2000 ) );
-      this.controls.target.copy( this.controlsStart.lerp( this.controlsEnd, this.cameraClock / 2000 ) );
+      if ( this.cameraClock > 1000 ) this.cameraClock = 1000;
+      let s = new THREE.Spherical().setFromVector3(this.cameraStart);
+      let sEnd = new THREE.Spherical().setFromVector3(this.cameraEnd);
+      s.phi += this.easing(this.cameraClock / 1000) * (sEnd.phi - s.phi);
+      s.theta += this.easing(this.cameraClock / 1000) * (sEnd.theta - s.theta);
+      s.radius += this.easing(this.cameraClock / 1000) * (sEnd.radius - s.radius);
+      s.makeSafe();
+      this.camera.position.setFromSpherical( s );
+      if ( this.controlsStart.x !== this.controlsEnd.x ) {
+        this.controls.target.copy( this.controlsStart.lerp( this.controlsEnd, this.easing(this.cameraClock / 1000) ) );
+      } else {
+        s.setFromVector3(this.controlsStart);
+        sEnd.setFromVector3(this.controlsEnd);
+        s.phi += this.easing(this.cameraClock / 1000) * (sEnd.phi - s.phi);
+        s.theta += this.easing(this.cameraClock / 1000) * (sEnd.theta - s.theta);
+        s.radius += this.easing(this.cameraClock / 1000) * (sEnd.radius - s.radius);
+        s.makeSafe();
+        this.controls.target.setFromSpherical( s );
+      }
       this.controls.update();
     }
 
