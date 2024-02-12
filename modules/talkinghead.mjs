@@ -813,15 +813,13 @@ class TalkingHead {
     let gltf = await loader.loadAsync( avatar.url, onprogress );
 
     // Check the gltf
-    const required = ['Armature','EyeLeft','EyeRight','Wolf3D_Head','Wolf3D_Teeth'];
+    const required = ['Armature'];
     this.posePropNames.forEach( x => required.push( x.split('.')[0] ) );
     required.forEach( x => {
       if ( !gltf.scene.getObjectByName(x) ) {
         throw new Error('Avatar object ' + x + ' not found');
       }
     });
-
-    // TODO: Check the needed morph targets
 
     this.stop();
     this.avatar = avatar;
@@ -837,9 +835,17 @@ class TalkingHead {
     this.armature.scale.setScalar(1);
 
     // Morph targets
-    this.morphs = ['EyeLeft','EyeRight','Wolf3D_Head','Wolf3D_Teeth'].map( x => {
-      return this.armature.getObjectByName( x );
+    // TODO: Check morph target names
+    this.morphs = [];
+    this.armature.traverse( x => {
+      if ( x.morphTargetInfluences && x.morphTargetInfluences.length &&
+        x.morphTargetDictionary ) {
+        this.morphs.push(x);
+      }
     });
+    if ( this.morphs.length === 0 ) {
+      throw new Error('Blend shapes not found');
+    }
 
     // Objects for needed properties
     this.poseAvatar = { props: {} };
@@ -1223,7 +1229,12 @@ class TalkingHead {
     } else if ( mt === 'chestInhale' ) {
       return this.poseDelta.props['Spine1.scale'].x * 20;
     } else {
-      return this.morphs[0].morphTargetInfluences[this.morphs[0].morphTargetDictionary[mt]];
+      const ndx = this.morphs[0].morphTargetDictionary[mt];
+      if ( ndx !== undefined ) {
+        return this.morphs[0].morphTargetInfluences[ndx];
+      } else {
+        return 0;
+      }
     }
   }
 
@@ -1276,7 +1287,12 @@ class TalkingHead {
       this.poseDelta.props['LeftArm.scale'] = dneg;
       this.poseDelta.props['RightArm.scale'] = dneg;
     } else {
-      this.morphs.forEach( x => x.morphTargetInfluences[x.morphTargetDictionary[mt]] = v );
+      this.morphs.forEach( x => {
+        const ndx = x.morphTargetDictionary[mt];
+        if ( ndx !== undefined ) {
+          x.morphTargetInfluences[ndx] = v;
+        }
+      });
     }
   }
 
@@ -1826,7 +1842,12 @@ class TalkingHead {
   */
   resetLips() {
     this.visemeNames.forEach( x => {
-      this.morphs.forEach( y => y.morphTargetInfluences[y.morphTargetDictionary['viseme_'+x]] );
+      this.morphs.forEach( y => {
+        const ndx = y.morphTargetDictionary['viseme_'+x];
+        if ( ndx !== undefined ) {
+          y.morphTargetInfluences[ndx] = 0;
+        }
+      });
     });
   }
 
