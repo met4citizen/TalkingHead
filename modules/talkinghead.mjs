@@ -2663,13 +2663,13 @@ class TalkingHead {
     });
 
     // Make an animation
-    const anim = head.animFactory( {
+    const anim = this.animFactory( {
       name: 'talkinghands',
       delay: delay,
       dt: dt,
       vs: { moveto: moveto }
     });
-    head.animQueue.push( anim );
+    this.animQueue.push( anim );
 
   }
 
