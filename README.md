@@ -82,7 +82,7 @@ Option | Description
 --- | ---
 `jwsGet` | Function to get the JSON Web Token (JWT).
 `ttsEndpoint` | Text-to-speech backend/endpoint/proxy implementing the Google Text-to-Speech API.
-`ttsApikey` | Google Text-to-Speech API key when using the Google TTS endpoint. **NOTE: Don't use this in client-side code in production**
+`ttsApikey` | If you don't want to use a proxy or JWT, you can use Google TTS endpoint directly and provide your API key here. **NOTE: I recommend that you don't use this in production and never put your API key in any client-side code.**
 `ttsLang` | Google text-to-speech language. Default is `"fi-FI"`.
 `ttsVoice` | Google text-to-speech voice. Default is `"fi-FI-Standard-A"`.
 `ttsRate` | Google text-to-speech rate in the range [0.25, 4.0]. Default is `0.95`.
@@ -92,8 +92,9 @@ Option | Description
 `ttsTrimEnd`| Trim the viseme sequence end relative to the end of the audio (shift in milliseconds). Default is `300`.
 `lipsyncLang`| Lip-sync language. Currently English `en` and Finnish `fi` are supported. Default is `fi`.
 `pcmSampleRate` | PCM (signed 16bit little endian) sample rate used in `speakAudio` in Hz. Default is `22050`.
+`modelRoot` | The root name of the armature. Default is `Armature`.
 `modelPixelRatio` | Sets the device's pixel ratio. Default is `1`.
-`modelFPS` | Frames per second. Note that actual frame will be lower than the set value. Default is `30`.
+`modelFPS` | Frames per second. Note that actual frame rate will be a bit lower than the set value. Default is `30`.
 `cameraView` | Initial view. Supported views are `"full"`, `"upper"`  and `"head"`. Default is `"full"`.
 `cameraDistance` | Camera distance offset for initial view in meters. Default is `0`.
 `cameraX` | Camera position offset in X direction in meters. Default is `0`.
@@ -167,6 +168,11 @@ Method | Description
 ---
 
 ### The Example App
+
+**NOTE:** The example app `index.html` was originally made for developing and
+testing various integrations of the TakingHead class. In most cases, your
+best choice is to skip this chapter and instead make your own project/app
+by following the instructions in the previous chapter.
 
 In order to configure and use the example app `index.html` do the following:
 

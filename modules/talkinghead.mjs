@@ -91,6 +91,7 @@ class TalkingHead {
       ttsVolume: 0,
       lipsyncLang: 'fi',
       pcmSampleRate: 22050,
+      modelRoot: "Armature",
       modelPixelRatio: 1,
       modelFPS: 30,
       cameraView: 'full',
@@ -813,7 +814,7 @@ class TalkingHead {
     let gltf = await loader.loadAsync( avatar.url, onprogress );
 
     // Check the gltf
-    const required = ['Armature'];
+    const required = [ this.opt.modelRoot ];
     this.posePropNames.forEach( x => required.push( x.split('.')[0] ) );
     required.forEach( x => {
       if ( !gltf.scene.getObjectByName(x) ) {
@@ -831,7 +832,7 @@ class TalkingHead {
     }
 
     // Avatar full-body
-    this.armature = gltf.scene.getObjectByName("Armature"); // Full-body
+    this.armature = gltf.scene.getObjectByName( this.opt.modelRoot );
     this.armature.scale.setScalar(1);
 
     // Morph targets
