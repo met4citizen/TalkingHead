@@ -169,10 +169,10 @@ Method | Description
 
 ### The Example App
 
-**NOTE:** The example app `index.html` was originally made for developing and
-testing various integrations of the TakingHead class. In most cases, your
-best choice is to skip this chapter and instead make your own project/app
-by following the instructions in the previous chapter.
+**NOTE:** *The `index.html` example app was originally made for testing and
+developing the TalkingHead class and it includes various integrations with
+paid services. If you just want to use TalkingHead in your own app,
+you don't need to install or configure the example app.*
 
 In order to configure and use the example app `index.html` do the following:
 
