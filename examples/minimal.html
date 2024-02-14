@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Talking Head - minimal example</title>
+
+  <style>
+    body, html { width:100%; height:100%; max-width: 800px; margin: auto; position: relative; }
+    #avatar { display: block; width:100%; height:100%; }
+    #controls { position: absolute; top: 10px; left: 10px; right: 10px; height: 50px; }
+    #text { position: absolute; top: 0; left: 0; bottom: 0; right: 110px; font-family: Arial; font-size: 20px; }
+    #speak { position: absolute; top: 0; bottom: 0; right: 0; width: 100px; font-family: Arial; font-size: 20px; }
+  </style>
+
+  <script type="importmap">
+  { "imports":
+    {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js/+esm",
+      "three/examples/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/",
+      "dompurify": "https://cdn.jsdelivr.net/npm/dompurify@3.0.6/+esm",
+      "marked": "https://cdn.jsdelivr.net/npm/marked@11.2.0/+esm",
+      "talkinghead/": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@latest/modules/"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import { TalkingHead } from "talkinghead/talkinghead.mjs";
+
+    let head;
+
+    document.addEventListener('DOMContentLoaded', async function(e) {
+
+      // Instantiate the class
+      // NOTE: Never put your API key in a client-side code unless you know
+      //       that you are the only one to have access to that code!
+      const nodeAvatar = document.getElementById('avatar');
+      head = new TalkingHead( nodeAvatar, {
+        ttsEndpoint: "https://eu-texttospeech.googleapis.com/v1beta1/text:synthesize",
+        ttsApikey: "put-your-own-Google-TTS-API-key-here", // <- Change this
+        cameraView: "upper"
+      });
+
+      // Load and show the avatar
+      try {
+        await head.showAvatar( {
+          url: 'https://models.readyplayer.me/64bfa15f0e72c63d7c3934a6.glb?morphTargets=ARKit,Oculus+Visemes,mouthOpen,mouthSmile,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png',
+          body: 'F',
+          avatarMood: 'neutral',
+          ttsLang: "en-GB",
+          ttsVoice: "en-GB-Standard-A",
+          lipsyncLang: 'en'
+        });
+      } catch (error) {
+        console.log(error);
+      }
+
+      // Speak when clicked
+      const nodeSpeak = document.getElementById('speak');
+      nodeSpeak.addEventListener('click', function () {
+        try {
+          const text = document.getElementById('text').value;
+          if ( text ) {
+            head.speakText( text );
+          }
+        } catch (error) {
+          console.log(error);
+        }
+      });
+
+    });
+
+  </script>
+</head>
+
+<body>
+  <div id="avatar"></div>
+  <div id="controls">
+    <input id="text" type="text" value="Hi there. How are you? I'm fine.">
+    <input id="speak" type="button" value="Speak">
+  </div>
+</body>
+
+</html>

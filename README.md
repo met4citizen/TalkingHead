@@ -15,8 +15,8 @@ the TalkingHead example web app without any post-processing.*
 
 ### Introduction
 
-This is as a small side-project featuring a 3D talking head capable
-of speaking and lip-syncing in real-time. The Talking Head supports
+Talking Head (3D) is a JavaScript class featuring a 3D avatar that can
+speak and lip-sync in real-time. The class supports
 [Ready Player Me](https://readyplayer.me/) full-body 3D avatars (GLB),
 [Mixamo](https://www.mixamo.com) animations (FBX), markdown text, and subtitles.
 It also knows a set of emojis, which it can convert into facial expressions.
@@ -36,7 +36,7 @@ As a default built-in TTS service, the class uses
 with language-specific lip-sync modules `./modules/lipsync-fi.mjs`
 and `./modules/lipsync-en.mjs`.
 
-The included example web app `index.html` shows how to integrate and use
+The included web app `index.html` shows how to integrate and use
 the class with [ElevenLabs WebSocket API](https://elevenlabs.io) (experimental),
 [Microsoft Azure Speech SDK](https://github.com/microsoft/cognitive-services-speech-sdk-js),
 [OpenAI API](https://openai.com) and
@@ -50,12 +50,18 @@ The class/app calls external paid services through API proxies. Creating
 the needed API proxies is not within the scope of this project.
 However, given the limited functionality without them, please refer
 to Appendix B for guidance on implementing them on your own web
-server using JSON Web Token (JWT) Single Sign-On.
+server using JSON Web Token (JWT) Single Sign-On (SSO).
 
 You can preview the example app's UI [here](https://met4citizen.github.io/TalkingHead/).
 Please note that since the API proxies for the text-to-speech and
 AI services are missing, the avatar does not speak or lip-sync, and
 you can't chat with it.
+
+**FOR HOBBYISTS:** If you simply want to try out things on your own laptop
+without any proxies, JSON Web Tokens, or SSO, check out the
+[minimal code example](https://github.com/met4citizen/TalkingHead/blob/main/examples/minimal.html).
+Just download the file, insert your Google TTS API key,
+and you'll have your first web app with a talking head.
 
 ---
 
@@ -80,7 +86,7 @@ The following table lists all the available options and their default values:
 
 Option | Description
 --- | ---
-`jwsGet` | Function to get the JSON Web Token (JWT).
+`jwsGet` | Function to get the JSON Web Token (JWT). See Appendix B for more information.
 `ttsEndpoint` | Text-to-speech backend/endpoint/proxy implementing the Google Text-to-Speech API.
 `ttsApikey` | If you don't want to use a proxy or JWT, you can use Google TTS endpoint directly and provide your API key here. **NOTE: I recommend that you don't use this in production and never put your API key in any client-side code.**
 `ttsLang` | Google text-to-speech language. Default is `"fi-FI"`.
@@ -169,12 +175,12 @@ Method | Description
 
 ### The Example App
 
-**NOTE:** *The `index.html` example app was originally made for testing and
-developing the TalkingHead class and it includes various integrations with
-paid services. If you just want to use TalkingHead in your own app,
-you don't need to install or configure the example app.*
+**NOTE:** *The `index.html` app was originally made for testing and
+developing the TalkingHead class and it includes various integrations
+with several paid services. If you just want to use TalkingHead class
+in your own app, there is no need to install and configure the example app.*
 
-In order to configure and use the example app `index.html` do the following:
+If you want to configure and use the example app `index.html`, do the following:
 
 1. Copy the project to your own server.
 
