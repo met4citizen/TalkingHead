@@ -4,11 +4,11 @@
   <title>Talking Head - minimal example</title>
 
   <style>
-    body, html { width:100%; height:100%; max-width: 800px; margin: auto; position: relative; }
+    body, html { width:100%; height:100%; max-width: 800px; margin: auto; position: relative; background-color: black; color: white; }
     #avatar { display: block; width:100%; height:100%; }
-    #controls { position: absolute; top: 10px; left: 10px; right: 10px; height: 50px; }
-    #text { position: absolute; top: 0; left: 0; bottom: 0; right: 110px; font-family: Arial; font-size: 20px; }
-    #speak { position: absolute; top: 0; bottom: 0; right: 0; width: 100px; font-family: Arial; font-size: 20px; }
+    #controls { display: block; position: absolute; top: 10px; left: 10px; right: 10px; height: 50px; }
+    #text { position: absolute; width: Calc( 100% - 110px ); height: 100%; top: 0; left: 0; bottom: 0; right: 110px; font-family: Arial; font-size: 20px; }
+    #speak { block; position: absolute; top: 0; bottom: 0; right: 0; height: 100%; width: 100px; font-family: Arial; font-size: 20px; }
   </style>
 
   <script type="importmap">
@@ -19,13 +19,13 @@
       "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/",
       "dompurify": "https://cdn.jsdelivr.net/npm/dompurify@3.0.6/+esm",
       "marked": "https://cdn.jsdelivr.net/npm/marked@11.2.0/+esm",
-      "talkinghead/": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@latest/modules/"
+      "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.0.0/modules/talkinghead.mjs"
     }
   }
   </script>
 
   <script type="module">
-    import { TalkingHead } from "talkinghead/talkinghead.mjs";
+    import { TalkingHead } from "talkinghead";
 
     let head;
 
