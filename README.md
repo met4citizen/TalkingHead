@@ -4,9 +4,9 @@
 
 Video | Description
 --- | ---
-<span style="display: block; width:400px">[<img src="screenshot4.jpg" width="400"/>](https://youtu.be/OA6LBZjkzJI)</span> | I chat with Jenny and Harri. The close-up view allows you to evaluate the accuracy of lip-sync in both English and Finnish. Using GPT-3.5 and Microsoft text-to-speech.
-[<img src="screenshot5.jpg" width="400"/>](https://youtu.be/fJrYGaGCAGo) | A short demo of how AI can control the avatar's movements. Using OpenAI's function calling and Google TTS with the built-in viseme generation.
-[<img src="screenshot3.jpg" width="400"/>](https://youtu.be/SfnqRnWKT40) | Julia and I showcase some of the features of the TalkingHead class/app including the settings, some poses and animations.
+<span style="display: block; width:400px">[<img src="screenshot4.jpg" width="500"/>](https://youtu.be/OA6LBZjkzJI)</span> | I chat with Jenny and Harri. The close-up view allows you to evaluate the accuracy of lip-sync in both English and Finnish. Using GPT-3.5 and Microsoft text-to-speech.
+[<img src="screenshot5.jpg" width="500"/>](https://youtu.be/fJrYGaGCAGo) | A short demo of how AI can control the avatar's movements. Using OpenAI's function calling and Google TTS with the built-in viseme generation.
+[<img src="screenshot3.jpg" width="500"/>](https://youtu.be/SfnqRnWKT40) | Julia and I showcase some of the features of the TalkingHead class/app including the settings, some poses and animations.
 
 *All videos are real-time screen captures from a Chrome browser running
 the TalkingHead example web app without any post-processing.*
@@ -21,59 +21,49 @@ speak and lip-sync in real-time. The class supports
 [Mixamo](https://www.mixamo.com) animations (FBX), markdown text, and subtitles.
 It also knows a set of emojis, which it can convert into facial expressions.
 
-You can integrate the TalkingHead class with all major text-to-speech services.
-If you use a TTS service that can provide visemes with timestamps,
-such as Microsoft Azure Speech Services, you can have accurate lip-sync across
-multiple languages. If you use a more affordable solution without visemes,
-such as Google TTS with four million free characters per month,
-you are limited to the built-in lip-sync in Finnish and English.
+By default, the class uses
+[Google Cloud TTS](https://cloud.google.com/text-to-speech) for text-to-speech
+and has a built-in lip-sync support for English and Finnish. You can add
+new lip-sync languages by creating a new language module or by using external
+TTS services like
+[Microsoft Azure Speech SDK](https://github.com/microsoft/cognitive-services-speech-sdk-js),
+which can supply visemes with timestamps.
 
-The class `TalkingHead` can be found in the module `./modules/talkinghead.mjs`.
 The class uses [ThreeJS](https://github.com/mrdoob/three.js/) / WebGL for 3D
 rendering, and [Marked](https://github.com/markedjs/marked) Markdown parser.
-As a default built-in TTS service, the class uses
-[Google TTS](https://cloud.google.com/text-to-speech)
-with language-specific lip-sync modules `./modules/lipsync-fi.mjs`
-and `./modules/lipsync-en.mjs`.
-
-The included web app `index.html` shows how to integrate and use
-the class with [ElevenLabs WebSocket API](https://elevenlabs.io) (experimental),
-[Microsoft Azure Speech SDK](https://github.com/microsoft/cognitive-services-speech-sdk-js),
-[OpenAI API](https://openai.com) and
-[Gemini Pro API](https://cloud.google.com/vertex-ai) (pre-GA).
-Background view examples are from
-[Virtual Backgrounds](https://virtualbackgrounds.site) and impulse
-responses (IR) for reverb effects are from [OpenAir](www.openairlib.net).
-See Appendix A for how to make your own free 3D avatar.
-
-The class/app calls external paid services through API proxies. Creating
-the needed API proxies is not within the scope of this project.
-However, given the limited functionality without them, please refer
-to Appendix B for guidance on implementing them on your own web
-server using JSON Web Token (JWT) Single Sign-On (SSO).
-
-You can preview the example app's UI [here](https://met4citizen.github.io/TalkingHead/).
-Please note that since the API proxies for the text-to-speech and
-AI services are missing, the avatar does not speak or lip-sync, and
-you can't chat with it.
-
-**FOR HOBBYISTS:** If you simply want to try out things on your own laptop
-without any proxies, JSON Web Tokens, or SSO, check out the
-[minimal code example](https://github.com/met4citizen/TalkingHead/blob/main/examples/minimal.html).
-Just download the file, insert your Google TTS API key,
-and you'll have your first web app with a talking head.
 
 ---
 
 ### Talking Head class
 
-In order to create an instance of the Talking Head, you need to provide it with
-a DOM element and a set of global options. If you want to use the built-in
-Google TTS functionality, you need to give it your proxy endpoint and
-a function from which to obtain the JSON Web Token needed to use that
-proxy (See Appendix B).
+You can download the TalkingHead modules from
+[releases](https://github.com/met4citizen/TalkingHead/releases)
+(without dependencies). Alternatively, you can import all the needed
+modules from a CDN:
 
 ```javascript
+<script type="importmap">
+{ "imports":
+  {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js/+esm",
+    "three/examples/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/",
+    "dompurify": "https://cdn.jsdelivr.net/npm/dompurify@3.0.6/+esm",
+    "marked": "https://cdn.jsdelivr.net/npm/marked@11.2.0/+esm",
+    "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.0.0/modules/talkinghead.mjs"
+  }
+}
+</script>
+```
+
+If you want to use the built-in Google TTS and lip-sync using
+Single Sign-On (SSO) functionality, give the class your TTS proxy endpoint and
+a function from which to obtain the JSON Web Token needed to use that proxy.
+Refer to Appendix B for one way to implement JWT SSO.
+
+```javascript
+import { TalkingHead } from "talkinghead";
+
 // Create the talking head avatar
 const nodeAvatar = document.getElementById('avatar');
 const head = new TalkingHead( nodeAvatar, {
@@ -81,6 +71,12 @@ const head = new TalkingHead( nodeAvatar, {
   jwtGet: jwtGet
 });
 ```
+
+**FOR HOBBYISTS:** If you're just looking to experiment on your personal
+laptop without dealing with proxies, JSON Web Tokens, or Single Sign-On,
+take a look at the [minimal code example](https://github.com/met4citizen/TalkingHead/blob/main/examples/minimal.html).
+Simply download the file, add your Google TTS API key, and you'll
+have a basic web app with a talking head.
 
 The following table lists all the available options and their default values:
 
@@ -127,24 +123,41 @@ Option | Description
 `statsNode` | Parent DOM element for the three.js stats display. If `null`, don't use. Default is `null`.
 `statsStyle` | CSS style for the stats element. If `null`, use the three.js default style. Default is `null`.
 
-Once the instance has been created, you can load your avatar:
+Once the instance has been created, you can load and display your avatar.
+Refer to Appendix A for how to make your avatar:
 
 ```javascript
+// Load and show the avatar
 try {
   await head.showAvatar( {
     url: './avatars/brunette.glb',
     body: 'F',
-    avatarMood: 'neutral'
-  }, function(ev) {
-    if ( ev.lengthComputable ) {
-      let val = Math.round(ev.loaded/ev.total * 100 );
-      console.info(val+"% loaded");
-    }
+    avatarMood: 'neutral',
+    ttsLang: "en-GB",
+    ttsVoice: "en-GB-Standard-A",
+    lipsyncLang: 'en'
   });
-  head.speakText("Lataus onnistui hyvin!", { lipsyncLang: 'fi' } );
 } catch (error) {
   console.log(error);
 }
+```
+
+An example of how to make the avatar speak the text on input `text` when
+the button `speak` is clicked:
+
+```javascript
+// Speak 'text' when the button 'speak' is clicked
+const nodeSpeak = document.getElementById('speak');
+nodeSpeak.addEventListener('click', function () {
+  try {
+    const text = document.getElementById('text').value;
+    if ( text ) {
+      head.speakText( text );
+    }
+  } catch (error) {
+    console.log(error);
+  }
+});
 ```
 
 The following table lists some of the key methods. See the source code for the rest:
@@ -173,16 +186,31 @@ Method | Description
 
 ---
 
-### The Example App
+### The `index.html` App
 
-**NOTE:** *The `index.html` app was originally made for testing and
-developing the TalkingHead class and it includes various integrations
-with several paid services. If you just want to use TalkingHead class
-in your own app, there is no need to install and configure the example app.*
 
-If you want to configure and use the example app `index.html`, do the following:
+**NOTE:** *The `index.html` app was initially created for testing and developing
+the TalkingHead class. It includes various integrations with several paid
+services. If you only want to use the TalkingHead class in your own app,
+there is no need to install and configure the example app.*
 
-1. Copy the project to your own server.
+The web app `index.html` shows how to integrate and use
+the class with [ElevenLabs WebSocket API](https://elevenlabs.io) (experimental),
+[Microsoft Azure Speech SDK](https://github.com/microsoft/cognitive-services-speech-sdk-js),
+[OpenAI API](https://openai.com) and
+[Gemini Pro API](https://cloud.google.com/vertex-ai) (pre-GA).
+Background view examples are from
+[Virtual Backgrounds](https://virtualbackgrounds.site) and impulse
+responses (IR) for reverb effects are from [OpenAir](www.openairlib.net).
+
+You can preview the app's UI [here](https://met4citizen.github.io/TalkingHead/).
+Please note that since the API proxies for the text-to-speech and
+AI services are missing, the avatar does not speak or lip-sync, and
+you can't chat with it.
+
+If you want to configure and use the app `index.html`, do the following:
+
+1. Copy the whole project to your own server.
 
 2. Create the needed API proxies as described in Appendix B and check/update your endpoint/proxy configuration in `index.html`:
 
@@ -302,8 +330,8 @@ events for syncronization, but the results were not good.
 You have two options. First, you can implement a word-to-viseme
 class similar to those that currently exist for English and Finnish.
 Alternatively, you can check if Microsoft Azure TTS can provide visemes
-for your language and use Microsoft Speech API integration (speakAudio)
-instead of Google TTS and the built-in lip-sync (speakText).
+for your language and use Microsoft Speech API integration (`speakAudio`)
+instead of Google TTS and the built-in lip-sync (`speakText`).
 
 **Any future plans for the project?**
 
