@@ -188,20 +188,16 @@ Method | Description
 
 ### The `index.html` App
 
-
 **NOTE:** *The `index.html` app was initially created for testing and developing
 the TalkingHead class. It includes various integrations with several paid
 services. If you only want to use the TalkingHead class in your own app,
-there is no need to install and configure the example app.*
+there is no need to install and configure the `index.html` app.*
 
 The web app `index.html` shows how to integrate and use
 the class with [ElevenLabs WebSocket API](https://elevenlabs.io) (experimental),
 [Microsoft Azure Speech SDK](https://github.com/microsoft/cognitive-services-speech-sdk-js),
 [OpenAI API](https://openai.com) and
 [Gemini Pro API](https://cloud.google.com/vertex-ai) (pre-GA).
-Background view examples are from
-[Virtual Backgrounds](https://virtualbackgrounds.site) and impulse
-responses (IR) for reverb effects are from [OpenAir](www.openairlib.net).
 
 You can preview the app's UI [here](https://met4citizen.github.io/TalkingHead/).
 Please note that since the API proxies for the text-to-speech and
@@ -236,82 +232,17 @@ const microsoftTTSProxy = [
 
 4. Add you own background images, videos, audio files, avatars etc. in the directory structure and update your site configuration `siteconfig.js` accordingly. The keys are in English, but the entries can include translations to other languages.
 
-```javascript
-// Site configuration
-export const site = {
+Licenses, attributions and notes related to the `index.html` web app assets:
 
-  // Preset avatars
-  avatars: {
-    'Brunette': {
-      url: './avatars/brunette.glb',
-      body: 'F',
-      avatarMood: 'neutral',
-      fi: 'Brunetti'
-    }
-  },
-
-  // Google voices
-  googleVoices: {
-    "fi-F": { id: "fi-FI-Standard-A" },
-    "lv-M": { id: "lv-LV-Standard-A" },
-    "lt-M": { id: "lt-LT-Standard-A" },
-    "en-F": { id: "en-GB-Standard-A" },
-    "en-M": { id: "en-GB-Standard-D" }
-  },
-
-  // ElevenLab voices
-  elevenVoices: {
-    "Bella": { id: "EXAVITQu4vr4xnSDxMaL" },
-    "Elli": { id: "MF3mGyEYCl7XYWbV9V6O" },
-    "Rachel": { id: "21m00Tcm4TlvDq8ikWAM" },
-    "Adam": { id: "pNInz6obpgDQGcFmaJgB" },
-    "Antoni": { id: "ErXwobaYiN019PkySvjV" },
-    "Arnold": { id: "VR6AewLTigWG4xSOukaG" },
-    "Domi": { id: "AZnzlk1XvdvUeBnXmlld" },
-    "Josh": { id: "TxGEqnHWrfWFTfGW9XjX" },
-    "Sam": { id: "yoZ06aMxZJJ28mfd3POQ" }
-  },
-
-  // Microsoft voices
-  microsoftVoices: {
-    "fi-Selma": { lang: "fi-FI", id: "fi-FI-SelmaNeural" },
-    "fi-Noora": { lang: "fi-FI", id: "fi-FI-NooraNeural" },
-    "fi-Harri": { lang: "fi-FI", id: "fi-FI-HarriNeural" },
-    "en-Jenny": { lang: "en-US", id: "en-US-JennyNeural"},
-    "en-Tony": { lang: "en-US", id: "en-US-TonyNeural" },
-  },
-
-  // Preset views
-  views: {
-    'DrStrange': { url: './views/strange.jpg', type: 'image/jpg', fi: 'TohtoriOuto' },
-    'Matrix': { url: './views/matrix.mp4', type: 'video/mp4' }
-  },
-
-  // Preset poses (in addition to internal poses)
-  poses: {
-    'Dance': { url: './poses/dance.fbx', fi: 'Tanssi' }
-  },
-
-  // Preset animations
-  animations: {
-    'Walking': { url: './animations/walking.fbx', fi: 'Kävely' }
-  },
-
-  // Impulse responses
-  impulses: {
-    'Room': { url: './audio/ir-room.m4a', fi: 'Huone' },
-    'Basement': { url: './audio/ir-basement.m4a', fi: 'Kellari' },
-    'Forest': { url: './audio/ir-forest.m4a', fi: 'Metsä' },
-    'Church': { url: './audio/ir-church.m4a', fi: 'Kirkko' }
-  },
-
-  // Background ambient sounds/music
-  music: {
-    'Murmur': { url: './audio/murmur.mp3', fi: 'Puheensorina'}
-  }
-
-};
-```
+- Fira Sans Condensed and Fira Sans Extra Condensed fonts are licensed under the SIL Open Font License, version 1.1, available with a FAQ at [http://scripts.sil.org/OFL](http://scripts.sil.org/OFL). Digitized data copyright (c) 2012-2015, The Mozilla Foundation and Telefonica S.A.
+- Background view examples are from [Virtual Backgrounds](https://virtualbackgrounds.site)
+- Impulse response (IR) files for reverb effects:
+  * ir-room: [OpenAir](www.openairlib.net), Public Domain Creative Commons license
+  * ir-basement: [OpenAir](www.openairlib.net), Public Domain Creative Commons license
+  * ir-forest (Abies Grandis Forest, Wheldrake Wood): [OpenAir](www.openairlib.net), Creative Commons Attribution 4.0 International License
+  * ir-church (St. Andrews Church): [OpenAir](www.openairlib.net), Share Alike Creative Commons 3.0
+- Ambient sounds/music attributions:
+  * murmur.mp3: https://github.com/siwalikm/coffitivity-offline
 
 ---
 
