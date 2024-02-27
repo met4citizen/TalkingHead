@@ -65,7 +65,7 @@ class LipsyncFi {
       w.push( dg[d] );
       n -= d;
     }
-    if ( n >= 0 && parseFloat(x) < 1) w.push( 'nolla' );
+    if ( n >= 0 && Math.abs(parseFloat(x)) < 1) w.push( 'nolla' );
     if ( n > 0 ) {
       let d = (n % 1).toFixed(1) * 10;
       if ( d > 0 ) w.push( ' pilkku ' + dg[d] );
