@@ -242,12 +242,19 @@ class LipsyncEn {
     this.ones = ['','one','two','three','four','five','six','seven','eight','nine'];
     this.tens = ['','','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'];
     this.teens = ['ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'];
+
+    // Symbols to English
+    this.symbols = {
+      '%': 'percentage', '€': 'euros', '&': 'and', '+': 'plus',
+      '$': 'dollars'
+    };
+    this.symbolsReg = /[%€&\+\$]/g;
   }
 
   convert_digit_by_digit(num) {
     num = String(num).split("");
-    var numWords = "";
-    for(m=0; m<num.length; m++) {
+    let numWords = "";
+    for(let m=0; m<num.length; m++) {
       numWords += this.digits[num[m]] + " ";
     }
     numWords = numWords.substring(0, numWords.length - 1); //kill final space
@@ -255,9 +262,9 @@ class LipsyncEn {
   }
 
   convert_sets_of_two(num) {
-    var firstNumHalf = String(num).substring(0, 2);
-    var secondNumHalf = String(num).substring(2, 4);
-    var numWords = this.convert_tens(firstNumHalf);
+    let firstNumHalf = String(num).substring(0, 2);
+    let secondNumHalf = String(num).substring(2, 4);
+    let numWords = this.convert_tens(firstNumHalf);
     numWords += " " + this.convert_tens(secondNumHalf);
     return numWords;
   }
@@ -265,8 +272,7 @@ class LipsyncEn {
   convert_millions(num){
     if (num>=1000000){
       return this.convert_millions(Math.floor(num/1000000))+" million "+this.convert_thousands(num%1000000);
-    }
-    else {
+    } else {
       return this.convert_thousands(num);
     }
   }
@@ -274,8 +280,7 @@ class LipsyncEn {
   convert_thousands(num){
     if (num>=1000){
       return this.convert_hundreds(Math.floor(num/1000))+" thousand "+this.convert_hundreds(num%1000);
-    }
-    else{
+    } else {
       return this.convert_hundreds(num);
     }
   }
@@ -283,16 +288,16 @@ class LipsyncEn {
   convert_hundreds(num){
     if (num>99){
       return this.ones[Math.floor(num/100)]+" hundred "+this.convert_tens(num%100);
-    }
-    else{
+    } else {
       return this.convert_tens(num);
     }
   }
 
   convert_tens(num){
     if (num<10) return this.ones[num];
-    else if (num>=10 && num<20) return this.teens[num-10];
-    else{
+    else if (num>=10 && num<20) {
+      return this.teens[num-10];
+    } else {
       return this.tens[Math.floor(num/10)]+" "+this.ones[num%10];
     }
   }
@@ -320,15 +325,15 @@ class LipsyncEn {
   */
   preProcessText(s) {
     return s.replace('/[#_*\'\":;]/g','')
-    .replaceAll('%',' percentage ')
-    .replaceAll('€',' euros ')
-    .replaceAll('&',' and ')
-    .replaceAll('+',' plus ')
-    .replace(/(\D)\1\1+/g, "$1$1") // max 2 repeating chars
-    .replaceAll('  ',' ') // Only one repeating space
-    .replace(/(\d)\,(\d)/g, '$1 point $2') // Number separator
-    .replace(/\d+/g, this.convertNumberToWords.bind(this)) // Numbers to words
-    .trim();
+      .replace( this.symbolsReg, (symbol) => {
+        return ' ' + this.symbols[symbol] + ' ';
+      })
+      .replace(/(\d)\,(\d)/g, '$1 point $2') // Number separator
+      .replace(/\d+/g, this.convertNumberToWords.bind(this)) // Numbers to words
+      .replace(/(\D)\1\1+/g, "$1$1") // max 2 repeating chars
+      .replaceAll('  ',' ') // Only one repeating space
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '').normalize('NFC') // Remove non-English diacritics
+      .trim();
   }
 
 

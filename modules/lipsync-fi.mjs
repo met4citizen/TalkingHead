@@ -30,6 +30,21 @@ class LipsyncFi {
     // Pauses in relative units (1=average)
     this.specialDurations = { ' ': 1, ',': 3, '-':0.5 };
 
+    // Finnish number words
+    this.numbers = [
+      'nolla', 'yksi', 'kaksi', 'kolme', 'neljä', 'viisi', 'kuusi',
+      'seitsemän', 'kahdeksan', 'yhdeksän', "kymmenen", "yksitoista",
+      "kaksitoista", "kolmetoista", "neljätoista", "viisitoista",
+      "kuusitoista", 'seitsemäntoista', 'kahdeksantoista', 'yhdeksäntoista'
+    ];
+
+    // Symbols to Finnish
+    this.symbols = {
+      '%': 'prosenttia', '€': 'euroa', '&': 'ja', '+': 'plus',
+      '$': 'dollaria'
+    };
+    this.symbolsReg = /[%€&\+\$]/g;
+
   }
 
   /**
@@ -39,10 +54,6 @@ class LipsyncFi {
   */
   numberToFinnishWords(x) {
     const w = [];
-    const dg = ['nolla', 'yksi', 'kaksi', 'kolme', 'neljä', 'viisi', 'kuusi',
-    'seitsemän', 'kahdeksan', 'yhdeksän', "kymmenen","yksitoista","kaksitoista",
-    "kolmetoista","neljätoista","viisitoista","kuusitoista",'seitsemäntoista',
-    'kahdeksantoista', 'yhdeksäntoista'];
     let n = parseFloat(x);
     if ( n === undefined ) return x;
     let p = (n,z,w0,w1,w2) => {
@@ -62,13 +73,19 @@ class LipsyncFi {
     if ( n > 20 ) n = p(n,10,'','','kymmentä');
     if ( n >= 1) {
       let d = Math.floor(n);
-      w.push( dg[d] );
+      w.push( this.numbers[d] );
       n -= d;
     }
     if ( n >= 0 && Math.abs(parseFloat(x)) < 1) w.push( 'nolla' );
     if ( n > 0 ) {
-      let d = (n % 1).toFixed(1) * 10;
-      if ( d > 0 ) w.push( ' pilkku ' + dg[d] );
+      let d = x.split('.');
+      if ( d.length > 1 ) {
+        w.push( ' pilkku' );
+        let c = [...d[d.length-1]];
+        for( let i=0; i<c.length; i++ ) {
+          w.push( ' ' + this.numbers[c[i]] );
+        }
+      }
     }
     return w.join('').trim();
   }
@@ -83,16 +100,16 @@ class LipsyncFi {
   * @return {string} Pre-processsed text.
   */
   preProcessText(s) {
-    return s.replace('/[#_*\'\":;]/g','')
-        .replaceAll('%',' prosenttia ')
-        .replaceAll('€',' euroa ')
-        .replaceAll('&',' ja ')
-        .replaceAll('+',' plus ')
-        .replace(/(\D)\1\1+/g, "$1$1") // max 2 repeating chars
-        .replaceAll('  ',' ') // Only one repeating space
-        .replace(/(\d)\,(\d)/g, '$1 pilkku $2') // Number separator
-        .replace(/\d+/g, this.numberToFinnishWords.bind(this)) // Numbers to words
-        .trim();
+    return s.replace(/[#_*\'\":;]/g,'')
+      .replace( this.symbolsReg, (symbol) => {
+        return ' ' + this.symbols[symbol] + ' ';
+      })
+      .replace(/(\d)\,(\d)/g, '$1 pilkku $2') // Number separator
+      .replace(/\d+/g, this.numberToFinnishWords.bind(this)) // Numbers to words
+      .replace(/(\D)\1\1+/g, "$1$1") // max 2 repeating chars
+      .replaceAll('  ',' ') // Only one repeating space
+      .normalize('NFD').replace(/[\u0300-\u0307\u0309\u030b-\u036f]/g, '').normalize('NFC') // Remove non-Finnish diacritics
+      .trim();
   }
 
   /**
