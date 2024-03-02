@@ -2215,12 +2215,12 @@ class TalkingHead {
       // If Web Audio API is suspended, try to resume it
       if ( this.audioCtx.state === "suspended" ) {
         const resume = this.audioCtx.resume();
-        const timeout = new Promise((_r, rej) => setTimeout(() => rej("p2"), 500));
+        const timeout = new Promise((_r, rej) => setTimeout(() => rej("p2"), 1000));
         try {
           await Promise.race([resume, timeout]);
         } catch(e) {
-          console.log("Can't play audio. Web Audio API suspended.");
-          playAudio(true);
+          console.log("Can't play audio. Web Audio API suspended. This is often due to calling some speak method before the first user action, which is typically prevented by the browser.");
+          this.playAudio(true);
           return;
         }
       }
