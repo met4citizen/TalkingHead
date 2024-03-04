@@ -253,6 +253,10 @@ class TalkingHead {
     this.poseTarget = this.poseFactory( this.poseTemplates[this.poseName] );
     this.poseAvatar = null; // Set when avatar has been loaded
 
+    // Avatar height in meters
+    // NOTE: The actual value is calculated based on the eye level on avatar load
+    this.avatarHeight = 1.7;
+
 
     // Animation templates
     //
@@ -886,6 +890,11 @@ class TalkingHead {
     this.scene.add( this.lightSpot );
     this.lightSpot.target = this.armature.getObjectByName('Head');
 
+    // Estimate avatar height based on eye level
+    const plEye = new THREE.Vector3();
+    this.armature.getObjectByName('LeftEye').getWorldPosition(plEye);
+    this.avatarHeight = plEye.y + 0.2;
+
     // Set pose, view and start animation
     if ( !this.viewName ) this.setView( this.opt.cameraView );
     this.setMood( this.moodName || this.avatar.avatarMood || this.opt.avatarMood );
@@ -924,19 +933,16 @@ class TalkingHead {
     this.viewName = view || this.viewName;
     opt = opt || {};
 
-    const boundingBox = new THREE.Box3().setFromObject( this.armature );
-    const size = new THREE.Vector3();
-    boundingBox.getSize(size);
     const fov = this.camera.fov * ( Math.PI / 180 );
     let x = - (opt.cameraX || this.opt.cameraX) * Math.tan( fov / 2 );
     let y = ( 1 - (opt.cameraY || this.opt.cameraY)) * Math.tan( fov / 2 );
     let z = (opt.cameraDistance || this.opt.cameraDistance);
     if ( this.viewName === 'head' ) {
       z += 2;
-      y = y * z + 4 * size.y / 5;
+      y = y * z + 4 * this.avatarHeight / 5;
     } else if ( this.viewName === 'upper' ) {
       z += 4.5;
-      y = y * z + 2 * size.y / 3;
+      y = y * z + 2 * this.avatarHeight / 3;
     } else {
       z += 12;
       y = y * z;
