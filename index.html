@@ -565,7 +565,8 @@ async function elevenSpeak(s,node=null) {
       elevenBOS,
       {
         "text": s,
-        "try_trigger_generation": true,
+        "try_trigger_generation": false,
+        "flush": true
       }
     ];
 
@@ -652,7 +653,8 @@ async function elevenSpeak(s,node=null) {
       "text": s
     };
     if ( s.length ) {
-      msg["try_trigger_generation"] = true;
+      msg["try_trigger_generation"] = false;
+      msg["flush"] = true;
     }
     if (elevenSocket.readyState === 1) { // OPEN
       elevenSocket.send(JSON.stringify(msg))
