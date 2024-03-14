@@ -926,7 +926,7 @@ class TalkingHead {
   * @param {Object} [opt=null] Options
   */
   setView(view, opt = null) {
-    if ( view !== 'full' && view !== 'upper' && view !== 'head' ) return;
+    if ( view !== 'full' && view !== 'upper' && view !== 'head' && view !== 'mid' ) return;
     if ( !this.armature ) {
       this.opt.cameraView = view;
       return;
@@ -945,6 +945,9 @@ class TalkingHead {
     } else if ( this.viewName === 'upper' ) {
       z += 4.5;
       y = y * z + 2 * this.avatarHeight / 3;
+    } else if ( this.viewName === 'mid' ) {
+      z += 8;
+      y = y * z + this.avatarHeight / 3;
     } else {
       z += 12;
       y = y * z;
