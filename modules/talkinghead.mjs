@@ -62,6 +62,8 @@ class TalkingHead {
   * @property {string[]} [visemes] Oculus lip-sync viseme IDs
   * @property {number[]} [vtimes] Starting times of visemes
   * @property {number[]} [vdurations] Durations of visemes
+  * @property {string[]} [markers] Timed callback functions
+  * @property {number[]} [mtimes] Starting times of markers
   */
 
   /**
@@ -2137,7 +2139,7 @@ class TalkingHead {
       for( let i=0; i<r.words.length; i++ ) {
         const word = r.words[i];
         const time = r.wtimes[i];
-        const duration = r.wdurations[i];
+        let duration = r.wdurations[i];
 
         if ( word.length ) {
 
@@ -2154,18 +2156,22 @@ class TalkingHead {
 
           // If visemes were not specified, calculate them based on the word
           if ( !r.visemes ) {
-            const v = this.lipsyncWordsToVisemes(word, lipsyncLang);
+            const w = this.lipsyncPreProcessText(word, lipsyncLang);
+            const v = this.lipsyncWordsToVisemes(w, lipsyncLang);
             if ( v && v.visemes && v.visemes.length ) {
               const dTotal = v.times[ v.visemes.length-1 ] + v.durations[ v.visemes.length-1 ];
+              const overdrive = Math.min(duration, Math.max( 0, duration - v.visemes.length * 150));
+              let level = 0.6 + this.convertRange( overdrive, [0,duration], [0,0.4]);
+              duration = Math.min( duration, v.visemes.length * 200 );
               if ( dTotal > 0 ) {
                 for( let j=0; j<v.visemes.length; j++ ) {
                   const t = time + (v.times[j]/dTotal) * duration;
                   const d = (v.durations[j]/dTotal) * duration;
                   lipsyncAnim.push( {
                     template: { name: 'viseme' },
-                    ts: [ t - 2*d/3, t + d/2, t + d + d/2 ],
+                    ts: [ t - Math.min(60,2*d/3), t + Math.min(25,d/2), t + d + Math.min(60,d/2) ],
                     vs: {
-                      ['viseme_'+v.visemes[j]]: [null,(v.visemes[j] === 'PP' || v.visemes[j] === 'FF') ? 0.9 : 0.6,0]
+                      ['viseme_'+v.visemes[j]]: [null,(v.visemes[j] === 'PP' || v.visemes[j] === 'FF') ? 0.9 : level, 0]
                     }
                   });
                 }
@@ -2185,8 +2191,21 @@ class TalkingHead {
             template: { name: 'viseme' },
             ts: [ time - 2 * duration/3, time + duration/2, time + duration + duration/2 ],
             vs: {
-              ['viseme_'+viseme]: [null,(viseme === 'PP' || viseme === 'FF') ? 0.9 : 0.6,0]
+              ['viseme_'+viseme]: [null,(viseme === 'PP' || viseme === 'FF') ? 0.9 : 0.6, 0]
             }
+          });
+        }
+      }
+
+      // Timed marker callbacks
+      if ( r.markers ) {
+        for( let i=0; i<r.markers.length; i++ ) {
+          const fn = r.markers[i];
+          const time = r.mtimes[i];
+          lipsyncAnim.push( {
+            template: { name: 'markers' },
+            ts: [ time ],
+            vs: { "function": [fn] }
           });
         }
       }
