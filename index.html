@@ -306,6 +306,7 @@
     -webkit-user-drag: none; -khtml-user-drag: none; -moz-user-drag: none;
     -o-user-drag: none; -ms-user-drag: none; user-drag: none;
   }
+  .disabled { opacity: 0.5; cursor: default; pointer-events: none; }
   .hidden { display: none; }
   .starttransparent { opacity: 0; }
 
@@ -408,6 +409,7 @@ import { marked } from 'marked';
 const jwtEndpoint = "/app/jwt/get"; // Get JSON Web Token for Single Sign-On
 const openaiChatCompletionsProxy = "/openai/v1/chat/completions";
 const openaiModerationsProxy = "/openai/v1/moderations";
+const openaiAudioTranscriptionsProxy = "/openai/v1/audio/transcriptions";
 const vertexaiChatCompletionsProxy = "/vertexai/";
 const googleTTSProxy = "/gtts/";
 const elevenTTSProxy = [
@@ -445,7 +447,8 @@ const i18n = {
     'en': 'English', 'fi': 'Finnish', 'words': 'sanaa', 'dialogs': 'sanomaa',
     'Manuscript': 'Käsikirjoitus', 'Exclude': 'Ohita', 'Italics': 'Kursiivi',
     'Code': 'Koodi', 'Light': 'Valo', 'LightAmbient': 'Ambientti',
-    'LightDirect': 'Suunnattu', 'LightSpot': 'Spotti', 'theme-full': "Täysi"
+    'LightDirect': 'Suunnattu', 'LightSpot': 'Spotti', 'theme-full': "Täysi",
+    'lt': 'Liettua', 'test-sentence': "Kirjoita tähän testilause.", 'Mid': 'Keskiosa'
   },
 
   'en': {
@@ -456,7 +459,8 @@ const i18n = {
     'theme-portrait': 'Portrait', 'voice-test': 'Speak', 'ai-stop': 'Stop',
     'ai-user': 'User', 'input': 'Message.', 'en': 'English', 'fi': 'Finnish',
     'ai-stopword': 'Word', 'ai-username': 'Name', 'LightAmbient': 'Ambient',
-    'LightDirect': 'Direct', 'LightSpot': 'Spot', 'theme-full': "Fullscreen"
+    'LightDirect': 'Direct', 'LightSpot': 'Spot', 'theme-full': "Fullscreen",
+    'lt': 'Lithuanian', 'test-sentence': "Write your test sentence."
   }
 
 }
@@ -804,6 +808,93 @@ async function microsoftProcessQueue() {
       );
 
     }
+  }
+}
+
+// Whisper MP3
+let whisperAudio = null;
+let whisperLipsyncLang = 'en';
+
+async function whisperLoadMP3(file) {
+  try {
+    d3.select("#playmp3").classed("disabled", true);
+
+    const form = new FormData();
+    form.append("file", file);
+    form.append("model", "whisper-1");
+    form.append("response_format", "verbose_json" );
+    form.append("timestamp_granularities[]", "word" );
+    form.append("timestamp_granularities[]", "segment" );
+    const response = await fetch( openaiAudioTranscriptionsProxy , {
+      method: "POST",
+      body: form,
+      headers: {
+        "Authorization": "Bearer " + await jwtGet()
+      }
+    });
+    if ( response.ok ) {
+      const json = await response.json();
+      d3.select("#jsonmp3").property("value", JSON.stringify(json) );
+
+      // Fetch audio
+      if ( json.words && json.words.length ) {
+        var reader = new FileReader();
+        reader.readAsArrayBuffer(file);
+        reader.onload = async readerEvent => {
+          let arraybuffer = readerEvent.target.result;
+          let audiobuffer = await head.audioCtx.decodeAudioData(arraybuffer);
+
+          // Set lip-sync language
+          whisperLipsyncLang = json.language.substring(0,2);
+
+          // Add words to the audio object
+          whisperAudio = {
+            audio: audiobuffer,
+            words: [],
+            wtimes: [],
+            wdurations: [],
+            markers: [],
+            mtimes: []
+          };
+          json.words.forEach( x => {
+            // Word
+            whisperAudio.words.push( x.word );
+
+            // Starting time
+            let t = 1000 * x.start;
+            if ( t > 150 ) t -= 150;
+            whisperAudio.wtimes.push( t );
+
+            // Duration
+            let d = 1000 * (x.end - x.start);
+            if ( d > 20 ) d -= 20;
+            whisperAudio.wdurations.push( d  );
+          });
+
+          // Add timed callback markers to the audio object
+          const startSegment = async () => {
+            // Look at the camera
+            head.lookAtCamera(500);
+            head.speakWithHands();
+          };
+          json.segments.forEach( x => {
+            if ( x.start > 2 && x.text.length > 10 ) {
+              whisperAudio.markers.push( startSegment );
+              whisperAudio.mtimes.push( 1000 * x.start - 1000 );
+            }
+          });
+
+          d3.select("#playmp3").classed("disabled", false);
+        }
+      }
+
+    } else {
+      d3.select("#jsonmp3").property("value", 'Error: ' + response.status + ' ' + response.statusText );
+      console.log(response);
+    }
+
+  } catch (error) {
+    console.log(error);
   }
 }
 
@@ -2042,10 +2133,12 @@ function progressUpdate(ev) {
   } else {
     d3.select("#loading").style("display","block");
   }
+  let hideMs = 1000;
   if ( ev.lengthComputable ) {
     let val = Math.min(100,Math.round(ev.loaded/ev.total * 100 ));
     d3.select("#loading-top").style("clip-path", "inset(0 " + (100-val) + "% 0 0)");
     d3.selectAll("#loading-value").text( val + "%" );
+    if ( val<100 ) hideMs = 3000;
   } else {
     d3.select("#loading-top").style("clip-path", "inset(0 0 0 0)");
     d3.selectAll("#loading-value").text( "" + ev.loaded );
@@ -2053,7 +2146,7 @@ function progressUpdate(ev) {
   progressTimeout = setTimeout( () => {
     d3.select("#loading").style("display","none");
     progressTimeout = null;
-  }, 1000);
+  }, hideMs);
 }
 
 // Update progress bar using media loading progress
@@ -2371,6 +2464,24 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     }
   });
 
+  // MP3 test
+  d3.select("#loadmp3").on("click", function(ev) {
+    let input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.m4a,.mp3.webm,.mp4,.mpga,.wav,.mpeg';
+    input.onchange = (ev) => {
+      let file = ev.target.files[0];
+      whisperLoadMP3(file);
+    }
+    input.click();
+  });
+
+  d3.select("#playmp3").on("click", function(ev) {
+    if ( whisperAudio ) {
+      head.speakAudio( whisperAudio, { lipsyncLang: whisperLipsyncLang } );
+    }
+  });
+
   // Repeat
   d3.selectAll("#pose-repeat,#animation-repeat").on("click", function(ev) {
     const e = d3.select(this);
@@ -2432,6 +2543,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
       if ( pose === 'FILE' ) {
         let input = document.createElement('input');
         input.type = 'file';
+        input.accept = '.fbx';
         input.onchange = (ev2) => {
           let file = ev2.target.files[0];
           var reader = new FileReader();
@@ -2462,6 +2574,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
       if ( animation === 'FILE' ) {
         let input = document.createElement('input');
         input.type = 'file';
+        input.accept = '.fbx';
         input.onchange = (ev2) => {
           let file = ev2.target.files[0];
           var reader = new FileReader();
@@ -2631,6 +2744,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     if ( avatar === 'FILE' ) {
       let input = document.createElement('input');
       input.type = 'file';
+      input.accept = '.glb';
       input.onchange = (ev2) => {
         let file = ev2.target.files[0];
         var reader = new FileReader();
@@ -2706,6 +2820,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     } else if ( view === 'FILE' ) {
       let input = document.createElement('input');
       input.type = 'file';
+      input.accept = 'image/*,video/*';
       input.onchange = (ev2) => {
         let file = ev2.target.files[0];
         var reader = new FileReader();
@@ -2889,6 +3004,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     } else if ( background === 'FILE' ) {
       let input = document.createElement('input');
       input.type = 'file';
+      input.accept = 'audio/*';
       input.onchange = (ev2) => {
         let file = ev2.target.files[0];
         var reader = new FileReader();
@@ -3306,7 +3422,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
             </div>
             <div class="row">
               <div class="text label" data-i18n-text="ai-stop"></div>
-              <input type="text" placeholder="Avainsana" data-item="ai-gemini-stop" data-type="value" data-ai-gemini-stop="">
+              <input type="text" data-i18n-placeholder="ai-stopword" data-item="ai-gemini-stop" data-type="value" data-ai-gemini-stop="">
             </div>
           </div>
 
@@ -3671,6 +3787,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
             <div class="column">
               <div class="rowWrap">
                 <div class="command" data-i18n-text="Full" data-item="camera-frame" data-type="option" data-camera-frame="full"></div>
+                <div class="command" data-i18n-text="Mid" data-item="camera-frame" data-type="option" data-camera-frame="mid"></div>
                 <div class="command selected" data-i18n-text="Upper" data-item="camera-frame" data-type="option" data-camera-frame="upper"></div>
                 <div class="command" data-i18n-text="Head" data-item="camera-frame" data-type="option" data-camera-frame="head"></div>
               </div>
@@ -3816,6 +3933,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
               <div class="rowWrap">
                 <div class="command selected" data-i18n-text="en" data-item="voice-lipsync-lang" data-type="option" data-voice-lipsync-lang="en"></div>
                 <div class="command" data-i18n-text="fi" data-item="voice-lipsync-lang" data-type="option" data-voice-lipsync-lang="fi"></div>
+                <div class="command" data-i18n-text="lt" data-item="voice-lipsync-lang" data-type="option" data-voice-lipsync-lang="lt"></div>
               </div>
             </div>
           </div>
@@ -3836,7 +3954,22 @@ document.addEventListener('DOMContentLoaded', async function(e) {
                 <path d="M16 12L10 16.3301V7.66987L16 12Z" fill="currentColor" />
               </svg>
             </div>
-            <textarea placeholder="Kirjoita tähän testilause." rows="1" autocapitalize="sentences" data-item="voice-test" data-type="value" data-voice-test=""></textarea>
+            <textarea data-i18n-placeholder="test-sentence" rows="1" autocapitalize="sentences" data-item="voice-test" data-type="value" data-voice-test=""></textarea>
+          </div>
+          <div class="row">
+            <div class="text label"></div>
+            <div id="playmp3" class="command disabled">
+              <svg viewBox="-2 -2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21ZM12 23C18.0751 23 23 18.0751 23 12C23 5.92487 18.0751 1 12 1C5.92487 1 1 5.92487 1 12C1 18.0751 5.92487 23 12 23Z" fill="currentColor" />
+                <path d="M16 12L10 16.3301V7.66987L16 12Z" fill="currentColor" />
+              </svg>
+            </div>
+            <div id="loadmp3" class="command">
+              <svg viewBox="-2 -2 28 28" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M4 1.5C2.89543 1.5 2 2.39543 2 3.5V4.5C2 4.55666 2.00236 4.61278 2.00698 4.66825C0.838141 5.07811 0 6.19118 0 7.5V19.5C0 21.1569 1.34315 22.5 3 22.5H21C22.6569 22.5 24 21.1569 24 19.5V7.5C24 5.84315 22.6569 4.5 21 4.5H11.874C11.4299 2.77477 9.86384 1.5 8 1.5H4ZM9.73244 4.5C9.38663 3.9022 8.74028 3.5 8 3.5H4V4.5H9.73244ZM3 6.5C2.44772 6.5 2 6.94772 2 7.5V19.5C2 20.0523 2.44772 20.5 3 20.5H21C21.5523 20.5 22 20.0523 22 19.5V7.5C22 6.94772 21.5523 6.5 21 6.5H3Z" fill="currentColor" />
+              </svg>
+            </div>
+            <input id="jsonmp3" class="disabled" disabled="disabled" type="text" placeholder="m4a/mp3/webm/mp4/mpga/wav/mpeg">
           </div>
 
           <div class="vbar"></div>
