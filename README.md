@@ -23,11 +23,11 @@ It also knows a set of emojis, which it can convert into facial expressions.
 
 By default, the class uses
 [Google Cloud TTS](https://cloud.google.com/text-to-speech) for text-to-speech
-and has a built-in lip-sync support for English and Finnish. You can add
-new lip-sync languages by creating a new language module or by using external
-TTS services like
+and has a built-in lip-sync support for English, Finnish, and Lithuanian (beta).
+New lip-sync languages can be added by creating new lip-sync language modules.
+It is also possible to integrate the class with an external TTS service, such as
 [Microsoft Azure Speech SDK](https://github.com/microsoft/cognitive-services-speech-sdk-js),
-which can supply visemes with timestamps.
+which can provide visemes with timestamps.
 
 The class uses [ThreeJS](https://github.com/mrdoob/three.js/) / WebGL for 3D
 rendering, and [Marked](https://github.com/markedjs/marked) Markdown parser.
@@ -92,12 +92,12 @@ Option | Description
 `ttsVolume` | Google text-to-speech volume gain (in dB) in the range [-96.0, 16.0]. Default is `0`.
 `ttsTrimStart` | Trim the viseme sequence start relative to the beginning of the audio (shift in milliseconds). Default is `0`.
 `ttsTrimEnd`| Trim the viseme sequence end relative to the end of the audio (shift in milliseconds). Default is `300`.
-`lipsyncLang`| Lip-sync language. Currently English `en` and Finnish `fi` are supported. Default is `fi`.
+`lipsyncLang`| Lip-sync language. Currently English `en`, Finnish `fi`, and Lithuanian `lt` are supported. Default is `fi`.
 `pcmSampleRate` | PCM (signed 16bit little endian) sample rate used in `speakAudio` in Hz. Default is `22050`.
 `modelRoot` | The root name of the armature. Default is `Armature`.
 `modelPixelRatio` | Sets the device's pixel ratio. Default is `1`.
 `modelFPS` | Frames per second. Note that actual frame rate will be a bit lower than the set value. Default is `30`.
-`cameraView` | Initial view. Supported views are `"full"`, `"upper"`  and `"head"`. Default is `"full"`.
+`cameraView` | Initial view. Supported views are `"full"`, `"mid"`, `"upper"`  and `"head"`. Default is `"full"`.
 `cameraDistance` | Camera distance offset for initial view in meters. Default is `0`.
 `cameraX` | Camera position offset in X direction in meters. Default is `0`.
 `cameraY` | Camera position offset in Y direction in meters. Default is `0`.
@@ -165,10 +165,10 @@ The following table lists some of the key methods. See the source code for the r
 Method | Description
 --- | ---
 `showAvatar(avatar, [onprogress=null])` | Load and show the specified avatar. The `avatar` object must include the `url` for GLB file. Optional properties are `body` for either male `M` or female `F` body form, `lipsyncLang`, `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood` and `avatarMute`.
-`setView(view, [opt])` | Set view. Supported views are `"full"`, `"upper"`  and `"head"`. The `opt` object can be used to set `cameraDistance`, `cameraX`, `cameraY`, `cameraRotateX`, `cameraRotateY`.
+`setView(view, [opt])` | Set view. Supported views are `"full"`, `"mid"`, `"upper"`  and `"head"`. The `opt` object can be used to set `cameraDistance`, `cameraX`, `cameraY`, `cameraRotateX`, `cameraRotateY`.
 `setLighting(opt)` | Change lighting settings. The `opt` object can be used to set `lightAmbientColor`, `lightAmbientIntensity`, `lightDirectColor`, `lightDirectIntensity`, `lightDirectPhi`, `lightDirectTheta`, `lightSpotColor`, `lightSpotIntensity`, `lightSpotPhi`, `lightSpotTheta`, `lightSpotDispersion`.
 `speakText(text, [opt={}], [onsubtitles=null], [excludes=[]])` | Add the `text` string to the speech queue. The text can contain face emojis. Options `opt` can be used to set text-specific `lipsyncLang`, `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood`, `avatarMute`. Optional callback function `onsubtitles` is called whenever a new subtitle is to be written with the parameter of the added string. The optional `excludes` is an array of [start,end] indices to be excluded from audio but to be included in the subtitles.
-`speakAudio(audio, [opt={}], [onsubtitles=null])` | Add a new `audio` object to the speech queue. This method was added to support external TTS services such as ElevenLabs and Azure. The audio object contains ArrayBuffer chunks in `audio` array, words in `words` array, starting times for each words in milliseconds in `wtimes` array, and durations for each words in milliseconds in `wdurations` array. If the Oculus viseme IDs are know, they can be given in optional `visemes`, `vtimes` and `vdurations` arrays. NOTE: As of now, the only supported audio format is PCM signed 16bit little endian. The `opt` object can be used to set text-specific `lipsyncLang` in cases when the visemes are not specified.
+`speakAudio(audio, [opt={}], [onsubtitles=null])` | Add a new `audio` object to the speech queue. This method was added to support external TTS services such as ElevenLabs and Azure, but can be user. In audio object, property `audio` is either `AudioBuffer` or an array of PCM 16bit LE audio chunks. Property `words` is an array of words, `wtimes` is an array of corresponding starting times in milliseconds, and `wdurations` an array of durations in milliseconds. If the Oculus viseme IDs are know, they can be given in optional `visemes`, `vtimes` and `vdurations` arrays. The object also supports optional timed callbacks using `markers` and `mtimes`. The `opt` object can be used to set text-specific `lipsyncLang`.
 `speakEmoji(e)` | Add an emoji `e` to the speech queue.
 `speakBreak(t)` | Add a break of `t` milliseconds to the speech queue.
 `speakMarker(onmarker)` | Add a marker to the speech queue. The callback function `onmarker` is called when the queue processes the event.
@@ -197,7 +197,7 @@ The web app `index.html` shows how to integrate and use
 the class with [ElevenLabs WebSocket API](https://elevenlabs.io) (experimental),
 [Microsoft Azure Speech SDK](https://github.com/microsoft/cognitive-services-speech-sdk-js),
 [OpenAI API](https://openai.com) and
-[Gemini Pro API](https://cloud.google.com/vertex-ai) (pre-GA).
+[Gemini Pro API](https://cloud.google.com/vertex-ai).
 
 You can preview the app's UI [here](https://met4citizen.github.io/TalkingHead/).
 Please note that since the API proxies for the text-to-speech and
@@ -215,6 +215,7 @@ If you want to configure and use the app `index.html`, do the following:
 const jwtEndpoint = "/app/jwt/get"; // Get JSON Web Token for Single Sign-On
 const openaiChatCompletionsProxy = "/openai/v1/chat/completions";
 const openaiModerationsProxy = "/openai/v1/moderations";
+const openaiAudioTranscriptionsProxy = "/openai/v1/audio/transcriptions";
 const vertexaiChatCompletionsProxy = "/vertexai/";
 const googleTTSProxy = "/gtts/";
 const elevenTTSProxy = [
@@ -256,13 +257,29 @@ get Web Speech API speech synthesis as an audio file or determine its
 duration in advance. At some point I tried to use the Web Speech API
 events for syncronization, but the results were not good.
 
+**What paid text-to-speech service should I use?**
+
+It depends on your use case and budget. If the built-in lip-sync support
+is sufficient for your needs, I would recommend Google TTS, because
+it gives you up to 4 million characters for free each month. If your
+app needs to support multiple languages, I would consider Microsoft
+Speech SDK.
+
 **I would like to have lip-sync support for language X.**
 
 You have two options. First, you can implement a word-to-viseme
 class similar to those that currently exist for English and Finnish.
+See Appendix C for detailed instructions.
 Alternatively, you can check if Microsoft Azure TTS can provide visemes
-for your language and use Microsoft Speech API integration (`speakAudio`)
+for your language and use Microsoft Speech SDK integration (`speakAudio`)
 instead of Google TTS and the built-in lip-sync (`speakText`).
+
+**Can I use a custom 3D model?**
+
+The class supports full-body Ready Player Me avatars. You can also make your
+own custom model, but it needs to have a RPM compatible rig/bone structure
+and all their blend shapes. Please refer to Appendix A and readyplayer.me
+documentation for more details.
 
 **Any future plans for the project?**
 
@@ -288,11 +305,30 @@ Washington, D. C., 1976. https://apps.dtic.mil/sti/pdfs/ADA021929.pdf
 
 ### Appendix A: Create Your Own 3D Avatar
 
+**FOR HOBBYISTS:**
+
 1. Create your own full-body avatar free at [https://readyplayer.me](https://readyplayer.me)
 
 2. Copy the given URL and add the following URL parameters in order to include all the needed morph targets:<br>`morphTargets=ARKit,Oculus+Visemes,mouthOpen,mouthSmile,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png`<br><br>Your final URL should look something like this:<br>`https://models.readyplayer.me/64bfa15f0e72c63d7c3934a6.glb?morphTargets=ARKit,Oculus+Visemes,mouthOpen,mouthSmile,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png`
 
 3. Use the URL to download the GLB file to your own web server.
+
+**FOR 3D MODELERS:**
+
+You can create and use your own 3D full-body model, but it has to be
+Ready Player Me compatible. Their rig has a Mixamo-compatible bone
+structure described here:
+
+https://docs.readyplayer.me/ready-player-me/api-reference/avatars/full-body-avatars
+
+For lip-sync and facial expressions, you also need to have ARKit and Oculus
+compatible blend shapes, and a few additional ones, all listed in the
+following two pages:
+
+https://docs.readyplayer.me/ready-player-me/api-reference/avatars/morph-targets/apple-arkit
+https://docs.readyplayer.me/ready-player-me/api-reference/avatars/morph-targets/oculus-ovr-libsync
+
+The TalkingHead class supports both separated mesh and texture atlasing.
 
 ---
 
@@ -370,3 +406,31 @@ RewriteMap jwtverify "prg:/etc/httpd/jwtverify" apache:apache
   RequestHeader set "xi-api-key" "<add-your-elevenlabs-api-key-here>"
 </LocationMatch>
 ```
+
+---
+
+### Appendix C: Create A New Lip-sync Module
+
+The steps that are common to all new languages:
+
+- Create a new file named `lipsync-xx.mjs` where `xx` is your language code, and place the file in the `./modules/` directory. The language module should have a class named `LipsyncXx` where Xx is the language code.
+- The class should have (at least) the following two methods: `preProcessText` and `wordsToVisemes`. These are the methods used in the TalkingHead class.
+- The purpose of the `preProcessText` method is to preprocess the given text by converting symbols to words, numbers to words, and filtering out characters that should be left unspoken (if any), etc. This is often needed to prevent ambiguities between TTS and lip-sync engines. This method takes a string as a parameter and returns the preprocessed string.
+- The purpose of the `wordsToVisemes` method is to convert the given text into visemes and timestamps. The method takes a string as a parameter and returns a lip-sync object. The lipsync object has three required properties: `visemes`, `times`and `durations`.
+  - Property `visemes` is an array of Oculus OVR viseme codes. Each viseme is one of the strings: 'aa', 'E', 'I', 'O', 'U', 'PP', 'SS', 'TH', 'CH', 'FF', 'kk', 'nn', 'RR', 'DD', 'sil'. See the reference images here: https://developer.oculus.com/documentation/unity/audio-ovrlipsync-viseme-reference/
+  - Property `times` is an array of starting times, one entry for each viseme in `visemes`. Starting times are to be given in relative units. They are always scaled according to the word timestamps that we get from the TTS engine.
+  - Property `durations` is an array of relative duration in milliseconds, one entry for each viseme in `visemes`. Durations are to be given in relative units. They are always scaled according to the word timestamps that we get from the TTS engine.
+- Import the new lip-sync implementation file into the `talkinghead.mjs` file, for example, `import { LipsyncXx } from './lipsync-xx.mjs';` and add a new entry `this.lipsync` in the constructor, for example, `'xx': new LipsyncXx()`.
+
+The difficult part is to actually make the conversion from words to visemes.
+What is the best approach depends on the language. Here are some typical
+approaches to consider (not a comprehensive list):
+
+- **Direct mapping from graphemes to phonemes to visemes**. This works well for languages that have a consistent one-to-one mapping between individual letters and phonemes. This was used as the approach for the Finnish language (`lipsync-fi.mjs`) giving >99.9% lip-sync accuracy compared to the Finnish phoneme dictionary. Implementation size was ~4k. Unfortunately not all languages are phonetically orthographic languages.
+- **Rule-based mapping**. This was used as the approach for the English language (`lipsync-en.mjs`) giving around 80% lip-sync accuracy compared to the English phoneme dictionary. However, since the rules cover the most common words, the effective accuracy is higher. Implementation size ~12k.
+- Dictionary based approach. If neither of the previous approaches work for your language, make a search from some open source phoneme dictionary. Note that you still need some backup algorithm for those words that are not in the dictionary. The problem with phoneme dictionaries is their size. For example, the CMU phoneme dictionary for English is ~5M.
+- **Neural-net approach based on transformer models**. Typically this should be done on server-side as the model side can be >50M.
+
+TalkingHead is supposed to be a real-time class, so latency is
+always something to consider. It is often better to be small and fast than
+to aim for 100% accuracy.
