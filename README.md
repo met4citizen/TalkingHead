@@ -50,7 +50,7 @@ modules from a CDN:
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/",
     "dompurify": "https://cdn.jsdelivr.net/npm/dompurify@3.0.6/+esm",
     "marked": "https://cdn.jsdelivr.net/npm/marked@11.2.0/+esm",
-    "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.0.0/modules/talkinghead.mjs"
+    "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.1/modules/talkinghead.mjs"
   }
 }
 </script>
@@ -236,6 +236,8 @@ const microsoftTTSProxy = [
 Licenses, attributions and notes related to the `index.html` web app assets:
 
 - Fira Sans Condensed and Fira Sans Extra Condensed fonts are licensed under the SIL Open Font License, version 1.1, available with a FAQ at [http://scripts.sil.org/OFL](http://scripts.sil.org/OFL). Digitized data copyright (c) 2012-2015, The Mozilla Foundation and Telefonica S.A.
+- Example avatar "brunette.glb" was created at [Ready Player Me](https://readyplayer.me/). The avatar is free to all developers for non-commercial use under the [CC BY-NC 4.0 DEED](https://creativecommons.org/licenses/by-nc/4.0/). If you want to integrate Ready Player Me avatars into a commercial app or game, you must sign up as a Ready Player Me developer.
+- Example animation "walking.fbx" is from Mixamo, a subsidiary of Adobe Inc. [Mixamo](https://www.mixamo.com) service is free and its animations (>2000) can be used royalty free for personal, commercial, and non-profit projects. Raw animation files can't be distributed outside the project team and can't be used to train ML models.
 - Background view examples are from [Virtual Backgrounds](https://virtualbackgrounds.site)
 - Impulse response (IR) files for reverb effects:
   * ir-room: [OpenAir](www.openairlib.net), Public Domain Creative Commons license
@@ -244,6 +246,11 @@ Licenses, attributions and notes related to the `index.html` web app assets:
   * ir-church (St. Andrews Church): [OpenAir](www.openairlib.net), Share Alike Creative Commons 3.0
 - Ambient sounds/music attributions:
   * murmur.mp3: https://github.com/siwalikm/coffitivity-offline
+
+**NOTE:** None of the assets described above are used or distributed as
+part of the TalkingHead class releases. If you wish to use them in your
+own application, please refer to the exact terms of use provided by
+the copyright holders.
 
 ---
 
