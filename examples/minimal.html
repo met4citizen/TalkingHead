@@ -68,6 +68,7 @@
       // Speak when clicked
       const nodeSpeak = document.getElementById('speak');
       nodeSpeak.addEventListener('click', function () {
+        head.audioCtx.resume();
         try {
           const text = document.getElementById('text').value;
           if ( text ) {
