@@ -19,7 +19,7 @@ the TalkingHead test web app without any post-processing.*
 Talking Head (3D) is a JavaScript class featuring a 3D avatar that can
 speak and lip-sync in real-time. The class supports
 [Ready Player Me](https://readyplayer.me/) full-body 3D avatars (GLB),
-[Mixamo](https://www.mixamo.com) animations (FBX), markdown text, and subtitles.
+[Mixamo](https://www.mixamo.com) animations (FBX), and subtitles.
 It also knows a set of emojis, which it can convert into facial expressions.
 
 By default, the class uses
@@ -31,7 +31,7 @@ It is also possible to integrate the class with an external TTS service, such as
 which can provide visemes with timestamps.
 
 The class uses [ThreeJS](https://github.com/mrdoob/three.js/) / WebGL for 3D
-rendering, and [Marked](https://github.com/markedjs/marked) Markdown parser.
+rendering.
 
 ---
 
@@ -47,10 +47,7 @@ modules from a CDN:
 { "imports":
   {
     "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js/+esm",
-    "three/examples/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/",
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/",
-    "dompurify": "https://cdn.jsdelivr.net/npm/dompurify@3.0.6/+esm",
-    "marked": "https://cdn.jsdelivr.net/npm/marked@11.2.0/+esm",
     "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.1/modules/talkinghead.mjs"
   }
 }
@@ -93,7 +90,8 @@ Option | Description
 `ttsVolume` | Google text-to-speech volume gain (in dB) in the range [-96.0, 16.0]. Default is `0`.
 `ttsTrimStart` | Trim the viseme sequence start relative to the beginning of the audio (shift in milliseconds). Default is `0`.
 `ttsTrimEnd`| Trim the viseme sequence end relative to the end of the audio (shift in milliseconds). Default is `300`.
-`lipsyncLang`| Lip-sync language. Currently English `en`, Finnish `fi`, and Lithuanian `lt` are supported. Default is `fi`.
+`lipsyncModules`| Lip-sync modules to load dynamically at start-up. Limiting the number of language modules improves the loading time and memory usage. Default is `["en", "fi", "lt"]`. [&#8805;`v1.2`]
+`lipsyncLang`| Lip-sync language. Default is `"fi"`.
 `pcmSampleRate` | PCM (signed 16bit little endian) sample rate used in `speakAudio` in Hz. Default is `22050`.
 `modelRoot` | The root name of the armature. Default is `Armature`.
 `modelPixelRatio` | Sets the device's pixel ratio. Default is `1`.
@@ -236,6 +234,7 @@ const microsoftTTSProxy = [
 
 Licenses, attributions and notes related to the `index.html` web app assets:
 
+- The app uses [Marked](https://github.com/markedjs/marked) Markdown parser and [DOMPurify](https://github.com/cure53/DOMPurify) XSS sanitizer.
 - Fira Sans Condensed and Fira Sans Extra Condensed fonts are licensed under the SIL Open Font License, version 1.1, available with a FAQ at [http://scripts.sil.org/OFL](http://scripts.sil.org/OFL). Digitized data copyright (c) 2012-2015, The Mozilla Foundation and Telefonica S.A.
 - Example avatar "brunette.glb" was created at [Ready Player Me](https://readyplayer.me/). The avatar is free to all developers for non-commercial use under the [CC BY-NC 4.0 DEED](https://creativecommons.org/licenses/by-nc/4.0/). If you want to integrate Ready Player Me avatars into a commercial app or game, you must sign up as a Ready Player Me developer.
 - Example animation "walking.fbx" is from Mixamo, a subsidiary of Adobe Inc. [Mixamo](https://www.mixamo.com) service is free and its animations (>2000) can be used royalty free for personal, commercial, and non-profit projects. Raw animation files can't be distributed outside the project team and can't be used to train ML models.
