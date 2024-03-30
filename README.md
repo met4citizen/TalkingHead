@@ -421,14 +421,14 @@ RewriteMap jwtverify "prg:/etc/httpd/jwtverify" apache:apache
 
 The steps that are common to all new languages:
 
-- Create a new file named `lipsync-xx.mjs` where `xx` is your language code, and place the file in the `./modules/` directory. The language module should have a class named `LipsyncXx` where Xx is the language code.
+- Create a new file named `lipsync-xx.mjs` where `xx` is your language code, and place the file in the `./modules/` directory. The language module should have a class named `LipsyncXx` where Xx is the language code. The naming in important, because the modules are loaded dynamically based on their names.
 - The class should have (at least) the following two methods: `preProcessText` and `wordsToVisemes`. These are the methods used in the TalkingHead class.
 - The purpose of the `preProcessText` method is to preprocess the given text by converting symbols to words, numbers to words, and filtering out characters that should be left unspoken (if any), etc. This is often needed to prevent ambiguities between TTS and lip-sync engines. This method takes a string as a parameter and returns the preprocessed string.
 - The purpose of the `wordsToVisemes` method is to convert the given text into visemes and timestamps. The method takes a string as a parameter and returns a lip-sync object. The lipsync object has three required properties: `visemes`, `times`and `durations`.
-  - Property `visemes` is an array of Oculus OVR viseme codes. Each viseme is one of the strings: 'aa', 'E', 'I', 'O', 'U', 'PP', 'SS', 'TH', 'CH', 'FF', 'kk', 'nn', 'RR', 'DD', 'sil'. See the reference images here: https://developer.oculus.com/documentation/unity/audio-ovrlipsync-viseme-reference/
+  - Property `visemes` is an array of Oculus OVR viseme codes. Each viseme is one of the strings: `'aa'`, `'E'`, `'I'`, `'O'`, `'U'`, `'PP'`, `'SS'`, `'TH'`, `'CH'`, `'FF'`, `'kk'`, `'nn'`, `'RR'`, `'DD'`, `'sil'`. See the reference images here: https://developer.oculus.com/documentation/unity/audio-ovrlipsync-viseme-reference/
   - Property `times` is an array of starting times, one entry for each viseme in `visemes`. Starting times are to be given in relative units. They are always scaled according to the word timestamps that we get from the TTS engine.
   - Property `durations` is an array of relative duration in milliseconds, one entry for each viseme in `visemes`. Durations are to be given in relative units. They are always scaled according to the word timestamps that we get from the TTS engine.
-- Import the new lip-sync implementation file into the `talkinghead.mjs` file, for example, `import { LipsyncXx } from './lipsync-xx.mjs';` and add a new entry `this.lipsync` in the constructor, for example, `'xx': new LipsyncXx()`.
+- (OPTIONAL) Add the new module `"xx"` to `lipsyncModules` parameter array in the `talkinghead.mjs` file.
 
 The difficult part is to actually make the conversion from words to visemes.
 What is the best approach depends on the language. Here are some typical
@@ -436,7 +436,7 @@ approaches to consider (not a comprehensive list):
 
 - **Direct mapping from graphemes to phonemes to visemes**. This works well for languages that have a consistent one-to-one mapping between individual letters and phonemes. This was used as the approach for the Finnish language (`lipsync-fi.mjs`) giving >99.9% lip-sync accuracy compared to the Finnish phoneme dictionary. Implementation size was ~4k. Unfortunately not all languages are phonetically orthographic languages.
 - **Rule-based mapping**. This was used as the approach for the English language (`lipsync-en.mjs`) giving around 80% lip-sync accuracy compared to the English phoneme dictionary. However, since the rules cover the most common words, the effective accuracy is higher. Implementation size ~12k.
-- Dictionary based approach. If neither of the previous approaches work for your language, make a search from some open source phoneme dictionary. Note that you still need some backup algorithm for those words that are not in the dictionary. The problem with phoneme dictionaries is their size. For example, the CMU phoneme dictionary for English is ~5M.
+- **Dictionary based approach**. If neither of the previous approaches work for your language, make a search from some open source phoneme dictionary. Note that you still need some backup algorithm for those words that are not in the dictionary. The problem with phoneme dictionaries is their size. For example, the CMU phoneme dictionary for English is ~5M.
 - **Neural-net approach based on transformer models**. Typically this should be done on server-side as the model side can be >50M.
 
 TalkingHead is supposed to be a real-time class, so latency is

@@ -5,11 +5,6 @@ import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import Stats from 'three/addons/libs/stats.module.js';
 
-// Lip-sync implementations for different languages
-import { LipsyncFi } from './lipsync-fi.mjs';
-import { LipsyncEn } from './lipsync-en.mjs';
-import { LipsyncLt } from './lipsync-lt.mjs';
-
 /**
 * @class Talking Head
 * @author Mika Suominen
@@ -93,6 +88,7 @@ class TalkingHead {
       ttsPitch: 0,
       ttsVolume: 0,
       lipsyncLang: 'fi',
+      lipsyncModules: ['fi','en','lt'],
       pcmSampleRate: 22050,
       modelRoot: "Armature",
       modelPixelRatio: 1,
@@ -568,12 +564,9 @@ class TalkingHead {
     this.animTimeLast = 0;
     this.easing = this.sigmoidFactory(5); // Ease in and out
 
-    // Lip-sync extensions
-    this.lipsync = {
-      'fi': new LipsyncFi(),
-      'en': new LipsyncEn(),
-      'lt': new LipsyncLt()
-    };
+    // Lip-sync extensions, import dynamically
+    this.lipsync = {};
+    this.opt.lipsyncModules.forEach( x => this.lipsyncGetProcessor(x) );
     this.visemeNames = [
       'aa', 'E', 'I', 'O', 'U', 'PP', 'SS', 'TH', 'DD', 'FF', 'kk',
       'nn', 'RR', 'CH', 'sil'
@@ -911,7 +904,7 @@ class TalkingHead {
   * @return {string[]} Supported view names.
   */
   getViewNames() {
-    return ['full','upper', 'head'];
+    return ['full', 'mid', 'upper', 'head'];
   }
 
   /**
@@ -1863,6 +1856,21 @@ class TalkingHead {
         }
       });
     });
+  }
+
+  /**
+  * Get lip-sync processor based on language. Import module dynamically.
+  * @param {string} lang Language
+  * @return {Object} Pre-processsed text.
+  */
+  lipsyncGetProcessor(lang, path="./") {
+    if ( !this.lipsync.hasOwnProperty(lang) ) {
+      const moduleName = path + 'lipsync-' + lang.toLowerCase() + '.mjs';
+      const className = 'Lipsync' + lang.charAt(0).toUpperCase() + lang.slice(1);
+      import(moduleName).then( module => {
+        this.lipsync[lang] = new module[className];
+      });
+    }
   }
 
   /**
