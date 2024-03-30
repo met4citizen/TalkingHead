@@ -245,7 +245,7 @@ class LipsyncEn {
 
     // Symbols to English
     this.symbols = {
-      '%': 'percentage', '€': 'euros', '&': 'and', '+': 'plus',
+      '%': 'percent', '€': 'euros', '&': 'and', '+': 'plus',
       '$': 'dollars'
     };
     this.symbolsReg = /[%€&\+\$]/g;
