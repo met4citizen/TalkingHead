@@ -894,7 +894,7 @@ class TalkingHead {
 
     // Set pose, view and start animation
     if ( !this.viewName ) this.setView( this.opt.cameraView );
-    this.setMood( this.moodName || this.avatar.avatarMood || this.opt.avatarMood );
+    this.setMood( this.avatar.avatarMood || this.moodName || this.opt.avatarMood );
     this.start();
 
   }
