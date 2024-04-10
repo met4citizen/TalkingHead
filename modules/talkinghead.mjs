@@ -639,7 +639,8 @@ class TalkingHead {
     const pmremGenerator = new THREE.PMREMGenerator( this.renderer );
     pmremGenerator.compileEquirectangularShader();
     this.scene.environment = pmremGenerator.fromScene( new RoomEnvironment() ).texture;
-    new ResizeObserver(this.onResize.bind(this)).observe(this.nodeAvatar);
+    this.resizeobserver = new ResizeObserver(this.onResize.bind(this));
+    this.resizeobserver.observe(this.nodeAvatar);
 
     this.controls = new OrbitControls( this.camera, this.renderer.domElement );
     this.controls.enableZoom = this.opt.cameraZoomEnable;
