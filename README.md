@@ -96,6 +96,7 @@ Option | Description
 `modelRoot` | The root name of the armature. Default is `Armature`.
 `modelPixelRatio` | Sets the device's pixel ratio. Default is `1`.
 `modelFPS` | Frames per second. Note that actual frame rate will be a bit lower than the set value. Default is `30`.
+`modelMovementFactor` | A factor in the range [0,1] limiting the avatar's upper body movement when standing. Default is `1`.
 `cameraView` | Initial view. Supported views are `"full"`, `"mid"`, `"upper"`  and `"head"`. Default is `"full"`.
 `cameraDistance` | Camera distance offset for initial view in meters. Default is `0`.
 `cameraX` | Camera position offset in X direction in meters. Default is `0`.

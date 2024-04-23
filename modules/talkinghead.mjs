@@ -93,6 +93,7 @@ class TalkingHead {
       modelRoot: "Armature",
       modelPixelRatio: 1,
       modelFPS: 30,
+      modelMovementFactor: 1,
       cameraView: 'full',
       cameraDistance: 0,
       cameraX: 0,
@@ -1169,6 +1170,18 @@ class TalkingHead {
     const o = { template: template, props: {} };
     Object.entries(template.props).forEach( x => {
       o.props[x[0]] = x[1].clone();
+
+      // Restrain movement when standing
+      if ( this.opt.modelMovementFactor < 1 && template.standing &&
+        (x[0] === 'Hips.quaternion' || x[0] === 'Spine.quaternion' ||
+        x[0] === 'Spine1.quaternion' || x[0] === 'Spine2.quaternion' ||
+        x[0] === 'Neck.quaternion' || x[0] === 'LeftUpLeg.quaternion' ||
+        x[0] === 'LeftLeg.quaternion' || x[0] === 'RightUpLeg.quaternion' ||
+        x[0] === 'RightLeg.quaternion') ) {
+        const ref = this.poseTemplates["straight"].props[x[0]];
+        const angle = o.props[x[0]].angleTo( ref );
+        o.props[x[0]].rotateTowards( ref, (1 - this.opt.modelMovementFactor) * angle );
+      }
 
       // Custom properties
       o.props[x[0]].t = this.animClock; // timestamp
