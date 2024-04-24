@@ -12,10 +12,10 @@ import { animEmojis } from './animemojis.mjs'
 import { b64ToArrayBuffer, concatArrayBuffers, pcmToAudioBuffer } from './talkingutils.js'
 
 /**
-* @class Talking Head
+* @class Talking Base
 * @author Mika Suominen
 */
-class TalkingHead {
+class TalkingBase {
 
   /**
   * Avatar.
@@ -76,12 +76,13 @@ class TalkingHead {
   */
 
   /**
-  * @constructor
-  * @param {Object} node DOM element of the avatar
-  * @param {Object} [opt=null] Global/default options
-  */
-  constructor(node, opt = null ) {
-    this.nodeAvatar = node;
+   * @constructor
+   */
+
+  constructor(parentWindowBounds, opt = null ) {
+
+    this.parentWindowBounds = parentWindowBounds;
+
     this.opt = {
       jwtGet: null, // Function to get JSON Web Token
       ttsEndpoint: null,
@@ -128,24 +129,10 @@ class TalkingHead {
     };
     Object.assign( this.opt, opt || {} );
 
-    // Statistics
-    if ( this.opt.statsNode ) {
-      this.stats = new Stats();
-      if ( this.opt.statsStyle ) {
-        this.stats.dom.style.cssText = this.opt.statsStyle;
-      }
-      this.opt.statsNode.appendChild( this.stats.dom );
-    }
-
     // Pose templates
     this.poseTemplates = poseTemplates
     this.poseDelta = poseDelta
     this.posePropNames = posePropNames
-
-    // Externals rely on these
-    this.b64ToArrayBuffer = b64ToArrayBuffer
-    this.concatArrayBuffers = concatArrayBuffers
-    this.pcmToAudioBuffer = pcmToAudioBuffer
 
     // Use "side" as the first pose, weight on left leg
     this.poseName = "side"; // First pose
@@ -259,7 +246,6 @@ class TalkingHead {
     }
 
     this._setupIKMesh()
-    this._setupLocalRenderer()
   }
 
   _setupIKMesh() {
@@ -286,51 +272,6 @@ class TalkingHead {
   }
 
 
-  _setupLocalRenderer() {
-
-    // Setup 3D Animation
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    this.renderer.setPixelRatio( this.opt.modelPixelRatio * window.devicePixelRatio );
-    this.renderer.setSize(this.nodeAvatar.clientWidth, this.nodeAvatar.clientHeight);
-    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.shadowMap.enabled = false;
-    this.nodeAvatar.appendChild( this.renderer.domElement );
-    this.camera = new THREE.PerspectiveCamera( 10, this.nodeAvatar.clientWidth / this.nodeAvatar.clientHeight, 0.1, 2000 );
-    this.scene = new THREE.Scene();
-    this.lightAmbient = new THREE.AmbientLight(
-      new THREE.Color( this.opt.lightAmbientColor ),
-      this.opt.lightAmbientIntensity
-    );
-    this.lightDirect = new THREE.DirectionalLight(
-      new THREE.Color( this.opt.lightDirectColor ),
-      this.opt.lightDirectIntensity
-    );
-    this.lightSpot = new THREE.SpotLight(
-      new THREE.Color( this.opt.lightSpotColor ),
-      this.opt.lightSpotIntensity,
-      0,
-      this.opt.lightSpotDispersion
-    );
-    this.setLighting( this.opt );
-    const pmremGenerator = new THREE.PMREMGenerator( this.renderer );
-    pmremGenerator.compileEquirectangularShader();
-    this.scene.environment = pmremGenerator.fromScene( new RoomEnvironment() ).texture;
-    this.resizeobserver = new ResizeObserver(this.onResize.bind(this));
-    this.resizeobserver.observe(this.nodeAvatar);
-
-    this.controls = new OrbitControls( this.camera, this.renderer.domElement );
-    this.controls.enableZoom = this.opt.cameraZoomEnable;
-    this.controls.enableRotate = this.opt.cameraRotateEnable;
-    this.controls.enablePan = this.opt.cameraPanEnable;
-    this.controls.minDistance = 2;
-    this.controls.maxDistance = 2000;
-    this.controls.autoRotateSpeed = 0;
-    this.controls.autoRotate = false;
-    this.controls.update();
-    this.cameraClock = null;
-  }
-
   /**
   * Clear 3D object.
   * @param {Object} obj Object
@@ -350,250 +291,6 @@ class TalkingHead {
       });
       obj.material.dispose();
     }
-  }
-
-  /**
-  * Loader for 3D avatar model.
-  * @param {string} avatar Avatar object with 'url' property to GLTF/GLB file.
-  * @param {progressfn} [onprogress=null] Callback for progress
-  */
-  async showAvatar(avatar, onprogress=null ) {
-
-    // Checkt the avatar parameter
-    if ( !avatar || !avatar.hasOwnProperty('url') ) {
-      throw new Error("Invalid parameter. The avatar must have at least 'url' specified.");
-    }
-
-    // Loader
-    const loader = new GLTFLoader();
-    let gltf = await loader.loadAsync( avatar.url, onprogress );
-
-    // Check the gltf
-    const required = [ this.opt.modelRoot ];
-    this.posePropNames.forEach( x => required.push( x.split('.')[0] ) );
-    required.forEach( x => {
-      if ( !gltf.scene.getObjectByName(x) ) {
-        throw new Error('Avatar object ' + x + ' not found');
-      }
-    });
-
-    this.stop();
-    this.avatar = avatar;
-
-    // Clear previous scene, if avatar was previously loaded
-    this.mixer = null;
-    if ( this.armature ) {
-      this.clearThree( this.scene );
-    }
-
-    // Avatar full-body
-    this.armature = gltf.scene.getObjectByName( this.opt.modelRoot );
-    this.armature.scale.setScalar(1);
-
-    // Morph targets
-    // TODO: Check morph target names
-    this.morphs = [];
-    this.armature.traverse( x => {
-      if ( x.morphTargetInfluences && x.morphTargetInfluences.length &&
-        x.morphTargetDictionary ) {
-        this.morphs.push(x);
-      }
-    });
-    if ( this.morphs.length === 0 ) {
-      throw new Error('Blend shapes not found');
-    }
-
-    // Objects for needed properties
-    this.poseAvatar = { props: {} };
-    this.posePropNames.forEach( x => {
-      const ids = x.split('.');
-      const o = this.armature.getObjectByName(ids[0]);
-      this.poseAvatar.props[x] = o[ids[1]];
-      if ( this.poseBase.props.hasOwnProperty(x) ) {
-        this.poseAvatar.props[x].copy( this.poseBase.props[x] );
-      } else {
-        this.poseBase.props[x] = this.poseAvatar.props[x].clone();
-      }
-
-      // Make sure the target has the delta properties, because we need it as a basis
-      if ( this.poseDelta.props.hasOwnProperty(x) && !this.poseTarget.props.hasOwnProperty(x) ) {
-        this.poseTarget.props[x] = this.poseAvatar.props[x].clone();
-      }
-
-      // Take target pose
-      this.poseTarget.props[x].t = this.animClock;
-      this.poseTarget.props[x].d = 2000;
-    });
-
-    // Reset IK bone positions
-    this.ikMesh.traverse( x => {
-      if (x.isBone) {
-        x.position.copy( this.armature.getObjectByName(x.name).position );
-      }
-    });
-
-    // Add avatar to scene
-    this.scene.add(gltf.scene);
-
-    // Add lights
-    this.scene.add( this.lightAmbient );
-    this.scene.add( this.lightDirect );
-    this.scene.add( this.lightSpot );
-    this.lightSpot.target = this.armature.getObjectByName('Head');
-
-    // Estimate avatar height based on eye level
-    const plEye = new THREE.Vector3();
-    this.armature.getObjectByName('LeftEye').getWorldPosition(plEye);
-    this.avatarHeight = plEye.y + 0.2;
-
-    // Set pose, view and start animation
-    if ( !this.viewName ) this.setView( this.opt.cameraView );
-    this.setMood( this.avatar.avatarMood || this.moodName || this.opt.avatarMood );
-    this.start();
-
-  }
-
-  /**
-  * Get view names.
-  * @return {string[]} Supported view names.
-  */
-  getViewNames() {
-    return ['full', 'mid', 'upper', 'head'];
-  }
-
-  /**
-  * Get current view.
-  * @return {string} View name.
-  */
-  getView() {
-    return this.viewName;
-  }
-
-  /**
-  * Fit 3D object to the view.
-  * @param {string} [view=null] Camera view. If null, reset current view
-  * @param {Object} [opt=null] Options
-  */
-  setView(view, opt = null) {
-    if ( view !== 'full' && view !== 'upper' && view !== 'head' && view !== 'mid' ) return;
-    if ( !this.armature ) {
-      this.opt.cameraView = view;
-      return;
-    }
-
-    this.viewName = view || this.viewName;
-    opt = opt || {};
-
-    const fov = this.camera.fov * ( Math.PI / 180 );
-    let x = - (opt.cameraX || this.opt.cameraX) * Math.tan( fov / 2 );
-    let y = ( 1 - (opt.cameraY || this.opt.cameraY)) * Math.tan( fov / 2 );
-    let z = (opt.cameraDistance || this.opt.cameraDistance);
-    if ( this.viewName === 'head' ) {
-      z += 2;
-      y = y * z + 4 * this.avatarHeight / 5;
-    } else if ( this.viewName === 'upper' ) {
-      z += 4.5;
-      y = y * z + 2 * this.avatarHeight / 3;
-    } else if ( this.viewName === 'mid' ) {
-      z += 8;
-      y = y * z + this.avatarHeight / 3;
-    } else {
-      z += 12;
-      y = y * z;
-    }
-    x = x * z;
-
-    this.controlsEnd = new THREE.Vector3(x, y, 0);
-    this.cameraEnd = new THREE.Vector3(x, y, z).applyEuler( new THREE.Euler( (opt.cameraRotateX || opt.cameraRotateX), (opt.cameraRotateY || this.opt.cameraRotateY), 0 ) );
-
-    if ( this.cameraClock === null ) {
-      this.controls.target.copy( this.controlsEnd );
-      this.camera.position.copy( this.cameraEnd );
-    }
-    this.controlsStart = this.controls.target.clone();
-    this.cameraStart = this.camera.position.clone();
-    this.cameraClock = 0;
-
-  }
-
-  /**
-  * Change light colors and intensities.
-  * @param {Object} opt Options
-  */
-  setLighting(opt) {
-    opt = opt || {};
-
-    // Ambient light
-    if ( opt.hasOwnProperty("lightAmbientColor") ) {
-      this.lightAmbient.color.set( new THREE.Color( opt.lightAmbientColor ) );
-    }
-    if ( opt.hasOwnProperty("lightAmbientIntensity") ) {
-      this.lightAmbient.intensity = opt.lightAmbientIntensity;
-      this.lightAmbient.visible = (opt.lightAmbientIntensity !== 0);
-    }
-
-    // Directional light
-    if ( opt.hasOwnProperty("lightDirectColor") ) {
-      this.lightDirect.color.set( new THREE.Color( opt.lightDirectColor ) );
-    }
-    if ( opt.hasOwnProperty("lightDirectIntensity") ) {
-      this.lightDirect.intensity = opt.lightDirectIntensity;
-      this.lightDirect.visible = (opt.lightDirectIntensity !== 0);
-    }
-    if ( opt.hasOwnProperty("lightDirectPhi") && opt.hasOwnProperty("lightDirectTheta") ) {
-      this.lightDirect.position.setFromSphericalCoords(2, opt.lightDirectPhi, opt.lightDirectTheta);
-    }
-
-    // Spot light
-    if ( opt.hasOwnProperty("lightSpotColor") ) {
-      this.lightSpot.color.set( new THREE.Color( opt.lightSpotColor ) );
-    }
-    if ( opt.hasOwnProperty("lightSpotIntensity") ) {
-      this.lightSpot.intensity = opt.lightSpotIntensity;
-      this.lightSpot.visible = (opt.lightSpotIntensity !== 0);
-    }
-    if ( opt.hasOwnProperty("lightSpotPhi") && opt.hasOwnProperty("lightSpotTheta") ) {
-      this.lightSpot.position.setFromSphericalCoords( 2, opt.lightSpotPhi, opt.lightSpotTheta );
-      this.lightSpot.position.add( new THREE.Vector3(0,1.5,0) );
-    }
-    if ( opt.hasOwnProperty("lightSpotDispersion") ) {
-      this.lightSpot.angle = opt.lightSpotDispersion;
-    }
-  }
-
-  /**
-  * Render scene.
-  */
-  render() {
-    if ( this.isRunning ) {
-
-      // Set limits to eyelids
-      const blinkl = this.getValue("eyeBlinkLeft");
-      const blinkr = this.getValue("eyeBlinkRight");
-      const lookdown = this.getValue("eyesLookDown") / 2;
-      const limitl = lookdown + this.getValue("browDownLeft") / 2;
-      const limitr = lookdown + this.getValue("browDownRight") / 2;
-      this.setValue( "eyeBlinkLeft", Math.max(blinkl,limitl) );
-      this.setValue( "eyeBlinkRight", Math.max(blinkr,limitr) );
-
-      this.renderer.render( this.scene, this.camera );
-
-      // Restore eyelid values
-      this.setValue( "eyeBlinkLeft", blinkl );
-      this.setValue( "eyeBlinkRight", blinkr );
-
-    }
-  }
-
-  /**
-  * Resize avatar.
-  */
-  onResize() {
-    this.camera.aspect = this.nodeAvatar.clientWidth / this.nodeAvatar.clientHeight;
-    this.camera.updateProjectionMatrix();
-    this.renderer.setSize( this.nodeAvatar.clientWidth, this.nodeAvatar.clientHeight );
-    this.controls.update();
-    this.renderer.render( this.scene, this.camera );
   }
 
   /**
@@ -1195,27 +892,16 @@ class TalkingHead {
   /**
   * Animate the avatar.
   * @param {number} t High precision timestamp in ms.
+  * @return {number} dt - delta time for convenience in ms.
   */
-  animate(t) {
-
-    // Are we running?
-    if ( this.isRunning ) {
-      requestAnimationFrame( this.animate.bind(this) );
-    } else {
-      return;
-    }
+  animateBase(t) {
 
     // Delta time
     let dt = t - this.animTimeLast;
-    if ( dt < this.animFrameDur ) return;
+    if ( dt < this.animFrameDur ) return 0;
     dt = dt / this.animSlowdownRate;
     this.animClock += dt;
     this.animTimeLast = t;
-
-    // Statistics start
-    if ( this.stats ) {
-      this.stats.begin();
-    }
 
     // Randomize facial expression
     if ( this.viewName !== 'full' ) {
@@ -1373,41 +1059,7 @@ class TalkingHead {
     hips.position.x -= (ltoePos.x+rtoePos.x)/4;
     hips.position.z -= (ltoePos.z+rtoePos.z)/2;
 
-    // Camera
-    if ( this.cameraClock !== null && this.cameraClock < 1000 ) {
-      this.cameraClock += dt;
-      if ( this.cameraClock > 1000 ) this.cameraClock = 1000;
-      let s = new THREE.Spherical().setFromVector3(this.cameraStart);
-      let sEnd = new THREE.Spherical().setFromVector3(this.cameraEnd);
-      s.phi += this.easing(this.cameraClock / 1000) * (sEnd.phi - s.phi);
-      s.theta += this.easing(this.cameraClock / 1000) * (sEnd.theta - s.theta);
-      s.radius += this.easing(this.cameraClock / 1000) * (sEnd.radius - s.radius);
-      s.makeSafe();
-      this.camera.position.setFromSpherical( s );
-      if ( this.controlsStart.x !== this.controlsEnd.x ) {
-        this.controls.target.copy( this.controlsStart.lerp( this.controlsEnd, this.easing(this.cameraClock / 1000) ) );
-      } else {
-        s.setFromVector3(this.controlsStart);
-        sEnd.setFromVector3(this.controlsEnd);
-        s.phi += this.easing(this.cameraClock / 1000) * (sEnd.phi - s.phi);
-        s.theta += this.easing(this.cameraClock / 1000) * (sEnd.theta - s.theta);
-        s.radius += this.easing(this.cameraClock / 1000) * (sEnd.radius - s.radius);
-        s.makeSafe();
-        this.controls.target.setFromSpherical( s );
-      }
-      this.controls.update();
-    }
-
-    // Autorotate
-    if ( this.controls.autoRotate ) this.controls.update();
-
-    // Statistics end
-    if ( this.stats ) {
-      this.stats.end();
-    }
-
-    this.render();
-
+    return dt
   }
 
   /**
@@ -1833,8 +1485,8 @@ class TalkingHead {
       let audio;
       if ( Array.isArray(item.audio) ) {
         // Convert from PCM samples
-        let buf = this.concatArrayBuffers( item.audio );
-        audio = this.pcmToAudioBuffer(buf);
+        let buf = concatArrayBuffers( item.audio );
+        audio = pcmToAudioBuffer(buf);
       } else {
         audio = item.audio;
       }
@@ -1965,7 +1617,7 @@ class TalkingHead {
           if ( res.status === 200 && data && data.audioContent ) {
 
             // Audio data
-            const buf = this.b64ToArrayBuffer(data.audioContent);
+            const buf = b64ToArrayBuffer(data.audioContent);
             const audio = await this.audioCtx.decodeAudioData( buf );
             this.speakWithHands();
 
@@ -2082,7 +1734,7 @@ class TalkingHead {
   lookAt(x,y,t) {
 
     // Eyes position
-    const rect = this.nodeAvatar.getBoundingClientRect();
+    const rect = this.parentWindowBounds;
     const lEye = this.armature.getObjectByName('LeftEye');
     const rEye = this.armature.getObjectByName('RightEye');
     lEye.updateMatrixWorld(true);
@@ -2158,7 +1810,7 @@ class TalkingHead {
   */
   touchAt(x,y) {
 
-    const rect = this.nodeAvatar.getBoundingClientRect();
+    const rect = this.parentWindowBounds;
     const pointer = new THREE.Vector2(
       ( (x - rect.left) / rect.width ) * 2 - 1,
       - ( (y - rect.top) / rect.height ) * 2 + 1
@@ -2627,4 +2279,390 @@ class TalkingHead {
 
 }
 
-export { TalkingHead };
+/**
+* @class Talking Base
+* @author Mika Suominen
+*/
+
+class TalkingHead extends TalkingBase {
+
+  /**
+  * @constructor
+  * @param {Object} node DOM element of the avatar
+  * @param {Object} [opt=null] Global/default options
+  */
+  constructor(parentWindow, opt = null ) {
+
+    super(parentWindow.getBoundingClientRect(),opt)
+
+    this.parentWindow = parentWindow
+
+    // Statistics
+    if ( this.opt.statsNode ) {
+      this.stats = new Stats();
+      if ( this.opt.statsStyle ) {
+        this.stats.dom.style.cssText = this.opt.statsStyle;
+      }
+      this.opt.statsNode.appendChild( this.stats.dom );
+    }
+
+    this._setupLocalRenderer()
+  }
+
+
+  _setupLocalRenderer() {
+
+    // Setup 3D Animation
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    this.renderer.setPixelRatio( this.opt.modelPixelRatio * window.devicePixelRatio );
+    this.renderer.setSize(this.parentWindow.clientWidth, this.parentWindow.clientHeight);
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.shadowMap.enabled = false;
+    this.parentWindow.appendChild( this.renderer.domElement );
+    this.camera = new THREE.PerspectiveCamera( 10, this.parentWindow.clientWidth / this.parentWindow.clientHeight, 0.1, 2000 );
+    this.scene = new THREE.Scene();
+    this.lightAmbient = new THREE.AmbientLight(
+      new THREE.Color( this.opt.lightAmbientColor ),
+      this.opt.lightAmbientIntensity
+    );
+    this.lightDirect = new THREE.DirectionalLight(
+      new THREE.Color( this.opt.lightDirectColor ),
+      this.opt.lightDirectIntensity
+    );
+    this.lightSpot = new THREE.SpotLight(
+      new THREE.Color( this.opt.lightSpotColor ),
+      this.opt.lightSpotIntensity,
+      0,
+      this.opt.lightSpotDispersion
+    );
+    this.setLighting( this.opt );
+    const pmremGenerator = new THREE.PMREMGenerator( this.renderer );
+    pmremGenerator.compileEquirectangularShader();
+    this.scene.environment = pmremGenerator.fromScene( new RoomEnvironment() ).texture;
+    this.resizeobserver = new ResizeObserver(this.onResize.bind(this));
+    this.resizeobserver.observe(this.parentWindow);
+
+    this.controls = new OrbitControls( this.camera, this.renderer.domElement );
+    this.controls.enableZoom = this.opt.cameraZoomEnable;
+    this.controls.enableRotate = this.opt.cameraRotateEnable;
+    this.controls.enablePan = this.opt.cameraPanEnable;
+    this.controls.minDistance = 2;
+    this.controls.maxDistance = 2000;
+    this.controls.autoRotateSpeed = 0;
+    this.controls.autoRotate = false;
+    this.controls.update();
+    this.cameraClock = null;
+
+    this.scene.add( this.lightAmbient );
+    this.scene.add( this.lightDirect );
+    this.scene.add( this.lightSpot );
+
+  }
+
+  /**
+  * Loader for 3D avatar model.
+  * @param {string} avatar Avatar object with 'url' property to GLTF/GLB file.
+  * @param {progressfn} [onprogress=null] Callback for progress
+  */
+  async showAvatar(avatar, onprogress=null ) {
+
+    // Checkt the avatar parameter
+    if ( !avatar || !avatar.hasOwnProperty('url') ) {
+      throw new Error("Invalid parameter. The avatar must have at least 'url' specified.");
+    }
+
+    // Loader
+    const loader = new GLTFLoader();
+    let gltf = await loader.loadAsync( avatar.url, onprogress );
+
+    // Check the gltf
+    const required = [ this.opt.modelRoot ];
+    this.posePropNames.forEach( x => required.push( x.split('.')[0] ) );
+    required.forEach( x => {
+      if ( !gltf.scene.getObjectByName(x) ) {
+        throw new Error('Avatar object ' + x + ' not found');
+      }
+    });
+
+    this.stop();
+    this.avatar = avatar;
+
+    // Clear previous scene, if avatar was previously loaded
+    this.mixer = null;
+    if ( this.armature ) {
+      this.clearThree( this.scene );
+    }
+
+    // Avatar full-body
+    this.armature = gltf.scene.getObjectByName( this.opt.modelRoot );
+    this.armature.scale.setScalar(1);
+
+    // Morph targets
+    // TODO: Check morph target names
+    this.morphs = [];
+    this.armature.traverse( x => {
+      if ( x.morphTargetInfluences && x.morphTargetInfluences.length &&
+        x.morphTargetDictionary ) {
+        this.morphs.push(x);
+      }
+    });
+    if ( this.morphs.length === 0 ) {
+      throw new Error('Blend shapes not found');
+    }
+
+    // Objects for needed properties
+    this.poseAvatar = { props: {} };
+    this.posePropNames.forEach( x => {
+      const ids = x.split('.');
+      const o = this.armature.getObjectByName(ids[0]);
+      this.poseAvatar.props[x] = o[ids[1]];
+      if ( this.poseBase.props.hasOwnProperty(x) ) {
+        this.poseAvatar.props[x].copy( this.poseBase.props[x] );
+      } else {
+        this.poseBase.props[x] = this.poseAvatar.props[x].clone();
+      }
+
+      // Make sure the target has the delta properties, because we need it as a basis
+      if ( this.poseDelta.props.hasOwnProperty(x) && !this.poseTarget.props.hasOwnProperty(x) ) {
+        this.poseTarget.props[x] = this.poseAvatar.props[x].clone();
+      }
+
+      // Take target pose
+      this.poseTarget.props[x].t = this.animClock;
+      this.poseTarget.props[x].d = 2000;
+    });
+
+    // Reset IK bone positions
+    this.ikMesh.traverse( x => {
+      if (x.isBone) {
+        x.position.copy( this.armature.getObjectByName(x.name).position );
+      }
+    });
+
+    // Add avatar to scene
+    this.scene.add(gltf.scene);
+
+    // Set lights
+    if(this.lightSpot) {
+      this.lightSpot.target = this.armature.getObjectByName('Head')
+    }
+
+    // Estimate avatar height based on eye level
+    const plEye = new THREE.Vector3();
+    this.armature.getObjectByName('LeftEye').getWorldPosition(plEye);
+    this.avatarHeight = plEye.y + 0.2;
+
+    // Set pose, view and start animation
+    if ( !this.viewName ) this.setView( this.opt.cameraView );
+    this.setMood( this.avatar.avatarMood || this.moodName || this.opt.avatarMood );
+    this.start();
+
+  }
+
+  /**
+  * Get view names.
+  * @return {string[]} Supported view names.
+  */
+  getViewNames() {
+    return ['full', 'mid', 'upper', 'head'];
+  }
+
+  /**
+  * Get current view.
+  * @return {string} View name.
+  */
+  getView() {
+    return this.viewName;
+  }
+
+  /**
+  * Fit 3D object to the view.
+  * @param {string} [view=null] Camera view. If null, reset current view
+  * @param {Object} [opt=null] Options
+  */
+  setView(view, opt = null) {
+    if ( view !== 'full' && view !== 'upper' && view !== 'head' && view !== 'mid' ) return;
+    if ( !this.armature ) {
+      this.opt.cameraView = view;
+      return;
+    }
+
+    this.viewName = view || this.viewName;
+    opt = opt || {};
+
+    const fov = this.camera.fov * ( Math.PI / 180 );
+    let x = - (opt.cameraX || this.opt.cameraX) * Math.tan( fov / 2 );
+    let y = ( 1 - (opt.cameraY || this.opt.cameraY)) * Math.tan( fov / 2 );
+    let z = (opt.cameraDistance || this.opt.cameraDistance);
+    if ( this.viewName === 'head' ) {
+      z += 2;
+      y = y * z + 4 * this.avatarHeight / 5;
+    } else if ( this.viewName === 'upper' ) {
+      z += 4.5;
+      y = y * z + 2 * this.avatarHeight / 3;
+    } else if ( this.viewName === 'mid' ) {
+      z += 8;
+      y = y * z + this.avatarHeight / 3;
+    } else {
+      z += 12;
+      y = y * z;
+    }
+    x = x * z;
+
+    this.controlsEnd = new THREE.Vector3(x, y, 0);
+    this.cameraEnd = new THREE.Vector3(x, y, z).applyEuler( new THREE.Euler( (opt.cameraRotateX || opt.cameraRotateX), (opt.cameraRotateY || this.opt.cameraRotateY), 0 ) );
+
+    if ( this.cameraClock === null ) {
+      this.controls.target.copy( this.controlsEnd );
+      this.camera.position.copy( this.cameraEnd );
+    }
+    this.controlsStart = this.controls.target.clone();
+    this.cameraStart = this.camera.position.clone();
+    this.cameraClock = 0;
+
+  }
+
+  /**
+  * Change light colors and intensities.
+  * @param {Object} opt Options
+  */
+  setLighting(opt) {
+    opt = opt || {};
+
+    // Ambient light
+    if ( opt.hasOwnProperty("lightAmbientColor") ) {
+      this.lightAmbient.color.set( new THREE.Color( opt.lightAmbientColor ) );
+    }
+    if ( opt.hasOwnProperty("lightAmbientIntensity") ) {
+      this.lightAmbient.intensity = opt.lightAmbientIntensity;
+      this.lightAmbient.visible = (opt.lightAmbientIntensity !== 0);
+    }
+
+    // Directional light
+    if ( opt.hasOwnProperty("lightDirectColor") ) {
+      this.lightDirect.color.set( new THREE.Color( opt.lightDirectColor ) );
+    }
+    if ( opt.hasOwnProperty("lightDirectIntensity") ) {
+      this.lightDirect.intensity = opt.lightDirectIntensity;
+      this.lightDirect.visible = (opt.lightDirectIntensity !== 0);
+    }
+    if ( opt.hasOwnProperty("lightDirectPhi") && opt.hasOwnProperty("lightDirectTheta") ) {
+      this.lightDirect.position.setFromSphericalCoords(2, opt.lightDirectPhi, opt.lightDirectTheta);
+    }
+
+    // Spot light
+    if ( opt.hasOwnProperty("lightSpotColor") ) {
+      this.lightSpot.color.set( new THREE.Color( opt.lightSpotColor ) );
+    }
+    if ( opt.hasOwnProperty("lightSpotIntensity") ) {
+      this.lightSpot.intensity = opt.lightSpotIntensity;
+      this.lightSpot.visible = (opt.lightSpotIntensity !== 0);
+    }
+    if ( opt.hasOwnProperty("lightSpotPhi") && opt.hasOwnProperty("lightSpotTheta") ) {
+      this.lightSpot.position.setFromSphericalCoords( 2, opt.lightSpotPhi, opt.lightSpotTheta );
+      this.lightSpot.position.add( new THREE.Vector3(0,1.5,0) );
+    }
+    if ( opt.hasOwnProperty("lightSpotDispersion") ) {
+      this.lightSpot.angle = opt.lightSpotDispersion;
+    }
+  }
+
+  /**
+  * Render scene.
+  */
+  render() {
+    if ( this.isRunning ) {
+
+      // Set limits to eyelids
+      const blinkl = this.getValue("eyeBlinkLeft");
+      const blinkr = this.getValue("eyeBlinkRight");
+      const lookdown = this.getValue("eyesLookDown") / 2;
+      const limitl = lookdown + this.getValue("browDownLeft") / 2;
+      const limitr = lookdown + this.getValue("browDownRight") / 2;
+      this.setValue( "eyeBlinkLeft", Math.max(blinkl,limitl) );
+      this.setValue( "eyeBlinkRight", Math.max(blinkr,limitr) );
+
+      this.renderer.render( this.scene, this.camera );
+
+      // Restore eyelid values
+      this.setValue( "eyeBlinkLeft", blinkl );
+      this.setValue( "eyeBlinkRight", blinkr );
+
+    }
+  }
+
+  /**
+  * Resize avatar.
+  */
+  onResize() {
+    this.parentWindowBounds = this.parentWindow.getBoundingClientRect()
+    this.camera.aspect = this.parentWindow.clientWidth / this.parentWindow.clientHeight;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize( this.parentWindow.clientWidth, this.parentWindow.clientHeight );
+    this.controls.update();
+    this.renderer.render( this.scene, this.camera );
+  }
+
+  /**
+   * Animate.
+   */
+
+  animate(t) {
+
+    // Are we running?
+    if ( this.isRunning ) {
+      requestAnimationFrame( this.animate.bind(this) );
+    } else {
+      return;
+    }
+
+    // Statistics start
+    if ( this.stats ) {
+      this.stats.begin();
+    }
+
+    const dt = this.animateBase(t)
+    if(!dt) return
+
+    // Camera
+    if ( this.cameraClock !== null && this.cameraClock < 1000 ) {
+      this.cameraClock += dt;
+      if ( this.cameraClock > 1000 ) this.cameraClock = 1000;
+      let s = new THREE.Spherical().setFromVector3(this.cameraStart);
+      let sEnd = new THREE.Spherical().setFromVector3(this.cameraEnd);
+      s.phi += this.easing(this.cameraClock / 1000) * (sEnd.phi - s.phi);
+      s.theta += this.easing(this.cameraClock / 1000) * (sEnd.theta - s.theta);
+      s.radius += this.easing(this.cameraClock / 1000) * (sEnd.radius - s.radius);
+      s.makeSafe();
+      this.camera.position.setFromSpherical( s );
+      if ( this.controlsStart.x !== this.controlsEnd.x ) {
+        this.controls.target.copy( this.controlsStart.lerp( this.controlsEnd, this.easing(this.cameraClock / 1000) ) );
+      } else {
+        s.setFromVector3(this.controlsStart);
+        sEnd.setFromVector3(this.controlsEnd);
+        s.phi += this.easing(this.cameraClock / 1000) * (sEnd.phi - s.phi);
+        s.theta += this.easing(this.cameraClock / 1000) * (sEnd.theta - s.theta);
+        s.radius += this.easing(this.cameraClock / 1000) * (sEnd.radius - s.radius);
+        s.makeSafe();
+        this.controls.target.setFromSpherical( s );
+      }
+      this.controls.update();
+    }
+
+    // Autorotate
+    if ( this.controls.autoRotate ) this.controls.update();
+
+    // Statistics end
+    if ( this.stats ) {
+      this.stats.end();
+    }
+
+    this.render();
+
+  }
+
+}
+
+
+export { TalkingBase, TalkingHead };
