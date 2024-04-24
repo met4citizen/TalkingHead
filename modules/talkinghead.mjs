@@ -142,6 +142,11 @@ class TalkingHead {
     this.poseDelta = poseDelta
     this.posePropNames = posePropNames
 
+    // Externals rely on these
+    this.b64ToArrayBuffer = b64ToArrayBuffer
+    this.concatArrayBuffers = concatArrayBuffers
+    this.pcmToAudioBuffer = pcmToAudioBuffer
+
     // Use "side" as the first pose, weight on left leg
     this.poseName = "side"; // First pose
     this.poseWeightOnLeft = true; // Initial weight on left leg
@@ -1828,8 +1833,8 @@ class TalkingHead {
       let audio;
       if ( Array.isArray(item.audio) ) {
         // Convert from PCM samples
-        let buf = concatArrayBuffers( item.audio );
-        audio = pcmToAudioBuffer(buf);
+        let buf = this.concatArrayBuffers( item.audio );
+        audio = this.pcmToAudioBuffer(buf);
       } else {
         audio = item.audio;
       }
@@ -1960,7 +1965,7 @@ class TalkingHead {
           if ( res.status === 200 && data && data.audioContent ) {
 
             // Audio data
-            const buf = b64ToArrayBuffer(data.audioContent);
+            const buf = this.b64ToArrayBuffer(data.audioContent);
             const audio = await this.audioCtx.decodeAudioData( buf );
             this.speakWithHands();
 
