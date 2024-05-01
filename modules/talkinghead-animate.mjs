@@ -1,115 +1,43 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
+import { animMoods } from './anim-moods.mjs'
+import { animEmojis } from './anim-emojis.mjs'
 import { poseTemplates, poseDelta, posePropNames } from './pose-templates.mjs'
-import { animMoods } from './animmoods.mjs'
-import { animEmojis } from './animemojis.mjs'
-
-import { b64ToArrayBuffer, concatArrayBuffers, pcmToAudioBuffer } from './talkingutils.js'
 
 /**
-* @class Talking Base
+* @class Talking Head Animate
 * @author Mika Suominen
+* 
+* Body animation support
 */
-export class TalkingBase {
-
-  /**
-  * Avatar.
-  * @typedef {Object} Avatar
-  * @property {string} url URL for the GLB file
-  * @property {string} [body] Body form 'M' or 'F'
-  * @property {string} [lipsyncLang] Lip-sync language, e.g. 'fi', 'en'
-  * @property {string} [ttsLang] Text-to-speech language, e.g. "fi-FI"
-  * @property {voice} [ttsVoice] Voice name.
-  * @property {numeric} [ttsRate] Voice rate.
-  * @property {numeric} [ttsPitch] Voice pitch.
-  * @property {numeric} [ttsVolume] Voice volume.
-  * @property {string} [avatarMood] Initial mood.
-  * @property {boolean} [avatarMute] If true, muted.
-  */
-
-  /**
-  * Loading progress.
-  * @callback progressfn
-  * @param {string} url URL of the resource
-  * @param {Object} event Progress event
-  * @param {boolean} event.lengthComputable If false, total is not known
-  * @param {number} event.loaded Number of loaded items
-  * @param {number} event.total Number of total items
-  */
-
-  /**
-  * Callback when new subtitles have been written to the DOM node.
-  * @callback subtitlesfn
-  * @param {Object} node DOM node
-  */
-
-  /**
-  * Callback when the speech queue processes this marker item.
-  * @callback markerfn
-  */
-
-  /**
-  * Audio object.
-  * @typedef {Object} Audio
-  * @property {ArrayBuffer|ArrayBuffer[]} audio Audio buffer or array of buffers
-  * @property {string[]} words Words
-  * @property {number[]} wtimes Starting times of words
-  * @property {number[]} wdurations Durations of words
-  * @property {string[]} [visemes] Oculus lip-sync viseme IDs
-  * @property {number[]} [vtimes] Starting times of visemes
-  * @property {number[]} [vdurations] Durations of visemes
-  * @property {string[]} [markers] Timed callback functions
-  * @property {number[]} [mtimes] Starting times of markers
-  */
-
-  /**
-  * Lip-sync object.
-  * @typedef {Object} Lipsync
-  * @property {string[]} visemes Oculus lip-sync visemes
-  * @property {number[]} times Starting times in relative units
-  * @property {number[]} durations Durations in relative units
-  */
+export class TalkingHeadAnimate {
 
   /**
   * @constructor
-  * @param {Object} parent window bounds
+  * @param {Object} node DOM element of the avatar
   * @param {Object} [opt=null] Global/default options
   */
+  constructor(node, opt = null ) {
 
-  constructor(parentWindowBounds, opt = null ) {
+    this.nodeAvatar = node;
 
-    this.parentWindowBounds = parentWindowBounds;
-
-    this.opt = {
-      jwtGet: null, // Function to get JSON Web Token
-      ttsEndpoint: null,
-      ttsApikey: null,
-      ttsTrimStart: 0,
-      ttsTrimEnd: 400,
-      ttsLang: "fi-FI",
-      ttsVoice: "fi-FI-Standard-A",
-      ttsRate: 0.95,
-      ttsPitch: 0,
-      ttsVolume: 0,
-      lipsyncLang: 'fi',
-      lipsyncModules: ['fi','en','lt'],
-      pcmSampleRate: 22050,
+    const default_options = {
       modelRoot: "Armature",
       modelPixelRatio: 1,
       modelFPS: 30,
       modelMovementFactor: 1,
       avatarMood: "neutral",
-      avatarMute: false,
-      markedOptions: { mangle:false, headerIds:false, breaks: true },
-      statsNode: null,
-      statsStyle: null
     };
-    Object.assign( this.opt, opt || {} );
+
+    this.opt = Object.assign( default_options, opt || {} );
+
+    this.stateName = 'idle';
 
     // Pose templates
+    // NOTE: The body weight on each pose should be on left foot
+    // for most natural result.
     this.poseTemplates = poseTemplates
     this.poseDelta = poseDelta
     this.posePropNames = posePropNames
@@ -121,9 +49,6 @@ export class TalkingBase {
     this.poseBase = this.poseFactory( this.poseTemplates[this.poseName] );
     this.poseTarget = this.poseFactory( this.poseTemplates[this.poseName] );
     this.poseAvatar = null; // Set when avatar has been loaded
-
-    this.animEmojis = animEmojis
-    this.animMoods = animMoods
 
     // Avatar height in meters
     // NOTE: The actual value is calculated based on the eye level on avatar load
@@ -149,6 +74,7 @@ export class TalkingBase {
     //           8. Current object
     // object  : delay, delta times dt and values vs.
     //
+    this.animMoods = animMoods
     this.moodName = this.opt.avatarMood || "neutral";
     this.mood = this.animMoods[ this.moodName ];
     if ( !this.mood ) {
@@ -179,56 +105,10 @@ export class TalkingBase {
     this.animTimeLast = 0;
     this.easing = this.sigmoidFactory(5); // Ease in and out
 
-    // Lip-sync extensions, import dynamically
-    this.lipsync = {};
-    this.opt.lipsyncModules.forEach( x => this.lipsyncGetProcessor(x) );
-    this.visemeNames = [
-      'aa', 'E', 'I', 'O', 'U', 'PP', 'SS', 'TH', 'DD', 'FF', 'kk',
-      'nn', 'RR', 'CH', 'sil'
-    ];
-
-
-    // Audio context and playlist
-    this.audioCtx = new AudioContext();
-    this.audioSpeechSource = this.audioCtx.createBufferSource();
-    this.audioBackgroundSource = this.audioCtx.createBufferSource();
-    this.audioBackgroundGainNode = this.audioCtx.createGain();
-    this.audioSpeechGainNode = this.audioCtx.createGain();
-    this.audioReverbNode = this.audioCtx.createConvolver();
-    this.setReverb(null); // Set dry impulse as default
-    this.audioBackgroundGainNode.connect(this.audioReverbNode);
-    this.audioSpeechGainNode.connect(this.audioReverbNode);
-    this.audioReverbNode.connect(this.audioCtx.destination);
-    this.audioPlaylist = [];
-
-    // Create a lookup table for base64 decoding
-    const b64Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-    this.b64Lookup = typeof Uint8Array === 'undefined' ? [] : new Uint8Array(256);
-    for (let i = 0; i < b64Chars.length; i++) this.b64Lookup[b64Chars.charCodeAt(i)] = i;
-
-    // Speech queue
-    this.stateName = 'idle';
-    this.speechQueue = [];
-    this.isSpeaking = false;
-
-    // Setup Google text-to-speech
-    if ( this.opt.ttsEndpoint ) {
-      let audio = new Audio();
-      if (audio.canPlayType("audio/ogg")) {
-        this.ttsAudioEncoding = "OGG-OPUS";
-      } else if (audio.canPlayType("audio/mp3")) {
-        this.ttsAudioEncoding = "MP3";
-      } else {
-        throw new Error("There was no support for either OGG or MP3 audio.");
-      }
-    } else {
-      throw new Error("You must provide some Google-compliant Text-To-Speech Endpoint.");
-    }
-
-    this._setupIKMesh()
+    this.setupIKMesh()
   }
 
-  _setupIKMesh() {
+  setupIKMesh() {
     // IK Mesh
     this.ikMesh = new THREE.SkinnedMesh();
     const ikSetup = {
@@ -249,28 +129,98 @@ export class TalkingBase {
       ikBones.push(bone);
     });
     this.ikMesh.bind( new THREE.Skeleton( ikBones ) );
+
   }
 
-
   /**
-  * Clear 3D object.
-  * @param {Object} obj Object
+  * Loader for 3D avatar model.
+  * @param {string} avatar Avatar object with 'url' property to GLTF/GLB file.
+  * @param {progressfn} [onprogress=null] Callback for progress
   */
-  clearThree(obj){
-    while( obj.children.length ){
-      this.clearThree(obj.children[0]);
-      obj.remove(obj.children[0]);
-    }
-    if ( obj.geometry ) obj.geometry.dispose();
+  async loadAvatar(avatar, onprogress=null ) {
 
-    if ( obj.material ) {
-      Object.keys(obj.material).forEach( x => {
-        if ( obj.material[x] && obj.material[x] !== null && typeof obj.material[x].dispose === 'function' ) {
-          obj.material[x].dispose();
-        }
-      });
-      obj.material.dispose();
+    // Checkt the avatar parameter
+    if ( !avatar || !avatar.hasOwnProperty('url') ) {
+      throw new Error("Invalid parameter. The avatar must have at least 'url' specified.");
     }
+
+    // Loader
+    const loader = new GLTFLoader();
+    let gltf = await loader.loadAsync( avatar.url, onprogress );
+
+    useAvatar(gltf.scene)
+    return gltf.scene
+  }
+
+  useAvatar(avatar) {
+
+    // Check the gltf
+    const required = [ this.opt.modelRoot ];
+    this.posePropNames.forEach( x => required.push( x.split('.')[0] ) );
+    required.forEach( x => {
+      if ( !avatar.getObjectByName(x) ) {
+        throw new Error('Avatar object ' + x + ' not found');
+      }
+    });
+
+    this.avatar = avatar;
+
+    // Clear previous scene, if avatar was previously loaded
+    this.mixer = null;
+
+    // Avatar full-body
+    this.armature = avatar.getObjectByName( this.opt.modelRoot );
+    this.armature.scale.setScalar(1);
+
+    // Morph targets
+    // TODO: Check morph target names
+    this.morphs = [];
+    this.armature.traverse( x => {
+      if ( x.morphTargetInfluences && x.morphTargetInfluences.length &&
+        x.morphTargetDictionary ) {
+        this.morphs.push(x);
+      }
+    });
+    if ( this.morphs.length === 0 ) {
+      throw new Error('Blend shapes not found');
+    }
+
+    // Objects for needed properties
+    this.poseAvatar = { props: {} };
+    this.posePropNames.forEach( x => {
+      const ids = x.split('.');
+      const o = this.armature.getObjectByName(ids[0]);
+      this.poseAvatar.props[x] = o[ids[1]];
+      if ( this.poseBase.props.hasOwnProperty(x) ) {
+        this.poseAvatar.props[x].copy( this.poseBase.props[x] );
+      } else {
+        this.poseBase.props[x] = this.poseAvatar.props[x].clone();
+      }
+
+      // Make sure the target has the delta properties, because we need it as a basis
+      if ( this.poseDelta.props.hasOwnProperty(x) && !this.poseTarget.props.hasOwnProperty(x) ) {
+        this.poseTarget.props[x] = this.poseAvatar.props[x].clone();
+      }
+
+      // Take target pose
+      this.poseTarget.props[x].t = this.animClock;
+      this.poseTarget.props[x].d = 2000;
+    });
+
+    // Reset IK bone positions
+    this.ikMesh.traverse( x => {
+      if (x.isBone) {
+        x.position.copy( this.armature.getObjectByName(x.name).position );
+      }
+    });
+
+    // Estimate avatar height based on eye level
+    const plEye = new THREE.Vector3();
+    this.armature.getObjectByName('LeftEye').getWorldPosition(plEye);
+    this.avatarHeight = plEye.y + 0.2;
+
+    // Set pose and start animation
+    this.setMood( this.avatar.avatarMood || this.moodName || this.opt.avatarMood );
   }
 
   /**
@@ -589,6 +539,7 @@ export class TalkingBase {
 
   }
 
+// THIS IS NOT USED XXX
 
   /**
   * Get morph target names.
@@ -870,18 +821,21 @@ export class TalkingBase {
   }
 
   /**
-  * Animate the avatar.
-  * @param {number} t High precision timestamp in ms.
-  * @return {number} dt - delta time for convenience in ms.
-  */
-  animateBase(t) {
-
-    // Delta time
+   * Animate forward time
+   */
+  animateTime(t) {
     let dt = t - this.animTimeLast;
     if ( dt < this.animFrameDur ) return 0;
     dt = dt / this.animSlowdownRate;
     this.animClock += dt;
     this.animTimeLast = t;
+    return dt
+  }
+
+  /**
+  * Build a list of chores to perform
+  */
+  animateBuildList() {
 
     // Randomize facial expression
     if ( this.viewName !== 'full' ) {
@@ -894,8 +848,9 @@ export class TalkingBase {
       }
     }
 
-    // Start from baseline
     const o = {};
+
+    // Start from baseline
     for( let [mt,x] of Object.entries(this.animBaseline) ) {
       const v = this.getValue(mt);
       if ( v !== x.target ) {
@@ -976,48 +931,66 @@ export class TalkingBase {
       if ( this.animBaseline.hasOwnProperty(mt) ) this.animBaseline[mt].t0 = undefined;
     }
 
+    return o
+  }
+
+  /**
+   * Update performance
+   */
+  _animateBodyInternal(mt,x) {
+    if ( mt === 'subtitles' ) {
+      // done at caller scope instead
+      //      if( this.onSubtitles && typeof this.onSubtitles === "function" ) {
+      //        this.onSubtitles(""+x);
+      //      }
+    } else if ( mt === 'speak' ) {
+      // done at caller scope instead
+      //      this.speakText(""+x);
+    } else if ( mt === 'pose' ) {
+      this.poseName = ""+x;
+      this.setPoseFromTemplate( this.poseTemplates[ this.poseName ] );
+    } else if ( mt === 'moveto' ) {
+      Object.entries(x.props).forEach( e => {
+        if ( e[1] ) {
+          this.poseTarget.props[e[0]].copy( e[1] );
+        } else {
+          this.poseTarget.props[e[0]].copy( this.getPoseTemplateProp(e[0]) );
+        }
+        this.poseTarget.props[e[0]].t = this.animClock;
+        this.poseTarget.props[e[0]].d = (e[1] && e[1].d) ? e[1].d : (x.duration || 2000);
+      });
+    } else if ( mt === 'handLeft' ) {
+      this.ikSolve( {
+        iterations: 20, root: "LeftShoulder", effector: "LeftHandMiddle1",
+        links: [
+          { link: "LeftHand", minx: -0.5, maxx: 0.5, miny: -1, maxy: 1, minz: -0.5, maxz: 0.5 },
+          { link: "LeftForeArm", minx: -0.5, maxx: 1.5, miny: -1.5, maxy: 1.5, minz: -0.5, maxz: 3 },
+          { link: "LeftArm", minx: -1.5, maxx: 1.5, miny: 0, maxy: 0, minz: -1, maxz: 3 }
+        ]
+      }, x.x ? new THREE.Vector3(x.x,x.y,x.z) : null, true, x.d );
+    } else if ( mt === 'handRight' ) {
+      this.ikSolve( {
+        iterations: 20, root: "RightShoulder", effector: "RightHandMiddle1",
+        links: [
+          { link: "RightHand", minx: -0.5, maxx: 0.5, miny: -1, maxy: 1, minz: -0.5, maxz: 0.5, maxAngle: 0.1 },
+          { link: "RightForeArm", minx: -0.5, maxx: 1.5, miny: -1.5, maxy: 1.5, minz: -3, maxz: 0.5, maxAngle: 0.2 },
+          { link: "RightArm", minx: -1.5, maxx: 1.5, miny: 0, maxy: 0, minz: -1, maxz: 3 }
+        ]
+      }, x.x ? new THREE.Vector3(x.x,x.y,x.z) : null, true, x.d );
+    } else {
+      this.setValue(mt,x);
+    }
+
+  }
+
+  /**
+  * animate avatar
+  */
+  animateBody(o) {
+
     // Update values
     for( let [mt,x] of Object.entries(o) ) {
-      if ( mt === 'subtitles' ) {
-        if( this.onSubtitles && typeof this.onSubtitles === "function" ) {
-          this.onSubtitles(""+x);
-        }
-      } else if ( mt === 'speak' ) {
-        this.speakText(""+x);
-      } else if ( mt === 'pose' ) {
-        this.poseName = ""+x;
-        this.setPoseFromTemplate( this.poseTemplates[ this.poseName ] );
-      } else if ( mt === 'moveto' ) {
-        Object.entries(x.props).forEach( e => {
-          if ( e[1] ) {
-            this.poseTarget.props[e[0]].copy( e[1] );
-          } else {
-            this.poseTarget.props[e[0]].copy( this.getPoseTemplateProp(e[0]) );
-          }
-          this.poseTarget.props[e[0]].t = this.animClock;
-          this.poseTarget.props[e[0]].d = (e[1] && e[1].d) ? e[1].d : (x.duration || 2000);
-        });
-      } else if ( mt === 'handLeft' ) {
-        this.ikSolve( {
-          iterations: 20, root: "LeftShoulder", effector: "LeftHandMiddle1",
-          links: [
-            { link: "LeftHand", minx: -0.5, maxx: 0.5, miny: -1, maxy: 1, minz: -0.5, maxz: 0.5 },
-            { link: "LeftForeArm", minx: -0.5, maxx: 1.5, miny: -1.5, maxy: 1.5, minz: -0.5, maxz: 3 },
-            { link: "LeftArm", minx: -1.5, maxx: 1.5, miny: 0, maxy: 0, minz: -1, maxz: 3 }
-          ]
-        }, x.x ? new THREE.Vector3(x.x,x.y,x.z) : null, true, x.d );
-      } else if ( mt === 'handRight' ) {
-        this.ikSolve( {
-          iterations: 20, root: "RightShoulder", effector: "RightHandMiddle1",
-          links: [
-            { link: "RightHand", minx: -0.5, maxx: 0.5, miny: -1, maxy: 1, minz: -0.5, maxz: 0.5, maxAngle: 0.1 },
-            { link: "RightForeArm", minx: -0.5, maxx: 1.5, miny: -1.5, maxy: 1.5, minz: -3, maxz: 0.5, maxAngle: 0.2 },
-            { link: "RightArm", minx: -1.5, maxx: 1.5, miny: 0, maxy: 0, minz: -1, maxz: 3 }
-          ]
-        }, x.x ? new THREE.Vector3(x.x,x.y,x.z) : null, true, x.d );
-      } else {
-        this.setValue(mt,x);
-      }
+    	this._animateBodyInternal(mt,x)
     }
 
     // Animate
@@ -1039,663 +1012,8 @@ export class TalkingBase {
     hips.position.x -= (ltoePos.x+rtoePos.x)/4;
     hips.position.z -= (ltoePos.z+rtoePos.z)/2;
 
-    return dt
   }
 
-  /**
-  * Reset all the visemes
-  */
-  resetLips() {
-    this.visemeNames.forEach( x => {
-      this.morphs.forEach( y => {
-        const ndx = y.morphTargetDictionary['viseme_'+x];
-        if ( ndx !== undefined ) {
-          y.morphTargetInfluences[ndx] = 0;
-        }
-      });
-    });
-  }
-
-  /**
-  * Get lip-sync processor based on language. Import module dynamically.
-  * @param {string} lang Language
-  * @return {Object} Pre-processsed text.
-  */
-  lipsyncGetProcessor(lang, path="./") {
-    if ( !this.lipsync.hasOwnProperty(lang) ) {
-      const moduleName = path + 'lipsync-' + lang.toLowerCase() + '.mjs';
-      const className = 'Lipsync' + lang.charAt(0).toUpperCase() + lang.slice(1);
-      import(moduleName).then( module => {
-        this.lipsync[lang] = new module[className];
-      });
-    }
-  }
-
-  /**
-  * Preprocess text for tts/lipsync, including:
-  * - convert symbols/numbers to words
-  * - filter out characters that should be left unspoken
-  * @param {string} s Text
-  * @param {string} lang Language
-  * @return {string} Pre-processsed text.
-  */
-  lipsyncPreProcessText(s,lang) {
-    const o = this.lipsync[lang] || Object.values(this.lipsync)[0];
-    return o.preProcessText(s);
-  }
-
-  /**
-  * Convert words to Oculus LipSync Visemes.
-  * @param {string} w Word
-  * @param {string} lang Language
-  * @return {Lipsync} Lipsync object.
-  */
-  lipsyncWordsToVisemes(w,lang) {
-    const o = this.lipsync[lang] || Object.values(this.lipsync)[0];
-    return o.wordsToVisemes(w);
-  }
-
-
-  /**
-  * Add text to the speech queue.
-  * @param {string} s Text.
-  * @param {Options} [opt=null] Text-specific options for lipsync/TTS language, voice, rate and pitch, mood and mute
-  * @param {subtitlesfn} [onsubtitles=null] Callback when a subtitle is written
-  * @param {number[][]} [excludes=null] Array of [start, end] index arrays to not speak
-  */
-  speakText(s, opt = null, onsubtitles = null, excludes = null ) {
-    opt = opt || {};
-
-    // Classifiers
-    const dividersSentence = /[!\.\?\n\p{Extended_Pictographic}]/ug;
-    const dividersWord = /[ ]/ug;
-    const speakables = /[\p{L}\p{N},\.'!€\$\+\-%&\?]/ug;
-    const emojis = /[\p{Extended_Pictographic}]/ug;
-    const lipsyncLang = opt.lipsyncLang || this.avatar.lipsyncLang || this.opt.lipsyncLang;
-
-    let markdownWord = ''; // markdown word
-    let textWord = ''; // text-to-speech word
-    let markId = 0; // SSML mark id
-    let ttsSentence = []; // Text-to-speech sentence
-    let lipsyncAnim = []; // Lip-sync animation sequence
-    const letters = [...s];
-    for( let i=0; i<letters.length; i++ ) {
-      const isLast = i === (letters.length-1);
-      const isSpeakable = letters[i].match(speakables);
-      const isEndOfSentence = letters[i].match(dividersSentence);
-      const isEndOfWord = letters[i].match(dividersWord);
-
-      // Add letter to subtitles
-      if ( onsubtitles ) {
-        markdownWord += letters[i];
-      }
-
-      // Add letter to spoken word
-      if ( isSpeakable ) {
-        if ( !excludes || excludes.every( x => (i < x[0]) || (i > x[1]) ) ) {
-          textWord += letters[i];
-        }
-      }
-
-      // Add words to sentence and animations
-      if ( isEndOfWord || isEndOfSentence || isLast ) {
-
-        // Add to text-to-speech sentence
-        if ( textWord.length ) {
-          textWord = this.lipsyncPreProcessText(textWord, lipsyncLang);
-          if ( textWord.length ) {
-            ttsSentence.push( {
-              mark: markId,
-              word: textWord
-            });
-          }
-        }
-
-        // Push subtitles to animation queue
-        if ( markdownWord.length ) {
-          lipsyncAnim.push( {
-            mark: markId,
-            template: { name: 'subtitles' },
-            ts: [0],
-            vs: {
-              subtitles: markdownWord
-            },
-          });
-          markdownWord = '';
-        }
-
-        // Push visemes to animation queue
-        if ( textWord.length ) {
-          const v = this.lipsyncWordsToVisemes(textWord, lipsyncLang);
-          if ( v && v.visemes && v.visemes.length ) {
-            const d = v.times[ v.visemes.length-1 ] + v.durations[ v.visemes.length-1 ];
-            for( let j=0; j<v.visemes.length; j++ ) {
-              const o =
-              lipsyncAnim.push( {
-                mark: markId,
-                template: { name: 'viseme' },
-                ts: [ (v.times[j] - 0.6) / d, (v.times[j] + 0.5) / d, (v.times[j] + v.durations[j] + 0.5) / d ],
-                vs: {
-                  ['viseme_'+v.visemes[j]]: [null,(v.visemes[j] === 'PP' || v.visemes[j] === 'FF') ? 0.9 : 0.6,0]
-                }
-              });
-            }
-          }
-          textWord = '';
-          markId++;
-        }
-      }
-
-      // Process sentences
-      if ( isEndOfSentence || isLast ) {
-
-        // Send sentence to Text-to-speech queue
-        if ( ttsSentence.length || (isLast && lipsyncAnim.length) ) {
-          const o = {
-            anim: lipsyncAnim
-          };
-          if ( onsubtitles ) o.onSubtitles = onsubtitles;
-          if ( ttsSentence.length && !opt.avatarMute ) {
-            o.text = ttsSentence;
-            if ( opt.avatarMood ) o.mood = opt.avatarMood;
-            if ( opt.ttsLang ) o.lang = opt.ttsLang;
-            if ( opt.ttsVoice ) o.voice = opt.ttsVoice;
-            if ( opt.ttsRate ) o.rate = opt.ttsRate;
-            if ( opt.ttsVoice ) o.pitch = opt.ttsPitch;
-            if ( opt.ttsVolume ) o.volume = opt.ttsVolume;
-          }
-          this.speechQueue.push(o);
-
-          // Reset sentence and animation sequence
-          ttsSentence = [];
-          textWord = '';
-          markId = 0;
-          lipsyncAnim = [];
-        }
-
-        // Send emoji, if the divider was a known emoji
-        if ( letters[i].match(emojis) ) {
-          let emoji = this.animEmojis[letters[i]];
-          if ( emoji && emoji.link ) emoji = this.animEmojis[emoji.link];
-          if ( emoji ) {
-            this.speechQueue.push( { emoji: emoji } );
-          }
-        }
-
-        this.speechQueue.push( { break: 100 } );
-
-      }
-
-    }
-
-    this.speechQueue.push( { break: 1000 } );
-
-    // Start speaking (if not already)
-    this.startSpeaking();
-  }
-
-  /**
-  * Add emoji to speech queue.
-  * @param {string} e Emoji.
-  */
-  async speakEmoji(e) {
-    let emoji = this.animEmojis[e];
-    if ( emoji && emoji.link ) emoji = this.animEmojis[emoji.link];
-    if ( emoji ) {
-      this.speechQueue.push( { emoji: emoji } );
-    }
-    this.startSpeaking();
-  }
-
-  /**
-  * Add a break to the speech queue.
-  * @param {numeric} t Duration in milliseconds.
-  */
-  async speakBreak(t) {
-    this.speechQueue.push( { break: t } );
-    this.startSpeaking();
-  }
-
-  /**
-  * Callback when speech queue processes this marker.
-  * @param {markerfn} onmarker Callback function.
-  */
-  async speakMarker(onmarker) {
-    this.speechQueue.push( { marker: onmarker } );
-    this.startSpeaking();
-  }
-
-  /**
-  * Play background audio.
-  * @param {string} url URL for the audio, stop if null.
-  */
-  async playBackgroundAudio( url ) {
-
-    // Fetch audio
-    let response = await fetch(url);
-    let arraybuffer = await response.arrayBuffer();
-
-    // Play audio in a loop
-    this.stopBackgroundAudio()
-    this.audioBackgroundSource = this.audioCtx.createBufferSource();
-    this.audioBackgroundSource.loop = true;
-    this.audioBackgroundSource.buffer = await this.audioCtx.decodeAudioData(arraybuffer);
-    this.audioBackgroundSource.playbackRate.value = 1 / this.animSlowdownRate;
-    this.audioBackgroundSource.connect(this.audioBackgroundGainNode);
-    this.audioBackgroundSource.start(0);
-
-  }
-
-  /**
-  * Stop background audio.
-  */
-  stopBackgroundAudio() {
-    try { this.audioBackgroundSource.stop(); } catch(error) {}
-    this.audioBackgroundSource.disconnect();
-  }
-
-  /**
-  * Setup the convolver node based on an impulse.
-  * @param {string} [url=null] URL for the impulse, dry impulse if null
-  */
-  async setReverb( url=null ) {
-    if ( url ) {
-      // load impulse response from file
-      let response = await fetch(url);
-      let arraybuffer = await response.arrayBuffer();
-      this.audioReverbNode.buffer = await this.audioCtx.decodeAudioData(arraybuffer);
-    } else {
-      // dry impulse
-      const samplerate = this.audioCtx.sampleRate;
-      const impulse = this.audioCtx.createBuffer(2, samplerate, samplerate);
-      impulse.getChannelData(0)[0] = 1;
-      impulse.getChannelData(1)[0] = 1;
-      this.audioReverbNode.buffer = impulse;
-    }
-  }
-
-  /**
-  * Set audio gain.
-  * @param {number} speech Gain for speech, if null do not change
-  * @param {number} background Gain for background audio, if null do not change
-  */
-  setMixerGain( speech, background ) {
-    if ( speech !== null ) {
-      this.audioSpeechGainNode.gain.value = speech;
-    }
-    if ( background !== null ) {
-      this.audioBackgroundGainNode.gain.value = background;
-    }
-  }
-
-  /**
-  * Add audio to the speech queue.
-  * @param {Audio} r Audio message.
-  * @param {Options} [opt=null] Text-specific options for lipsyncLang
-  * @param {subtitlesfn} [onsubtitles=null] Callback when a subtitle is written
-  */
-  speakAudio(r, opt = null, onsubtitles = null ) {
-    opt = opt || {};
-    const lipsyncLang = opt.lipsyncLang || this.avatar.lipsyncLang || this.opt.lipsyncLang;
-    const o = {};
-
-
-    if ( r.words ) {
-      let lipsyncAnim = [];
-      for( let i=0; i<r.words.length; i++ ) {
-        const word = r.words[i];
-        const time = r.wtimes[i];
-        let duration = r.wdurations[i];
-
-        if ( word.length ) {
-
-          // Subtitle
-          if ( onsubtitles ) {
-            lipsyncAnim.push( {
-              template: { name: 'subtitles' },
-              ts: [time],
-              vs: {
-                subtitles: ' ' + word
-              }
-            });
-          }
-
-          // If visemes were not specified, calculate them based on the word
-          if ( !r.visemes ) {
-            const w = this.lipsyncPreProcessText(word, lipsyncLang);
-            const v = this.lipsyncWordsToVisemes(w, lipsyncLang);
-            if ( v && v.visemes && v.visemes.length ) {
-              const dTotal = v.times[ v.visemes.length-1 ] + v.durations[ v.visemes.length-1 ];
-              const overdrive = Math.min(duration, Math.max( 0, duration - v.visemes.length * 150));
-              let level = 0.6 + this.convertRange( overdrive, [0,duration], [0,0.4]);
-              duration = Math.min( duration, v.visemes.length * 200 );
-              if ( dTotal > 0 ) {
-                for( let j=0; j<v.visemes.length; j++ ) {
-                  const t = time + (v.times[j]/dTotal) * duration;
-                  const d = (v.durations[j]/dTotal) * duration;
-                  lipsyncAnim.push( {
-                    template: { name: 'viseme' },
-                    ts: [ t - Math.min(60,2*d/3), t + Math.min(25,d/2), t + d + Math.min(60,d/2) ],
-                    vs: {
-                      ['viseme_'+v.visemes[j]]: [null,(v.visemes[j] === 'PP' || v.visemes[j] === 'FF') ? 0.9 : level, 0]
-                    }
-                  });
-                }
-              }
-            }
-          }
-        }
-      }
-
-      // If visemes were specifies, use them
-      if ( r.visemes ) {
-        for( let i=0; i<r.visemes.length; i++ ) {
-          const viseme = r.visemes[i];
-          const time = r.vtimes[i];
-          const duration = r.vdurations[i];
-          lipsyncAnim.push( {
-            template: { name: 'viseme' },
-            ts: [ time - 2 * duration/3, time + duration/2, time + duration + duration/2 ],
-            vs: {
-              ['viseme_'+viseme]: [null,(viseme === 'PP' || viseme === 'FF') ? 0.9 : 0.6, 0]
-            }
-          });
-        }
-      }
-
-      // Timed marker callbacks
-      if ( r.markers ) {
-        for( let i=0; i<r.markers.length; i++ ) {
-          const fn = r.markers[i];
-          const time = r.mtimes[i];
-          lipsyncAnim.push( {
-            template: { name: 'markers' },
-            ts: [ time ],
-            vs: { "function": [fn] }
-          });
-        }
-      }
-
-      if ( lipsyncAnim.length ) {
-        o.anim = lipsyncAnim;
-      }
-
-    }
-
-    if ( r.audio ) {
-      o.audio = r.audio;
-    }
-
-    if ( onsubtitles ) {
-      o.onSubtitles = onsubtitles;
-    }
-
-    if ( Object.keys(o).length ) {
-      this.speechQueue.push(o);
-      this.speechQueue.push( { break: 300 } );
-      this.startSpeaking();
-    }
-
-  }
-
-  /**
-  * Play audio playlist using Web Audio API.
-  * @param {boolean} [force=false] If true, forces to proceed
-  */
-  async playAudio(force=false) {
-    if ( !this.armature || (this.isAudioPlaying && !force) ) return;
-    this.isAudioPlaying = true;
-    if ( this.audioPlaylist.length ) {
-      const item = this.audioPlaylist.shift();
-
-      // If Web Audio API is suspended, try to resume it
-      if ( this.audioCtx.state === "suspended" ) {
-        const resume = this.audioCtx.resume();
-        const timeout = new Promise((_r, rej) => setTimeout(() => rej("p2"), 1000));
-        try {
-          await Promise.race([resume, timeout]);
-        } catch(e) {
-          console.log("Can't play audio. Web Audio API suspended. This is often due to calling some speak method before the first user action, which is typically prevented by the browser.");
-          this.playAudio(true);
-          return;
-        }
-      }
-
-      // AudioBuffer
-      let audio;
-      if ( Array.isArray(item.audio) ) {
-        // Convert from PCM samples
-        let buf = concatArrayBuffers( item.audio );
-        audio = pcmToAudioBuffer(buf);
-      } else {
-        audio = item.audio;
-      }
-
-      // Create audio source
-      this.audioSpeechSource = this.audioCtx.createBufferSource();
-      this.audioSpeechSource.buffer = audio;
-      this.audioSpeechSource.playbackRate.value = 1 / this.animSlowdownRate;
-      this.audioSpeechSource.connect(this.audioSpeechGainNode);
-      this.audioSpeechSource.addEventListener('ended', () => {
-        this.audioSpeechSource.disconnect();
-        this.playAudio(true);
-      }, { once: true });
-
-      // Rescale lipsync and push to queue
-      const delay = 100;
-      if ( item.anim ) {
-        item.anim.forEach( x => {
-          for(let i=0; i<x.ts.length; i++) {
-            x.ts[i] = this.animClock + x.ts[i] + delay;
-          }
-          this.animQueue.push(x);
-        });
-      }
-
-      // Play
-      this.audioSpeechSource.start(delay/1000);
-
-    } else {
-      this.isAudioPlaying = false;
-      this.startSpeaking(true);
-    }
-  }
-
-  /**
-  * Take the next queue item from the speech queue, convert it to text, and
-  * load the audio file.
-  * @param {boolean} [force=false] If true, forces to proceed (e.g. after break)
-  */
-  async startSpeaking( force = false ) {
-    if ( !this.armature || (this.isSpeaking && !force) ) return;
-    this.stateName = 'talking';
-    this.isSpeaking = true;
-    if ( this.speechQueue.length ) {
-      let line = this.speechQueue.shift();
-      if ( line.emoji ) {
-
-        // Look at the camera
-        this.lookAtCamera(500);
-
-        // Only emoji
-        let duration = line.emoji.dt.reduce((a,b) => a+b,0);
-        this.animQueue.push( this.animFactory( line.emoji ) );
-        setTimeout( this.startSpeaking.bind(this), duration, true );
-      } else if ( line.break ) {
-        // Break
-        setTimeout( this.startSpeaking.bind(this), line.break, true );
-      } else if ( line.audio ) {
-
-        // Look at the camera
-        this.lookAtCamera(500);
-        this.speakWithHands();
-
-        // Make a playlist
-        this.audioPlaylist.push({ anim: line.anim, audio: line.audio });
-        this.onSubtitles = line.onSubtitles || null;
-        this.resetLips();
-        if ( line.mood ) this.setMood( line.mood );
-        this.playAudio();
-
-      } else if ( line.text ) {
-
-        // Look at the camera
-        this.lookAtCamera(500);
-
-        // Spoken text
-        try {
-          // Convert text to SSML
-          let ssml = "<speak>";
-          line.text.forEach( (x,i) => {
-            // Add mark
-            if (i > 0) {
-              ssml += " <mark name='" + x.mark + "'/>";
-            }
-
-            // Add word
-            ssml += x.word.replaceAll('&','&amp;')
-              .replaceAll('<','&lt;')
-              .replaceAll('>','&gt;')
-              .replaceAll('"','&quot;')
-              .replaceAll('\'','&apos;');
-
-          });
-          ssml += "</speak>";
-
-
-          const o = {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json; charset=utf-8"
-            },
-            body: JSON.stringify({
-              "input": {
-                "ssml": ssml
-              },
-              "voice": {
-                "languageCode": line.lang || this.avatar.ttsLang || this.opt.ttsLang,
-                "name": line.voice || this.avatar.ttsVoice || this.opt.ttsVoice
-              },
-              "audioConfig": {
-                "audioEncoding": this.ttsAudioEncoding,
-                "speakingRate": (line.rate || this.avatar.ttsRate || this.opt.ttsRate) + this.mood.speech.deltaRate,
-                "pitch": (line.pitch || this.avatar.ttsPitch || this.opt.ttsPitch) + this.mood.speech.deltaPitch,
-                "volumeGainDb": (line.volume || this.avatar.ttsVolume || this.opt.ttsVolume) + this.mood.speech.deltaVolume
-              },
-              "enableTimePointing": [ 1 ] // Timepoint information for mark tags
-            })
-          };
-
-          // JSON Web Token
-          if ( this.opt.jwtGet && typeof this.opt.jwtGet === "function" ) {
-            o.headers["Authorization"] = "Bearer " + await this.opt.jwtGet();
-          }
-
-          const res = await fetch( this.opt.ttsEndpoint + (this.opt.ttsApikey ? "?key=" + this.opt.ttsApikey : ''), o);
-          const data = await res.json();
-
-          if ( res.status === 200 && data && data.audioContent ) {
-
-            // Audio data
-            const buf = b64ToArrayBuffer(data.audioContent);
-            const audio = await this.audioCtx.decodeAudioData( buf );
-            this.speakWithHands();
-
-            // Word-to-audio alignment
-            const timepoints = [ { mark: 0, time: 0 } ];
-            data.timepoints.forEach( (x,i) => {
-              const time = x.timeSeconds * 1000;
-              let prevDuration = time - timepoints[i].time;
-              if ( prevDuration > 150 ) prevDuration - 150; // Trim out leading space
-              timepoints[i].duration = prevDuration;
-              timepoints.push( { mark: parseInt(x.markName), time: time });
-            });
-            let d = 1000 * audio.duration; // Duration in ms
-            if ( d > this.opt.ttsTrimEnd ) d = d - this.opt.ttsTrimEnd; // Trim out silence at the end
-            timepoints[timepoints.length-1].duration = d - timepoints[timepoints.length-1].time;
-
-            // Re-set animation starting times and rescale durations
-            line.anim.forEach( x => {
-              const timepoint = timepoints[x.mark];
-              if ( timepoint ) {
-                for(let i=0; i<x.ts.length; i++) {
-                  x.ts[i] = timepoint.time + (x.ts[i] * timepoint.duration) + this.opt.ttsTrimStart;
-                }
-              }
-            });
-
-            // Add to the playlist
-            this.audioPlaylist.push({ anim: line.anim, audio: audio });
-            this.onSubtitles = line.onSubtitles || null;
-            this.resetLips();
-            if ( line.mood ) this.setMood( line.mood );
-            this.playAudio();
-
-          } else {
-            this.startSpeaking(true);
-          }
-        } catch (error) {
-          console.error("Error:", error);
-          this.startSpeaking(true);
-        }
-      } else if ( line.anim ) {
-        // Only subtitles
-        this.onSubtitles = line.onSubtitles || null;
-        this.resetLips();
-        if ( line.mood ) this.setMood( line.mood );
-        line.anim.forEach( (x,i) => {
-          for(let j=0; j<x.ts.length; j++) {
-            x.ts[j] = this.animClock  + 10 * i;
-          }
-          this.animQueue.push(x);
-        });
-        setTimeout( this.startSpeaking.bind(this), 10 * line.anim.length, true );
-      } else if ( line.marker ) {
-        if ( typeof line.marker === "function" ) {
-          line.marker();
-        }
-        this.startSpeaking(true);
-      } else {
-        this.startSpeaking(true);
-      }
-    } else {
-      this.stateName = 'idle';
-      this.isSpeaking = false;
-    }
-  }
-
-  /**
-  * Pause speaking.
-  */
-  pauseSpeaking() {
-    try { this.audioSpeechSource.stop(); } catch(error) {}
-    this.audioPlaylist.length = 0;
-    this.stateName = 'idle';
-    this.isSpeaking = false;
-    this.isAudioPlaying = false;
-    this.animQueue = this.animQueue.filter( x  => x.template.name !== 'viseme' );
-    if ( this.armature ) {
-      this.resetLips();
-      this.render();
-    }
-  }
-
-  /**
-  * Stop speaking and clear the speech queue.
-  */
-  stopSpeaking() {
-    try { this.audioSpeechSource.stop(); } catch(error) {}
-    this.audioPlaylist.length = 0;
-    this.speechQueue.length = 0;
-    this.animQueue = this.animQueue.filter( x  => x.template.name !== 'viseme' );
-    this.stateName = 'idle';
-    this.isSpeaking = false;
-    this.isAudioPlaying = false;
-    if ( this.armature ) {
-      this.resetLips();
-      this.render();
-    }
-  }
 
   /**
   * Turn head and eyes to look at the camera.
@@ -1713,11 +1031,11 @@ export class TalkingBase {
   */
   lookAt(x,y,t) {
 
-  	// camera may not be present or specified
-  	if(!this.camera) return
+  	// camera may not exist
+  	if(!this.camera || !this.nodeAvatar) return
 
     // Eyes position
-    const rect = this.parentWindowBounds;
+    const rect = this.nodeAvatar.getBoundingClientRect();
     const lEye = this.armature.getObjectByName('LeftEye');
     const rEye = this.armature.getObjectByName('RightEye');
     lEye.updateMatrixWorld(true);
@@ -1793,7 +1111,9 @@ export class TalkingBase {
   */
   touchAt(x,y) {
 
-    const rect = this.parentWindowBounds;
+    if(!this.nodeAvatar) return
+
+    const rect = this.nodeAvatar.getBoundingClientRect();
     const pointer = new THREE.Vector2(
       ( (x - rect.left) / rect.width ) * 2 - 1,
       - ( (y - rect.top) / rect.height ) * 2 + 1
@@ -1910,44 +1230,6 @@ export class TalkingBase {
     });
     this.animQueue.push( anim );
 
-  }
-
-  /**
-  * Get slowdown.
-  * @return {numeric} Slowdown factor.
-  */
-  getSlowdownRate(k) {
-    return this.animSlowdownRate;
-  }
-
-  /**
-  * Set slowdown.
-  * @param {numeric} k Slowdown factor.
-  */
-  setSlowdownRate(k) {
-    this.animSlowdownRate = k;
-    this.audioSpeechSource.playbackRate.value = 1 / this.animSlowdownRate;
-    this.audioBackgroundSource.playbackRate.value = 1 / this.animSlowdownRate;
-  }
-
-  /**
-  * Start animation cycle.
-  */
-  start() {
-    if ( this.armature && this.isRunning === false ) {
-      this.audioCtx.resume();
-      this.animTimeLast = performance.now();
-      this.isRunning = true;
-      requestAnimationFrame( this.animate.bind(this) );
-    }
-  }
-
-  /**
-  * Stop animation cycle.
-  */
-  stop() {
-    this.isRunning = false;
-    this.audioCtx.suspend();
   }
 
   /**
@@ -2242,98 +1524,4 @@ export class TalkingBase {
       });
     }
   }
-
-  /**
-  * Loader for 3D avatar model Base.
-  * @param {string} avatar Avatar object with 'url' property to GLTF/GLB file.
-  * @param {progressfn} [onprogress=null] Callback for progress
-  */
-  async loadAvatar(avatar, onprogress=null ) {
-
-    // Check the avatar parameter
-    if ( !avatar || !avatar.hasOwnProperty('url') ) {
-      throw new Error("Invalid parameter. The avatar must have at least 'url' specified.");
-    }
-
-    // Loader
-    const loader = new GLTFLoader();
-    let gltf = await loader.loadAsync( avatar.url, onprogress );
-
-    // Check the gltf
-    const required = [ this.opt.modelRoot ];
-    this.posePropNames.forEach( x => required.push( x.split('.')[0] ) );
-    required.forEach( x => {
-      if ( !gltf.scene.getObjectByName(x) ) {
-        throw new Error('Avatar object ' + x + ' not found');
-      }
-    });
-
-    this.stop();
-    this.avatar = avatar;
-
-    // Clear previous scene, if avatar was previously loaded
-    this.mixer = null;
-    if ( this.armature ) {
-      this.clearThree( this.scene );
-    }
-
-    // Avatar full-body
-    this.armature = gltf.scene.getObjectByName( this.opt.modelRoot );
-    this.armature.scale.setScalar(1);
-
-    // Morph targets
-    // TODO: Check morph target names
-    this.morphs = [];
-    this.armature.traverse( x => {
-      if ( x.morphTargetInfluences && x.morphTargetInfluences.length &&
-        x.morphTargetDictionary ) {
-        this.morphs.push(x);
-      }
-    });
-    if ( this.morphs.length === 0 ) {
-      throw new Error('Blend shapes not found');
-    }
-
-    // Objects for needed properties
-    this.poseAvatar = { props: {} };
-    this.posePropNames.forEach( x => {
-      const ids = x.split('.');
-      const o = this.armature.getObjectByName(ids[0]);
-      this.poseAvatar.props[x] = o[ids[1]];
-      if ( this.poseBase.props.hasOwnProperty(x) ) {
-        this.poseAvatar.props[x].copy( this.poseBase.props[x] );
-      } else {
-        this.poseBase.props[x] = this.poseAvatar.props[x].clone();
-      }
-
-      // Make sure the target has the delta properties, because we need it as a basis
-      if ( this.poseDelta.props.hasOwnProperty(x) && !this.poseTarget.props.hasOwnProperty(x) ) {
-        this.poseTarget.props[x] = this.poseAvatar.props[x].clone();
-      }
-
-      // Take target pose
-      this.poseTarget.props[x].t = this.animClock;
-      this.poseTarget.props[x].d = 2000;
-    });
-
-    // Reset IK bone positions
-    this.ikMesh.traverse( x => {
-      if (x.isBone) {
-        x.position.copy( this.armature.getObjectByName(x.name).position );
-      }
-    });
-
-    // Estimate avatar height based on eye level
-    const plEye = new THREE.Vector3();
-    this.armature.getObjectByName('LeftEye').getWorldPosition(plEye);
-    this.avatarHeight = plEye.y + 0.2;
-
-    // Set pose, view and start animation
-    if ( !this.viewName ) this.setView( this.opt.cameraView );
-    this.setMood( this.avatar.avatarMood || this.moodName || this.opt.avatarMood );
-    this.start();
-
-    return gltf
-  }
-
 }
