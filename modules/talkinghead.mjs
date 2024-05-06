@@ -1680,13 +1680,15 @@ class TalkingHead {
     const o = {};
     for( let [mt,x] of Object.entries(this.animBaseline) ) {
       const v = this.getValue(mt);
-      if ( v !== x.target ) {
+      const restrain = ( this.isSpeaking && mt.startsWith("mouth") ) ? 3 : 1;
+      const target = x.target / restrain;
+      if ( v !== target ) {
         if ( x.t0 === undefined ) {
           x.t0 = this.animClock;
           x.v0 = v;
         }
         let delay = 1000;
-        o[mt] = this.valueAnimationSeq( [x.t0,x.t0+delay], [x.v0,x.target], this.animClock, this.easing );
+        o[mt] = this.valueAnimationSeq( [x.t0,x.t0+delay], [x.v0,target], this.animClock, this.easing );
       } else {
         x.t0 = undefined;
       }
