@@ -19,7 +19,7 @@ export class TalkingHeadAnimate {
   * @param {Object} node DOM element of the avatar
   * @param {Object} [opt=null] Global/default options
   */
-  constructor(node, opt = null ) {
+  constructor(node = null, opt = null ) {
 
     this.nodeAvatar = node;
 
@@ -496,6 +496,20 @@ export class TalkingHeadAnimate {
     }
   }
 
+  /**
+  * Reset all the visemes only
+  */
+  resetLips() {
+    this.visemeNames.forEach( x => {
+      this.morphs.forEach( y => {
+        const ndx = y.morphTargetDictionary['viseme_'+x];
+        if ( ndx !== undefined ) {
+          y.morphTargetInfluences[ndx] = 0;
+        }
+      });
+    });
+  }
+
 
   /**
   * Get mood names.
@@ -538,8 +552,6 @@ export class TalkingHeadAnimate {
     });
 
   }
-
-// THIS IS NOT USED XXX
 
   /**
   * Get morph target names.
@@ -1032,7 +1044,9 @@ export class TalkingHeadAnimate {
   lookAt(x,y,t) {
 
   	// camera may not exist
-  	if(!this.camera || !this.nodeAvatar) return
+  	if(!this.camera || !this.nodeAvatar) {
+      return
+    }
 
     // Eyes position
     const rect = this.nodeAvatar.getBoundingClientRect();

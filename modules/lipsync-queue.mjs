@@ -175,3 +175,112 @@ export function lipsyncQueue(text, lipsyncLang = "en", onsubtitles = null, exclu
 
 }
 
+/**
+* Convert value from one range to another.
+* @param {number} value Value
+* @param {number[]} r1 Source range
+* @param {number[]} r2 Target range
+* @return {number} Scaled value
+*/
+function convertRange( value, r1, r2 ) {
+	return (value-r1[0]) * (r2[1]-r2[0]) / (r1[1]-r1[0]) + r2[0];
+}
+
+
+/**
+* Convert array of words with timings to a lipsync sequence
+* @param {Audio} r Audio message.
+* @param {Options} [opt=null] Text-specific options for lipsyncLang
+* @param {subtitlesfn} [onsubtitles=null] Callback when a subtitle is written
+*/
+
+export function lipsyncConvert(r, lipsyncLang = "en", onsubtitles = null ) {
+
+    const o = {};
+
+    if ( r.words ) {
+      let lipsyncAnim = [];
+      for( let i=0; i<r.words.length; i++ ) {
+        const word = r.words[i];
+        const time = r.wtimes[i];
+        let duration = r.wdurations[i];
+
+        if ( word.length ) {
+
+          // Subtitle
+          if ( onsubtitles ) {
+            lipsyncAnim.push( {
+              template: { name: 'subtitles' },
+              ts: [time],
+              vs: {
+                subtitles: ' ' + word
+              }
+            });
+          }
+
+          // If visemes were not specified, calculate them based on the word
+          if ( !r.visemes ) {
+            const w = lipsyncPreProcessText(word, lipsyncLang);
+            const v = lipsyncWordsToVisemes(w, lipsyncLang);
+            if ( v && v.visemes && v.visemes.length ) {
+              const dTotal = v.times[ v.visemes.length-1 ] + v.durations[ v.visemes.length-1 ];
+              const overdrive = Math.min(duration, Math.max( 0, duration - v.visemes.length * 150));
+              let level = 0.6 + convertRange( overdrive, [0,duration], [0,0.4]);
+              duration = Math.min( duration, v.visemes.length * 200 );
+              if ( dTotal > 0 ) {
+                for( let j=0; j<v.visemes.length; j++ ) {
+                  const t = time + (v.times[j]/dTotal) * duration;
+                  const d = (v.durations[j]/dTotal) * duration;
+                  lipsyncAnim.push( {
+                    template: { name: 'viseme' },
+                    ts: [ t - Math.min(60,2*d/3), t + Math.min(25,d/2), t + d + Math.min(60,d/2) ],
+                    vs: {
+                      ['viseme_'+v.visemes[j]]: [null,(v.visemes[j] === 'PP' || v.visemes[j] === 'FF') ? 0.9 : level, 0]
+                    }
+                  });
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // If visemes were specifies, use them
+      if ( r.visemes ) {
+        for( let i=0; i<r.visemes.length; i++ ) {
+          const viseme = r.visemes[i];
+          const time = r.vtimes[i];
+          const duration = r.vdurations[i];
+          lipsyncAnim.push( {
+            template: { name: 'viseme' },
+            ts: [ time - 2 * duration/3, time + duration/2, time + duration + duration/2 ],
+            vs: {
+              ['viseme_'+viseme]: [null,(viseme === 'PP' || viseme === 'FF') ? 0.9 : 0.6, 0]
+            }
+          });
+        }
+      }
+
+      // Timed marker callbacks
+      if ( r.markers ) {
+        for( let i=0; i<r.markers.length; i++ ) {
+          const fn = r.markers[i];
+          const time = r.mtimes[i];
+          lipsyncAnim.push( {
+            template: { name: 'markers' },
+            ts: [ time ],
+            vs: { "function": [fn] }
+          });
+        }
+      }
+
+      if ( lipsyncAnim.length ) {
+        o.anim = lipsyncAnim;
+      }
+
+    }
+
+    return o
+}
+
+

@@ -1,7 +1,7 @@
 
-import { TalkingHeadAnimate } from './TalkingHead-animate.mjs'
+import { TalkingHeadAudio } from './talkinghead-audio.mjs'
 
-import { lipsyncGetProcessor, lipsyncPreProcessText, lipsyncWordsToVisemes, lipsyncQueue } from './lipsync-queue.mjs'
+import { lipsyncGetProcessor, lipsyncPreProcessText, lipsyncWordsToVisemes, lipsyncQueue, lipsyncConvert } from './lipsync-queue.mjs'
 
 /**
 * @class Talking Head Articulate
@@ -9,7 +9,7 @@ import { lipsyncGetProcessor, lipsyncPreProcessText, lipsyncWordsToVisemes, lips
 * 
 * Viseme and speech support on top of animation foundation
 */
-export class TalkingHeadArticulate extends TalkingHeadAnimate {
+export class TalkingHeadArticulate extends TalkingHeadAudio {
 
   /**
   * @constructor
@@ -53,24 +53,6 @@ export class TalkingHeadArticulate extends TalkingHeadAnimate {
       'nn', 'RR', 'CH', 'sil'
     ];
 
-    // Audio context and playlist
-    this.audioCtx = new AudioContext();
-    this.audioSpeechSource = this.audioCtx.createBufferSource();
-    this.audioBackgroundSource = this.audioCtx.createBufferSource();
-    this.audioBackgroundGainNode = this.audioCtx.createGain();
-    this.audioSpeechGainNode = this.audioCtx.createGain();
-    this.audioReverbNode = this.audioCtx.createConvolver();
-    this.setReverb(null); // Set dry impulse as default
-    this.audioBackgroundGainNode.connect(this.audioReverbNode);
-    this.audioSpeechGainNode.connect(this.audioReverbNode);
-    this.audioReverbNode.connect(this.audioCtx.destination);
-    this.audioPlaylist = [];
-
-    // Create a lookup table for base64 decoding
-    const b64Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-    this.b64Lookup = typeof Uint8Array === 'undefined' ? [] : new Uint8Array(256);
-    for (let i = 0; i < b64Chars.length; i++) this.b64Lookup[b64Chars.charCodeAt(i)] = i;
-
     // Speech queue
     this.speechQueue = [];
     this.isSpeaking = false;
@@ -89,93 +71,6 @@ export class TalkingHeadArticulate extends TalkingHeadAnimate {
       // throw new Error("You must provide some Google-compliant Text-To-Speech Endpoint.");
     }
 
-  }
-
-  /**
-  * Convert a Base64 MP3 chunk to ArrayBuffer.
-  * @param {string} chunk Base64 encoded chunk
-  * @return {ArrayBuffer} ArrayBuffer
-  */
-  b64ToArrayBuffer(chunk) {
-
-    // Calculate the needed total buffer length
-    let bufLen = 3 * chunk.length / 4;
-    if (chunk[chunk.length - 1] === '=') {
-      bufLen--;
-      if (chunk[chunk.length - 2] === '=') {
-        bufLen--;
-      }
-    }
-
-    // Create the ArrayBuffer
-    const arrBuf = new ArrayBuffer(bufLen);
-    const arr = new Uint8Array(arrBuf);
-    let i, p = 0, c1, c2, c3, c4;
-
-    // Populate the buffer
-    for (i = 0; i < chunk.length; i += 4) {
-      c1 = this.b64Lookup[chunk.charCodeAt(i)];
-      c2 = this.b64Lookup[chunk.charCodeAt(i+1)];
-      c3 = this.b64Lookup[chunk.charCodeAt(i+2)];
-      c4 = this.b64Lookup[chunk.charCodeAt(i+3)];
-      arr[p++] = (c1 << 2) | (c2 >> 4);
-      arr[p++] = ((c2 & 15) << 4) | (c3 >> 2);
-      arr[p++] = ((c3 & 3) << 6) | (c4 & 63);
-    }
-
-    return arrBuf;
-  }
-
-  /**
-  * Concatenate an array of ArrayBuffers.
-  * @param {ArrayBuffer[]} bufs Array of ArrayBuffers
-  * @return {ArrayBuffer} Concatenated ArrayBuffer
-  */
-  concatArrayBuffers(bufs) {
-    let len = 0;
-    for( let i=0; i<bufs.length; i++ ) {
-      len += bufs[i].byteLength;
-    }
-    let buf = new ArrayBuffer(len);
-    let arr = new Uint8Array(buf);
-    let p = 0;
-    for( let i=0; i<bufs.length; i++ ) {
-      arr.set( new Uint8Array(bufs[i]), p);
-      p += bufs[i].byteLength;
-    }
-    return buf;
-  }
-
-
-  /**
-  * Convert PCM buffer to AudioBuffer.
-  * NOTE: Only signed 16bit little endian supported.
-  * @param {ArrayBuffer} buf PCM buffer
-  * @return {AudioBuffer} AudioBuffer
-  */
-  pcmToAudioBuffer(buf) {
-    const arr = new Int16Array(buf);
-    const floats = new Float32Array(arr.length);
-    for( let i=0; i<arr.length; i++ ) {
-      floats[i] = (arr[i] >= 0x8000) ? -(0x10000 - arr[i]) / 0x8000 : arr[i] / 0x7FFF;
-    }
-    const audio = this.audioCtx.createBuffer(1, floats.length, this.opt.pcmSampleRate );
-    audio.copyToChannel( floats, 0 , 0 );
-    return audio;
-  }
-
-  /**
-  * Reset all the visemes
-  */
-  resetLips() {
-    this.visemeNames.forEach( x => {
-      this.morphs.forEach( y => {
-        const ndx = y.morphTargetDictionary['viseme_'+x];
-        if ( ndx !== undefined ) {
-          y.morphTargetInfluences[ndx] = 0;
-        }
-      });
-    });
   }
 
   /**
@@ -260,69 +155,6 @@ export class TalkingHeadArticulate extends TalkingHeadAnimate {
   }
 
   /**
-  * Play background audio.
-  * @param {string} url URL for the audio, stop if null.
-  */
-  async playBackgroundAudio( url ) {
-
-    // Fetch audio
-    let response = await fetch(url);
-    let arraybuffer = await response.arrayBuffer();
-
-    // Play audio in a loop
-    this.stopBackgroundAudio()
-    this.audioBackgroundSource = this.audioCtx.createBufferSource();
-    this.audioBackgroundSource.loop = true;
-    this.audioBackgroundSource.buffer = await this.audioCtx.decodeAudioData(arraybuffer);
-    this.audioBackgroundSource.playbackRate.value = 1 / this.animSlowdownRate;
-    this.audioBackgroundSource.connect(this.audioBackgroundGainNode);
-    this.audioBackgroundSource.start(0);
-
-  }
-
-  /**
-  * Stop background audio.
-  */
-  stopBackgroundAudio() {
-    try { this.audioBackgroundSource.stop(); } catch(error) {}
-    this.audioBackgroundSource.disconnect();
-  }
-
-  /**
-  * Setup the convolver node based on an impulse.
-  * @param {string} [url=null] URL for the impulse, dry impulse if null
-  */
-  async setReverb( url=null ) {
-    if ( url ) {
-      // load impulse response from file
-      let response = await fetch(url);
-      let arraybuffer = await response.arrayBuffer();
-      this.audioReverbNode.buffer = await this.audioCtx.decodeAudioData(arraybuffer);
-    } else {
-      // dry impulse
-      const samplerate = this.audioCtx.sampleRate;
-      const impulse = this.audioCtx.createBuffer(2, samplerate, samplerate);
-      impulse.getChannelData(0)[0] = 1;
-      impulse.getChannelData(1)[0] = 1;
-      this.audioReverbNode.buffer = impulse;
-    }
-  }
-
-  /**
-  * Set audio gain.
-  * @param {number} speech Gain for speech, if null do not change
-  * @param {number} background Gain for background audio, if null do not change
-  */
-  setMixerGain( speech, background ) {
-    if ( speech !== null ) {
-      this.audioSpeechGainNode.gain.value = speech;
-    }
-    if ( background !== null ) {
-      this.audioBackgroundGainNode.gain.value = background;
-    }
-  }
-
-  /**
   * Add audio to the speech queue.
   * @param {Audio} r Audio message.
   * @param {Options} [opt=null] Text-specific options for lipsyncLang
@@ -331,89 +163,8 @@ export class TalkingHeadArticulate extends TalkingHeadAnimate {
   speakAudio(r, opt = null, onsubtitles = null ) {
     opt = opt || {};
     const lipsyncLang = opt.lipsyncLang || this.avatar.lipsyncLang || this.opt.lipsyncLang;
-    const o = {};
 
-    if ( r.words ) {
-      let lipsyncAnim = [];
-      for( let i=0; i<r.words.length; i++ ) {
-        const word = r.words[i];
-        const time = r.wtimes[i];
-        let duration = r.wdurations[i];
-
-        if ( word.length ) {
-
-          // Subtitle
-          if ( onsubtitles ) {
-            lipsyncAnim.push( {
-              template: { name: 'subtitles' },
-              ts: [time],
-              vs: {
-                subtitles: ' ' + word
-              }
-            });
-          }
-
-          // If visemes were not specified, calculate them based on the word
-          if ( !r.visemes ) {
-            const w = lipsyncPreProcessText(word, lipsyncLang);
-            const v = lipsyncWordsToVisemes(w, lipsyncLang);
-            if ( v && v.visemes && v.visemes.length ) {
-              const dTotal = v.times[ v.visemes.length-1 ] + v.durations[ v.visemes.length-1 ];
-              const overdrive = Math.min(duration, Math.max( 0, duration - v.visemes.length * 150));
-              let level = 0.6 + this.convertRange( overdrive, [0,duration], [0,0.4]);
-              duration = Math.min( duration, v.visemes.length * 200 );
-              if ( dTotal > 0 ) {
-                for( let j=0; j<v.visemes.length; j++ ) {
-                  const t = time + (v.times[j]/dTotal) * duration;
-                  const d = (v.durations[j]/dTotal) * duration;
-                  lipsyncAnim.push( {
-                    template: { name: 'viseme' },
-                    ts: [ t - Math.min(60,2*d/3), t + Math.min(25,d/2), t + d + Math.min(60,d/2) ],
-                    vs: {
-                      ['viseme_'+v.visemes[j]]: [null,(v.visemes[j] === 'PP' || v.visemes[j] === 'FF') ? 0.9 : level, 0]
-                    }
-                  });
-                }
-              }
-            }
-          }
-        }
-      }
-
-      // If visemes were specifies, use them
-      if ( r.visemes ) {
-        for( let i=0; i<r.visemes.length; i++ ) {
-          const viseme = r.visemes[i];
-          const time = r.vtimes[i];
-          const duration = r.vdurations[i];
-          lipsyncAnim.push( {
-            template: { name: 'viseme' },
-            ts: [ time - 2 * duration/3, time + duration/2, time + duration + duration/2 ],
-            vs: {
-              ['viseme_'+viseme]: [null,(viseme === 'PP' || viseme === 'FF') ? 0.9 : 0.6, 0]
-            }
-          });
-        }
-      }
-
-      // Timed marker callbacks
-      if ( r.markers ) {
-        for( let i=0; i<r.markers.length; i++ ) {
-          const fn = r.markers[i];
-          const time = r.mtimes[i];
-          lipsyncAnim.push( {
-            template: { name: 'markers' },
-            ts: [ time ],
-            vs: { "function": [fn] }
-          });
-        }
-      }
-
-      if ( lipsyncAnim.length ) {
-        o.anim = lipsyncAnim;
-      }
-
-    }
+    const o = lipsyncConvert(r,lipsyncLang,onsubtitles)
 
     if ( r.audio ) {
       o.audio = r.audio;
@@ -436,72 +187,26 @@ export class TalkingHeadArticulate extends TalkingHeadAnimate {
   * @param {boolean} [force=false] If true, forces to proceed
   */
   async playAudio(force=false) {
-
     if ( !this.armature || (this.isAudioPlaying && !force) ) return;
     this.isAudioPlaying = true;
     if ( this.audioPlaylist.length ) {
       const item = this.audioPlaylist.shift();
-
-      // If Web Audio API is suspended, try to resume it
-      if ( this.audioCtx.state === "suspended" ) {
-        const resume = this.audioCtx.resume();
-        const timeout = new Promise((_r, rej) => setTimeout(() => rej("p2"), 1000));
-        try {
-          await Promise.race([resume, timeout]);
-        } catch(e) {
-          console.log("Can't play audio. Web Audio API suspended. This is often due to calling some speak method before the first user action, which is typically prevented by the browser.");
-          this.playAudio(true);
-          return;
-        }
-      }
-
-      // AudioBuffer
-      let audio = item.audio
-
-      if(typeof audio === 'string') {
-        try {
-          console.log("************ audio is a string = starting decode at",performance.now())
-          const buf = this.b64ToArrayBuffer(audio)
-          console.log("********* decoded audio buffer successfully",performance.now())
-          audio = await this.audioCtx.decodeAudioData(buf)
-          console.log("********** audio done decoding",performance.now())
-        } catch(err) {
-          console.error("*********** cannot decode audio block",item.audio)
-          audio = null
-          this.playAudio(true);
-          return
-        }
-      }
-      else if ( Array.isArray(item.audio) ) {
-        // Convert from PCM samples
-        let buf = this.concatArrayBuffers( item.audio );
-        audio = this.pcmToAudioBuffer(buf);
-      }
-
-      // Create audio source
-      this.audioSpeechSource = this.audioCtx.createBufferSource();
-      this.audioSpeechSource.buffer = audio;
-      this.audioSpeechSource.playbackRate.value = 1 / this.animSlowdownRate;
-      this.audioSpeechSource.connect(this.audioSpeechGainNode);
-      this.audioSpeechSource.addEventListener('ended', () => {
-        this.audioSpeechSource.disconnect();
-        this.playAudio(true);
-      }, { once: true });
-
-      // Rescale lipsync and push to queue
       const delay = 100;
-      if ( item.anim ) {
-        item.anim.forEach( x => {
-          for(let i=0; i<x.ts.length; i++) {
-            x.ts[i] = this.animClock + x.ts[i] + delay;
-          }
-          this.animQueue.push(x);
-        });
+      const ended = () => { this.playAudio(true) };
+      try {
+        await this.playAudioBuffer(item.audio,delay,ended);
+        if ( item.anim ) {
+          item.anim.forEach( x => {
+            for(let i=0; i<x.ts.length; i++) {
+              x.ts[i] = this.animClock + x.ts[i] + delay;
+            }
+            this.animQueue.push(x);
+          });
+        }
+      } catch(err) {
+        ended();
+        return;
       }
-
-      // Play
-      this.audioSpeechSource.start(delay/1000);
-
     } else {
       this.isAudioPlaying = false;
       this.startSpeaking(true);

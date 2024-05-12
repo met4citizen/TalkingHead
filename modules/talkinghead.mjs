@@ -3,7 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import Stats from 'three/addons/libs/stats.module.js';
 
-import { TalkingHeadArticulate } from './TalkingHeadArticulate.mjs'
+import { TalkingHeadArticulate } from './talkinghead-articulate.mjs'
 
 /**
 * @class Talking Head
