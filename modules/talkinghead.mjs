@@ -846,6 +846,9 @@ class TalkingHead {
         x.morphTargetDictionary ) {
         this.morphs.push(x);
       }
+
+      // Workaround for #40, hands culled from the rendering process
+      x.frustumCulled = false;
     });
     if ( this.morphs.length === 0 ) {
       throw new Error('Blend shapes not found');
