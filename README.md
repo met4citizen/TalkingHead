@@ -4,10 +4,10 @@
 
 Video | Description
 --- | ---
-<span style="display: block; min-width:300px">[<img src="screenshot4.jpg" width="300"/>](https://youtu.be/OA6LBZjkzJI)</span> | I chat with Jenny and Harri. The close-up view allows you to evaluate the accuracy of lip-sync in both English and Finnish. Using GPT-3.5 and Microsoft text-to-speech.
-[<img src="screenshot5.jpg" width="300"/>](https://youtu.be/fJrYGaGCAGo) | A short demo of how AI can control the avatar's movements. Using OpenAI's function calling and Google TTS with the TalkingHead's built-in viseme generation.
-[<img src="screenshot6.jpg" width="300"/>](https://youtu.be/6XRxALY1Iwg) | Michael lip-syncs to two MP3 audio tracks using OpenAI's Whisper and TalkingHead's `speakAudio` method. He kicks things off with some casual talk, but then goes all out by trying to tackle an old Meat Loaf classic. 🤘 Keep rockin', Michael! 🎤😂
-[<img src="screenshot3.jpg" width="300"/>](https://youtu.be/SfnqRnWKT40) | Julia and I showcase some of the features of the TalkingHead class and the test app including the settings, some poses and animations.
+<span style="display: block; min-width:400px">[<img src="screenshot4.jpg" width="500"/>](https://youtu.be/OA6LBZjkzJI)</span> | I chat with Jenny and Harri. The close-up view allows you to evaluate the accuracy of lip-sync in both English and Finnish. Using GPT-3.5 and Microsoft text-to-speech.
+[<img src="screenshot5.jpg" width="500"/>](https://youtu.be/fJrYGaGCAGo) | A short demo of how AI can control the avatar's movements. Using OpenAI's function calling and Google TTS with the TalkingHead's built-in viseme generation.
+[<img src="screenshot6.jpg" width="500"/>](https://youtu.be/6XRxALY1Iwg) | Michael lip-syncs to two MP3 audio tracks using OpenAI's Whisper and TalkingHead's `speakAudio` method. He kicks things off with some casual talk, but then goes all out by trying to tackle an old Meat Loaf classic. 🤘 Keep rockin', Michael! 🎤😂
+[<img src="screenshot3.jpg" width="500"/>](https://youtu.be/SfnqRnWKT40) | Julia and I showcase some of the features of the TalkingHead class and the test app including the settings, some poses and animations.
 
 *All the demo videos are real-time screen captures from a Chrome browser running
 the TalkingHead test web app without any post-processing.*
@@ -18,8 +18,8 @@ the TalkingHead test web app without any post-processing.*
 
 Video | Use Case
 --- | ---
-<span style="display: block; min-width:300px">[<img src="evertrail.jpg" width="300"/>](https://www.youtube.com/watch?v=OG1vwOit_Yk)</span> | **Live Twitch adventure**. [Evertrail](https://evertrail.app) is an infinite, real-time generated world where all of your choices shape the outcome. Video clip and the app by [JPhilipp](https://github.com/JPhilipp) 👏👏
-[<img src="cliquevm.jpg" width="300"/>](https://www.youtube.com/watch?v=vNJ9Ifv-as8) | **Quantum physics using a blackboard**. David introduces us to the CHSH game and explores the mystery of quantum entanglement. For more information about the research project, see [CliqueVM](https://github.com/met4citizen/CliqueVM).
+<span style="display: block; min-width:400px">[<img src="evertrail.jpg" width="500"/>](https://www.youtube.com/watch?v=OG1vwOit_Yk)</span> | **Live Twitch adventure**. [Evertrail](https://evertrail.app) is an infinite, real-time generated world where all of your choices shape the outcome. Video clip and the app by [JPhilipp](https://github.com/JPhilipp) 👏👏
+[<img src="cliquevm.jpg" width="500"/>](https://www.youtube.com/watch?v=vNJ9Ifv-as8) | **Quantum physics using a blackboard**. David introduces us to the CHSH game and explores the mystery of quantum entanglement. For more information about the research project, see [CliqueVM](https://github.com/met4citizen/CliqueVM).
 
 ---
 
