@@ -57,7 +57,7 @@ modules from a CDN:
   {
     "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js/+esm",
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/",
-    "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.1/modules/talkinghead.mjs"
+    "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.2/modules/talkinghead.mjs"
   }
 }
 </script>
