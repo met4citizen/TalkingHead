@@ -448,7 +448,8 @@ const i18n = {
     'Manuscript': 'Käsikirjoitus', 'Exclude': 'Ohita', 'Italics': 'Kursiivi',
     'Code': 'Koodi', 'Light': 'Valo', 'LightAmbient': 'Ambientti',
     'LightDirect': 'Suunnattu', 'LightSpot': 'Spotti', 'theme-full': "Täysi",
-    'lt': 'Liettua', 'test-sentence': "Kirjoita tähän testilause.", 'Mid': 'Keskiosa'
+    'lt': 'Liettua', 'test-sentence': "Kirjoita tähän testilause.", 'Mid': 'Keskiosa',
+    'Gesture': 'Ele'
   },
 
   'en': {
@@ -895,6 +896,219 @@ async function whisperLoadMP3(file) {
 
   } catch (error) {
     console.log(error);
+  }
+}
+
+
+// RECORDING
+let recordingMediaRecorder = null;
+let recordingChunks = [];
+const recordingMediaTypes = [
+  { type: "audio/webm", ext: "webm" },
+  { type: "video/mp4", ext: "mp4" }
+];
+let recordingMediaType = {};
+for( let i=0; i<recordingMediaTypes.length; i++ ) {
+  if ( MediaRecorder.isTypeSupported(recordingMediaTypes[i].type) ) {
+    recordingMediaType = recordingMediaTypes[i];
+    break;
+  }
+}
+const recordingBeep = "data:audio/wav;base64,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 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////VEFHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAU291bmRib3kuZGUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMjAwNGh0dHA6Ly93d3cuc291bmRib3kuZGUAAAAAAAAAACU=";
+const recordingPlaySound = (function beep() {
+  const snd = new Audio(recordingBeep);
+  return function() { snd.play(); }
+})();
+
+
+// Adapted from:
+// https://github.com/SimpleWebRTC/hark
+// MIT Licence
+let speechEvents = null;
+function recordingHark(stream, options) {
+  var audioContextType = window.webkitAudioContext || window.AudioContext;
+  var harker = this;
+  harker.events = {};
+  harker.on = function (event, callback) { harker.events[event] = callback; }
+  harker.emit = function () {
+    if (harker.events[arguments[0]]) {
+      harker.events[arguments[0]](arguments[1], arguments[2], arguments[3], arguments[4]);
+    }
+  };
+  // make it not break in non-supported browsers
+  if (!audioContextType) return harker;
+
+  options = options || {};
+  var smoothing = (options.smoothing || 0.1),
+      interval = (options.interval || 50),
+      threshold = options.threshold,
+      play = options.play,
+      history = options.history || 10,
+      running = true;
+
+  // Setup Audio Context
+  if (!window.audioContext00) {
+      window.audioContext00 = new audioContextType();
+  }
+
+  var gainNode = audioContext00.createGain();
+  gainNode.connect(audioContext00.destination);
+  // don't play for self
+  gainNode.gain.value = 0;
+
+  var sourceNode, fftBins, analyser;
+
+  analyser = audioContext00.createAnalyser();
+  analyser.fftSize = 512;
+  analyser.smoothingTimeConstant = smoothing;
+  fftBins = new Float32Array(analyser.fftSize);
+
+  //WebRTC Stream
+  sourceNode = audioContext00.createMediaStreamSource(stream);
+  threshold = threshold || -50;
+
+  sourceNode.connect(analyser);
+  if (play) analyser.connect(audioContext00.destination);
+
+  harker.speaking = false;
+  harker.setThreshold = function (t) { threshold = t; };
+  harker.setInterval = function (i) { interval = i; };
+  harker.stop = function () {
+      running = false;
+      harker.emit('volume_change', -100, threshold);
+      if (harker.speaking) {
+          harker.speaking = false;
+          harker.emit('stopped_speaking');
+      }
+  };
+  harker.speakingHistory = [];
+  for (var i = 0; i < history; i++) {
+      harker.speakingHistory.push(0);
+  }
+
+  // Poll the analyser node to determine if speaking
+  // and emit events if changed
+  var looper = function () {
+    setTimeout(function () {
+      //check if stop has been called
+      if (!running) return;
+
+      var currentVolume = getMaxVolume(analyser, fftBins);
+      harker.emit('volume_change', currentVolume, threshold);
+
+      var history = 0;
+      if (currentVolume > threshold && !harker.speaking) {
+        // trigger quickly, short history
+        for (var i = harker.speakingHistory.length - 3; i < harker.speakingHistory.length; i++) {
+          history += harker.speakingHistory[i];
+        }
+        if (history >= 2) {
+          harker.speaking = true;
+          harker.emit('speaking');
+        }
+      } else if (currentVolume < threshold && harker.speaking) {
+        for (var j = 0; j < harker.speakingHistory.length; j++) {
+          history += harker.speakingHistory[j];
+        }
+        if (history === 0) {
+          harker.speaking = false;
+          harker.emit('stopped_speaking');
+        }
+      }
+      harker.speakingHistory.shift();
+      harker.speakingHistory.push(0 + (currentVolume > threshold));
+
+      looper();
+    }, interval);
+  };
+  looper();
+
+  function getMaxVolume(analyser, fftBins) {
+      var maxVolume = -Infinity;
+      analyser.getFloatFrequencyData(fftBins);
+      for (var i = 4, ii = fftBins.length; i < ii; i++) {
+          if (fftBins[i] > maxVolume && fftBins[i] < 0) {
+              maxVolume = fftBins[i];
+          }
+      }
+      return maxVolume;
+  }
+
+  return harker;
+}
+
+async function recordingRecord() {
+  if ( !recordingMediaRecorder ) {
+    try {
+      let stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      recordingMediaRecorder = new MediaRecorder(stream, { mimeType: recordingMediaType.type });
+      recordingMediaRecorder.ondataavailable = async (event) => {
+        const isRecording = d3.select("#record").classed("selected");
+        if ( isRecording && event.data.size > 0 ) {
+
+          // Make a transcription
+          const file = new File([event.data], 'file.'+recordingMediaType.ext, { type: recordingMediaType.type });
+          const form = new FormData();
+          form.append("file", file);
+          form.append("model", "whisper-1");
+          const lang = cfg('theme-lang') || 'en';
+          form.append("language", lang);
+          const response = await fetch( openaiAudioTranscriptionsProxy , {
+            method: "POST",
+            body: form,
+            headers: {
+              "Authorization": "Bearer " + await jwtGet()
+            }
+          });
+
+          // Append text to input
+          if ( response.ok ) {
+            let json;
+            try {
+              json = await response.json();
+            } catch(error) {
+              console.error("Invalid response from OpenAI");
+            }
+            if ( json && json.text ) {
+              const e = d3.select("#input");
+              let text = e.property("value");
+              if ( text ) {
+                e.property("value", text + ' ' + json.text );
+              } else {
+                e.property("value", json.text );
+              }
+            }
+          }
+
+        }
+      };
+    } catch (error) {
+      d3.select("#record").classed("selected",false);
+      console.error('Error accessing microphone:', error);
+      return;
+    }
+  }
+
+  try {
+    let speechEvents = new recordingHark(recordingMediaRecorder.stream, {});
+    speechEvents.on('stopped_speaking', function() {
+      const isRecording = d3.select("#record").classed("selected");
+      if ( recordingMediaRecorder && recordingMediaRecorder.state === 'recording' ) {
+        recordingMediaRecorder.stop();
+      }
+      if ( recordingMediaRecorder && isRecording ) {
+        recordingMediaRecorder.start();
+      } else {
+        speechEvents.stop();
+        speechEvents = null;
+      }
+    });
+    if ( recordingMediaRecorder ) {
+      recordingMediaRecorder.start();
+    }
+  } catch(error) {
+    d3.select("#record").classed("selected",false);
+    console.error('Recorder error:', error);
   }
 }
 
@@ -1677,18 +1891,19 @@ async function geminiSendMessage(node,msgs) {
       // Read the response as a stream of data
       const reader = res.body.getReader();
       const decoder = new TextDecoder("utf-8");
+      let chunk = '';
 
       while (true) {
         const { done, value } = await reader.read();
 
         // Parse partial JSON chunks
         if ( value ) {
-          const chunk = decoder.decode(value);
+          chunk += decoder.decode(value);
           const start = chunk.indexOf('{');
-          const end = chunk.lastIndexOf('}');
+          const end = chunk.lastIndexOf('\n}');
           if ( start !== -1 && end !== -1 && start < end ) {
             try {
-              const obj = JSON.parse('[' + chunk.substring(start,end+1) + ']');
+              const obj = JSON.parse('[' + chunk.substring(start,end+2) + ']');
               if ( obj ) {
                 for( let i=0; i<obj.length; i++ ) {
                   if ( obj[i].candidates ) {
@@ -1698,8 +1913,9 @@ async function geminiSendMessage(node,msgs) {
                   }
                 }
               }
+              chunk = chunk.substring(end+2);
             } catch(e) {
-              throw new Error( "Error JSON parsing line: " + e );
+              console.log( "Error JSON parsing chunk: " + chunk );
             }
           }
         }
@@ -2045,7 +2261,7 @@ function headLoaded() {
           e.classed("selected",true);
 
           // Animate
-          head.speakText(name);
+          head.playGesture(name);
 
           // Update morphs
           const o = head.animEmojis[name];
@@ -2054,7 +2270,7 @@ function headLoaded() {
               let val = null;
               if ( o.vs &&  o.vs[mt] ) {
                 val = o.vs[mt][o.vs[mt].length-1];
-                if ( Array.isArray(val) ) val = lastv[0];
+                if ( Array.isArray(val) ) val = val[val.length-1];
               }
               const el = d3.select('#'+mt);
               if ( !el.empty() ) {
@@ -2314,6 +2530,17 @@ document.addEventListener('DOMContentLoaded', async function(e) {
       .attr("data-i18n-site","poses-"+k);
   }
 
+  // Add gestures
+  if ( site.gestures ) {
+    const eGestures = d3.select("#gestures");
+    for ( const [k,o] of Object.entries(site.gestures) ) {
+      eGestures.append("div")
+        .classed("command", true)
+        .attr("data-gesture",o.name)
+        .attr("data-i18n-site","gestures-"+k);
+    }
+  }
+
   // Add animations
   const eAnimations = d3.select("#animations");
   for ( const [k,o] of Object.entries(site.animations) ) {
@@ -2358,8 +2585,8 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     cameraView: 'full',
     avatarMood: 'neutral',
     // Stats display that can be used when testing performance
-    // statsNode: document.body,
-    // statsStyle: "position: fixed; bottom: 0px; left: 0px; cursor: pointer; opacity: 0.9; z-index: 10000;" */
+    statsNode: document.body,
+    statsStyle: "position: fixed; bottom: 0px; left: 0px; cursor: pointer; opacity: 0.9; z-index: 10000;"
   });
   window.head = head;
 
@@ -2477,8 +2704,8 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     }
   });
 
-  // Repeat
-  d3.selectAll("#pose-repeat,#animation-repeat").on("click", function(ev) {
+  // Repeat/mirror
+  d3.selectAll("#pose-repeat,#animation-repeat,#gesture-repeat,#gesture-mirror").on("click", function(ev) {
     const e = d3.select(this);
     const sel = e.classed("selected");
     e.classed("selected", !sel );
@@ -2539,6 +2766,22 @@ document.addEventListener('DOMContentLoaded', async function(e) {
         d3.selectAll("[data-pose='" + pose + "']").classed("selected",repeat);
         head.playPose( pose, progressUpdate, (repeat ? 600 : 5) );
       }
+    }
+  });
+
+  // Avatar gesture
+  d3.selectAll("[data-gesture]").on('click.command', async function(ev) {
+    const e = d3.select(this);
+    const sel = e.classed("selected");
+    const repeat = d3.select("#gesture-repeat").classed("selected");
+    const mirror = d3.select("#gesture-mirror").classed("selected");
+    d3.selectAll("[data-gesture]").classed("selected",false);
+    if ( sel ) {
+      head.stopGesture();
+    } else {
+      let g = e.attr('data-gesture');
+      d3.selectAll("[data-gesture='" + g + "']").classed("selected",repeat);
+      head.playGesture( g, (repeat ? 600 : 5), mirror );
     }
   });
 
@@ -3101,6 +3344,25 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     e.classed("selected", !sel );
   });
 
+  // Record
+  d3.select('#record').on('click', async function(ev) {
+    const x = d3.select(this);
+    const mode = !x.classed("selected");
+    x.classed("selected",mode);
+    // recordingPlaySound();
+    if ( mode ) {
+      recordingRecord();
+    } else {
+      if ( recordingMediaRecorder ) {
+        if ( recordingMediaRecorder.state === 'recording' ) {
+          recordingMediaRecorder.stop();
+        }
+        recordingMediaRecorder.stream.getTracks().forEach( track => track.stop() );
+        recordingMediaRecorder = null;
+      }
+    }
+  });
+
   try {
 
     // Get token
@@ -3225,6 +3487,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
               <div class="rowWrap">
                 <div class="command selected" data-item="ai-model" data-type="option" data-ai-model="gpt-3.5-turbo">GPT-3.5-Turbo</div>
                 <div class="command" data-item="ai-model" data-type="option" data-ai-model="gpt-4">GPT-4</div>
+                <div class="command" data-item="ai-model" data-type="option" data-ai-model="gpt-4o">GPT-4o</div>
                 <div class="command" data-item="ai-model" data-type="option" data-ai-model="gemini-pro">Gemini-pro</div>
               </div>
             </div>
@@ -3575,6 +3838,25 @@ document.addEventListener('DOMContentLoaded', async function(e) {
                 </svg>
               </label>
               <input type="file" id="pose-file" accept=".fbx" style="display:none">
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="text label" data-i18n-text="Gesture"></div>
+            <div id="gestures" class="rowWrap">
+              <div id="gesture-repeat" class="command selected">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M18.3701 7.99993L13.8701 10.598V8.99993H6.88989V12.9999H4.88989V6.99993H13.8701V5.40186L18.3701 7.99993Z" fill="currentColor" />
+                  <path d="M10.1299 16.9999H19.1101V10.9999H17.1101V14.9999H10.1299V13.4019L5.62988 15.9999L10.1299 18.598V16.9999Z" fill="currentColor" />
+                </svg>
+              </div>
+              <div id="gesture-mirror" class="command">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M13 7H11V17H13V7Z" fill="currentColor" />
+                  <path d="M5.99996 7.75732L7.41418 9.17154L5.58572 11L9.99996 11V13L5.58579 13L7.41418 14.8284L5.99996 16.2426L1.75732 12L5.99996 7.75732Z" fill="currentColor" />
+                  <path d="M18 16.2427L16.5858 14.8285L18.4143 13H14V11L18.4142 11L16.5858 9.17161L18 7.75739L22.2427 12L18 16.2427Z" fill="currentColor" />
+                </svg>
+              </div>
             </div>
           </div>
 
@@ -3982,7 +4264,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
                     <path fill-rule="evenodd" clip-rule="evenodd" d="M12 8.95439L17.6352 7.82736C19.0102 7.55235 20 6.34501 20 4.94274C20 3.08637 18.3017 1.69406 16.4813 2.05813L12.4117 2.87206C11.0094 3.15252 10 4.38376 10 5.8138V13.8895C9.41165 13.5492 8.72857 13.3544 8 13.3544C5.79086 13.3544 4 15.1453 4 17.3544C4 19.5635 5.79086 21.3544 8 21.3544C10.2091 21.3544 12 19.5635 12 17.3544V8.95439ZM16.8736 4.01929L12.8039 4.83322C12.3365 4.92671 12 5.33712 12 5.8138V6.91479L17.2429 5.8662C17.6831 5.77816 18 5.39165 18 4.94274C18 4.34846 17.4563 3.90274 16.8736 4.01929ZM10 17.3544C10 16.2498 9.10457 15.3544 8 15.3544C6.89543 15.3544 6 16.2498 6 17.3544C6 18.459 6.89543 19.3544 8 19.3544C9.10457 19.3544 10 18.459 10 17.3544Z" fill="currentColor" />
                   </svg>
                 </div>
-                <input type="range" min="0" max="1" step="0.01" value="0.5" data-item="voice-mixerbg" data-type="value" data-range="float" data-voice-mixerbg="">
+                <input type="range" min="0" max="10" step="0.1" value="0.5" data-item="voice-mixerbg" data-type="value" data-range="float" data-voice-mixerbg="">
                 <div class="text">0.5</div>
               </div>
               <div class="row">
@@ -3992,7 +4274,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
                     <path d="M16 15C16 14.4477 15.5523 14 15 14H9C8.44772 14 8 14.4477 8 15V21H6V15C6 13.3431 7.34315 12 9 12H15C16.6569 12 18 13.3431 18 15V21H16V15Z" fill="currentColor" />
                   </svg>
                 </div>
-                <input type="range" min="0" max="1" step="0.01" value="1" data-item="voice-mixerspeech" data-type="value" data-range="float" data-voice-mixerspeech="">
+                <input type="range" min="0" max="10" step="0.1" value="1" data-item="voice-mixerspeech" data-type="value" data-range="float" data-voice-mixerspeech="">
                 <div class="text">1</div>
               </div>
             </div>
@@ -4133,6 +4415,12 @@ document.addEventListener('DOMContentLoaded', async function(e) {
           </div>
           <div id="score" class="text starttransparent" style="margin-left:-8px;">0</div>
           <div class="filler"></div>
+          <div id="record" class="command starttransparent" data-i18n-title="Record">
+            <svg viewBox="-2 -2 28 28" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M9 4C9 2.34315 10.3431 1 12 1C13.6569 1 15 2.34315 15 4V12C15 13.6569 13.6569 15 12 15C10.3431 15 9 13.6569 9 12V4ZM13 4V12C13 12.5523 12.5523 13 12 13C11.4477 13 11 12.5523 11 12V4C11 3.44772 11.4477 3 12 3C12.5523 3 13 3.44772 13 4Z" fill="currentColor" />
+              <path d="M18 12C18 14.973 15.8377 17.441 13 17.917V21H17V23H7V21H11V17.917C8.16229 17.441 6 14.973 6 12V9H8V12C8 14.2091 9.79086 16 12 16C14.2091 16 16 14.2091 16 12V9H18V12Z" fill="currentColor" />
+            </svg>
+          </div>
           <div id="motion" class="command starttransparent" data-i18n-title="Motion">
             <svg viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
               <path d="M 34.498047 3 C 32.014047 3 30 5.0150469 30 7.4980469 C 30 9.9830469 32.014047 12 34.498047 12 C 36.987047 12 39 9.9830469 39 7.4980469 C 39 5.0150469 36.987047 3 34.498047 3 z M 20 10 A 2 2 0 0 0 18.919922 10.316406 L 18.917969 10.316406 L 18.886719 10.322266 L 11.957031 15.294922 A 2 2 0 0 0 11 17 A 2 2 0 0 0 13 19 A 2 2 0 0 0 14.287109 18.527344 L 14.289062 18.529297 L 20.283203 14.21875 L 24.691406 15.619141 L 19.757812 23.660156 L 19.757812 23.664062 A 4 4 0 0 0 19 26 A 4 4 0 0 0 21.210938 29.572266 L 28.755859 34.226562 L 27.048828 43.009766 A 2.5 2.5 0 0 0 27 43.5 A 2.5 2.5 0 0 0 29.5 46 A 2.5 2.5 0 0 0 31.955078 43.962891 L 31.957031 43.962891 L 33.984375 33.289062 L 33.978516 33.273438 A 2 2 0 0 0 34 33 A 2 2 0 0 0 33.345703 31.523438 L 33.339844 31.507812 L 27.9375 26.720703 L 32.607422 17.486328 L 32.605469 17.482422 A 3 3 0 0 0 33 16 A 3 3 0 0 0 31.193359 13.248047 L 31.191406 13.244141 L 28.685547 11.849609 L 20.519531 10.066406 L 20.507812 10.068359 A 2 2 0 0 0 20 10 z M 34.212891 18.742188 L 31.972656 23.171875 L 33.181641 25.837891 L 33.193359 25.845703 C 33.513359 26.525703 34.199 27 35 27 L 42 27 C 43.105 27 44 26.105 44 25 C 44 23.895 43.105 23 42 23 L 36 23 L 34.212891 18.742188 z M 17.517578 28.414062 L 15.242188 32 L 7.5 32 C 6.119 32 5 33.119 5 34.5 C 5 35.881 6.119 37 7.5 37 L 15.931641 37 C 17.228641 37 18.445312 36.3705 19.195312 35.3125 L 21.480469 32.089844 C 20.653469 31.578844 20.055828 31.208125 20.048828 31.203125 C 18.904828 30.555125 18.031578 29.569062 17.517578 28.414062 z"  fill="currentColor"/>

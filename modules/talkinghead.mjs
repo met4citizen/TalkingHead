@@ -206,10 +206,35 @@ class TalkingHead {
       }
     };
 
-    // Convert all the pose templates to THREE objects
-    Object.values(this.poseTemplates).forEach( x => {
-      x.props = this.propsToThreeObjects( x.props );
-    });
+    // Gestures
+    // NOTE: For one hand gestures, use left left
+    this.gestureTemplates = {
+      'handup': {
+        'LeftShoulder.rotation':{x:[1.5,2,1,2], y:[0.2,0.4,1,2], z:[-1.5,-1.3,1,2]}, 'LeftArm.rotation':{x:[1.5,1.7,1,2], y:[-0.6,-0.4,1,2], z:[1,1.2,1,2]}, 'LeftForeArm.rotation':{x:-0.815, y:[-0.4,0,1,2], z:1.575}, 'LeftHand.rotation':{x:-0.529, y:-0.2, z:0.022}, 'LeftHandThumb1.rotation':{x:0.745, y:-0.526, z:0.604}, 'LeftHandThumb2.rotation':{x:-0.107, y:-0.01, z:-0.142}, 'LeftHandThumb3.rotation':{x:0, y:0.001, z:0}, 'LeftHandIndex1.rotation':{x:-0.126, y:-0.035, z:-0.087}, 'LeftHandIndex2.rotation':{x:0.255, y:0.007, z:-0.085}, 'LeftHandIndex3.rotation':{x:0, y:0, z:0}, 'LeftHandMiddle1.rotation':{x:-0.019, y:-0.128, z:-0.082}, 'LeftHandMiddle2.rotation':{x:0.233, y:0.019, z:-0.074}, 'LeftHandMiddle3.rotation':{x:0, y:0, z:0}, 'LeftHandRing1.rotation':{x:0.005, y:-0.241, z:-0.122}, 'LeftHandRing2.rotation':{x:0.261, y:0.021, z:-0.076}, 'LeftHandRing3.rotation':{x:0, y:0, z:0}, 'LeftHandPinky1.rotation':{x:0.059, y:-0.336, z:-0.2}, 'LeftHandPinky2.rotation':{x:0.153, y:0.019, z:0.001}, 'LeftHandPinky3.rotation':{x:0, y:0, z:0}
+      },
+      'index': {
+        'LeftShoulder.rotation':{x:[1.5,2,1,2], y:[0.2,0.4,1,2], z:[-1.5,-1.3,1,2]}, 'LeftArm.rotation':{x:[1.5,1.7,1,2], y:[-0.6,-0.4,1,2], z:[1,1.2,1,2]}, 'LeftForeArm.rotation':{x:-0.815, y:[-0.4,0,1,2], z:1.575}, 'LeftHand.rotation':{x:-0.276, y:-0.506, z:-0.208}, 'LeftHandThumb1.rotation':{x:0.579, y:0.228, z:0.363}, 'LeftHandThumb2.rotation':{x:-0.027, y:-0.04, z:-0.662}, 'LeftHandThumb3.rotation':{x:0, y:0.001, z:0}, 'LeftHandIndex1.rotation':{x:0, y:-0.105, z:0.225}, 'LeftHandIndex2.rotation':{x:0.256, y:-0.103, z:-0.213}, 'LeftHandIndex3.rotation':{x:0, y:0, z:0}, 'LeftHandMiddle1.rotation':{x:1.453, y:0.07, z:0.021}, 'LeftHandMiddle2.rotation':{x:1.599, y:0.062, z:0.07}, 'LeftHandMiddle3.rotation':{x:0, y:0, z:0}, 'LeftHandRing1.rotation':{x:1.528, y:-0.073, z:0.052}, 'LeftHandRing2.rotation':{x:1.386, y:0.044, z:0.053}, 'LeftHandRing3.rotation':{x:0, y:0, z:0}, 'LeftHandPinky1.rotation':{x:1.65, y:-0.204, z:0.031}, 'LeftHandPinky2.rotation':{x:1.302, y:0.071, z:0.085}, 'LeftHandPinky3.rotation':{x:0, y:0, z:0}
+      },
+      'ok': {
+        'LeftShoulder.rotation':{x:[1.5,2,1,2], y:[0.2,0.4,1,2], z:[-1.5,-1.3,1,2]}, 'LeftArm.rotation':{x:[1.5,1.7,1,1], y:[-0.6,-0.4,1,2], z:[1,1.2,1,2]}, 'LeftForeArm.rotation':{x:-0.415, y:[-0.4,0,1,2], z:1.575}, 'LeftHand.rotation':{x:-0.476, y:-0.506, z:-0.208}, 'LeftHandThumb1.rotation':{x:0.703, y:0.445, z:0.899}, 'LeftHandThumb2.rotation':{x:-0.312, y:-0.04, z:-0.938}, 'LeftHandThumb3.rotation':{x:-0.37, y:0.024, z:-0.393}, 'LeftHandIndex1.rotation':{x:0.8, y:-0.086, z:-0.091}, 'LeftHandIndex2.rotation':{x:1.123, y:-0.046, z:-0.074}, 'LeftHandIndex3.rotation':{x:0.562, y:-0.013, z:-0.043}, 'LeftHandMiddle1.rotation':{x:-0.019, y:-0.128, z:-0.082}, 'LeftHandMiddle2.rotation':{x:0.233, y:0.019, z:-0.074}, 'LeftHandMiddle3.rotation':{x:0, y:0, z:0}, 'LeftHandRing1.rotation':{x:0.005, y:-0.241, z:-0.122}, 'LeftHandRing2.rotation':{x:0.261, y:0.021, z:-0.076}, 'LeftHandRing3.rotation':{x:0, y:0, z:0}, 'LeftHandPinky1.rotation':{x:0.059, y:-0.336, z:-0.2}, 'LeftHandPinky2.rotation':{x:0.153, y:0.019, z:0.001}, 'LeftHandPinky3.rotation':{x:0, y:0, z:0}
+      },
+      'thumbup': {
+        'LeftShoulder.rotation':{x:[1.5,2,1,2], y:[0.2,0.4,1,2], z:[-1.5,-1.3,1,2]}, 'LeftArm.rotation':{x:[1.5,1.7,1,2], y:[-0.6,-0.4,1,2], z:[1,1.2,1,2]}, 'LeftForeArm.rotation':{x:-0.415, y:0.206, z:1.575}, 'LeftHand.rotation':{x:-0.276, y:-0.506, z:-0.208}, 'LeftHandThumb1.rotation':{x:0.208, y:-0.189, z:0.685}, 'LeftHandThumb2.rotation':{x:0.129, y:-0.285, z:-0.163}, 'LeftHandThumb3.rotation':{x:-0.047, y:0.068, z:0.401}, 'LeftHandIndex1.rotation':{x:1.412, y:-0.102, z:-0.152}, 'LeftHandIndex2.rotation':{x:1.903, y:-0.16, z:-0.114}, 'LeftHandIndex3.rotation':{x:0.535, y:-0.017, z:-0.062}, 'LeftHandMiddle1.rotation':{x:1.424, y:-0.103, z:-0.12}, 'LeftHandMiddle2.rotation':{x:1.919, y:-0.162, z:-0.114}, 'LeftHandMiddle3.rotation':{x:0.44, y:-0.012, z:-0.051}, 'LeftHandRing1.rotation':{x:1.619, y:-0.127, z:-0.053}, 'LeftHandRing2.rotation':{x:1.898, y:-0.16, z:-0.115}, 'LeftHandRing3.rotation':{x:0.262, y:-0.004, z:-0.031}, 'LeftHandPinky1.rotation':{x:1.661, y:-0.131, z:-0.016}, 'LeftHandPinky2.rotation':{x:1.715, y:-0.067, z:-0.13}, 'LeftHandPinky3.rotation':{x:0.627, y:-0.023, z:-0.071}
+      },
+      'thumbdown': {
+        'LeftShoulder.rotation':{x:[1.5,2,1,2], y:[0.2,0.4,1,2], z:[-1.5,-1.3,1,2]}, 'LeftArm.rotation':{x:[1.5,1.7,1,2], y:[-0.6,-0.4,1,2], z:[1,1.2,1,2]}, 'LeftForeArm.rotation':{x:-2.015, y:0.406, z:1.575}, 'LeftHand.rotation':{x:-0.176, y:-0.206, z:-0.208}, 'LeftHandThumb1.rotation':{x:0.208, y:-0.189, z:0.685}, 'LeftHandThumb2.rotation':{x:0.129, y:-0.285, z:-0.163}, 'LeftHandThumb3.rotation':{x:-0.047, y:0.068, z:0.401}, 'LeftHandIndex1.rotation':{x:1.412, y:-0.102, z:-0.152}, 'LeftHandIndex2.rotation':{x:1.903, y:-0.16, z:-0.114}, 'LeftHandIndex3.rotation':{x:0.535, y:-0.017, z:-0.062}, 'LeftHandMiddle1.rotation':{x:1.424, y:-0.103, z:-0.12}, 'LeftHandMiddle2.rotation':{x:1.919, y:-0.162, z:-0.114}, 'LeftHandMiddle3.rotation':{x:0.44, y:-0.012, z:-0.051}, 'LeftHandRing1.rotation':{x:1.619, y:-0.127, z:-0.053}, 'LeftHandRing2.rotation':{x:1.898, y:-0.16, z:-0.115}, 'LeftHandRing3.rotation':{x:0.262, y:-0.004, z:-0.031}, 'LeftHandPinky1.rotation':{x:1.661, y:-0.131, z:-0.016}, 'LeftHandPinky2.rotation':{x:1.715, y:-0.067, z:-0.13}, 'LeftHandPinky3.rotation':{x:0.627, y:-0.023, z:-0.071}
+      },
+      'side': {
+        'LeftShoulder.rotation':{x:1.755, y:-0.035, z:-1.63}, 'LeftArm.rotation':{x:1.263, y:-0.955, z:1.024}, 'LeftForeArm.rotation':{x:0, y:0, z:0.8}, 'LeftHand.rotation':{x:-0.36, y:-1.353, z:-0.184}, 'LeftHandThumb1.rotation':{x:0.137, y:-0.049, z:0.863}, 'LeftHandThumb2.rotation':{x:-0.293, y:0.153, z:-0.193}, 'LeftHandThumb3.rotation':{x:-0.271, y:-0.17, z:0.18}, 'LeftHandIndex1.rotation':{x:-0.018, y:0.007, z:0.28}, 'LeftHandIndex2.rotation':{x:0.247, y:-0.003, z:-0.025}, 'LeftHandIndex3.rotation':{x:0.13, y:-0.001, z:-0.013}, 'LeftHandMiddle1.rotation':{x:0.333, y:-0.015, z:0.182}, 'LeftHandMiddle2.rotation':{x:0.313, y:-0.005, z:-0.032}, 'LeftHandMiddle3.rotation':{x:0.294, y:-0.004, z:-0.03}, 'LeftHandRing1.rotation':{x:0.456, y:-0.028, z:-0.092}, 'LeftHandRing2.rotation':{x:0.53, y:-0.014, z:-0.052}, 'LeftHandRing3.rotation':{x:0.478, y:-0.012, z:-0.047}, 'LeftHandPinky1.rotation':{x:0.647, y:-0.049, z:-0.184}, 'LeftHandPinky2.rotation':{x:0.29, y:-0.004, z:-0.029}, 'LeftHandPinky3.rotation':{x:0.501, y:-0.013, z:-0.049}
+      },
+      'shrug': {
+        'Neck.rotation':{x:[-0.3,0.3,1,2], y:[-0.3,0.3,1,2], z:[-0.1,0.1]}, 'Head.rotation':{x:[-0.3,0.3], y:[-0.3,0.3], z:[-0.1,0.1]}, 'RightShoulder.rotation':{x:1.732, y:-0.058, z:1.407}, 'RightArm.rotation':{x:1.305, y:0.46, z:0.118}, 'RightForeArm.rotation':{x:[0,2.0], y:[-1,0.2], z:-1.637}, 'RightHand.rotation':{x:-0.048, y:0.165, z:-0.39}, 'RightHandThumb1.rotation':{x:1.467, y:0.599, z:-1.315}, 'RightHandThumb2.rotation':{x:-0.255, y:-0.123, z:0.119}, 'RightHandThumb3.rotation':{x:0, y:-0.002, z:0}, 'RightHandIndex1.rotation':{x:-0.293, y:-0.066, z:-0.112}, 'RightHandIndex2.rotation':{x:0.181, y:0.007, z:0.069}, 'RightHandIndex3.rotation':{x:0, y:0, z:0}, 'RightHandMiddle1.rotation':{x:-0.063, y:-0.041, z:0.032}, 'RightHandMiddle2.rotation':{x:0.149, y:0.005, z:0.05}, 'RightHandMiddle3.rotation':{x:0, y:0, z:0}, 'RightHandRing1.rotation':{x:0.152, y:-0.03, z:0.132}, 'RightHandRing2.rotation':{x:0.194, y:0.007, z:0.058}, 'RightHandRing3.rotation':{x:0, y:0, z:0}, 'RightHandPinky1.rotation':{x:0.306, y:-0.015, z:0.257}, 'RightHandPinky2.rotation':{x:0.15, y:-0.003, z:-0.003}, 'RightHandPinky3.rotation':{x:0, y:0, z:0}, 'LeftShoulder.rotation':{x:1.713, y:0.141, z:-1.433}, 'LeftArm.rotation':{x:1.136, y:-0.422, z:-0.416}, 'LeftForeArm.rotation':{x:1.42, y:0.123, z:1.506}, 'LeftHand.rotation':{x:0.073, y:-0.138, z:0.064}, 'LeftHandThumb1.rotation':{x:1.467, y:-0.599, z:1.314}, 'LeftHandThumb2.rotation':{x:-0.255, y:0.123, z:-0.119}, 'LeftHandThumb3.rotation':{x:0, y:0.001, z:0}, 'LeftHandIndex1.rotation':{x:-0.293, y:0.066, z:0.112}, 'LeftHandIndex2.rotation':{x:0.181, y:-0.007, z:-0.069}, 'LeftHandIndex3.rotation':{x:0, y:0, z:0}, 'LeftHandMiddle1.rotation':{x:-0.062, y:0.041, z:-0.032}, 'LeftHandMiddle2.rotation':{x:0.149, y:-0.005, z:-0.05}, 'LeftHandMiddle3.rotation':{x:0, y:0, z:0}, 'LeftHandRing1.rotation':{x:0.152, y:0.03, z:-0.132}, 'LeftHandRing2.rotation':{x:0.194, y:-0.007, z:-0.058}, 'LeftHandRing3.rotation':{x:0, y:0, z:0}, 'LeftHandPinky1.rotation':{x:0.306, y:0.015, z:-0.257}, 'LeftHandPinky2.rotation':{x:0.15, y:0.003, z:0.003}, 'LeftHandPinky3.rotation':{x:0, y:0, z:0}
+      },
+      'namaste': {
+        'RightShoulder.rotation':{x:1.758, y:0.099, z:1.604}, 'RightArm.rotation':{x:0.862, y:-0.292, z:-0.932}, 'RightForeArm.rotation':{x:0.083, y:0.066, z:-1.791}, 'RightHand.rotation':{x:-0.52, y:-0.001, z:-0.176}, 'RightHandThumb1.rotation':{x:0.227, y:0.418, z:-0.776}, 'RightHandThumb2.rotation':{x:-0.011, y:-0.003, z:0.171}, 'RightHandThumb3.rotation':{x:-0.041, y:-0.001, z:-0.013}, 'RightHandIndex1.rotation':{x:-0.236, y:0.003, z:-0.028}, 'RightHandIndex2.rotation':{x:0.004, y:0, z:0.001}, 'RightHandIndex3.rotation':{x:0.002, y:0, z:0}, 'RightHandMiddle1.rotation':{x:-0.236, y:0.003, z:-0.028}, 'RightHandMiddle2.rotation':{x:0.004, y:0, z:0.001}, 'RightHandMiddle3.rotation':{x:0.002, y:0, z:0}, 'RightHandRing1.rotation':{x:-0.236, y:0.003, z:-0.028}, 'RightHandRing2.rotation':{x:0.004, y:0, z:0.001}, 'RightHandRing3.rotation':{x:0.002, y:0, z:0}, 'RightHandPinky1.rotation':{x:-0.236, y:0.003, z:-0.028}, 'RightHandPinky2.rotation':{x:0.004, y:0, z:0.001}, 'RightHandPinky3.rotation':{x:0.002, y:0, z:0}, 'LeftShoulder.rotation':{x:1.711, y:-0.002, z:-1.625}, 'LeftArm.rotation':{x:0.683, y:0.334, z:0.977}, 'LeftForeArm.rotation':{x:0.086, y:-0.066, z:1.843}, 'LeftHand.rotation':{x:-0.595, y:-0.229, z:0.096}, 'LeftHandThumb1.rotation':{x:0.404, y:-0.05, z:0.537}, 'LeftHandThumb2.rotation':{x:-0.02, y:0.004, z:-0.154}, 'LeftHandThumb3.rotation':{x:-0.049, y:0.002, z:-0.019}, 'LeftHandIndex1.rotation':{x:-0.113, y:-0.001, z:0.014}, 'LeftHandIndex2.rotation':{x:0.003, y:0, z:0}, 'LeftHandIndex3.rotation':{x:0.002, y:0, z:0}, 'LeftHandMiddle1.rotation':{x:-0.113, y:-0.001, z:0.014}, 'LeftHandMiddle2.rotation':{x:0.004, y:0, z:0}, 'LeftHandMiddle3.rotation':{x:0.002, y:0, z:0}, 'LeftHandRing1.rotation':{x:-0.113, y:-0.001, z:0.014}, 'LeftHandRing2.rotation':{x:0.003, y:0, z:0}, 'LeftHandRing3.rotation':{x:0.002, y:0, z:0}, 'LeftHandPinky1.rotation':{x:-0.122, y:-0.001, z:-0.057}, 'LeftHandPinky2.rotation':{x:0.012, y:0.001, z:0.07}, 'LeftHandPinky3.rotation':{x:0.002, y:0, z:0}
+      }
+    }
+
 
     // Pose deltas
     // NOTE: In this object (x,y,z) are always Euler rotations despite the name!!
@@ -238,7 +263,7 @@ class TalkingHead {
     // Dynamically pick up all the property names that we need in the code
     const names = new Set();
     Object.values(this.poseTemplates).forEach( x => {
-      Object.keys(x.props).forEach( y => names.add(y) );
+      Object.keys( this.propsToThreeObjects(x.props) ).forEach( y => names.add(y) );
     });
     Object.keys( this.poseDelta.props ).forEach( x => {
       names.add(x)
@@ -248,9 +273,11 @@ class TalkingHead {
     // Use "side" as the first pose, weight on left leg
     this.poseName = "side"; // First pose
     this.poseWeightOnLeft = true; // Initial weight on left leg
-    this.poseCurrentTemplate = null;
-    this.poseBase = this.poseFactory( this.poseTemplates[this.poseName] );
-    this.poseTarget = this.poseFactory( this.poseTemplates[this.poseName] );
+    this.gesture = null; // Values that override pose properties
+    this.poseCurrentTemplate = this.poseTemplates[this.poseName];
+    this.poseBase = this.poseFactory( this.poseCurrentTemplate );
+    this.poseTarget = this.poseFactory( this.poseCurrentTemplate );
+    this.poseStraight = this.propsToThreeObjects( this.poseTemplates["straight"].props ); // Straight pose used as a reference
     this.poseAvatar = null; // Set when avatar has been loaded
 
     // Avatar height in meters
@@ -498,12 +525,7 @@ class TalkingHead {
       '😏': { dt: [300,2000], vs: { browDownRight: [0.1], browInnerUp: [0.7], browOuterUpRight: [0.2], eyeLookInRight: [0.7], eyeLookOutLeft: [0.7], eyeSquintLeft: [1], eyeSquintRight: [0.8], eyesRotateY: [0.7], mouthLeft: [0.4], mouthPucker: [0.4], mouthShrugLower: [0.3], mouthShrugUpper: [0.2], mouthSmile: [0.2], mouthSmileLeft: [0.4], mouthSmileRight: [0.2], mouthStretchLeft: [0.5], mouthUpperUpLeft: [0.6], noseSneerLeft: [0.7] } },
       '🙂': { dt: [300,2000], vs: { mouthSmile: [0.5] } },
       '🙃': { link:  '🙂' },
-      '😊': { dt: [300,1000,1000], vs: {
-        browInnerUp: [0.6], eyeSquintLeft: [1], eyeSquintRight: [1],
-        mouthSmile: [0.7], noseSneerLeft: [0.7], noseSneerRight: [0.7],
-        /* handLeft: [null,{ x: 0.2, y: -0.1, z:0.1, d:1000 }, { d:1000 }],
-        handFistLeft: [0] */
-      } },
+      '😊': { dt: [300,1000,1000], vs: { browInnerUp: [0.6], eyeSquintLeft: [1], eyeSquintRight: [1], mouthSmile: [0.7], noseSneerLeft: [0.7], noseSneerRight: [0.7]} },
       '😇': { link:  '😊' },
       '😀': { dt: [300,2000], vs: { browInnerUp: [0.6], jawOpen: [0.1], mouthDimpleLeft: [0.2], mouthDimpleRight: [0.2], mouthOpen: [0.3], mouthPressLeft: [0.3], mouthPressRight: [0.3], mouthRollLower: [0.4], mouthShrugUpper: [0.4], mouthSmile: [0.7], mouthUpperUpLeft: [0.3], mouthUpperUpRight: [0.3], noseSneerLeft: [0.4], noseSneerRight: [0.4] }},
       '😃': { dt: [300,2000], vs: { browInnerUp: [0.6], eyeWideLeft: [0.7], eyeWideRight: [0.7], jawOpen: [0.1], mouthDimpleLeft: [0.2], mouthDimpleRight: [0.2], mouthOpen: [0.3], mouthPressLeft: [0.3], mouthPressRight: [0.3], mouthRollLower: [0.4], mouthShrugUpper: [0.4], mouthSmile: [0.7], mouthUpperUpLeft: [0.3], mouthUpperUpRight: [0.3], noseSneerLeft: [0.4], noseSneerRight: [0.4] } },
@@ -546,7 +568,22 @@ class TalkingHead {
       } },
       '👀': { dt: [500,1500], vs: { eyesRotateY: [-0.8] } },
 
-      '😴': { dt: [5000,5000], vs:{ eyeBlinkLeft: [1], eyeBlinkRight: [1], headRotateX: [0.2], headRotateZ: [0.1] } }
+      '😴': { dt: [5000,5000], vs:{ eyeBlinkLeft: [1], eyeBlinkRight: [1], headRotateX: [0.2], headRotateZ: [0.1] } },
+
+      '✋': { dt: [300,2000], vs:{ mouthSmile: [0.5], gesture: [["handup",2,true],null] } },
+      '🤚': { dt: [300,2000], vs:{ mouthSmile: [0.5], gesture: [["handup",2],null] } },
+      '👋': { link:  '✋' },
+      '👍': { dt: [300,2000], vs:{ mouthSmile: [0.5], gesture: [["thumbup",2],null] } },
+      '👎': { dt: [300,2000], vs:{ browDownLeft: [1], browDownRight: [1], eyesLookUp: [0.2], jawForward: [0.3], mouthFrownLeft: [1], mouthFrownRight: [1], headRotateX: [0.15], gesture: [["thumbdown",2],null] } },
+      '👌': { dt: [300,2000], vs:{ mouthSmile: [0.5], gesture: [["ok",2],null] } },
+      '🤷‍♂️': { dt: [1000,1500], vs:{ gesture: [["shrug",2],null] } },
+      '🤷‍♀️': { link: '🤷‍♂️' },
+      '🤷': { link: '🤷‍♂️' },
+      '🙏': { dt: [1500,300,1000], vs:{ eyeBlinkLeft: [0,1], eyeBlinkRight: [0,1], headRotateX: [0], headRotateZ: [0.1], gesture: [["namaste",2],null] } },
+
+      'yes': { dt: [[200,500],[200,500],[200,500],[200,500]], vs:{ headRotateX: [[0.1,0.2],0.1,[0.1,0.2],0], headRotateZ: [[-0.2,0.2]] } },
+      'no': { dt: [[200,500],[200,500],[200,500],[200,500],[200,500]], vs:{ headRotateY: [[-0.1,-0.05],[0.05,0.1],[-0.1,-0.05],[0.05,0.1],0], headRotateZ: [[-0.2,0.2]] } }
+
     };
 
     // Baseline/fixed morph targets
@@ -762,14 +799,19 @@ class TalkingHead {
     for( let [key,val] of Object.entries(p) ) {
       const ids = key.split('.');
       let v;
+      let x = Array.isArray(val.x) ? this.gaussianRandom(...val.x) : val.x;
+      let y = Array.isArray(val.y) ? this.gaussianRandom(...val.y) : val.y;
+      let z = Array.isArray(val.z) ? this.gaussianRandom(...val.z) : val.z;
+
       if ( ids[1] === 'position' || ids[1] === 'scale' ) {
-        v = new THREE.Vector3(val.x,val.y,val.z);
+        v = new THREE.Vector3(x,y,z);
       } else if ( ids[1] === 'rotation' ) {
         key = ids[0] + '.quaternion';
-        v = new THREE.Quaternion().setFromEuler(new THREE.Euler(val.x,val.y,val.z,'XYZ')).normalize();
+        v = new THREE.Quaternion().setFromEuler(new THREE.Euler(x,y,z,'XYZ')).normalize();
       } else if ( ids[1] === 'quaternion' ) {
-        v = new THREE.Quaternion(val.x,val.y,val.z,val.w).normalize();
+        v = new THREE.Quaternion(x,y,z,val.w).normalize();
       }
+
       if (v) {
         r[key] = v;
       }
@@ -1088,7 +1130,7 @@ class TalkingHead {
   /**
   * Get given pose as a string.
   * @param {Object} pose Pose
-  * @param {number} [prec=0.001] Precision used in values
+  * @param {number} [prec=1000] Precision used in values
   * @return {string} Pose as a string
   */
   getPoseString(pose,prec=1000){
@@ -1111,32 +1153,55 @@ class TalkingHead {
 
 
   /**
-  * Return pose template property taking into account mirror pose.
+  * Return pose template property taking into account mirror pose and gesture.
   * @param {string} key Property key
   * @return {Quaternion|Vector3} Position or rotation
   */
   getPoseTemplateProp(key) {
-    let q;
-    if ( !this.poseWeightOnLeft ) {
-      if ( key.startsWith('Left') ) {
-        key = 'Right' + key.substring(4);
-      } else if ( key.startsWith('Right') ) {
-        key = 'Left' + key.substring(5);
+
+    const ids = key.split('.');
+    let target = ids[0] + '.' + (ids[1] === 'rotation' ? 'quaternion' : ids[1]);
+
+    if ( this.gesture && this.gesture.hasOwnProperty(target) ) {
+      return this.gesture[target].clone();
+    } else {
+      let source = ids[0] + '.' + (ids[1] === 'quaternion' ? 'rotation' : ids[1]);
+      if ( !this.poseWeightOnLeft ) {
+        if ( source.startsWith('Left') ) {
+          source = 'Right' + source.substring(4);
+          target = 'Right' + target.substring(4);
+        } else if ( source.startsWith('Right') ) {
+          source = 'Left' + source.substring(5);
+          target = 'Left' + target.substring(5);
+        }
       }
-      q = this.poseTarget.template.props[key].clone();
-      if ( q.isQuaternion ) {
+
+      // Get value
+      let q;
+      if ( this.poseTarget.template.props.hasOwnProperty(target) ) {
+        const o = {};
+        o[target] = this.poseTarget.template.props[target];
+        q = this.propsToThreeObjects( o )[target];
+      } else if ( this.poseTarget.template.props.hasOwnProperty(source) ) {
+        const o = {};
+        o[source] = this.poseTarget.template.props[source];
+        q = this.propsToThreeObjects( o )[target];
+      }
+
+      // Mirror
+      if ( q && !this.poseWeightOnLeft && q.isQuaternion ) {
         q.x *= -1;
         q.w *= -1;
       }
-    } else {
-      q = this.poseTarget.template.props[key].clone();
+
+      return q;
     }
-    return q;
   }
 
   /**
   * Change body weight from current leg to another.
   * @param {Object} p Pose properties
+  * @return {Object} Mirrored pose.
   */
   mirrorPose(p) {
     const r = {};
@@ -1159,69 +1224,87 @@ class TalkingHead {
       r[key].t = v.t;
       r[key].d = v.d;
     }
-    this.poseWeightOnLeft = !this.poseWeightOnLeft;
     return r;
   }
 
   /**
   * Create a new pose.
   * @param {Object} template Pose template
-  * @param {numeric} duration Default duration in ms
+  * @param {numeric} [ms=2000] Transition duration in ms
   * @return {Object} A new pose object.
   */
-  poseFactory(template, duration) {
-    const o = { template: template, props: {} };
-    Object.entries(template.props).forEach( x => {
-      o.props[x[0]] = x[1].clone();
+  poseFactory(template, ms=2000) {
+
+    // Pose object
+    const o = {
+      template: template,
+      props: this.propsToThreeObjects( template.props )
+    };
+
+    for( const [p,v] of Object.entries(o.props) ) {
 
       // Restrain movement when standing
       if ( this.opt.modelMovementFactor < 1 && template.standing &&
-        (x[0] === 'Hips.quaternion' || x[0] === 'Spine.quaternion' ||
-        x[0] === 'Spine1.quaternion' || x[0] === 'Spine2.quaternion' ||
-        x[0] === 'Neck.quaternion' || x[0] === 'LeftUpLeg.quaternion' ||
-        x[0] === 'LeftLeg.quaternion' || x[0] === 'RightUpLeg.quaternion' ||
-        x[0] === 'RightLeg.quaternion') ) {
-        const ref = this.poseTemplates["straight"].props[x[0]];
-        const angle = o.props[x[0]].angleTo( ref );
-        o.props[x[0]].rotateTowards( ref, (1 - this.opt.modelMovementFactor) * angle );
+        (p === 'Hips.quaternion' || p === 'Spine.quaternion' ||
+        p === 'Spine1.quaternion' || p === 'Spine2.quaternion' ||
+        p === 'Neck.quaternion' || p === 'LeftUpLeg.quaternion' ||
+        p === 'LeftLeg.quaternion' || p === 'RightUpLeg.quaternion' ||
+        p === 'RightLeg.quaternion') ) {
+        const ref = this.poseStraight[p];
+        const angle = v.angleTo( ref );
+        v.rotateTowards( ref, (1 - this.opt.modelMovementFactor) * angle );
       }
 
       // Custom properties
-      o.props[x[0]].t = this.animClock; // timestamp
-      o.props[x[0]].d = duration; // Transition duration
-    });
-    this.poseWeightOnLeft = true;
+      v.t = this.animClock; // timestamp
+      v.d = ms; // Transition duration
+
+    }
     return o;
   }
 
   /**
   * Set a new pose and start transition timer.
-  * @param {Object} t Pose template
+  * @param {Object} template Pose template, if null update current pose
+  * @param {number} [ms=2000] Transition time in milliseconds
   */
-  setPoseFromTemplate(template) {
+  setPoseFromTemplate(template, ms=2000) {
 
     // Special cases
-    const isIntermediate = this.poseTarget && this.poseTarget.template && ((this.poseTarget.template.standing && template.lying) || (this.poseTarget.template.lying && template.standing));
-    const isSameTemplate = template === this.poseCurrentTemplate;
+    const isIntermediate = template && this.poseTarget && this.poseTarget.template && ((this.poseTarget.template.standing && template.lying) || (this.poseTarget.template.lying && template.standing));
+    const isSameTemplate = template && (template === this.poseCurrentTemplate);
     const isWeightOnLeft = this.poseWeightOnLeft;
-    let duration = isIntermediate ? 1000 : 2000;
+    let duration = isIntermediate ? 1000 : ms;
 
     // New pose template
     if ( isIntermediate) {
       this.poseCurrentTemplate = this.poseTemplates['oneknee'];
       setTimeout( () => {
-        this.setPoseFromTemplate(template);
+        this.setPoseFromTemplate(template,ms);
       }, duration);
     } else {
-      this.poseCurrentTemplate = template;
+      this.poseCurrentTemplate = template || this.poseCurrentTemplate;
     }
 
     // Set target
     this.poseTarget = this.poseFactory(this.poseCurrentTemplate, duration);
+    this.poseWeightOnLeft = true;
 
     // Mirror properties, if necessary
     if ( (!isSameTemplate && !isWeightOnLeft) || (isSameTemplate && isWeightOnLeft ) ) {
       this.poseTarget.props = this.mirrorPose(this.poseTarget.props);
+      this.poseWeightOnLeft = !this.poseWeightOnLeft;
+    }
+
+    // Gestures
+    if ( this.gesture ) {
+      for( let [p,v] of Object.entries(this.gesture) ) {
+        if ( this.poseTarget.props.hasOwnProperty(p) ) {
+          this.poseTarget.props[p].copy(v);
+          this.poseTarget.props[p].t = v.t;
+          this.poseTarget.props[p].d = v.d;
+        }
+      }
     }
 
     // Make sure deltas are included in the target
@@ -1534,10 +1617,10 @@ class TalkingHead {
     }
 
     // Time series
-    const delay = a.delay ? (Array.isArray(a.delay) ? this.gaussianRandom(a.delay[0], a.delay[1], a.delay[2], a.delay[3]) : a.delay ) : 0;
+    const delay = a.delay ? (Array.isArray(a.delay) ? this.gaussianRandom(...a.delay) : a.delay ) : 0;
     if ( a.hasOwnProperty('dt') ) {
       a.dt.forEach( (x,i) => {
-        o.ts[i+1] = o.ts[i] + (Array.isArray(x) ? this.gaussianRandom(x[0],x[1],x[2],x[3]) : x);
+        o.ts[i+1] = o.ts[i] + (Array.isArray(x) ? this.gaussianRandom(...x) : x);
       });
     }
     o.ts = o.ts.map( x => this.animClock + delay + x * scaleTime );
@@ -1553,7 +1636,11 @@ class TalkingHead {
         } else if ( typeof x === 'string' || x instanceof String ) {
           return x.slice();
         } else if ( Array.isArray(x) ) {
-          return (base === undefined ? 0 : base) + scaleValue * this.gaussianRandom(x[0],x[1],x[2],x[3]);
+          if ( mt === 'gesture' ) {
+            return x.slice();
+          } else {
+            return (base === undefined ? 0 : base) + scaleValue * this.gaussianRandom(...x);
+          }
         } else if ( x instanceof Object && x.constructor === Object ) {
           return Object.assign( {}, x );
         } else {
@@ -1718,6 +1805,13 @@ class TalkingHead {
           } else if ( mt === 'pose' ) {
             o[mt] = ""+vs[1];
             delete x.vs[mt];
+          } else if ( mt === 'gesture' ) {
+            for( let j=0; j<x.ts.length; j++ ) {
+              if ( vs[j] && this.animClock >= x.ts[j] ) {
+                o[mt] = vs[j];
+                vs[j] = null;
+              }
+            }
           } else if ( mt === 'moveto' || mt ==='handLeft' || mt === 'handRight' ) {
             for( let j=0; j<x.ts.length; j++ ) {
               if ( vs[j] && this.animClock >= x.ts[j] ) {
@@ -1774,7 +1868,9 @@ class TalkingHead {
       } else if ( mt === 'pose' ) {
         this.poseName = ""+x;
         this.setPoseFromTemplate( this.poseTemplates[ this.poseName ] );
-      } else if ( mt === 'moveto' ) {
+      } else if ( mt === 'gesture' ) {
+        this.playGesture( ...x );
+      }else if ( mt === 'moveto' ) {
         Object.entries(x.props).forEach( e => {
           if ( e[1] ) {
             this.poseTarget.props[e[0]].copy( e[1] );
@@ -2668,7 +2764,7 @@ class TalkingHead {
   speakWithHands(delay=0,prob=0.5) {
 
     // Only if we are standing and not bending and probabilities match up
-    if ( this.mixer || !this.poseTarget.template.standing || this.poseTarget.template.bend || Math.random()>prob ) return;
+    if ( this.mixer || this.gesture || !this.poseTarget.template.standing || this.poseTarget.template.bend || Math.random()>prob ) return;
 
     // Random targets for left hand
     this.ikSolve( {
@@ -2710,7 +2806,7 @@ class TalkingHead {
     } } );
     ["LeftArm","LeftForeArm","RightArm","RightForeArm"].forEach( x => {
       moveto[0].props[x+'.quaternion'] = this.ikMesh.getObjectByName(x).quaternion.clone();
-    })
+    });
 
     // Return to original target
     dt.push( 1000 + Math.round( Math.random() * 500 ) );
@@ -2787,7 +2883,7 @@ class TalkingHead {
 
   /**
   * Play RPM/Mixamo animation clip.
-  * @param {string} url URL to animation file FBX
+  * @param {string|Object} url URL to animation file FBX
   * @param {progressfn} [onprogress=null] Callback for progress
   * @param {number} [dur=10] Duration in seconds, but at least once
   * @param {number} [ndx=0] Index of the clip
@@ -2881,18 +2977,36 @@ class TalkingHead {
   * Stop running animations.
   */
   stopAnimation() {
+
+    // Stop mixer
     this.mixer = null;
-    this.poseCurrentTemplate = null; // This forces the pose change
+
+    // Restart gesture
+    if ( this.gesture ) {
+      for( let [p,v] of Object.entries(this.gesture) ) {
+        v.t = this.animClock;
+        v.d = 1000;
+        if ( this.poseTarget.props.hasOwnProperty(p) ) {
+          this.poseTarget.props[p].copy(v);
+          this.poseTarget.props[p].t = this.animClock;
+          this.poseTarget.props[p].d = 1000;
+        }
+      }
+    }
+
+    // Restart pose animation
     let anim = this.animQueue.find( x => x.template.name === 'pose' );
     if ( anim ) {
       anim.ts[0] = this.animClock;
     }
+    this.setPoseFromTemplate( null );
+
   }
 
 
   /**
   * Play RPM/Mixamo pose.
-  * @param {string} url URL to animation file FBX
+  * @param {string|Object} url Pose name | URL to FBX
   * @param {progressfn} [onprogress=null] Callback for progress
   * @param {number} [dur=5] Duration of the pose in seconds
   * @param {number} [ndx=0] Index of the clip
@@ -2981,6 +3095,120 @@ class TalkingHead {
   }
 
   /**
+  * Play a gesture, which is either a hand gesture, an emoji animation or their
+  * combination.
+  * @param {string} name Gesture name
+  * @param {number} [dur=3] Duration of the gesture in seconds
+  * @param {boolean} [mirror=false] Mirror gesture
+  * @param {number} [ms=1000] Transition time in milliseconds
+  */
+  playGesture(name, dur=3, mirror=false, ms=1000) {
+
+    if ( !this.armature ) return;
+
+    // Hand gesture, if any
+    let g = this.gestureTemplates[name];
+    if ( g ) {
+
+      // New gesture always overrides the existing one
+      if ( this.gestureTimeout ) {
+        clearTimeout( this.gestureTimeout );
+        this.gestureTimeout = null;
+      }
+
+      // Set gesture
+      this.gesture = this.propsToThreeObjects( g );
+      if ( mirror ) {
+        this.gesture = this.mirrorPose( this.gesture );
+      }
+      if ( name === "namaste" && this.avatar.body === 'M' ) {
+        // Work-a-round for male model so that the hands meet
+        this.gesture["RightArm.quaternion"].rotateTowards( new THREE.Quaternion(0,1,0,0), -0.25);
+        this.gesture["LeftArm.quaternion"].rotateTowards( new THREE.Quaternion(0,1,0,0), -0.25);
+      }
+
+      // Apply to target
+      for( let [p,v] of Object.entries(this.gesture) ) {
+        v.t = this.animClock;
+        v.d = ms;
+        if ( this.poseTarget.props.hasOwnProperty(p) ) {
+          this.poseTarget.props[p].copy(v);
+          this.poseTarget.props[p].t = this.animClock;
+          this.poseTarget.props[p].d = ms;
+        }
+      }
+
+      // Timer
+      if ( dur && Number.isFinite(dur) ) {
+        this.gestureTimeout = setTimeout( this.stopGesture.bind(this,ms), 1000 * dur);
+      }
+    }
+
+    // Animated emoji, if any
+    let e = this.animEmojis[name];
+    if ( e ) {
+
+      // Follow link
+      if ( e && e.link ) {
+        e = this.animEmojis[e.link];
+      }
+
+      if ( e ) {
+        // Look at the camera for 500 ms
+        this.lookAtCamera(500);
+
+        // Create animation and tag as gesture
+        const anim = this.animFactory( e );
+        anim.gesture = true;
+
+        // Rescale duration
+        if ( dur && Number.isFinite(dur) ) {
+          const first = anim.ts[0];
+          const last = anim.ts[ anim.ts.length -1 ];
+          const scale = (1000 * dur) / (last-first);
+          anim.ts = anim.ts.map( x => first + scale * (x - first) );
+        }
+
+        this.animQueue.push( anim );
+      }
+    }
+
+  }
+
+  /**
+  * Stop the gesture.
+  * @param {number} [ms=1000] Transition time in milliseconds
+  */
+  stopGesture(ms=1000) {
+
+    // Stop gesture timer
+    if ( this.gestureTimeout ) {
+      clearTimeout( this.gestureTimeout );
+      this.gestureTimeout = null;
+    }
+
+    // Stop hand gesture, if any
+    if ( this.gesture ) {
+      const gs = Object.entries(this.gesture);
+      this.gesture = null;
+      for( const [p,v] of gs ) {
+        if ( this.poseTarget.props.hasOwnProperty(p) ) {
+          this.poseTarget.props[p].copy( this.getPoseTemplateProp(p) );
+          this.poseTarget.props[p].t = this.animClock;
+          this.poseTarget.props[p].d = ms;
+        }
+      }
+    }
+
+    // Stop animated emoji gesture, if any
+    let i = this.animQueue.findIndex( y => y.gesture );
+    if ( i !== -1 ) {
+      this.animQueue.splice(i, 1);
+    }
+
+  }
+
+  /**
   * Cyclic Coordinate Descent (CCD) Inverse Kinematic (IK) algorithm.
   * Adapted from:
   * https://github.com/mrdoob/three.js/blob/master/examples/jsm/animation/CCDIKSolver.js
@@ -3020,7 +3248,7 @@ class TalkingHead {
     if ( target ) {
       for ( let i = 0; i < iterations; i ++ ) {
         let rotated = false;
-        for ( let j = 0, jl = links.length; j < jl; j ++ ) {
+        for ( let j = 0, jl = links.length; j < jl; j++ ) {
           const bone = links[j].bone;
           bone.matrixWorld.decompose( linkPos, invLinkQ, linkScale );
           invLinkQ.invert();

@@ -63,6 +63,18 @@ export const site = {
     'Dance': { url: './poses/dance.fbx', fi: 'Tanssi' }
   },
 
+  // Preset gestures
+  gestures: {
+    'HandUp': { name: "handup", fi: 'KäsiYlös' },
+    'OK': { name: "ok" },
+    'Index': { name: "index", fi: 'Etusormi' },
+    'ThumbUp': { name: "thumbup", fi: 'PeukaloYlös' },
+    'ThumbDown': { name: "thumbdown", fi: 'PeukaloAlas' },
+    'Side': { name: "side", fi: 'Sivu' },
+    'Shrug': { name: "shrug", fi: 'Olankohautus' },
+    'Namaste': { name: "namaste" }
+  },
+
   // Preset animations
   animations: {
     'Walking': { url: './animations/walking.fbx', fi: 'Kävely' }
