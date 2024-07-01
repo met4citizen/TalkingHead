@@ -235,7 +235,7 @@ class LipsyncEn {
     };
 
     // Pauses in relative units (1=average)
-    this.specialDurations = { ' ': 1, ',': 3, '-':0.5 };
+    this.specialDurations = { ' ': 1, ',': 3, '-':0.5, "'":0.5 };
 
     // English number words
     this.digits = ['oh', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
@@ -324,7 +324,7 @@ class LipsyncEn {
   * @return {string} Pre-processsed text.
   */
   preProcessText(s) {
-    return s.replace('/[#_*\'\":;]/g','')
+    return s.replace('/[#_*\":;]/g','')
       .replace( this.symbolsReg, (symbol) => {
         return ' ' + this.symbols[symbol] + ' ';
       })
