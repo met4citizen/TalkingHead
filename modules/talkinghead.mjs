@@ -2026,7 +2026,7 @@ class TalkingHead {
     // Classifiers
     const dividersSentence = /[!\.\?\n\p{Extended_Pictographic}]/ug;
     const dividersWord = /[ ]/ug;
-    const speakables = /[\p{L}\p{N},\.'!€\$\+\-%&\?]/ug;
+    const speakables = /[\p{L}\p{N},\.'!€\$\+\-–—%&\?]/ug;
     const emojis = /[\p{Extended_Pictographic}]/ug;
     const lipsyncLang = opt.lipsyncLang || this.avatar.lipsyncLang || this.opt.lipsyncLang;
 
@@ -2518,14 +2518,33 @@ class TalkingHead {
             const audio = await this.audioCtx.decodeAudioData( buf );
             this.speakWithHands();
 
+            // Workaround for Google TTS not providing all timepoints
+            const times = [ 0 ];
+            let markIndex = 0;
+            line.text.forEach( (x,i) => {
+              if ( i > 0 ) {
+                let ms = times[ times.length - 1 ];
+                if ( data.timepoints[markIndex] ) {
+                  ms = data.timepoints[markIndex].timeSeconds * 1000;
+                  if ( data.timepoints[markIndex].markName === ""+x.mark ) {
+                    markIndex++;
+                  }
+                }
+                times.push( ms );
+              }
+            });
+
+            console.log(times);
+
             // Word-to-audio alignment
             const timepoints = [ { mark: 0, time: 0 } ];
-            data.timepoints.forEach( (x,i) => {
-              const time = x.timeSeconds * 1000;
-              let prevDuration = time - timepoints[i].time;
-              if ( prevDuration > 150 ) prevDuration - 150; // Trim out leading space
-              timepoints[i].duration = prevDuration;
-              timepoints.push( { mark: parseInt(x.markName), time: time });
+            times.forEach( (x,i) => {
+              if ( i>0 ) {
+                let prevDuration = x - times[i-1];
+                if ( prevDuration > 150 ) prevDuration - 150; // Trim out leading space
+                timepoints[i-1].duration = prevDuration;
+                timepoints.push( { mark: i, time: x });
+              }
             });
             let d = 1000 * audio.duration; // Duration in ms
             if ( d > this.opt.ttsTrimEnd ) d = d - this.opt.ttsTrimEnd; // Trim out silence at the end
@@ -3114,6 +3133,12 @@ class TalkingHead {
       if ( this.gestureTimeout ) {
         clearTimeout( this.gestureTimeout );
         this.gestureTimeout = null;
+      }
+
+      // Stop talking hands animation
+      let ndx = this.animQueue.findIndex( y => y.template.name === "talkinghands" );
+      if ( ndx !== -1 ) {
+        this.animQueue[ndx].ts = this.animQueue[ndx].ts.map( x => 0 );
       }
 
       // Set gesture
