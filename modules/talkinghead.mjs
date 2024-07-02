@@ -2534,8 +2534,6 @@ class TalkingHead {
               }
             });
 
-            console.log(times);
-
             // Word-to-audio alignment
             const timepoints = [ { mark: 0, time: 0 } ];
             times.forEach( (x,i) => {
