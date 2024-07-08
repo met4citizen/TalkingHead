@@ -2026,7 +2026,7 @@ class TalkingHead {
     // Classifiers
     const dividersSentence = /[!\.\?\n\p{Extended_Pictographic}]/ug;
     const dividersWord = /[ ]/ug;
-    const speakables = /[\p{L}\p{N},\.'!€\$\+\-–—%&\?]/ug;
+    const speakables = /[\p{L}\p{N},\.'!€\$\+\p{Dash_Punctuation}%&\?]/ug;
     const emojis = /[\p{Extended_Pictographic}]/ug;
     const lipsyncLang = opt.lipsyncLang || this.avatar.lipsyncLang || this.opt.lipsyncLang;
 
@@ -2474,7 +2474,8 @@ class TalkingHead {
               .replaceAll('<','&lt;')
               .replaceAll('>','&gt;')
               .replaceAll('"','&quot;')
-              .replaceAll('\'','&apos;');
+              .replaceAll('\'','&apos;')
+              .replace(/^\p{Dash_Punctuation}$/ug,'<break time="750ms"/>');
 
           });
           ssml += "</speak>";
