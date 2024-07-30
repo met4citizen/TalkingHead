@@ -410,7 +410,7 @@ const jwtEndpoint = "/app/jwt/get"; // Get JSON Web Token for Single Sign-On
 const openaiChatCompletionsProxy = "/openai/v1/chat/completions";
 const openaiModerationsProxy = "/openai/v1/moderations";
 const openaiAudioTranscriptionsProxy = "/openai/v1/audio/transcriptions";
-const vertexaiChatCompletionsProxy = "/vertexai/";
+const geminiProxy = "/gemini/";
 const googleTTSProxy = "/gtts/";
 const elevenTTSProxy = [
   "wss://" + window.location.host + "/elevenlabs/",
@@ -1358,12 +1358,12 @@ function excludesProcess(s,o=null) {
   return o;
 }
 
-function motion( action, pose, expression, mood ) {
+function motion( action, pose, gesture, mood ) {
   try {
     head.setMood(mood || 'neutral');
   } catch(err) {}
-  if ( expression ) {
-    head.speakEmoji(expression);
+  if ( gesture && site.gestures[gesture] ) {
+    head.playGesture(site.gestures[gesture].name);
   }
   if ( action && site.animations[action] ) {
     head.playAnimation( site.animations[action].url, progressUpdate, site.animations[action].dur || 20 );
@@ -1554,20 +1554,14 @@ async function openaiSendMessage(node,msgs) {
                   "type": "string",
                   "enum": Object.keys(site.poses)
                 },
-                /* "facialexpression": {
+                "gesture": {
                   "type": "string",
-                  "enum": Object.keys(head.animEmojis).map( x => {
-                    return x.split("").map((unit) => "\\u" + unit.charCodeAt(0).toString(16).padStart(4, "0")).join("");
-                  })
-                }, */
+                  "enum": Object.keys(site.gestures)
+                },
                 "mood": {
                   "type": "string",
                   "enum": Object.keys(head.animMoods)
                 }
-                /* "custom-animation": {
-                  "type": "string",
-                  "description": "A short description of the custom movement, e.g. standing and waving left hand."
-                }*/
               },
               "required": []
             }
@@ -1575,6 +1569,7 @@ async function openaiSendMessage(node,msgs) {
         }
       ];
       body.tool_choice = "auto";
+      body.parallel_tool_calls = false;
     }
 
     // Elements
@@ -1586,7 +1581,7 @@ async function openaiSendMessage(node,msgs) {
 
       // Ready for either text response or a function call
       tts = '';
-      fn = null;
+      fn = { id: '', name: '', arguments: '' };
 
       // Fetch the response from the OpenAI API
       const res = await fetch( openaiChatCompletionsProxy, {
@@ -1605,127 +1600,121 @@ async function openaiSendMessage(node,msgs) {
         // Read the response as a stream of data
         const reader = res.body.getReader();
         const decoder = new TextDecoder("utf-8");
-        let buf = new Uint8Array(512);
-        let ndx = 0;
-        let ns = -1; // Number of consecutive line break, -1=new chapter begins
         let exclude = null; // Exclude object
 
         while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          for (let i = 0; i < value.byteLength; ++i) {
-            buf[ndx++] = value[i];
-            if ( ns === -1 ) ns = 0;
-            ns = (value[i]===10) ? (ns + 1) : 0;
-            if ( ns == 2 ) {
-              let line = decoder.decode( buf.subarray(0, ndx - 2) );
-              if ( !line.startsWith('data: ') ) throw new Error('Expected "data:" prefix in: ' + line);
-              line = line.substring(6);
-              if ( line === '[DONE]' ) {
-                if ( fn ) {
+          let { done, value } = await reader.read();
 
-                  // Function call
-                  body.messages.push({
-                    role: "assistant",
-                    content: null,
-                    tool_calls: [
-                      {
-                        id: fn.id,
-                        type: "function",
-                        function: {
-                          name: fn.name,
-                          arguments: fn.arguments
-                        }
-                      }
-                    ]
-                  });
-
-                  // Call the function
+          // Extract text data
+          if ( value ) {
+            decoder.decode(value).split('\n').forEach( data => {
+              if ( data.startsWith("data: ") ) {
+                let line = data.substring(6).trim();
+                if ( line === '[DONE]' ) {
+                  done = true;
+                } else {
+                  let obj;
                   try {
-                    const m = JSON.parse(fn.arguments);
-                    motion(m.action, m.stillpose, m.facialexpression, m.mood);
-                  } catch(motionError) {
-                    console.error(motionError);
+                    obj = JSON.parse( line );
+                  } catch(error) {
+                    throw new Error( "Error JSON parsing line: " + line );
                   }
 
-                  // Response
-                  body.messages.push({
-                    role: "tool",
-                    content: "",
-                    tool_call_id: fn.id
-                  });
+                  if ( obj && obj.error ) throw new Error( obj.error.message || ''+res.status );
+                  fn.id += obj?.choices?.[0]?.delta?.tool_calls?.[0]?.id || '';
+                  fn.name += obj?.choices?.[0]?.delta?.tool_calls?.[0]?.function?.name || '';
+                  fn.arguments += obj?.choices?.[0]?.delta?.tool_calls?.[0]?.function?.arguments || '';
+                  node.dataset.output += obj?.choices?.[0]?.delta?.content || '';
+                  tts += obj?.choices?.[0]?.delta?.content || '';
 
-                  // Make sure we do not get abother function call
-                  body.tool_choice = "none";
-                }
-                if ( tts ) {
-                  if ( cfg('voice-type') === 'eleven' ) {
-                    await elevenSpeak( tts.trimStart() + " ", node );
-                  } else if ( cfg('voice-type') === 'microsoft' ) {
-                    await microsoftSpeak( tts.trimStart() + " ", node );
-                  } else {
-                    exclude = excludesProcess(tts,exclude);
-                    await head.speakText( tts, {
-                      lipsyncLang: cfg('voice-lipsync-lang'),
-                      ttsVoice: cfg('voice-google-id'),
-                      ttsRate: cfg('voice-google-rate'),
-                      ttsPitch: cfg('voice-google-pitch')
-                    }, addText.bind(null,node), exclude.excludes );
-                  }
-                }
-                break;
-              } else {
-                let obj;
-                try {
-                  obj = JSON.parse(line);
-                } catch(e) {
-                  throw new Error( "Error JSON parsing line: " + line );
-                }
-                if ( obj && obj.error ) throw new Error( obj.error.message || ''+res.status );
-                if ( obj && obj.choices && obj.choices[0] && obj.choices[0].delta ) {
-                  const delta = obj.choices[0].delta;
-                  if ( delta.tool_calls ) {
-                    if ( !fn ) fn = { id: '', name: '', arguments: '' };
-                    fn.id += delta.tool_calls[0].id || '';
-                    fn.name += delta.tool_calls[0].function?.name || '';
-                    fn.arguments += delta.tool_calls[0].function?.arguments || '';
-                  }
-                  if ( delta.content ) {
-                    node.dataset.output += delta.content;
-                    tts += delta.content;
-                  }
-                }
-
-                // Speak
-                if ( tts ) {
-                  let idx = Math.max(tts.lastIndexOf('.'), tts.lastIndexOf('!'), tts.lastIndexOf('?'), tts.lastIndexOf('\n'));
-                  if ( idx !== -1 ) {
-                    let s = tts.substring(0, idx + 1);
-                    if ( s && s.length ) {
-                      tts = tts.substring(idx + 1).trimStart();
-                      if ( cfg('voice-type') === 'eleven' ) {
-                        await elevenSpeak( s + " ", node );
-                      } else if ( cfg('voice-type') === 'microsoft' ) {
-                        await microsoftSpeak( s + " ", node );
-                      } else {
-                        exclude = excludesProcess(s,exclude);
-                        await head.speakText( s, {
-                          lipsyncLang: cfg('voice-lipsync-lang'),
-                          ttsVoice: cfg('voice-google-id'),
-                          ttsRate: cfg('voice-google-rate'),
-                          ttsPitch: cfg('voice-google-pitch')
-                        }, addText.bind(null,node), exclude.excludes );
-                      }
-                    }
-                  }
                 }
               }
+            });
+          }
 
-              // Continue
-              ndx = 0;
-              ns = -1;
+          // Break, if done
+          if (done) {
+            if ( fn.id ) {
+
+              // Function call
+              body.messages.push({
+                role: "assistant",
+                content: null,
+                tool_calls: [
+                  {
+                    id: fn.id,
+                    type: "function",
+                    function: {
+                      name: fn.name,
+                      arguments: fn.arguments
+                    }
+                  }
+                ]
+              });
+
+              // Call the function
+              try {
+                const m = JSON.parse(fn.arguments);
+                motion(m.action, m.stillpose, m.gesture, m.mood);
+              } catch(motionError) {
+                console.error(motionError);
+              }
+
+              // Response
+              body.messages.push({
+                role: "tool",
+                content: "",
+                tool_call_id: fn.id
+              });
+
+              // Make sure we do not get another function call
+              body.tool_choice = "none";
+            }
+
+            if ( tts ) {
+              if ( cfg('voice-type') === 'eleven' ) {
+                await elevenSpeak( tts.trimStart() + " ", node );
+              } else if ( cfg('voice-type') === 'microsoft' ) {
+                await microsoftSpeak( tts.trimStart() + " ", node );
+              } else {
+                exclude = excludesProcess(tts,exclude);
+                await head.speakText( tts, {
+                  lipsyncLang: cfg('voice-lipsync-lang'),
+                  ttsVoice: cfg('voice-google-id'),
+                  ttsRate: cfg('voice-google-rate'),
+                  ttsPitch: cfg('voice-google-pitch')
+                }, addText.bind(null,node), exclude.excludes );
+              }
+            }
+            
+            break;
+          }
+
+          // Speak
+          if ( tts ) {
+            let idx = 0;
+            ['.','!','?','\n'].forEach( x => idx = tts.lastIndexOf(x,idx) + 1 );
+            if ( idx > 10 ) {
+              let s = tts.substring(0, idx);
+              if ( s && s.length ) {
+                tts = tts.substring(idx).trimStart();
+                if ( cfg('voice-type') === 'eleven' ) {
+                  await elevenSpeak( s + " ", node );
+                } else if ( cfg('voice-type') === 'microsoft' ) {
+                  await microsoftSpeak( s + " ", node );
+                } else {
+                  exclude = excludesProcess(s,exclude);
+                  await head.speakText( s, {
+                    lipsyncLang: cfg('voice-lipsync-lang'),
+                    ttsVoice: cfg('voice-google-id'),
+                    ttsRate: cfg('voice-google-rate'),
+                    ttsPitch: cfg('voice-google-pitch')
+                  }, addText.bind(null,node), exclude.excludes );
+                }
+              }
             }
           }
+
         }
 
         // Moderate
@@ -1736,7 +1725,7 @@ async function openaiSendMessage(node,msgs) {
         throw new Error( json.error ? json.error.message : ''+res.status );
       }
 
-    } while( fn ); // Repeat, if this iteration was a function call
+    } while( fn.id ); // Repeat, if this iteration was a function call
 
   } catch (error) {
     if ( signal.aborted ) error = "aborted";
@@ -1761,6 +1750,7 @@ function geminiBuildMessage() {
   const msgs = [];
 
   const systems = [
+    { sel: "[data-ai-gemini-system]", role: "system" },
     { sel: "[data-ai-gemini-user1]", role: "user" },
     { sel: "[data-ai-gemini-ai1]", role: "model" },
     { sel: "[data-ai-gemini-user2]", role: "user" },
@@ -1834,25 +1824,13 @@ async function geminiSendMessage(node,msgs) {
 
   // Elements
   node.dataset.output = '';
-  let tts = '';
 
   // Chat completion
   try {
 
-    // Make sure multiturn messages alternate between user and model
-    const messages = [];
-    let nextRole = 'user';
-    msgs.forEach( x => {
-      if ( x.role !== nextRole ) {
-        messages.push( { role: nextRole, "parts": { "text": "..." } } )
-      }
-      messages.push( { role: x.role, "parts": { "text": x.content } } );
-      nextRole = x.role === 'user' ? 'model' : 'user';
-    });
-
     // Message body
     const body = {
-      contents: messages,
+      contents: [],
       safetySettings: [
         { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_ONLY_HIGH" },
         { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_ONLY_HIGH" },
@@ -1868,88 +1846,213 @@ async function geminiSendMessage(node,msgs) {
       }
     };
 
+    // Add messages
+    // Make sure multiturn messages alternate between user and model
+    let nextRole = 'user';
+    msgs.forEach( x => {
+      if ( x.role === "system" ) {
+        body["systemInstruction"] = { "parts": [ { "text": x.content } ] };
+      } else {
+        if ( x.role !== nextRole ) {
+          body.contents.push( { role: nextRole, "parts": { "text": "..." } } )
+        }
+        body.contents.push( { role: x.role, "parts": { "text": x.content } } );
+        nextRole = x.role === 'user' ? 'model' : 'user';
+      }
+    });
+
     // Stop
     const stop = cfg('ai-gemini-stop');
     if ( stop && stop.length ) {
       body.generationConfig.stopSequences = [ stop ];
     }
 
-    // Fetch the response from the Vertex AI API
-    const res = await fetch( vertexaiChatCompletionsProxy + cfg("ai-model") + ':streamGenerateContent', {
-      method: "POST",
-      mode: "cors",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + await jwtGet()
-      },
-      body: JSON.stringify(body),
-      signal
-    });
+    // Function calling
+    const isMotionSelected = d3.select("#motion").classed("selected");
+    if ( isMotionSelected ) {
+      body.tools = [{
+        functionDeclarations: [{
+          "name": "move_body",
+          "description": "Set the action, still pose, gesture and/or mood of your avatar's body in virtual world",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "STRING",
+                format: "enum",
+                nullable: true,
+                "enum": Object.keys(site.animations)
+              },
+              "stillpose": {
+                "type": "STRING",
+                format: "enum",
+                nullable: true,
+                "enum": Object.keys(site.poses)
+              },
+              "gesture": {
+                "type": "STRING",
+                format: "enum",
+                nullable: true,
+                "enum": Object.keys(site.gestures)
+              },
+              "mood": {
+                "type": "STRING",
+                format: "enum",
+                nullable: true,
+                "enum": Object.keys(head.animMoods)
+              }
+            },
+            "required": []
+          }
+        }]
+      }];
+    }
 
-    if ( res.ok ) {
+    // Function loop
+    let fn;
+    do {
 
-      // Read the response as a stream of data
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder("utf-8");
-      let chunk = '';
+      fn = null;
 
-      while (true) {
-        const { done, value } = await reader.read();
+      // Fetch the response from the Vertex AI API
+      const res = await fetch( geminiProxy + cfg("ai-model") + ':streamGenerateContent?alt=sse', {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          "Authorization": "Bearer " + await jwtGet()
+        },
+        body: JSON.stringify(body),
+        signal
+      });
 
-        // Parse partial JSON chunks
-        if ( value ) {
-          chunk += decoder.decode(value);
-          const start = chunk.indexOf('{');
-          const end = chunk.lastIndexOf('\n}');
-          if ( start !== -1 && end !== -1 && start < end ) {
-            try {
-              const obj = JSON.parse('[' + chunk.substring(start,end+2) + ']');
-              if ( obj ) {
-                for( let i=0; i<obj.length; i++ ) {
-                  if ( obj[i].candidates ) {
-                    let c = obj[i].candidates[0].content.parts[0].text;
-                    node.dataset.markdown += c;
-                    tts += c;
+      if ( res.ok ) {
+
+        // Read the response as a stream of data
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let tts = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+
+          // Extract text data
+          if ( value ) {
+            decoder.decode(value).split('\n').forEach( data => {
+              if ( data.startsWith("data: ") ) {
+                let finish;
+                try {
+                  const obj = JSON.parse( data.substring(6).trim() );
+                  const canditate = obj?.candidates?.[0];
+                  finish = canditate?.finishReason || 'STOP';
+                  fn = canditate?.content?.parts?.[0]?.functionCall;
+                  if ( !fn ) {
+                    node.dataset.markdown += canditate?.content?.parts?.[0]?.text || '';
+                    tts += canditate?.content?.parts?.[0]?.text || '';
                   }
+
+                } catch(error) {
+                  console.log( "Error JSON parsing data: " + data );
+                }
+                if ( finish !== 'STOP' ) {
+                  throw new Error("Stopped for " + finish + ".");
                 }
               }
-              chunk = chunk.substring(end+2);
-            } catch(e) {
-              console.log( "Error JSON parsing chunk: " + chunk );
+            });
+          }
+
+          // Speak and break when done
+          if ( done ) {
+            if ( tts ) {
+              if ( cfg('voice-type') === 'eleven' ) {
+                await elevenSpeak( tts + " ", node );
+              } else if ( cfg('voice-type') === 'microsoft' ) {
+                await microsoftSpeak( tts + " ", node );
+              } else {
+                await head.speakText( tts, {
+                  lipsyncLang: cfg('voice-lipsync-lang'),
+                  ttsVoice: cfg('voice-google-id'),
+                  ttsRate: cfg('voice-google-rate'),
+                  ttsPitch: cfg('voice-google-pitch')
+                }, addText.bind(null,node) );
+              }
+            }
+            break;
+          } else {
+            let ndx = 0;
+            ['.','!','?','\n'].forEach( x => ndx = tts.lastIndexOf(x,ndx) + 1 );
+            if ( ndx > 10 ) {
+              if ( cfg('voice-type') === 'eleven' ) {
+                await elevenSpeak( tts.substring(0, ndx) + " ", node );
+              } else if ( cfg('voice-type') === 'microsoft' ) {
+                await microsoftSpeak( tts.substring(0, ndx) + " ", node );
+              } else {
+                await head.speakText( tts.substring(0, ndx), {
+                  lipsyncLang: cfg('voice-lipsync-lang'),
+                  ttsVoice: cfg('voice-google-id'),
+                  ttsRate: cfg('voice-google-rate'),
+                  ttsPitch: cfg('voice-google-pitch')
+                }, addText.bind(null,node) );
+              }
+              tts = tts.substring(ndx).trimStart();
             }
           }
+
         }
 
-        // Speak
-        let ndx = Math.max(tts.lastIndexOf('.'), tts.lastIndexOf('!'), tts.lastIndexOf('?'), tts.lastIndexOf('\n'));
-        if ( done || ndx !== -1 ) {
-          let s = done ? tts : tts.substring(0, ndx + 1);
-          if ( s && s.length ) {
-            tts = tts.substring(ndx + 1).trimStart();
-            if ( cfg('voice-type') === 'eleven' ) {
-              await elevenSpeak( s + " ", node );
-            } else if ( cfg('voice-type') === 'microsoft' ) {
-              await microsoftSpeak( s + " ", node );
-            } else {
-              await head.speakText( s, {
-                lipsyncLang: cfg('voice-lipsync-lang'),
-                ttsVoice: cfg('voice-google-id'),
-                ttsRate: cfg('voice-google-rate'),
-                ttsPitch: cfg('voice-google-pitch')
-              }, addText.bind(null,node) );
+      } else {
+        console.error( await res.text() );
+        throw new Error( json.error ? json.error.message : ''+res.status );
+      }
+
+      // Call function
+      if ( fn ) {
+
+        // Add function call to body
+        body.contents.push( {
+          role: "model",
+          parts: [
+            {
+              functionCall: {
+                name: "move_body",
+                args: {
+                  "action": fn.args?.["action"],
+                  "stillpose": fn.args?.["stillpose"],
+                  "gesture": fn.args?.["gesture"],
+                  "mood": fn.args?.["mood"]
+                }
+              }
             }
-          }
+          ]
+        });
+
+        // Call function
+        try {
+          motion(fn.args?.["action"], fn.args?.["stillpose"], fn.args?.["gesture"], fn.args?.["mood"]);
+        } catch(motionError) {
+          console.error(motionError);
         }
 
-        // We are done
-        if (done) break;
+        // Add response
+        body.contents.push({
+          role: "function",
+          parts: [
+            {
+              functionResponse: {
+                name: "move_body",
+                response: {
+                  "status": "ok"
+                }
+              }
+            }
+          ]
+        });
+
+        // Instruct not to make another call
+        body.toolConfig = { functionCallingConfig: { mode: "NONE" } };
 
       }
 
-    } else {
-      console.error( await res.text() );
-      throw new Error( json.error ? json.error.message : ''+res.status );
-    }
+    } while( fn ); // Repeat, if this iteration was a function call
 
   } catch (error) {
     if ( signal.aborted ) error = "aborted";
@@ -3363,6 +3466,17 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     }
   });
 
+  // Pause animation when not visible
+  document.addEventListener("visibilitychange", async function (ev) {
+    if (document.visibilityState === "visible") {
+      if ( !d3.select("#pause").classed("selected") ) {
+        head.start();
+      }
+    } else {
+      head.stop();
+    }
+  });
+
   try {
 
     // Get token
@@ -3485,10 +3599,10 @@ document.addEventListener('DOMContentLoaded', async function(e) {
             <div class="text label" data-i18n-text="AI"></div>
             <div class="column">
               <div class="rowWrap">
-                <div class="command selected" data-item="ai-model" data-type="option" data-ai-model="gpt-3.5-turbo">GPT-3.5-Turbo</div>
-                <div class="command" data-item="ai-model" data-type="option" data-ai-model="gpt-4">GPT-4</div>
+                <div class="command selected" data-item="ai-model" data-type="option" data-ai-model="gpt-4o-mini">GPT-4o-mini</div>
                 <div class="command" data-item="ai-model" data-type="option" data-ai-model="gpt-4o">GPT-4o</div>
-                <div class="command" data-item="ai-model" data-type="option" data-ai-model="gemini-pro">Gemini-pro</div>
+                <div class="command" data-item="ai-model" data-type="option" data-ai-model="gpt-4">GPT-4</div>
+                <div class="command" data-item="ai-model" data-type="option" data-ai-model="gemini-1.5-pro">Gemini-1.5-pro</div>
               </div>
             </div>
           </div>
@@ -3598,6 +3712,10 @@ document.addEventListener('DOMContentLoaded', async function(e) {
           </div>
 
           <div id="ai-gemini" class="column">
+            <div class="row">
+              <div class="text label" data-i18n-text="System"></div>
+              <textarea data-i18n-placeholder="ai-system" rows="1" autocapitalize="sentences" data-item="ai-gemini-system" data-type="value" data-ai-gemini-system=""></textarea>
+            </div>
             <div class="row">
               <div class="text label" data-i18n-text="Example1"></div>
               <textarea data-i18n-placeholder="ai-user1" rows="1" autocapitalize="sentences" data-item="ai-gemini-user1" data-type="value" data-ai-gemini-user1=""></textarea>
