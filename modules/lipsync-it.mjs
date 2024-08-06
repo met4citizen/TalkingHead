@@ -11,68 +11,68 @@ class LipsyncIt {
   constructor() {
     this.rules = {
       'A': [
-        "[A] =aa", "[AN] =aa nn", "[AM] =aa mm", "[AR] =aa rr", "[A]LL =aa",
-        " [ARE] =aa rr", "[AR]I=aa rr I", "[AT]O=aa tt O", "[AU] =aa U", "[AV]O=aa v O"
+        "[AN] =aa nn", "[AM] =aa mm", "[AR] =aa rr", "[A]LL =aa",
+        " [ARE] =aa rr", "[AR]I=aa rr I", "[AT]O=aa tt O", "[AU] =aa U", "[AV]O=aa v O", "[A]=aa"
       ],
       'B': [
-        " [B]=bb", "[B]R=bb rr", "[B]L=bb ll"
+        " [B]=m", "[B]R=m rr", "[B]L=m ll", "[B]=m"
       ],
       'C': [
-        "[CH]=k", "[C]A=kk aa", "[C]O=kk O", "[C]U=kk U", "[CI]=ch I", "[CE]=ch E"
+        "[CH]=kk", "[C]A=kk aa", "[C]O=kk O", "[C]U=kk U", "[CI]=ch I", "[CE]=ch E", "[C]=kk"
       ],
       'D': [
-        " [D]=dd", "[D]I=dd I", "[D]O=dd O", "[DI]A=dd I aa", "[DI]O=dd I O"
+        " [D]=dd", "[D]I=dd I", "[D]O=dd O", "[DI]A=dd I aa", "[DI]O=dd I O", "[D]=dd"
       ],
       'E': [
-        "[E]=E", "[ER]=E rr", "[E]L=E ll", "[EM]=E mm", "[EN]=E nn", "[ES]=E ss"
+        "[ER]=E rr", "[E]L=E ll", "[EM]=E mm", "[EN]=E nn", "[ES]=E ss", "[E]=E"
       ],
       'F': [
-        " [F]=ff", "[F]I=ff I", "[F]O=ff O", "[F]U=ff U", "[FR]=ff rr", "[FL]=ff ll"
+        " [F]=ff", "[F]I=ff I", "[F]O=ff O", "[F]U=ff U", "[FR]=ff rr", "[FL]=ff ll", "[F]=ff"
       ],
       'G': [
-        "[GH]=g", "[G]A=g aa", "[G]O=g O", "[G]U=g U", "[GI]=j I", "[GE]=j E"
+        "[GH]=kk", "[G]A=kk aa", "[G]O=kk O", "[G]U=kk U", "[GI]=j I", "[GE]=j E", "[G]=kk"
       ],
       'H': [
-        " [H]=h", "[H]O=h O", "[H]A=h aa", "[H]U=h U"
+        " [H]=", "[H]O=O", "[H]A=aa", "[H]U=U", "[H]="
       ],
       'I': [
-        "[I]=I", "[IN]=I nn", "[IM]=I mm", "[IR]=I rr"
+        "[IN]=I nn", "[IM]=I mm", "[IR]=I rr", "[I]=I"
       ],
       'L': [
-        " [L]=ll", "[L]A=ll aa", "[L]O=ll O", "[L]U=ll U", "[LI]=ll I", "[LE]=ll E"
+        " [L]=ll", "[L]A=ll aa", "[L]O=ll O", "[L]U=ll U", "[LI]=ll I", "[LE]=ll E", "[L]=ll"
       ],
       'M': [
-        " [M]=mm", "[M]A=mm aa", "[M]O=mm O", "[M]U=mm U", "[MI]=mm I", "[ME]=mm E"
+        " [M]=mm", "[M]A=mm aa", "[M]O=mm O", "[M]U=mm U", "[MI]=mm I", "[ME]=mm E", "[M]=mm"
       ],
       'N': [
-        " [N]=nn", "[N]A=nn aa", "[N]O=nn O", "[N]U=nn U", "[NI]=nn I", "[NE]=nn E"
+        " [N]=nn", "[N]A=nn aa", "[N]O=nn O", "[N]U=nn U", "[NI]=nn I", "[NE]=nn E", "[N]=nn"
       ],
       'O': [
-        "[O]=O", "[OR]=O rr", "[ON]=O nn", "[OM]=O mm", "[OS]=O ss"
+        "[OR]=O rr", "[ON]=O nn", "[OM]=O mm", "[OS]=O ss", "[O]=O"
       ],
       'P': [
-        " [P]=pp", "[P]A=pp aa", "[P]O=pp O", "[P]U=pp U", "[PI]=pp I", "[PE]=pp E"
+        " [P]=p", "[P]A=p aa", "[P]O=p O", "[P]U=p U", "[PI]=p I", "[PE]=p E", "[P]=p"
       ],
       'Q': [
-        " [Q]=kw", "[Q]A=kw aa", "[Q]O=kw O", "[Q]U=kw U", "[QI]=kw I", "[QE]=kw E"
+        " [Q]=kw", "[Q]A=kw aa", "[Q]O=kw O", "[Q]U=kw U", "[QI]=kw I", "[QE]=kw E", "[Q]=kw"
       ],
       'R': [
-        " [R]=rr", "[R]A=rr aa", "[R]O=rr O", "[R]U=rr U", "[RI]=rr I", "[RE]=rr E"
+        " [R]=rr", "[R]A=rr aa", "[R]O=rr O", "[R]U=rr U", "[RI]=rr I", "[RE]=rr E", "[R]=rr"
       ],
       'S': [
-        " [S]=ss", "[S]A=ss aa", "[S]O=ss O", "[S]U=ss U", "[SI]=ss I", "[SE]=ss E"
+        " [S]=ss", "[S]A=ss aa", "[S]O=ss O", "[S]U=ss U", "[SI]=ss I", "[SE]=ss E", "[S]=ss"
       ],
       'T': [
-        " [T]=tt", "[T]A=tt aa", "[T]O=tt O", "[T]U=tt U", "[TI]=tt I", "[TE]=tt E"
+        " [T]=tt", "[T]A=tt aa", "[T]O=tt O", "[T]U=tt U", "[TI]=tt I", "[TE]=tt E", "[T]=tt"
       ],
       'U': [
-        "[U]=U", "[UN]=U nn", "[UM]=U mm", "[UR]=U rr", "[US]=U ss"
+        "[UN]=U nn", "[UM]=U mm", "[UR]=U rr", "[US]=U ss", "[U]=U"
       ],
       'V': [
-        " [V]=vv", "[V]A=vv aa", "[V]O=vv O", "[V]U=vv U", "[VI]=vv I", "[VE]=vv E"
+        " [V]=v", "[V]A=v aa", "[V]O=v O", "[V]U=v U", "[VI]=v I", "[VE]=v E", "[V]=v"
       ],
       'Z': [
-        " [Z]=zz", "[Z]A=zz aa", "[Z]O=zz O", "[Z]U=zz U", "[ZI]=zz I", "[ZE]=zz E"
+        " [Z]=zz", "[Z]A=zz aa", "[Z]O=zz O", "[Z]U=zz U", "[ZI]=zz I", "[ZE]=zz E", "[Z]=zz"
       ]
     };
 
@@ -120,9 +120,9 @@ class LipsyncIt {
     });
 
     this.visemeDurations = {
-      'aa': 0.95, 'E': 0.90, 'I': 0.92, 'O': 0.96, 'U': 0.95, 'PP': 1.08,
-      'SS': 1.23, 'TH': 1, 'DD': 1.05, 'FF': 1.00, 'kk': 1.21, 'nn': 0.88,
-      'RR': 0.88, 'DD': 1.05, 'sil': 1
+      'aa': 0.95, 'E': 0.90, 'I': 0.92, 'O': 0.96, 'U': 0.95, 'm': 1.08,
+      'ss': 1.23, 'tt': 1.05, 'ff': 1.00, 'kk': 1.21, 'nn': 0.88,
+      'rr': 0.88, 'dd': 1.05, 'sil': 1
     };
 
     this.specialDurations = { ' ': 1, ',': 3, '-': 0.5, "'": 0.5 };
@@ -133,7 +133,7 @@ class LipsyncIt {
     this.teens = ['dieci', 'undici', 'dodici', 'tredici', 'quattordici', 'quindici', 'sedici', 'diciassette', 'diciotto', 'diciannove'];
 
     this.symbols = {
-      '%': 'percento', '€': 'euro', '&': 'e', '+': 'più', '$': 'dollari', '-': 'meno', '/': 'diviso', '*': 'per', ':': 'due punti', ';': 'punto e virgola'
+        '%': 'percento', '€': 'euro', '&': 'e', '+': 'più', '$': 'dollari', '-': 'meno', '/': 'diviso', '*': 'per', ':': 'due punti', ';': 'punto e virgola'
     };
     this.symbolsReg = /[%€&\+\$]/g;
   }
