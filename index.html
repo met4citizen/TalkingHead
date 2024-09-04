@@ -2489,7 +2489,7 @@ function errorShow(error) {
 function testerUpdateMorphData() {
   let s = '{';
   for( let mt of head.getMorphTargetNames() ) {
-    const el = d3.select('#'+mt);
+    const el = d3.select('#' + CSS.escape(mt));
     if ( !el.empty() ) {
       const v = testerGetFixedValue( mt, parseFloat(el.property("value")) );
       if ( v !== null ) {
