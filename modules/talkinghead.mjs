@@ -84,9 +84,11 @@ class TalkingHead {
       ttsTrimEnd: 400,
       ttsLang: "fi-FI",
       ttsVoice: "fi-FI-Standard-A",
-      ttsRate: 0.95,
+      ttsRate: 1,
       ttsPitch: 0,
       ttsVolume: 0,
+      mixerGainSpeech: null,
+      mixerGainBackground: null,
       lipsyncLang: 'fi',
       lipsyncModules: ['fi','en','lt'],
       pcmSampleRate: 22050,
@@ -622,6 +624,7 @@ class TalkingHead {
     this.audioBackgroundGainNode.connect(this.audioReverbNode);
     this.audioSpeechGainNode.connect(this.audioReverbNode);
     this.audioReverbNode.connect(this.audioCtx.destination);
+    this.setMixerGain( this.opt.mixerGainSpeech, this.opt.mixerGainBackground ); // Volume
     this.audioPlaylist = [];
 
     // Create a lookup table for base64 decoding
@@ -2238,10 +2241,10 @@ class TalkingHead {
   */
   setMixerGain( speech, background ) {
     if ( speech !== null ) {
-      this.audioSpeechGainNode.gain.value = speech;
+      this.audioSpeechGainNode.gain.value = speech || 0;
     }
     if ( background !== null ) {
-      this.audioBackgroundGainNode.gain.value = background;
+      this.audioBackgroundGainNode.gain.value = background || 0;
     }
   }
 
