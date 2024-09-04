@@ -2366,7 +2366,7 @@ class TalkingHead {
       const item = this.audioPlaylist.shift();
 
       // If Web Audio API is suspended, try to resume it
-      if ( this.audioCtx.state === "suspended" ) {
+      if ( this.audioCtx.state === "suspended" || this.audioCtx.state === "interrupted" ) {
         const resume = this.audioCtx.resume();
         const timeout = new Promise((_r, rej) => setTimeout(() => rej("p2"), 1000));
         try {
