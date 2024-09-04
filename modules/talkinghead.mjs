@@ -1454,9 +1454,20 @@ class TalkingHead {
     this.moodName = s;
     this.mood = this.animMoods[this.moodName];
 
-    // Reset morph target baseline to 0
-    for( let mt of ["handFistLeft","handFistRight",...Object.keys(this.morphs[0].morphTargetDictionary)] ) {
-      this.setBaselineValue( mt, this.mood.baseline.hasOwnProperty(mt) ? this.mood.baseline[mt] : 0 );
+    // Reset morph target baseline
+    let blendkeys = new Set();
+    blendkeys.add("handFistLeft").add("handFistRight");
+    this.morphs.forEach( x => {
+      Object.keys(x.morphTargetDictionary).forEach( y => blendkeys.add(y) );
+    });
+    for( let mt of blendkeys ) {
+      let v = 0;
+      if ( this.mood.baseline.hasOwnProperty(mt) ) {
+        v = this.mood.baseline[mt];
+      } else if ( this.avatar.baseline?.hasOwnProperty(mt) ) {
+        v = this.avatar.baseline[mt];
+      }
+      this.setBaselineValue( mt, v );
     }
 
     // Set/replace animations
