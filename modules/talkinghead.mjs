@@ -1506,7 +1506,7 @@ class TalkingHead {
       if ( ll === undefined ) return undefined;
       const lr = this.getBaselineValue('eyeLookInLeft');
       if ( lr === undefined ) return undefined;
-      const rl = this.getBaselineValue('eyeLookOurRight');
+      const rl = this.getBaselineValue('eyeLookOutRight');
       if ( rl === undefined ) return undefined;
       const rr = this.getBaselineValue('eyeLookInRight');
       if ( rr === undefined ) return undefined;
