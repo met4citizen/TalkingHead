@@ -2632,7 +2632,7 @@ class TalkingHead {
     this.stateName = 'idle';
     this.isSpeaking = false;
     this.isAudioPlaying = false;
-    this.animQueue = this.animQueue.filter( x  => x.template.name !== 'viseme' );
+    this.animQueue = this.animQueue.filter( x  => x.template.name !== 'viseme' && x.template.name !== 'subtitles' );
     if ( this.armature ) {
       this.resetLips();
       this.render();
@@ -2646,7 +2646,7 @@ class TalkingHead {
     try { this.audioSpeechSource.stop(); } catch(error) {}
     this.audioPlaylist.length = 0;
     this.speechQueue.length = 0;
-    this.animQueue = this.animQueue.filter( x  => x.template.name !== 'viseme' );
+    this.animQueue = this.animQueue.filter( x  => x.template.name !== 'viseme' && x.template.name !== 'subtitles' );
     this.stateName = 'idle';
     this.isSpeaking = false;
     this.isAudioPlaying = false;
