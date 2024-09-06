@@ -1,5 +1,12 @@
 # Talking Head (3D)
 
+> [!NOTE]
+> [<img src="images/geminicompetition.jpg" width="300"/>](https://ai.google.dev/competition/projects/recycling-advisor-3d)
+>
+> A TalkingHead web app, **Recycling Advisor 3D**, is currently competing for the People's Choice Award in the Gemini API Developer Competition! - Watch the short demo video [here](https://ai.google.dev/competition/projects/recycling-advisor-3d) and give it a vote if you like it. 🙏
+
+---
+
 ### Demo Videos
 
 Video | Description
@@ -357,11 +364,26 @@ https://docs.readyplayer.me/ready-player-me/api-reference/avatars/morph-targets/
 
 The TalkingHead class supports both separated mesh and texture atlasing.
 
+Here are some Blender Python scripts that could be useful in converting
+custom models:
+
+Script | Description
+--- | ---
+[rename-mixamo-bones.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/rename-mixamo-bones.py) | If your model doesn't have a compatible rig, you can auto-rig your model easily at [Mixamo](https://www.mixamo.com) and use this Blender script to rename the Mixamo bones.
+[rename-rocketbox-shapekeys.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/rename-rocketbox-shapekeys.py) | Rename [Microsoft Rocketbox](https://github.com/microsoft/Microsoft-Rocketbox) model shape keys.
+[rename-avatarsdk-shapekeys.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/rename-avatarsdk-shapekeys.py) | Rename [Avatar SDK MetaPerson](https://github.com/avatarsdk) model shape keys.
+[build-extras-from-arkit.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/build-extras-from-arkit.py) | Build RPM extras (mouthOpen, mouthSmile, eyesClosed, eyesLookUp, eyesLookDown) from ARKit blendshapes.
+[build-visemes-from-arkit.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/build-visemes-from-arkit.py) | Build Oculus visemes from ARKit blendshapes. As models are all different, you should fine-tune the script for best result. EXPERIMENTAL
+
 ---
 
 ### Appendix B: Create API Proxies with JSON Web Token (JWT) Single Sign-On (SSO)
 
-1. Make a CGI script that generates a new JSON Web Token with an expiration time (exp). See [jwt.io](https://jwt.io) for more information about JWT and libraries that best fit your needs and architecture.
+1. Make a CGI script that generates a new JSON Web Token with an expiration time (exp). See [jwt.io](https://jwt.io) for more information about JWT and libraries that best fit your needs and architecture. In my own test setup, I return the generated JWT as JSON.
+
+```json
+{ "jwt": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c" }
+```
 
 2. Protect your CGI script with some authentication scheme. Below is an example Apache 2.4 directory config that uses Basic authentication (remember to always use HTTPS/SSL!). Put your CGI script `get` in the `jwt` directory.
 
