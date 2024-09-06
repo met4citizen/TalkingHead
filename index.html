@@ -1686,7 +1686,7 @@ async function openaiSendMessage(node,msgs) {
                 }, addText.bind(null,node), exclude.excludes );
               }
             }
-            
+
             break;
           }
 
@@ -2337,58 +2337,61 @@ function reconnectEffect() {
 // Talking Head
 let head;
 
-function headLoaded() {
+function headLoaded(firsttime=false) {
 
   // Populate emoji tester
-  const elEmojis = d3.select("#emojis");
-  for( let [em,x] of Object.entries(head.animEmojis) ) {
-    elEmojis.append("div")
-      .classed("emoji", true)
-      .on('click', function(ev) {
-        const e = d3.select(this);
-        const name = e.text();
+  if ( firsttime ) {
+    const elEmojis = d3.select("#emojis");
+    for( let [em,x] of Object.entries(head.animEmojis) ) {
+      elEmojis.append("div")
+        .classed("emoji", true)
+        .on('click', function(ev) {
+          const e = d3.select(this);
+          const name = e.text();
 
-        // Clear morphs
-        head.getMorphTargetNames().forEach( mt => {
-          const el = d3.select('#'+mt);
-          if ( !el.empty() ) {
-            el.property("value",testerGetValue(mt,null)).dispatch("change");
-          }
-        });
+          // Clear morphs
+          head.getMorphTargetNames().forEach( mt => {
+            const el = d3.select('#' + CSS.escape(mt));
+            if ( !el.empty() ) {
+              el.property("value",testerGetValue(mt,null)).dispatch("change");
+            }
+          });
 
-        const selected = e.classed("selected");
-        d3.selectAll(".emoji").classed("selected",false);
-        if ( selected ) {
+          const selected = e.classed("selected");
           d3.selectAll(".emoji").classed("selected",false);
-        } else {
-          e.classed("selected",true);
+          if ( selected ) {
+            d3.selectAll(".emoji").classed("selected",false);
+          } else {
+            e.classed("selected",true);
 
-          // Animate
-          head.playGesture(name);
+            // Animate
+            head.playGesture(name);
 
-          // Update morphs
-          const o = head.animEmojis[name];
-          if ( o ) {
-            head.getMorphTargetNames().forEach( mt => {
-              let val = null;
-              if ( o.vs &&  o.vs[mt] ) {
-                val = o.vs[mt][o.vs[mt].length-1];
-                if ( Array.isArray(val) ) val = val[val.length-1];
-              }
-              const el = d3.select('#'+mt);
-              if ( !el.empty() ) {
-                el.property("value",testerGetValue(mt,val)).dispatch("change");
-              }
-            });
+            // Update morphs
+            const o = head.animEmojis[name];
+            if ( o ) {
+              head.getMorphTargetNames().forEach( mt => {
+                let val = null;
+                if ( o.vs &&  o.vs[mt] ) {
+                  val = o.vs[mt][o.vs[mt].length-1];
+                  if ( Array.isArray(val) ) val = val[val.length-1];
+                }
+                const el = d3.select('#' + CSS.escape(mt));
+                if ( !el.empty() ) {
+                  el.property("value",testerGetValue(mt,val)).dispatch("change");
+                }
+              });
+            }
           }
-        }
-        testerUpdateMorphData();
-      })
-      .html(em);
+          testerUpdateMorphData();
+        })
+        .html(em);
+    }
   }
 
-  // Populote morph targets (a.k.a. blend shapes)
+  // Populate morph targets (a.k.a. blend shapes)
   const elMorphs = d3.select("#morphs");
+  elMorphs.html("");
   head.getMorphTargetNames().forEach( mt => {
     let v = head.getFixedValue(mt);
 
@@ -2423,24 +2426,26 @@ function headLoaded() {
   });
 
   // Unlock Web Audio API
-  if ( head.audioCtx.state === 'suspended' ) {
-    if ( 'ontouchstart' in window ) {
-      let unlockWebAudioAPI = function() {
-        head.audioCtx.resume().then( () => {
-          document.body.removeEventListener('touchstart', unlockWebAudioAPI);
-          document.body.removeEventListener('touchend', unlockWebAudioAPI);
-        });
-      };
-      document.body.addEventListener('touchstart', unlockWebAudioAPI, false);
-      document.body.addEventListener('touchend', unlockWebAudioAPI, false);
+  if ( firsttime ) {
+    if ( head.audioCtx.state === 'suspended' ) {
+      if ( 'ontouchstart' in window ) {
+        let unlockWebAudioAPI = function() {
+          head.audioCtx.resume().then( () => {
+            document.body.removeEventListener('touchstart', unlockWebAudioAPI);
+            document.body.removeEventListener('touchend', unlockWebAudioAPI);
+          });
+        };
+        document.body.addEventListener('touchstart', unlockWebAudioAPI, false);
+        document.body.addEventListener('touchend', unlockWebAudioAPI, false);
+      }
     }
-  }
 
-  setTimeout( () => {
-    turnOnEffect();
-    reconnectEffect();
-    loadConfig();
-  }, 1000);
+    setTimeout( () => {
+      turnOnEffect();
+      reconnectEffect();
+      loadConfig();
+    }, 1000);
+  }
 }
 
 // Update progress bar
@@ -3091,6 +3096,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
       };
       try {
         await head.showAvatar( o, progressUpdate );
+        headLoaded();
         d3.select("[data-camera-frame].selected").dispatch('click');
       } catch(error) {
         errorShow(error);
@@ -3100,6 +3106,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
       d3.selectAll("[data-pose],[data-animation],#pause").classed("selected",false);
       try {
         await head.showAvatar( site.avatars[name], progressUpdate );
+        headLoaded();
         d3.select("[data-camera-frame].selected").dispatch('click');
       } catch(error) {
         errorShow(error);
@@ -3120,6 +3127,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
       };
       try {
         await head.showAvatar( o, progressUpdate );
+        headLoaded();
         d3.select("[data-camera-frame].selected").dispatch('click');
       } catch(error) {
         errorShow(error);
@@ -3494,13 +3502,13 @@ document.addEventListener('DOMContentLoaded', async function(e) {
       o =  Object.values(site.avatars)[0];
     }
     await head.showAvatar( o, progressUpdate);
-    headLoaded();
+    headLoaded(true);
   } catch (error) {
     errorShow(error);
 
     // Backup plan: show the first avatar in site config
     await head.showAvatar( Object.values(site.avatars)[0], progressUpdate);
-    headLoaded();
+    headLoaded(true);
   }
 
 });

@@ -905,7 +905,6 @@ class TalkingHead {
     this.armature.scale.setScalar(1);
 
     // Morph targets
-    // TODO: Check morph target names
     this.morphs = [];
     this.armature.traverse( x => {
       if ( x.morphTargetInfluences && x.morphTargetInfluences.length &&
@@ -919,6 +918,14 @@ class TalkingHead {
     if ( this.morphs.length === 0 ) {
       throw new Error('Blend shapes not found');
     }
+
+    // Morph target keys
+    let keys = new Set();
+    keys.add("handFistLeft").add("handFistRight");
+    this.morphs.forEach( x => {
+      Object.keys(x.morphTargetDictionary).forEach( y => keys.add(y) );
+    });
+    this.morphsTargetKeys = [...keys];
 
     // Objects for needed properties
     this.poseAvatar = { props: {} };
@@ -1360,12 +1367,13 @@ class TalkingHead {
     } else if ( mt === 'chestInhale' ) {
       return this.poseDelta.props['Spine1.scale'].x * 20;
     } else {
-      const ndx = this.morphs[0].morphTargetDictionary[mt];
-      if ( ndx !== undefined ) {
-        return this.morphs[0].morphTargetInfluences[ndx];
-      } else {
-        return 0;
+      for( let m of this.morphs ) {
+        const ndx = m.morphTargetDictionary[mt];
+        if ( ndx !== undefined ) {
+          return m.morphTargetInfluences[ndx];
+        }
       }
+      return 0;
     }
   }
 
@@ -1455,12 +1463,7 @@ class TalkingHead {
     this.mood = this.animMoods[this.moodName];
 
     // Reset morph target baseline
-    let blendkeys = new Set();
-    blendkeys.add("handFistLeft").add("handFistRight");
-    this.morphs.forEach( x => {
-      Object.keys(x.morphTargetDictionary).forEach( y => blendkeys.add(y) );
-    });
-    for( let mt of blendkeys ) {
+    for( let mt of this.morphsTargetKeys ) {
       let v = 0;
       if ( this.mood.baseline.hasOwnProperty(mt) ) {
         v = this.mood.baseline[mt];
@@ -1490,8 +1493,7 @@ class TalkingHead {
     return [
       'headRotateX', 'headRotateY', 'headRotateZ',
       'eyesRotateX', 'eyesRotateY', 'chestInhale',
-      'handFistLeft', 'handFistRight',
-      ...Object.keys(this.morphs[0].morphTargetDictionary)
+      ...this.morphsTargetKeys
     ].sort();
   }
 
