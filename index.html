@@ -124,7 +124,7 @@
     display: flex; row-gap: 2px; column-gap: 8px; flex-wrap: wrap;
   }
   .vspace {
-    flex-shrink: 0; height: 2rem;
+    flex-shrink: 0; height: 1rem;
   }
   .vbar {
     height: 1px; background-color: var(--colorToolbarPassive2);
@@ -277,7 +277,7 @@
     pointer-events: auto; box-sizing: border-box;
   }
   #bottom textarea::placeholder { color: var(--colorUserText); opacity: 0.3; }
-  #flag, #score { color: var(--colorToolbarPassive2); }
+  #flag, #score, #scripttag, #scriptstatus { color: var(--colorToolbarPassive2); }
 
   [data-image-type^='video/']:before {
     content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' version='1.1' width='16' height='16' viewBox='-10 -10 58 58'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M43,42H5c-2.209,0-4-1.791-4-4V10c0-2.209,1.791-4,4-4h38c2.209,0,4,1.791,4,4v28 C47,40.209,45.209,42,43,42z M12,8H5c-1.104,0-2,0.896-2,2v2h9V8z M23,8h-9v4h9V8z M34,8h-9v4h9V8z M45,10c0-1.104-0.896-2-2-2h-7v4 h9l0,0V10z M45,14L45,14H3v20h42l0,0V14z M45,36L45,36h-9v4h-2v-4h-9v4h-2v-4h-9v4h-2v-4H3v2c0,1.104,0.896,2,2,2h38 c1.104,0,2-0.896,2-2V36z M21.621,29.765C21.449,29.904,21.238,30,21,30c-0.553,0-1-0.447-1-1V19c0-0.552,0.447-1,1-1 c0.213,0,0.4,0.082,0.563,0.196l7.771,4.872C29.72,23.205,30,23.566,30,24c0,0.325-0.165,0.601-0.405,0.783L21.621,29.765z' fill='gray'%3E%3C/path%3E%3C/svg%3E");
@@ -526,6 +526,7 @@ const elevenBOS = {
 let elevenSocket = null;
 let elevenInputMsgs = null;
 let elevenOutputMsg = null;
+let elevenOnProcessed = null;
 
 // JSON Web Token (JWT)
 let jwtExpires = 0;
@@ -600,6 +601,9 @@ async function elevenSpeak(s,node=null) {
       // Speak audio
       if ( (r.isFinal || r.normalizedAlignment) && elevenOutputMsg ) {
         head.speakAudio( elevenOutputMsg, { lipsyncLang: cfg('voice-lipsync-lang') }, node ? addText.bind(null,node) : null );
+        if ( elevenOnProcessed ) {
+          elevenOnProcessed();
+        }
         elevenOutputMsg = null;
       }
 
@@ -641,11 +645,13 @@ async function elevenSpeak(s,node=null) {
 
     // Error
     elevenSocket.onerror = function (error) {
+      if ( elevenOnProcessed ) elevenOnProcessed();
       console.error(`WebSocket Error: ${error}`);
     };
 
     // Connection closed
     elevenSocket.onclose = function (event) {
+      if ( elevenOnProcessed ) elevenOnProcessed();
       if ( event.wasClean) {
         // console.info(`Connection closed cleanly, code=${event.code}, reason=${event.reason}`);
       } else {
@@ -673,7 +679,7 @@ async function elevenSpeak(s,node=null) {
 let microsoftSynthesizer = null;
 const microsoftQueue= [];
 
-async function microsoftSpeak(s, node=null) {
+async function microsoftSpeak(s, node=null, onprocessed=null) {
 
   if ( s === null ) {
     microsoftQueue.push( null );
@@ -697,6 +703,7 @@ async function microsoftSpeak(s, node=null) {
     microsoftQueue.push( {
       ssml: ssml,
       node: node,
+      onprocessed: onprocessed,
       speak: { audio: [], words: [], wtimes: [], wdurations: [], visemes: [], vtimes: [], vdurations: [] }
      } );
   }
@@ -797,11 +804,13 @@ async function microsoftProcessQueue() {
               const job = microsoftQueue[0];
               job.speak.audio.push( result.audioData );
               head.speakAudio(job.speak, {}, job.node ? addText.bind(null,job.node) : null );
+              if ( job.onprocessed ) job.onprocessed();
             }
             microsoftQueue.shift();
             microsoftProcessQueue();
           }
         }, function (err) {
+          if ( job.onprocessed ) job.onprocessed();
           console.log(err);
           microsoftQueue.shift();
           microsoftProcessQueue();
@@ -1307,6 +1316,7 @@ function loadConfig(session = null) {
       if ( d3.select("[data-item='avatar-name'].selected").empty() ) {
         d3.select("[data-item='avatar-name']").classed("selected",true).dispatch('click');
       }
+      scriptInit();
       json = JSON.stringify( cfg() );
       d3.select("#json").property("value",json);
     }
@@ -2549,6 +2559,143 @@ function testerGetLabel(mt,v) {
 }
 
 
+// Script
+let scriptIsRunning = false;
+let scriptBlocks = [];
+let scriptIndex = 0;
+
+function scriptStatus(msg=null) {
+  const el = d3.select("#scriptstatus");
+  if ( msg ) {
+    el.text( msg );
+  } else if ( scriptIsRunning ) {
+    el.text( "ACTIVE" );
+  } else {
+    const size = scriptBlocks.length;
+    if ( size === 0 ) {
+      el.text( "" );
+    } else if ( scriptIndex === 0 ) {
+      el.text( "READY" );
+    } else if ( scriptIndex >= size ) {
+      el.text( "END" );
+    } else {
+      el.text( (scriptIndex + 1) + "/" + size );
+    }
+  }
+}
+
+function scriptInit() {
+  const script = d3.select("#script").property("value");
+  scriptBlocks = script
+    .replaceAll('\n\n\n','\n\n').trim()
+    .split('\n\n')
+    .map( x => x.trim().split('\n')
+    .map( y => y.trim() ).filter( y => y.length) )
+    .filter( y => y.length );
+  scriptIndex = 0;
+  scriptStatus();
+}
+
+function scriptCommand(ev) {
+  if ( ev.altKey ) {
+    if ( scriptIsRunning ) {
+      if ( ev.keyCode === 37 ) { // Arrow left
+        scriptIsRunning = false;
+      }
+    } else {
+      const size = scriptBlocks.length;
+      const status = d3.select("#scriptstatus");
+      if ( ev.keyCode === 38 ) { // Arrow up
+        if ( scriptIndex > 0 ) scriptIndex--;
+        scriptStatus();
+      } else if ( ev.keyCode === 39 ) { // Arrow right
+        if ( scriptIndex < scriptBlocks.length ) {
+          scriptIsRunning = true;
+          scriptRun(scriptIndex);
+          scriptStatus();
+        }
+      } else if ( ev.keyCode === 40 ) { // Arrow down
+        if ( scriptIndex < scriptBlocks.length ) scriptIndex++;
+        scriptStatus();
+      }
+    }
+  }
+}
+
+window.sleep = ms => new Promise(r => setTimeout(r, ms));
+const AsyncFunction = async function () {}.constructor;
+async function scriptRun() {
+  let node = null;
+  for( let i=0; i < scriptBlocks[scriptIndex].length; i++ ) {
+    if ( !scriptIsRunning ) break;
+
+    let x = scriptBlocks[scriptIndex][i];
+
+    if ( x.charAt(0) === '#' ) {
+      // Comment, ignore
+    } else if ( x.charAt(x.length-1) === ';' ) {
+      // Function
+      try {
+        const fn = new AsyncFunction( x );
+        await fn();
+      } catch( err ) {
+        console.error(err);
+      }
+    } else {
+
+      // First text
+      if ( !node ) {
+        node = addMessage(false);
+      } else {
+        addText( node, " " );
+      }
+
+      if ( cfg('voice-type') === 'eleven' ) {
+        await new Promise(resolve => {
+          elevenOnProcessed = resolve;
+          elevenSpeak( x + " ", node );
+          elevenSpeak( "" );
+        });
+        elevenOnProcessed = null;
+      } else if ( cfg('voice-type') === 'microsoft' ) {
+        await new Promise(resolve => {
+          microsoftSpeak( x, node, resolve );
+        });
+      } else {
+        await head.speakText( x, {
+          lipsyncLang: cfg('voice-lipsync-lang'),
+          ttsVoice: cfg('voice-google-id'),
+          ttsRate: cfg('voice-google-rate'),
+          ttsPitch: cfg('voice-google-pitch')
+        }, addText.bind(null,node) );
+      }
+
+      // Wait for it
+      await new Promise(resolve => {
+        head.speakMarker(resolve);
+      });
+
+    }
+  }
+
+  // Close connection
+  if ( node ) {
+    if ( elevenSocket ) {
+      elevenSpeak("",null);
+    }
+    microsoftSpeak(null);
+    d3.selectAll('.blink').classed("blink",false);
+  }
+
+  scriptIndex++;
+  scriptIsRunning = false;
+  scriptStatus();
+}
+
+
+
+
+
 // Page ready
 document.addEventListener('DOMContentLoaded', async function(e) {
 
@@ -3474,6 +3621,10 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     }
   });
 
+  // Script
+  d3.select("#script").on('input change keyup paste', scriptInit);
+  d3.select("body").on('keydown', scriptCommand);
+
   // Pause animation when not visible
   document.addEventListener("visibilitychange", async function (ev) {
     if (document.visibilityState === "visible") {
@@ -3806,6 +3957,13 @@ document.addEventListener('DOMContentLoaded', async function(e) {
               <div class="text label" data-i18n-text="ai-stop"></div>
               <input type="text" data-i18n-placeholder="ai-stopword" data-item="ai-gemini-stop" data-type="value" data-ai-gemini-stop="">
             </div>
+          </div>
+
+          <div class="vbar"></div>
+
+          <div class="row">
+            <div class="text label" data-i18n-text="Script"></div>
+            <textarea id="script" data-i18n-placeholder="Script" data-item="script-text" data-type="value" data-script-text=""></textarea>
           </div>
 
         </div>
@@ -4540,6 +4698,12 @@ document.addEventListener('DOMContentLoaded', async function(e) {
             </svg>
           </div>
           <div id="score" class="text starttransparent" style="margin-left:-8px;">0</div>
+          <div id="scripttag" class="command starttransparent">
+            <svg viewBox="-4 -4 32 32" xmlns="http://www.w3.org/2000/svg">
+              <path d="M17 9H7V7H17V9Z" fill="currentColor" /><path d="M7 13H17V11H7V13Z" fill="currentColor" /><path fill-rule="evenodd" clip-rule="evenodd" d="M2 18V2H22V18H16V22H14C11.7909 22 10 20.2091 10 18H2ZM12 16V18C12 19.1046 12.8954 20 14 20V16H20V4H4V16H12Z" fill="currentColor" />
+            </svg>
+          </div>
+          <div id="scriptstatus" class="text starttransparent" style="margin-left:-8px;">1/1</div>
           <div class="filler"></div>
           <div id="record" class="command starttransparent" data-i18n-title="Record">
             <svg viewBox="-2 -2 28 28" xmlns="http://www.w3.org/2000/svg">
