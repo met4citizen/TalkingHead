@@ -4,6 +4,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import Stats from 'three/addons/libs/stats.module.js';
+import{ DynamicBones } from './dynamicbones.mjs';
 
 /**
 * @class Talking Head
@@ -736,6 +737,9 @@ class TalkingHead {
     });
     this.ikMesh.bind( new THREE.Skeleton( ikBones ) );
 
+    // Dynamic Bones
+    this.dynamicbones = new DynamicBones();
+
   }
 
   /**
@@ -894,6 +898,9 @@ class TalkingHead {
     this.stop();
     this.avatar = avatar;
 
+    // Dispose Dynamic Bones
+    this.dynamicbones.dispose();
+
     // Clear previous scene, if avatar was previously loaded
     this.mixer = null;
     if ( this.armature ) {
@@ -964,6 +971,16 @@ class TalkingHead {
     this.scene.add( this.lightDirect );
     this.scene.add( this.lightSpot );
     this.lightSpot.target = this.armature.getObjectByName('Head');
+
+    // Setup Dynamic Bones
+    if ( avatar.hasOwnProperty("modelDynamicBones") ) {
+      try {
+        this.dynamicbones.setup(this.scene, this.armature, avatar.modelDynamicBones );
+      }
+      catch(error) {
+        console.error("Dynamic bones setup failed: " + error);
+      }
+    }
 
     // Estimate avatar height based on eye level
     const plEye = new THREE.Vector3();
@@ -1958,6 +1975,9 @@ class TalkingHead {
     hips.position.y -= box.min.y / 2;
     hips.position.x -= (ltoePos.x+rtoePos.x)/4;
     hips.position.z -= (ltoePos.z+rtoePos.z)/2;
+
+    // Update Dynamic Bones
+    this.dynamicbones.update(dt);
 
     // Camera
     if ( this.cameraClock !== null && this.cameraClock < 1000 ) {

@@ -106,11 +106,13 @@ Option | Description
 `ttsApikey` | If you don't want to use a proxy or JWT, you can use Google TTS endpoint directly and provide your API key here. **NOTE: I recommend that you don't use this in production and never put your API key in any client-side code.**
 `ttsLang` | Google text-to-speech language. Default is `"fi-FI"`.
 `ttsVoice` | Google text-to-speech voice. Default is `"fi-FI-Standard-A"`.
-`ttsRate` | Google text-to-speech rate in the range [0.25, 4.0]. Default is `0.95`.
+`ttsRate` | Google text-to-speech rate in the range [0.25, 4.0]. Default is `1.0`.
 `ttsPitch` | Google text-to-speech pitch in the range [-20.0, 20.0]. Default is `0`.
 `ttsVolume` | Google text-to-speech volume gain (in dB) in the range [-96.0, 16.0]. Default is `0`.
 `ttsTrimStart` | Trim the viseme sequence start relative to the beginning of the audio (shift in milliseconds). Default is `0`.
-`ttsTrimEnd`| Trim the viseme sequence end relative to the end of the audio (shift in milliseconds). Default is `300`.
+`ttsTrimEnd` | Trim the viseme sequence end relative to the end of the audio (shift in milliseconds). Default is `300`.
+`mixerGainSpeech` | The amount of gain for speech. See Web Audio API / GainNode for more information. Default value is `null` (system default) [&#8805;`v1.3`].
+`mixerGainBackground` | The amount of gain for background audio. See Web Audio API / GainNode for more information. Default value is `null` (system default) [&#8805;`v1.3`].
 `lipsyncModules`| Lip-sync modules to load dynamically at start-up. Limiting the number of language modules improves the loading time and memory usage. Default is `["en", "fi", "lt"]`. [&#8805;`v1.2`]
 `lipsyncLang`| Lip-sync language. Default is `"fi"`.
 `pcmSampleRate` | PCM (signed 16bit little endian) sample rate used in `speakAudio` in Hz. Default is `22050`.
@@ -185,14 +187,14 @@ The following table lists some of the key methods. See the source code for the r
 
 Method | Description
 --- | ---
-`showAvatar(avatar, [onprogress=null])` | Load and show the specified avatar. The `avatar` object must include the `url` for GLB file. Optional properties are `body` for either male `M` or female `F` body form, `lipsyncLang`, `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood` and `avatarMute`.
+`showAvatar(avatar, [onprogress=null])` | Load and show the specified avatar. The `avatar` object must include the `url` for GLB file. Optional properties are `body` for either male `M` or female `F` body form, `lipsyncLang`, `baseline` object for blend shape baseline, `modelDynamicBones` for dynamic bones (see Appendix E), `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood` and `avatarMute`.
 `setView(view, [opt])` | Set view. Supported views are `"full"`, `"mid"`, `"upper"`  and `"head"`. The `opt` object can be used to set `cameraDistance`, `cameraX`, `cameraY`, `cameraRotateX`, `cameraRotateY`.
 `setLighting(opt)` | Change lighting settings. The `opt` object can be used to set `lightAmbientColor`, `lightAmbientIntensity`, `lightDirectColor`, `lightDirectIntensity`, `lightDirectPhi`, `lightDirectTheta`, `lightSpotColor`, `lightSpotIntensity`, `lightSpotPhi`, `lightSpotTheta`, `lightSpotDispersion`.
 `speakText(text, [opt={}], [onsubtitles=null], [excludes=[]])` | Add the `text` string to the speech queue. The text can contain face emojis. Options `opt` can be used to set text-specific `lipsyncLang`, `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood`, `avatarMute`. Optional callback function `onsubtitles` is called whenever a new subtitle is to be written with the parameter of the added string. The optional `excludes` is an array of [start,end] indices to be excluded from audio but to be included in the subtitles.
 `speakAudio(audio, [opt={}], [onsubtitles=null])` | Add a new `audio` object to the speech queue. In audio object, property `audio` is either `AudioBuffer` or an array of PCM 16bit LE audio chunks. Property `words` is an array of words, `wtimes` is an array of corresponding starting times in milliseconds, and `wdurations` an array of durations in milliseconds. If the Oculus viseme IDs are know, they can be given in optional `visemes`, `vtimes` and `vdurations` arrays. The object also supports optional timed callbacks using `markers` and `mtimes`. The `opt` object can be used to set text-specific `lipsyncLang`.
 `speakEmoji(e)` | Add an emoji `e` to the speech queue.
 `speakBreak(t)` | Add a break of `t` milliseconds to the speech queue.
-`speakMarker(onmarker)` | Add a marker to the speech queue. The callback function `onmarker` is called when the queue processes the event.
+`speakMarker(onmarker)` | Add a marker to the speech queue. The callback function `onmarker` is called when the queue processes the marker.
 `lookAt(x,y,t)` | Make the avatar's head turn to look at the screen position (`x`,`y`) for `t` milliseconds.
 `lookAtCamera(t)` | Make the avatar's head turn to look at the camera for `t` milliseconds.
 `setMood(mood)` | Set avatar mood.
@@ -577,3 +579,79 @@ head.animEmojis["🫤"] = { dt: [300,2000], vs: {
 };
 head.playGesture("🫤",3);
 ```
+
+---
+
+### Appendix E: Dynamic Bones (ADVANCED)
+
+If you want your character's hair or other body parts to wiggle as
+the character moves, you can use TalkingHead's Dynamic Bones feature.
+It simulates Newton's equations of motions using a spring-damper model and the
+[velocity Verlet integration](https://en.wikipedia.org/wiki/Verlet_integration)
+method.
+
+Standard Ready Player Me 3D avatars don't include features
+like hair bones, so you'll need to add the dynamic bones and their weights to
+the model yourself. Here's an example of rigged hair in Blender.
+
+<img src="images/ponytail.jpg"/>
+
+
+Once your custom rig is in place, you can configure the dynamic bones
+by setting the `modelDynamicBones` property to the `avatar` object of
+the `showAvatar` method. Here's an example:
+
+```javascript
+// Load and show the avatar
+try {
+  await head.showAvatar( {
+    url: './avatars/custom.glb',
+    body: 'F',
+    avatarMood: 'neutral',
+    ttsLang: "en-GB",
+    ttsVoice: "en-GB-Standard-A",
+    lipsyncLang: 'en',
+    modelDynamicBones: [
+      {
+        bone: "ponytail1",
+        type: "full",
+        stiffness: [ 20, 20, 20, 20 ],
+        damping: [ 2, 2, 2, 2 ],
+        limits: [null,null,[null,0.01],null],
+      },
+      {
+        bone: "ponytail2",
+        type: "full",
+        stiffness: [ 200, 200, 200, 200 ],
+        damping: [ 10, 10, 10, 10 ]
+      },
+      {
+        bone: "ponytail3",
+        type: "full",
+        stiffness: [ 400, 400, 400, 400 ],
+        damping: [ 10, 10, 10, 140 ]
+      }
+    ]
+  });
+} catch (error) {
+  console.log(error);
+}
+```
+
+Each item in `modelDynamicBones` array represents a dynamic bone, which
+can be configured using the following properties:
+
+Property | Description | Example
+--- | --- | ---
+`bone` | The name of the bone in your custom skeleton. Note that each dynamic bone must have a parent bone. | `bone: "ponytail1"`
+`type` | <ul><li>`"point"` updates only the bone's local position [x,y,z]. It is fast to calculate, but may cause skinned meshes to deform unnaturally.</li><li>`"link"` updates only the parent's quaternions.</li><li>`"mix"` uses both positions (stretch) and quaternions (rotations).</li><li>`"full"` adds bone twist to the mix.</li></ul> | `type: "full"`
+`stiffness` | An array of mass-normalized spring constants `k` [m/s^2], one for each dimension [x,y,z,t]. The forth value, twist, is only used when the type is "full". | `stiffness: [20,20,20,20]`
+`damping` | An array of mass-normalized damping coefficients `c` [1/s], one for each dimension [x,y,z,t]. The forth value, twist, is only used when the type is "full". | `damping: [2,2,2,2]`
+`limits` | Sets absolute limits [m] to negative and positive direction for each dimension [x,y,z,t]. This helps you prevent situations in which meshes overlap due to sudden movements or the amplitude gets unrealistic. Limits get applied in local space. This is an optional parameter with default value `null` (no limits). | `limits: [null,null,[null,0.01],null]`
+`helper` | If `true`, add a helper object to the scene to assist with visualizing the bone during testing. If the dynamic bone type is "point", displays only a square, otherwise also the line from parent to the bone. Optional, default value `false`. | `helper: true`
+
+
+> [!TIP]
+> Finding a good combination of stiffness and damping is mostly a matter of
+trial and error. Turn on the helper property or use the test app to
+fine-tune the settings while running animations typical to your use case.

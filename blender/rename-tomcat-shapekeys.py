@@ -3,15 +3,12 @@ import bpy
 # NOTES FOR CONVERTING TOMCAT MODELS
 #
 # 1. Import and replace the rig with RPM rig
-#   - Import TomCAT FBX: root | Apply all transformations, delete rig,
+#   - Import TomCAT model: root | Apply all transformations, delete rig,
 #      for all meshes: Data | Vertex groups | Delete all groups
 #   - Import RPM GLB: Apply all transformations, delete all meshes,
-#     edit rig to match the character pose
-#   - Add bones: LeftEye, RightEye, LeftBreast, RightBreast
+#     edit rig to match the TomCAT character pose
+#   - Add bones: LeftEye, RightEye, LeftBreast, RightBreast, Scarf etc.
 #   - Select body+Armature, Parent Ctrl+P | Armature deform /w Automatic Weights
-#
-# 2. Add eyes, eye brows, etc.
-#   - Select mesh + Head bone, Parent | Bone
 #
 # 3. Add Clothes
 #   - Select mesh+Armature, Parent Ctrl+P | Armature deform with Empty Groups

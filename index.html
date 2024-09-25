@@ -2435,6 +2435,250 @@ function headLoaded(firsttime=false) {
       .html(testerGetLabel(mt,v));
   });
 
+  // Populate dynamic bones
+  const elBonesHelpers = d3.select("#boneshelpers");
+  const elBonesSelect = d3.select("#bonesselect");
+  elBonesHelpers.html("");
+  elBonesSelect.html("");
+  const names = head.dynamicbones?.getBoneNames();
+  if ( names && names.length ) {
+
+    // Director
+    d3.select("#bonesdisable")
+      .on("click", null)
+      .on("click", function(ev) {
+        const e = d3.select(this);
+        const sel = !e.classed('selected');
+        e.classed('selected', sel);
+        if ( sel === true ) {
+          head.dynamicbones.stop();
+        } else {
+          head.dynamicbones.start();
+        }
+      })
+      .classed("disabled", false);
+
+    // Bone testers
+    d3.selectAll(".bonetester").on("click", function(ev) {
+      const e = d3.select(this);
+      const name = d3.select(".dynamicbone.selected").text();
+      const data = head?.dynamicbones?.data?.find( x => x.name === name );
+      if ( data ) {
+        let dir = 0;
+        switch( e.text() ) {
+          case 'x': dir = 0; break;
+          case 'y': dir = 1; break;
+          case 'z': dir = 2; break;
+          case 't': dir = 3;
+        }
+        data.v[dir] = 100;
+      }
+    });
+
+    // Show all
+    elBonesHelpers.append("div")
+      .property("id","bonehelpershowall")
+      .classed("command", true)
+      .on('click', function(ev) {
+        const e = d3.select(this);
+        const sel = e.classed('selected');
+        e.classed('selected', !sel)
+        head.dynamicbones.showHelpers(!sel);
+      })
+      .html("ALL");
+
+    names.forEach( (name,i) => {
+
+      elBonesHelpers.append("div")
+        .classed("command", true)
+        .classed("bonehelper", true)
+        .classed("selected", head.dynamicbones.getValue(name,"helper") )
+        .on('click', function(ev) {
+          const e = d3.select(this);
+          const sel = e.classed('selected');
+          e.classed('selected', !sel)
+          head.dynamicbones.setValue(name,"helper",!sel);
+        })
+        .html(name);
+
+      elBonesSelect.append("div")
+        .classed("command", true)
+        .classed("dynamicbone", true)
+        .classed("selected", i === 0)
+        .on('click', function(ev) {
+          const e = d3.select(this);
+          d3.selectAll(".dynamicbone").classed('selected',false);
+          e.classed('selected',true);
+
+          const type = head.dynamicbones.getValue(name,"type");
+          d3.selectAll(".bonetype").classed('selected',false);
+          d3.select("#bonetype"+type).classed('selected',true);
+
+          const k = head.dynamicbones.getValue(name,"stiffness");
+          d3.select('#stiffnessx').property('value', k[0] ).node().nextElementSibling.textContent = k[0];
+          d3.select('#stiffnessy').property('value', k[1] ).node().nextElementSibling.textContent = k[1];
+          d3.select('#stiffnessz').property('value', k[2] ).node().nextElementSibling.textContent = k[2];
+          d3.select('#stiffnesst').property('value', k[3] ).node().nextElementSibling.textContent = k[3];
+
+          const c = head.dynamicbones.getValue(name,"damping");
+          d3.select('#dampingx').property('value', c[0] ).node().nextElementSibling.textContent = c[0];
+          d3.select('#dampingy').property('value', c[1] ).node().nextElementSibling.textContent = c[1];
+          d3.select('#dampingz').property('value', c[2] ).node().nextElementSibling.textContent = c[2];
+          d3.select('#dampingt').property('value', c[3] ).node().nextElementSibling.textContent = c[3];
+
+          let l = head.dynamicbones.getValue(name,"limits");
+          if ( l ) {
+            if ( !l[0] ) l[0] = [-0.01,-0.01];
+            if ( !l[1] ) l[1] = [-0.01,-0.01];
+            if ( !l[2] ) l[2] = [-0.01,-0.01];
+            if ( !l[3] ) l[3] = [-0.01,-0.01];
+          } else {
+            l = [[-0.01,-0.01],[-0.01,-0.01],[-0.01,-0.01],[-0.01,-0.01]];
+          }
+          l.forEach( x => x.forEach( (y,i,arr) => {
+            if (y === null) arr[i] = -0.01;
+          }));
+          d3.select('#limitsx1').property('value', l[0][0] ).node().nextElementSibling.textContent = l[0][0] < 0 ? "" : (l[0][0] + ' m');
+          d3.select('#limitsx2').property('value', l[0][1] ).node().nextElementSibling.textContent = l[0][1] < 0 ? "" : (l[0][1] + ' m');
+          d3.select('#limitsy1').property('value', l[1][0] ).node().nextElementSibling.textContent = l[1][0] < 0 ? "" : (l[1][0] + ' m');
+          d3.select('#limitsy2').property('value', l[1][1] ).node().nextElementSibling.textContent = l[1][1] < 0 ? "" : (l[1][1] + ' m');
+          d3.select('#limitsz1').property('value', l[2][0] ).node().nextElementSibling.textContent = l[2][0] < 0 ? "" : (l[2][0] + ' m');
+          d3.select('#limitsz2').property('value', l[2][1] ).node().nextElementSibling.textContent = l[2][1] < 0 ? "" : (l[2][1] + ' m');
+          d3.select('#limitst1').property('value', l[3][0] ).node().nextElementSibling.textContent = l[3][0] < 0 ? "" : (l[3][0] + ' m');
+          d3.select('#limitst2').property('value', l[3][1] ).node().nextElementSibling.textContent = l[3][1] < 0 ? "" : (l[3][1] + ' m');
+
+        })
+        .html(name);
+    });
+
+    d3.select('#bonesdata').property("value", JSON.stringify( head.dynamicbones.getConfig() ) );
+
+    // Change type
+    d3.selectAll(".bonetype")
+      .classed("disabled", false)
+      .on('click', null)
+      .on('click', function(ev) {
+        const e = d3.select(this);
+        d3.selectAll(".bonetype").classed('selected',false);
+        e.classed('selected',true);
+        const name = d3.select(".dynamicbone.selected").text();
+        const type = e.text();
+        head.dynamicbones.setValue(name,"type",type);
+        d3.select('#bonesdata').property("value", JSON.stringify( head.dynamicbones.getConfig() ) );
+      });
+
+    // Change stiffness
+    d3.selectAll(".stiffness")
+      .classed("disabled", false)
+      .on('input.update change.update keyup.update', null)
+      .on('input.update change.update keyup.update', function(ev) {
+        const name = d3.select(".dynamicbone.selected").text();
+        head.dynamicbones.setValue(name,"stiffness",[
+          parseFloat( d3.select('#stiffnessx').property('value') ),
+          parseFloat( d3.select('#stiffnessy').property('value') ),
+          parseFloat( d3.select('#stiffnessz').property('value') ),
+          parseFloat( d3.select('#stiffnesst').property('value') )
+        ]);
+        d3.select('#bonesdata').property("value", JSON.stringify( head.dynamicbones.getConfig() ) );
+      });
+
+    // Change damping
+    d3.selectAll(".damping")
+      .classed("disabled", false)
+      .on('input.update change.update keyup.update', null)
+      .on('input.update change.update keyup.update', function(ev) {
+        const name = d3.select(".dynamicbone.selected").text();
+        head.dynamicbones.setValue(name,"damping",[
+          parseFloat( d3.select('#dampingx').property('value') ),
+          parseFloat( d3.select('#dampingy').property('value') ),
+          parseFloat( d3.select('#dampingz').property('value') ),
+          parseFloat( d3.select('#dampingt').property('value') )
+        ]);
+        d3.select('#bonesdata').property("value", JSON.stringify( head.dynamicbones.getConfig() ) );
+      });
+
+    // Change limits
+    d3.selectAll(".limits")
+      .classed("disabled", false)
+      .on('input.update change.update keyup.update', null)
+      .on('input.update change.update keyup.update', function(ev) {
+        let val = [
+          [
+            d3.select('#limitsx1').property('value'),
+            d3.select('#limitsx2').property('value')
+          ],
+          [
+            d3.select('#limitsy1').property('value'),
+            d3.select('#limitsy2').property('value')
+          ],
+          [
+            d3.select('#limitsz1').property('value'),
+            d3.select('#limitsz2').property('value')
+          ],
+          [
+            d3.select('#limitst1').property('value'),
+            d3.select('#limitst2').property('value')
+          ]
+        ];
+        for( let i=0; i<val.length; i++ ) {
+          val[i][0] = parseFloat(val[i][0]);
+          if ( val[i][0] < 0 ) val[i][0] = null;
+          val[i][1] = parseFloat(val[i][1]);
+          if ( val[i][1] < 0 ) val[i][1] = null;
+          if ( val[i][0] === null && val[i][1] === null ) val[i] = null;
+        }
+        if ( val.every( x => x === null ) ) val = null;
+        const name = d3.select(".dynamicbone.selected").text();
+        head.dynamicbones.setValue(name, "limits", val );
+        d3.select('#bonesdata').property("value", JSON.stringify( head.dynamicbones.getConfig() ) );
+      });
+
+    // Select first bone
+    d3.select('.dynamicbone').dispatch("click");
+
+  } else {
+
+    d3.select("#bonesdisable")
+      .classed("disabled", true)
+      .on("click", null);
+
+    let row = elBonesHelpers.append("div")
+      .classed("row", true)
+      .classed("bone", true);
+
+    row.append("div")
+      .classed("text", true)
+      .classed("label", true)
+      .html("N/A");
+
+    row = elBonesSelect.append("div")
+      .classed("row", true)
+      .classed("bone", true);
+
+    row.append("div")
+      .classed("text", true)
+      .classed("label", true)
+      .html("N/A");
+
+    d3.selectAll(".bonetype")
+      .classed("disabled", true)
+      .on('click', null);
+
+    d3.selectAll(".stiffness")
+      .classed("disabled", true)
+      .on('input.update change.update keyup.update', null);
+
+    d3.selectAll(".damping")
+      .classed("disabled", true)
+      .on('input.update change.update keyup.update', null);
+
+    d3.selectAll(".limits")
+      .classed("disabled", true)
+      .on('input.update change.update keyup.update', null);
+
+    d3.select('#bonesdata').property("value", "");
+  }
+
   // Unlock Web Audio API
   if ( firsttime ) {
     if ( head.audioCtx.state === 'suspended' ) {
@@ -3156,6 +3400,8 @@ document.addEventListener('DOMContentLoaded', async function(e) {
       v = n.value + ' ' + i18nWord('words');
     } else if ( type === 'dialog' ) {
       v = n.value + ' ' + i18nWord('dialogs');
+    } else if ( type === 'dynamicbonelimit' ) {
+      v = (n.value < 0) ? '' : (n.value + ' m');
     }
     n.nextElementSibling.textContent = v;
   });
@@ -3369,6 +3615,12 @@ document.addEventListener('DOMContentLoaded', async function(e) {
       }
     }
     ev.target.value = '';
+  });
+
+  d3.select("[data-pose-movement]").on('input.command change.command keyup.command', function(ev) {
+    let factor = parseFloat( d3.select("[data-pose-movement]").property("value") );
+    head.opt.modelMovementFactor = factor;
+    head.setPoseFromTemplate( head.poseCurrentTemplate );
   });
 
   d3.selectAll("[data-camera-frame]").on('click.command', function(ev) {
@@ -3729,6 +3981,11 @@ document.addEventListener('DOMContentLoaded', async function(e) {
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path fill-rule="evenodd" clip-rule="evenodd" d="M16 7C16 9.20914 14.2091 11 12 11C9.79086 11 8 9.20914 8 7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7ZM14 7C14 8.10457 13.1046 9 12 9C10.8954 9 10 8.10457 10 7C10 5.89543 10.8954 5 12 5C13.1046 5 14 5.89543 14 7Z" fill="currentColor" />
               <path d="M16 15C16 14.4477 15.5523 14 15 14H9C8.44772 14 8 14.4477 8 15V21H6V15C6 13.3431 7.34315 12 9 12H15C16.6569 12 18 13.3431 18 15V21H16V15Z" fill="currentColor" />
+            </svg>
+          </div>
+          <div class="command starttransparent" data-i18n-title="Bones" data-show="right-bones">
+            <svg viewBox="-2 -2 28 28" xmlns="http://www.w3.org/2000/svg">
+              <path d="m19.1072 11.2565c.7557.0637 1.5333-.1936 2.1115-.7718 1.0417-1.0417 1.0417-2.73065 0-3.77236-.6245-.62448-1.5546-.8015-2.1996-.84313-.5717 0-.8883-.34038-.8883-.88834-.0416-.64494-.2187-1.57511-.8431-2.19959-1.0418-1.04171-2.7307-1.04171-3.7724 0-.5782.57821-.8355 1.35582-.7718 2.11147.0867 1.0289.1799 2.25278-.5502 2.9829l-4.31765 4.31765c-.73012.7301-1.954.6369-2.9829.5502-.75565-.0637-1.53326.1936-2.11147.7718-1.04171 1.0417-1.04171 2.7306 0 3.7724.62448.6244 1.55465.8015 2.19959.8431.61071 0 .88835.3692.88835.8883.04162.645.21864 1.5751.84312 2.1996 1.04171 1.0417 2.73066 1.0417 3.77236 0 .5782-.5782.8355-1.3558.7718-2.1115-.0867-1.0288-.1799-2.2527.5502-2.9829l4.3177-4.3176c.7301-.7301 1.954-.6369 2.9828-.5502z" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
             </svg>
           </div>
           <div class="command starttransparent" data-i18n-title="Light" data-show="right-light">
@@ -4200,6 +4457,21 @@ document.addEventListener('DOMContentLoaded', async function(e) {
             </div>
           </div>
 
+          <div class="row">
+            <div class="text label" data-i18n-text="PoseMovement"></div>
+            <div class="column">
+              <div class="row">
+                <div class="command" data-target="pose-movement" data-range-reset="1">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 21.5L17.5 13L13 10L15 2.5L6.5 11L11 14L9 21.5Z" fill="currentColor" />
+                  </svg>
+                </div>
+                <input type="range" min="0" max="1" step="0.05" value="1" data-item="pose-movement" data-type="value" data-range="float" data-pose-movement="">
+                <div class="text">1</div>
+              </div>
+            </div>
+          </div>
+
           <div class="vbar"></div>
 
           <div class="row">
@@ -4216,6 +4488,158 @@ document.addEventListener('DOMContentLoaded', async function(e) {
           <div class="row">
             <div class="text label" data-i18n-text="Data"></div>
             <textarea id="morphdata" rows="1"></textarea>
+          </div>
+
+        </div>
+
+        <div id="right-bones" class="page noselect nodrag hidden">
+
+          <div class="vbar"></div>
+
+          <div class="row">
+            <div class="text label" data-i18n-text="Director"></div>
+            <div class="rowWrap">
+              <div id="bonesdisable" class="command" data-i18n-text="Disable"></div>
+            </div>
+          </div>
+
+          <div class="vbar"></div>
+
+          <div class="row">
+            <div class="text label" data-i18n-text="Helper"></div>
+            <div id="boneshelpers" class="rowWrap">
+            </div>
+          </div>
+
+          <div class="vbar"></div>
+
+          <div class="row">
+            <div class="text label" data-i18n-text="Edit"></div>
+            <div id="bonesselect" class="rowWrap">
+            </div>
+          </div>
+
+          <div class="vspace"></div>
+
+          <div class="row">
+            <div class="text label" data-i18n-text="Type"></div>
+            <div class="rowWrap">
+              <div id="bonetypepoint" class="command bonetype selected">point</div>
+              <div id="bonetypelink" class="command bonetype">link</div>
+              <div id="bonetypemix" class="command bonetype">mix</div>
+              <div id="bonetypefull" class="command bonetype">full</div>
+            </div>
+          </div>
+
+          <div class="vspace"></div>
+
+          <div class="row">
+            <div class="text label" data-i18n-text="Stiffness"></div>
+            <div class="column">
+              <div class="row">
+                <div class="command bonetester" style="width: 20px">x</div>
+                <input id="stiffnessx" class="stiffness" type="range" min="0" max="1000" step="1" value="100" data-range="float" style="width: 358px">
+                <div class="text">100</div>
+              </div>
+              <div class="row">
+                <div class="command bonetester" style="width: 20px">y</div>
+                <input  id="stiffnessy" class="stiffness" type="range" min="0" max="1000" step="1" value="100" data-range="float" style="width: 358px">
+                <div class="text">100</div>
+              </div>
+              <div class="row">
+                <div class="command bonetester" style="width: 20px">z</div>
+                <input id="stiffnessz" class="stiffness" type="range" min="0" max="1000" step="1" value="100" data-range="float" style="width: 358px">
+                <div class="text">100</div>
+              </div>
+              <div class="row">
+                <div class="command bonetester" style="width: 20px">t</div>
+                <input  id="stiffnesst" class="stiffness" type="range" min="0" max="1000" step="1" value="100" data-range="float" style="width: 358px">
+                <div class="text">100</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="vspace"></div>
+
+          <div class="row">
+            <div class="text label" data-i18n-text="Damping"></div>
+            <div class="column">
+              <div class="row">
+                <div class="command bonetester" style="width: 20px">x</div>
+                <input id="dampingx" class="damping" type="range" min="0" max="100" step="1" value="10" data-range="float" style="width: 358px">
+                <div class="text">100</div>
+              </div>
+              <div class="row">
+                <div class="command bonetester" style="width: 20px">y</div>
+                <input  id="dampingy" class="damping" type="range" min="0" max="100" step="1" value="10" data-range="float" style="width: 358px">
+                <div class="text">100</div>
+              </div>
+              <div class="row">
+                <div class="command bonetester" style="width: 20px">z</div>
+                <input id="dampingz" class="damping" type="range" min="0" max="100" step="1" value="10" data-range="float" style="width: 358px">
+                <div class="text">100</div>
+              </div>
+              <div class="row">
+                <div class="command bonetester" style="width: 20px">t</div>
+                <input  id="dampingt" class="damping" type="range" min="0" max="100" step="1" value="10" data-range="float" style="width: 358px">
+                <div class="text">100</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="vspace"></div>
+
+          <div class="row">
+            <div class="text label" data-i18n-text="Limits"></div>
+            <div class="column">
+              <div class="row">
+                <div class="command bonetester" style="width: 20px">x</div>
+                <input id="limitsx1" class="limits" type="range" min="-0.01" max="1" step="0.01" value="-0.01" data-range="dynamicbonelimit" style="width: 358px">
+                <div class="text">null</div>
+              </div>
+              <div class="row">
+                <div class="text label" style="width: 20px"></div>
+                <input id="limitsx2" class="limits" type="range" min="-0.01" max="1" step="0.01" value="-0.01" data-range="dynamicbonelimit" style="width: 358px">
+                <div class="text">null</div>
+              </div>
+              <div class="row">
+                <div class="command bonetester" style="width: 20px">y</div>
+                <input  id="limitsy1" class="limits" type="range" min="-0.01" max="1" step="0.01" value="-0.01" data-range="dynamicbonelimit" style="width: 358px">
+                <div class="text">null</div>
+              </div>
+              <div class="row">
+                <div class="text label" style="width: 20px"></div>
+                <input  id="limitsy2" class="limits" type="range" min="-0.01" max="1" step="0.01" value="-0.01" data-range="dynamicbonelimit" style="width: 358px">
+                <div class="text">null</div>
+              </div>
+              <div class="row">
+                <div class="command bonetester" style="width: 20px">z</div>
+                <input id="limitsz1" class="limits" type="range" min="-0.01" max="1" step="0.01" value="-0.01" data-range="dynamicbonelimit" style="width: 358px">
+                <div class="text">null</div>
+              </div>
+              <div class="row">
+                <div class="text label" style="width: 20px"></div>
+                <input id="limitsz2" class="limits" type="range" min="-0.01" max="1" step="0.01" value="-0.01" data-range="dynamicbonelimit" style="width: 358px">
+                <div class="text">null</div>
+              </div>
+              <div class="row">
+                <div class="command bonetester" style="width: 20px">t</div>
+                <input  id="limitst1" class="limits" type="range" min="-0.01" max="1" step="0.01" value="-0.01" data-range="dynamicbonelimit" style="width: 358px">
+                <div class="text">null</div>
+              </div>
+              <div class="row">
+                <div class="text label" style="width: 20px"></div>
+                <input  id="limitst2" class="limits" type="range" min="-0.01" max="1" step="0.01" value="-0.01" data-range="dynamicbonelimit" style="width: 358px">
+                <div class="text">null</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="vbar"></div>
+
+          <div class="row">
+            <div class="text label" data-i18n-text="Data"></div>
+            <textarea id="bonesdata" rows="1"></textarea>
           </div>
 
         </div>
