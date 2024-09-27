@@ -3642,6 +3642,23 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     d3.select("[data-camera-frame].selected").dispatch('click');
   });
 
+  function setLightingData() {
+    let o = {
+      lightAmbientColor: d3.select("[data-light-ambient-color]").property("value"),
+      lightAmbientIntensity: parseFloat( d3.select("[data-light-ambient-intensity]").property("value") ),
+      lightDirectColor: d3.select("[data-light-direct-color]").property("value"),
+      lightDirectIntensity: parseFloat( d3.select("[data-light-direct-intensity]").property("value") ),
+      lightDirectPhi: parseFloat( d3.select("[data-light-direct-phi]").property("value") ),
+      lightDirectTheta: parseFloat( d3.select("[data-light-direct-theta]").property("value") ),
+      lightSpotColor: d3.select("[data-light-spot-color]").property("value"),
+      lightSpotIntensity: parseFloat( d3.select("[data-light-spot-intensity]").property("value") ),
+      lightSpotPhi: parseFloat( d3.select("[data-light-spot-phi]").property("value") ),
+      lightSpotTheta: parseFloat( d3.select("[data-light-spot-theta]").property("value") ),
+      lightSpotDispersion: parseFloat( d3.select("[data-light-spot-dispersion]").property("value") )
+    };
+    d3.select('#lightingdata').property("value", JSON.stringify( o ) );
+  }
+
   d3.selectAll("[data-light-ambient-color],[data-light-ambient-intensity]").on('input.command change.command keyup.command', function(ev) {
     const e = d3.select(this);
     let o = {
@@ -3649,6 +3666,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
       lightAmbientIntensity: parseFloat( d3.select("[data-light-ambient-intensity]").property("value") )
     };
     head.setLighting(o);
+    setLightingData();
   });
 
   d3.selectAll("[data-light-direct-color],[data-light-direct-intensity],[data-light-direct-phi],[data-light-direct-theta]").on('input.command change.command keyup.command', function(ev) {
@@ -3660,6 +3678,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
       lightDirectTheta: parseFloat( d3.select("[data-light-direct-theta]").property("value") )
     };
     head.setLighting(o);
+    setLightingData();
   });
 
   d3.selectAll("[data-light-spot-color],[data-light-spot-intensity],[data-light-spot-phi],[data-light-spot-theta],[data-light-spot-dispersion]").on('input.command change.command keyup.command', function(ev) {
@@ -3672,6 +3691,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
       lightSpotDispersion: parseFloat( d3.select("[data-light-spot-dispersion]").property("value") ),
     };
     head.setLighting(o);
+    setLightingData();
   });
 
   d3.selectAll("[data-view-brightness],[data-view-contrast],[data-view-saturate],[data-view-blur]").on('input.command change.command keyup.command', function(ev) {
@@ -4750,6 +4770,13 @@ document.addEventListener('DOMContentLoaded', async function(e) {
                 <div class="text">1</div>
               </div>
             </div>
+          </div>
+
+          <div class="vbar"></div>
+
+          <div class="row">
+            <div class="text label" data-i18n-text="Data"></div>
+            <textarea id="lightingdata" rows="1"></textarea>
           </div>
 
         </div>
