@@ -2292,13 +2292,26 @@ class TalkingHead {
   * Set audio gain.
   * @param {number} speech Gain for speech, if null do not change
   * @param {number} background Gain for background audio, if null do not change
+  * @param {number} [fadeSecs=0] Gradual exponential fade in/out time in seconds
   */
-  setMixerGain( speech, background ) {
+  setMixerGain( speech, background, fadeSecs=0 ) {
     if ( speech !== null ) {
-      this.audioSpeechGainNode.gain.value = speech || 0;
+      this.audioSpeechGainNode.gain.cancelScheduledValues(this.audioCtx.currentTime);
+      if ( fadeSecs ) {
+        this.audioSpeechGainNode.gain.setValueAtTime(this.audioSpeechGainNode.gain.value, this.audioCtx.currentTime);
+        this.audioSpeechGainNode.gain.exponentialRampToValueAtTime( (speech || 0.0001), this.audioCtx.currentTime + fadeSecs );
+      } else {
+        this.audioSpeechGainNode.gain.setValueAtTime( (speech || 0), this.audioCtx.currentTime);
+      }
     }
     if ( background !== null ) {
-      this.audioBackgroundGainNode.gain.value = background || 0;
+      this.audioBackgroundGainNode.gain.cancelScheduledValues(this.audioCtx.currentTime);
+      if ( fadeSecs ) {
+        this.audioBackgroundGainNode.gain.setValueAtTime(this.audioBackgroundGainNode.gain.value, this.audioCtx.currentTime);
+        this.audioBackgroundGainNode.gain.exponentialRampToValueAtTime( (background || 0.0001), this.audioCtx.currentTime + fadeSecs );
+      } else {
+        this.audioBackgroundGainNode.gain.setValueAtTime( (background || 0), this.audioCtx.currentTime);
+      }
     }
   }
 

@@ -201,7 +201,7 @@ Method | Description
 `setMood(mood)` | Set avatar mood.
 `playBackgroundAudio(url)` | Play background audio such as ambient sounds/music in a loop.
 `stopBackgroundAudio()` | Stop playing the background audio.
-`setMixerGain(speech, background)` | The amount of gain for speech and background audio (see Web Audio API / GainNode for more information). Default value is `1`.
+`setMixerGain(speech, background, [fadeSecs=0])` | The amount of gain for speech and background audio (see Web Audio API / GainNode for more information). Optional `fadeSecs` parameter sets exponential fade in/out time in seconds.
 `playAnimation(url, [onprogress=null], [dur=10], [ndx=0], [scale=0.01])` | Play Mixamo animation file for `dur` seconds, but full rounds and at least once. If the FBX file includes several animations, the parameter `ndx` specifies the index. Since Mixamo rigs have a scale 100 and RPM a scale 1, the `scale` factor can be used to scale the positions.
 `stopAnimation()` | Stop the current animation started by `playAnimation`.
 `playPose(url, [onprogress=null], [dur=5], [ndx=0], [scale=0.01])` | Play the initial pose of a Mixamo animation file for `dur` seconds. If the FBX file includes several animations, the parameter `ndx` specifies the index. Since Mixamo rigs have a scale 100 and RPM a scale 1, the `scale` factor can be used to scale the positions.
