@@ -183,7 +183,7 @@ class DynamicBones {
   getConfig() {
     return this.data.map( d => {
       const o = {
-        name: d.name.slice(),
+        bone: d.name.slice(),
         type: Object.keys(this.types).find(x => this.types[x] === d.type),
         stiffness: [...d.k],
         damping: [...d.c],
