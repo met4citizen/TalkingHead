@@ -31,6 +31,7 @@ const v = new THREE.Vector3();
 const w = new THREE.Vector3();
 const e = new THREE.Euler();
 const q = new THREE.Quaternion();
+const qq = new THREE.Quaternion();
 const m = new THREE.Matrix4();
 const minv = new THREE.Matrix4();
 
@@ -90,9 +91,23 @@ class DynamicBones {
     if ( key === "type" ) {
       val = Object.keys(this.types).find(x => this.types[x] === d.type);
     } else if ( key === "stiffness" ) {
-      val = [...d.k];
+      if ( d.k.every( x => x === d.k[0] ) ) {
+        val = d.k[0];
+      } else {
+        val = [...d.k];
+      }
     } else if ( key === "damping" ) {
-      val = [...d.c];
+      if ( d.c.every( x => x === d.c[0] ) ) {
+        val = d.c[0];
+      } else {
+        val = [...d.c];
+      }
+    } else if ( key === "external" ) {
+      if ( d.ext < 1.0 ) {
+        val = d.ext
+      } else {
+        val = null;
+      }
     } else if ( key === "limits" ) {
       val = d.limits?.map( x => {
         if ( x === null ) {
@@ -101,6 +116,12 @@ class DynamicBones {
           return [...x];
         }
       });
+    } else if ( key === "deltaLocal" ) {
+      val = d.dl ? [...d.dl] : null;
+    } else if ( key === "deltaWorld" ) {
+      val = d.dw ? [...d.dw] : null;
+    } else if ( key === "pivot" ) {
+      val = d.pivot;
     } else if ( key === "helper" ) {
       val = d.helper;
     } else {
@@ -130,26 +151,38 @@ class DynamicBones {
       d.dim = d.type === 3 ? 4 : 3;
 
     } else if ( key === "stiffness" ) {
-
       if ( !val ) throw new Error( "Parameter 'stiffness' not set." );
-      if ( !Array.isArray(val) || val.length !== 4 ) throw new Error( "Stiffness must be an array of four numbers." );
-      if ( !val.every( x => x >= 0 ) ) throw new Error( "Stiffness values must be non-negative numbers." );
-      d.k = [...val];
-
+      if ( !Number.isNaN(val) && val >= 0 ) {
+        d.k = Array(4).fill(val);
+      } else if ( Array.isArray(val) && val.length === 4 && val.every( x => x >= 0 ) ) {
+        d.k = [...val];
+      } else {
+        throw new Error( "Stiffness must be a non-negative number or an array of four non-negative numbers." );
+      }
     } else if ( key === "damping" ) {
-
       if ( !val ) throw new Error( "Parameter 'damping' not set." );
-      if ( !Array.isArray(val) || val.length !== 4 ) throw new Error( "Damping must be an array of four numbers." );
-      if ( !val.every( x => x >= 0 ) ) throw new Error( "Damping values must be non-negative numbers." );
-      d.c = [...val];
-
+      if ( !Number.isNaN(val) && val >= 0 ) {
+        d.c = Array(4).fill(val);
+      } else if ( Array.isArray(val) && val.length === 4 && val.every( x => x >= 0 ) ) {
+        d.c = [...val];
+      } else {
+        throw new Error( "Damping must be a non-negative number or an array of four non-negative numbers." );
+      }
+    } else if ( key === "external" ) {
+      if ( val === null || val === undefined ) {
+        d.ext = 1.0;
+      } else if ( !Number.isNaN(val) && val >=0 && val <= 1 ) {
+        d.ext = val;
+      } else {
+        throw new Error( "External (if set) must be a number between [0,1]." );
+      }
     } else if ( key === "limits" ) {
 
       if ( val === null || val === undefined ) {
         d.limits = null;
       } else {
         if ( !Array.isArray(val) || val.length !== 4 ) throw new Error( "Limits (if set) must null, or an array of four arrays." );
-        if ( !val.every( x => x === null || (Array.isArray(x) && x.length === 2 && ( x[0] === null || x[0] >= 0 ) && ( x[1] === null || x[1] >= 0 ) ) ) ) throw new Error( "Limit values must be null, or arrays of two non-negative numbers." );
+        if ( !val.every( x => x === null || (Array.isArray(x) && x.length === 2 && ( x[0] === null || !Number.isNaN(x[0]) ) && ( x[1] === null || !Number.isNaN(x) ) ) ) ) throw new Error( "Limit values must be null or numbers." );
         d.limits = [
           val[0] ? [...val[0]] : null,
           val[1] ? [...val[1]] : null,
@@ -169,6 +202,36 @@ class DynamicBones {
 
       this.showHelpers();
 
+    } else if ( key === "pivot" ) {
+
+      if ( val === null || val === undefined ) {
+        d.pivot = null;
+      } else {
+        if ( val !== false && val !== true ) throw new Error( "Pivot, if set, must be false or true." );
+        if ( val === true && d.type === "point" ) throw new Error( "Point type bone can't be a pivot." );
+        d.pivot = val;
+      }
+
+    } else if ( key === "deltaLocal" ) {
+
+      if ( val === null || val === undefined ) {
+        d.dl = null;
+      } else {
+        if ( !Array.isArray(val) || val.length !== 3 ) throw new Error( "deltaLocal, is set, must be an array of three numbers." );
+        if ( !val.every( x => !Number.isNaN(x) ) ) throw new Error( "deltaLocal values must be numbers." );
+        d.dl = [...val];
+      }
+
+    } else if ( key === "deltaWorld" ) {
+
+      if ( val === null || val === undefined ) {
+        d.dw = null;
+      } else {
+        if ( !Array.isArray(val) || val.length !== 3 ) throw new Error( "deltaWorld, is set, must be an array of three values." );
+        if ( !val.every( x => !Number.isNaN(x) ) ) throw new Error( "deltaWorld values must be numbers." );
+        d.dw = [...val];
+      }
+
     } else {
       throw new Error("Unsupported property "+key);
     }
@@ -182,23 +245,13 @@ class DynamicBones {
   */
   getConfig() {
     return this.data.map( d => {
-      const o = {
-        bone: d.name.slice(),
-        type: Object.keys(this.types).find(x => this.types[x] === d.type),
-        stiffness: [...d.k],
-        damping: [...d.c],
-      };
-      if ( d.limits !== null ) {
-        o.limits = [
-          d.limits[0] ? [...d.limits[0]] : null,
-          d.limits[1] ? [...d.limits[1]] : null,
-          d.limits[2] ? [...d.limits[2]] : null,
-          d.limits[3] ? [...d.limits[3]] : null
-        ];
-      }
-      if ( d.helper !== null ) {
-        o.helper = d.helper;
-      }
+
+      const o = { bone: d.name.slice() };
+      ["type","stiffness","damping","external","deltaLocal",
+      "deltaWorld","limits","pivot","helper"].forEach( x => {
+        tmp = this.getValue(d.name,x);
+        if ( tmp ) o[x] = tmp;
+      });
       return o;
     });
   }
@@ -274,10 +327,28 @@ class DynamicBones {
         this.setValue(name, "type", item.type);
         this.setValue(name, "stiffness", item.stiffness);
         this.setValue(name, "damping", item.damping);
+        this.setValue(name, "external", item.external);
         this.setValue(name, "limits", item.limits);
+        this.setValue(name, "deltaLocal", item.deltaLocal);
+        this.setValue(name, "deltaWorld", item.deltaWorld);
+        this.setValue(name, "pivot", item.pivot);
         this.setValue(name, "helper", item.helper);
       } catch(error) {
         check( false, id + error );
+      }
+
+      // Set gravity baseline
+      if ( o.type > 0 ) {
+
+        // Remove the yaw from the world quaternion
+        // - Get world quaternion
+        // - Extract the forward direction (Z-axis) and project it
+        //   onto the XZ-plane (remove the Y component)
+        // - Create a quaternion that represents only the yaw rotation
+        bone.parent.matrixWorld.decompose( v, q, tmp );
+        v.copy(axisz).applyQuaternion(q).setComponent(1,0).normalize();
+        q.premultiply( qq.setFromUnitVectors(axisz,v).invert() );
+        o.qWorldInverseYaw = q.clone().normalize();
       }
 
     });
@@ -326,19 +397,20 @@ class DynamicBones {
         d.bone.updateMatrixWorld();
       }
       m.copy( d.boneParent.matrixWorld );
+      minv.copy(m).invert();
       d.vWorld.setFromMatrixPosition( m ); // Update position
-      v.applyMatrix4( m.invert() ); // World to local
+      v.applyMatrix4( minv ); // World to local
 
       if ( v.length() > 0.5 ) {
         // Not realistic update, so limit
-        console.info("Info: Unrealistic jump of " + v.length() + " meters.");
+        console.info("Info: Unrealistic jump of " + v.length().toFixed(2) + " meters.");
         v.setLength(0.5);
       }
 
-      arr[0] = v.x;
-      arr[1] = v.y;
-      arr[2] = -v.z;
-      arr[3] = v.length() / 3; // TODO: Hack, fix this in later versions
+      arr[0] = d.ext * v.x;
+      arr[1] = d.ext * v.y;
+      arr[2] = d.ext * -v.z;
+      arr[3] = d.ext * v.length() / 3; // TODO: Hack, fix this in later versions
 
       // Simulate each dimension using Velocity Verlet integration
       for( let j=0, l=d.dim; j<l; j++ ) {
@@ -387,23 +459,49 @@ class DynamicBones {
       arr[2] = d.p[2];
       arr[3] = d.p[3];
 
+      // Delta local
+      if ( d.dl ) {
+        tmp = d.dl;
+        arr[0] += tmp[0];
+        arr[1] += tmp[1];
+        arr[2] += tmp[2];
+      }
+
+      // Delta world
+      if ( d.dw ) {
+        tmp = d.dw;
+        v.set(
+          d.vBasis.x + arr[0],
+          d.vBasis.y + arr[1],
+          d.vBasis.z + arr[2]
+        );
+        v.applyMatrix4(m); // local to world
+        v.x += tmp[0];
+        v.y += tmp[1];
+        v.z += tmp[2];
+        v.applyMatrix4(minv); // world to local
+        arr[0] += v.x - d.vBasis.x;
+        arr[1] += v.y - d.vBasis.y;
+        arr[2] += v.z - d.vBasis.z;
+      }
+
       // Limits
-      tmp = d.limits;
-      if ( tmp ) {
+      if ( d.limits ) {
+        tmp = d.limits;
         if ( tmp[0] ) {
-          if ( tmp[0][0] !== null && arr[0] < -tmp[0][0] ) arr[0] = -tmp[0][0];
+          if ( tmp[0][0] !== null && arr[0] < tmp[0][0] ) arr[0] = tmp[0][0];
           if ( tmp[0][1] !== null && arr[0] > tmp[0][1] ) arr[0] = tmp[0][1];
         }
         if ( tmp[1] ) {
-          if ( tmp[1][0] !== null && arr[1] < -tmp[1][0] ) arr[1] = -tmp[1][0];
+          if ( tmp[1][0] !== null && arr[1] < tmp[1][0] ) arr[1] = tmp[1][0];
           if ( tmp[1][1] !== null && arr[1] > tmp[1][1] ) arr[1] = tmp[1][1];
         }
         if ( tmp[2] ) {
-          if ( tmp[2][0] !== null && arr[2] < -tmp[2][0] ) arr[2] = -tmp[2][0];
+          if ( tmp[2][0] !== null && arr[2] < tmp[2][0] ) arr[2] = tmp[2][0];
           if ( tmp[2][1] !== null && arr[2] > tmp[2][1] ) arr[2] = tmp[2][1];
         }
         if ( tmp[3] ) {
-          if ( tmp[3][0] !== null && arr[3] < -tmp[3][0] ) arr[3] = -tmp[3][0];
+          if ( tmp[3][0] !== null && arr[3] < tmp[3][0] ) arr[3] = tmp[3][0];
           if ( tmp[3][1] !== null && arr[3] > tmp[3][1] ) arr[3] = tmp[3][1];
         }
       }
@@ -422,6 +520,16 @@ class DynamicBones {
 
         // Link: set parent quaternion
         d.boneParent.quaternion.copy(d.qBasis);
+
+        // Pivot, EXPERIMENTAL
+        if ( d.pivot ) {
+          d.boneParent.getWorldQuaternion(q);
+          v.copy(axisz).applyQuaternion(q).setComponent(1,0).normalize();
+          q.premultiply( qq.setFromUnitVectors(axisz,v).invert() );
+          d.boneParent.quaternion.multiply(q.invert());
+          d.boneParent.quaternion.multiply(d.qWorldInverseYaw);
+        }
+
         tmp = Math.atan( arr[0] / d.l );
         q.setFromAxisAngle(axisz, -tmp);
         d.boneParent.quaternion.multiply(q);
@@ -490,6 +598,7 @@ class DynamicBones {
         transparent: true, color: this.opt.helperBoneColor, size: 0.2
       });
       tmp.object = new THREE.Points( geom, material );
+      tmp.object.renderOrder = 999;
       tmp.object.matrix = this.armature.matrixWorld;
       tmp.object.matrixAutoUpdate = false;
       this.scene.add(tmp.object);
@@ -511,6 +620,7 @@ class DynamicBones {
         toneMapped: false, transparent: true
       });
       tmp.object = new THREE.LineSegments( geom, material );
+      tmp.object.renderOrder = 999;
       tmp.object.matrix = this.armature.matrixWorld;
       tmp.object.matrixAutoUpdate = false;
       this.scene.add(tmp.object);

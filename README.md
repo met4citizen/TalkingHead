@@ -609,21 +609,22 @@ try {
       {
         bone: "ponytail1",
         type: "full",
-        stiffness: [ 20, 20, 20, 20 ],
-        damping: [ 2, 2, 2, 2 ],
+        stiffness: 20,
+        damping: 2,
         limits: [null,null,[null,0.01],null],
       },
       {
         bone: "ponytail2",
         type: "full",
-        stiffness: [ 200, 200, 200, 200 ],
-        damping: [ 10, 10, 10, 10 ]
+        stiffness: 200,
+        damping: 10,
+        pivot: true
       },
       {
         bone: "ponytail3",
         type: "full",
-        stiffness: [ 400, 400, 400, 400 ],
-        damping: [ 10, 10, 10, 140 ]
+        stiffness: 400,
+        damping: 10
       }
     ]
   });
@@ -639,13 +640,22 @@ Property | Description | Example
 --- | --- | ---
 `bone` | The name of the bone in your custom skeleton. Note that each dynamic bone must have a parent bone. | `bone: "ponytail1"`
 `type` | <ul><li>`"point"` updates only the bone's local position [x,y,z]. It is fast to calculate, but may cause skinned meshes to deform unnaturally.</li><li>`"link"` updates only the parent's quaternions.</li><li>`"mix"` uses both positions (stretch) and quaternions (rotations).</li><li>`"full"` adds bone twist to the mix.</li></ul> | `type: "full"`
-`stiffness` | An array of mass-normalized spring constants `k` [m/s^2], one for each dimension [x,y,z,t]. The forth value, twist, is only used when the type is "full". | `stiffness: [20,20,20,20]`
-`damping` | An array of mass-normalized damping coefficients `c` [1/s], one for each dimension [x,y,z,t]. The forth value, twist, is only used when the type is "full". | `damping: [2,2,2,2]`
-`limits` | Sets absolute limits [m] to negative and positive direction for each dimension [x,y,z,t]. This helps you prevent situations in which meshes overlap due to sudden movements or the amplitude gets unrealistic. Limits get applied in local space. This is an optional parameter with default value `null` (no limits). | `limits: [null,null,[null,0.01],null]`
-`helper` | If `true`, add a helper object to the scene to assist with visualizing the bone during testing. If the dynamic bone type is "point", displays only a square, otherwise also the line from parent to the bone. Optional, default value `false`. | `helper: true`
+`stiffness` | Mass-normalized spring constant `k` [m/s^2]. Either a non-negative number or an array with separate values for each dimension [x, y, z, t]. The forth value t, twist, is only used when the type is "full". | `stiffness: 20`
+`damping` | Mass-normalized damping coefficient `c` [1/s]. Either a non-negative number or an array with separate values for each dimension [x, y, z, t]. The forth value t, twist, is only used when the type is "full". | `damping: 2`
+`external` | External scaling factor between [0,1] that can be used to scale down the external forces caused by parent's movement. If set to `0`, the bone is rigid and moves with its parent without experiencing any external force. If set to `1`, the bone follows its parent with a lag (inertia) and feels the force.  OPTIONAL, default value `1.0` | `external: 0.7`
+`limits` | Sets the limiting range [low, high] for each dimension [x, y, z, t] in meters [m]. This can help prevent situations in which meshes overlap due to sudden movements or when the amplitude becomes unrealistic. Limits are applied in local space. OPTIONAL, default `null` (no limit) | `limits: [null,null,[null,0.01],null]`
+`deltaLocal` | Local position translation [dx,dy,dz] in meters [m]. OPTIONAL, default `null` | `deltaLocal: [0,0.01,0]`
+`deltaWorld` | World position translation [dx,dy,dz] in meters [m]. OPTIONAL, default `null` | `deltaWorld: [0,-0.02,0]`
+`pivot` | If `true`, the bone becomes a free-hanging bone along the Y-axis. This means that the parent's X/Z rotations are automatically compensated. Use with caution, as this requires additional computational effort, and the `limits` do not apply as usual. OPTIONAL, default `false` | `pivot: true`
+`helper` | If `true`, add a helper object to the scene to assist with visualizing the bone during testing. If the dynamic bone type is "point", displays only a square, otherwise also the line from parent to the bone. OPTIONAL, default `false` | `helper: true`
 
+
+Finding a good combination of `stiffness`, `damping`, and `external`, is mostly
+a matter of trial and error. Turn on the helper property or use the test app
+to fine-tune the settings while running animations typical to your use case.
 
 > [!TIP]
-> Finding a good combination of stiffness and damping is mostly a matter of
-trial and error. Turn on the helper property or use the test app to
-fine-tune the settings while running animations typical to your use case.
+> For dynamic bones of type `point`, you can simulate gravity by applying
+a `deltaWorld` translation down the Y-axis and compensating for
+the initial stretch in the rest pose by applying `deltaLocal` translation
+up the Y-axis.
