@@ -1,12 +1,5 @@
 # Talking Head (3D)
 
-> [!NOTE]
-> [<img src="images/geminicompetition.jpg" width="300"/>](https://ai.google.dev/competition/projects/recycling-advisor-3d)
->
-> A TalkingHead web app, **Recycling Advisor 3D**, is currently competing for the People's Choice Award in the Gemini API Developer Competition! - Watch the short demo video [here](https://ai.google.dev/competition/projects/recycling-advisor-3d) and give it a vote if you like it. 🙏
-
----
-
 ### Demo Videos
 
 Video | Description
