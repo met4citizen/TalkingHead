@@ -982,9 +982,18 @@ class TalkingHead {
       }
     }
 
+    // Find objects that we need in the animate function
+    this.objectLeftToeBase = this.armature.getObjectByName('LeftToeBase');
+    this.objectRightToeBase = this.armature.getObjectByName('RightToeBase');
+    this.objectLeftEye = this.armature.getObjectByName('LeftEye');
+    this.objectRightEye = this.armature.getObjectByName('RightEye');
+    this.objectLeftArm = this.armature.getObjectByName('LeftArm');
+    this.objectRightArm = this.armature.getObjectByName('RightArm');
+    this.objectHips = this.armature.getObjectByName('Hips');
+
     // Estimate avatar height based on eye level
     const plEye = new THREE.Vector3();
-    this.armature.getObjectByName('LeftEye').getWorldPosition(plEye);
+    this.objectLeftEye.getWorldPosition(plEye);
     this.avatarHeight = plEye.y + 0.2;
 
     // Set pose, view and start animation
@@ -1969,9 +1978,9 @@ class TalkingHead {
     box.setFromObject( this.armature );
     const ltoePos = new THREE.Vector3();
     const rtoePos = new THREE.Vector3();
-    this.armature.getObjectByName('LeftToeBase').getWorldPosition(ltoePos);
-    this.armature.getObjectByName('RightToeBase').getWorldPosition(rtoePos);
-    const hips = this.armature.getObjectByName('Hips');
+    this.objectLeftToeBase.getWorldPosition(ltoePos);
+    this.objectRightToeBase.getWorldPosition(rtoePos);
+    const hips = this.objectHips;
     hips.position.y -= box.min.y / 2;
     hips.position.x -= (ltoePos.x+rtoePos.x)/4;
     hips.position.z -= (ltoePos.z+rtoePos.z)/2;
@@ -2291,26 +2300,26 @@ class TalkingHead {
   /**
   * Set audio gain.
   * @param {number} speech Gain for speech, if null do not change
-  * @param {number} background Gain for background audio, if null do not change
+  * @param {number} [background=null] Gain for background audio, if null do not change
   * @param {number} [fadeSecs=0] Gradual exponential fade in/out time in seconds
   */
-  setMixerGain( speech, background, fadeSecs=0 ) {
+  setMixerGain( speech, background=null, fadeSecs=0 ) {
     if ( speech !== null ) {
       this.audioSpeechGainNode.gain.cancelScheduledValues(this.audioCtx.currentTime);
       if ( fadeSecs ) {
-        this.audioSpeechGainNode.gain.setValueAtTime(this.audioSpeechGainNode.gain.value, this.audioCtx.currentTime);
-        this.audioSpeechGainNode.gain.exponentialRampToValueAtTime( (speech || 0.0001), this.audioCtx.currentTime + fadeSecs );
+        this.audioSpeechGainNode.gain.setValueAtTime( Math.max( this.audioSpeechGainNode.gain.value, 0.0001), this.audioCtx.currentTime);
+        this.audioSpeechGainNode.gain.exponentialRampToValueAtTime( Math.max( speech, 0.0001), this.audioCtx.currentTime + fadeSecs );
       } else {
-        this.audioSpeechGainNode.gain.setValueAtTime( (speech || 0), this.audioCtx.currentTime);
+        this.audioSpeechGainNode.gain.setValueAtTime( speech, this.audioCtx.currentTime);
       }
     }
     if ( background !== null ) {
       this.audioBackgroundGainNode.gain.cancelScheduledValues(this.audioCtx.currentTime);
       if ( fadeSecs ) {
-        this.audioBackgroundGainNode.gain.setValueAtTime(this.audioBackgroundGainNode.gain.value, this.audioCtx.currentTime);
-        this.audioBackgroundGainNode.gain.exponentialRampToValueAtTime( (background || 0.0001), this.audioCtx.currentTime + fadeSecs );
+        this.audioBackgroundGainNode.gain.setValueAtTime( Math.max( this.audioBackgroundGainNode.gain.value, 0.0001), this.audioCtx.currentTime);
+        this.audioBackgroundGainNode.gain.exponentialRampToValueAtTime( Math.max( background, 0.0001 ), this.audioCtx.currentTime + fadeSecs );
       } else {
-        this.audioBackgroundGainNode.gain.setValueAtTime( (background || 0), this.audioCtx.currentTime);
+        this.audioBackgroundGainNode.gain.setValueAtTime( background, this.audioCtx.currentTime);
       }
     }
   }
@@ -2720,8 +2729,8 @@ class TalkingHead {
 
     // Eyes position
     const rect = this.nodeAvatar.getBoundingClientRect();
-    const lEye = this.armature.getObjectByName('LeftEye');
-    const rEye = this.armature.getObjectByName('RightEye');
+    const lEye = this.objectLeftEye;
+    const rEye = this.objectRightEye;
     lEye.updateMatrixWorld(true);
     rEye.updateMatrixWorld(true);
     const plEye = new THREE.Vector3().setFromMatrixPosition(lEye.matrixWorld);
@@ -2807,8 +2816,8 @@ class TalkingHead {
       const target = intersects[0].point;
       const LeftArmPos = new THREE.Vector3();
       const RightArmPos = new THREE.Vector3();
-      this.armature.getObjectByName('LeftArm').getWorldPosition(LeftArmPos);
-      this.armature.getObjectByName('RightArm').getWorldPosition(RightArmPos);
+      this.objectLeftArm.getWorldPosition(LeftArmPos);
+      this.objectRightArm.getWorldPosition(RightArmPos);
       const LeftD2 = LeftArmPos.distanceToSquared(target);
       const RightD2 = RightArmPos.distanceToSquared(target);
       if ( LeftD2 < RightD2 ) {
