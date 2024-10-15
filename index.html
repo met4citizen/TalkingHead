@@ -263,6 +263,7 @@
   #right textarea::placeholder { color: inherit; opacity: 0.3; }
   .emoji { cursor: pointer; pointer-events: auto; }
   #morphs .label { width: calc( 2.5 * var(--widthLabel) ); }
+  #right-sessions { scrollbar-gutter: stable; }
 
   /* Bottom panel */
   #bottom {
@@ -318,7 +319,8 @@
   .blink>ul:last-child li:last-child:after {
     -webkit-animation: blinking 1s steps(5,start) infinite;
     animation: blinking 1s steps(5,start) infinite; content: "▋";
-    margin-left: .25rem; vertical-align: baseline; white-space: nowrap;
+    position: absolute; margin: 0 0 0 .25rem; padding:0; vertical-align: baseline;
+    white-space: nowrap; width: 0; overflow: visible;
   }
 
 
@@ -2464,18 +2466,49 @@ function headLoaded(firsttime=false) {
   if ( names && names.length ) {
 
     // Director
-    d3.select("#bonesdisable")
+    d3.select("#bonesfeaturedynamic")
       .on("click", null)
       .on("click", function(ev) {
         const e = d3.select(this);
         const sel = !e.classed('selected');
         e.classed('selected', sel);
         if ( sel === true ) {
-          head.dynamicbones.stop();
-        } else {
           head.dynamicbones.start();
+        } else {
+          head.dynamicbones.stop();
         }
       })
+      .classed("selected", true)
+      .classed("disabled", false);
+    d3.select("#bonesfeatureexcludes")
+      .on("click", null)
+      .on("click", function(ev) {
+        const e = d3.select(this);
+        const sel = !e.classed('selected');
+        e.classed('selected', sel);
+        head.dynamicbones.setOptionValue("isExcludes",sel);
+      })
+      .classed("selected", true)
+      .classed("disabled", false);
+    d3.select("#bonesfeaturepivots")
+      .on("click", null)
+      .on("click", function(ev) {
+        const e = d3.select(this);
+        const sel = !e.classed('selected');
+        e.classed('selected', sel);
+        head.dynamicbones.setOptionValue("isPivots",sel);
+      })
+      .classed("selected", true)
+      .classed("disabled", false);
+    d3.select("#bonesfeaturelimits")
+      .on("click", null)
+      .on("click", function(ev) {
+        const e = d3.select(this);
+        const sel = !e.classed('selected');
+        e.classed('selected', sel);
+        head.dynamicbones.setOptionValue("isLimits",sel);
+      })
+      .classed("selected", true)
       .classed("disabled", false);
 
     // Bone testers
@@ -2503,7 +2536,11 @@ function headLoaded(firsttime=false) {
         const e = d3.select(this);
         const sel = e.classed('selected');
         e.classed('selected', !sel)
-        head.dynamicbones.showHelpers(!sel);
+        if ( sel ) {
+          head.dynamicbones.showHelpers(false);
+        } else {
+          head.dynamicbones.showHelpers(true);
+        }
       })
       .html("ALL");
 
@@ -2512,7 +2549,7 @@ function headLoaded(firsttime=false) {
       elBonesHelpers.append("div")
         .classed("command", true)
         .classed("bonehelper", true)
-        .classed("selected", head.dynamicbones.getValue(name,"helper") )
+        .classed("selected", head.dynamicbones.getValue(name,"helper") || false )
         .on('click', function(ev) {
           const e = d3.select(this);
           const sel = e.classed('selected');
@@ -2758,7 +2795,8 @@ function headLoaded(firsttime=false) {
 
   } else {
 
-    d3.select("#bonesdisable,.bonetype,#pivot,#stiffnesslock,#dampinglock")
+    d3.selectAll("#bonesfeaturedynamic,#bonesfeatureexcludes,#bonesfeaturepivots,#bonesfeaturelimits,.bonetype,#pivot,#stiffnesslock,#dampinglock")
+      .classed("selected", false)
       .classed("disabled", true)
       .on("click", null);
 
@@ -3749,6 +3787,12 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     d3.select("[data-camera-frame].selected").dispatch('click');
   });
 
+  d3.select("[data-camera-fps]").on('input.command change.command keyup.command', function(ev) {
+    let fps = parseFloat( d3.select("[data-camera-fps]").property("value") );
+    head.opt.modelFPS = fps;
+    head.animFrameDur = 1000 / fps;
+  });
+
   function setLightingData() {
     let o = {
       lightAmbientColor: d3.select("[data-light-ambient-color]").property("value"),
@@ -3879,6 +3923,17 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     } else {
       head.playBackgroundAudio(background);
     }
+  });
+
+  // Dynamic bones
+  d3.select("[data-dynamicbones-sensitivity]").on('input.command change.command keyup.command', function(ev) {
+    let factor = parseFloat( d3.select("[data-dynamicbones-sensitivity]").property("value") );
+    head.dynamicbones.setOptionValue("sensitivityFactor",factor);
+  });
+
+  d3.select("[data-dynamicbones-movement]").on('input.command change.command keyup.command', function(ev) {
+    let factor = parseFloat( d3.select("[data-dynamicbones-movement]").property("value") );
+    head.dynamicbones.setOptionValue("movementFactor",factor);
   });
 
   // Open voice background file
@@ -4630,17 +4685,54 @@ document.addEventListener('DOMContentLoaded', async function(e) {
           <div class="vbar"></div>
 
           <div class="row">
-            <div class="text label" data-i18n-text="Director"></div>
+            <div class="text label" data-i18n-text="Features"></div>
             <div class="rowWrap">
-              <div id="bonesdisable" class="command" data-i18n-text="Disable"></div>
+              <div id="bonesfeaturedynamic" class="command" data-i18n-text="DynamicBones"></div>
+              <div id="bonesfeaturelimits" class="command" data-i18n-text="Limits"></div>
+              <div id="bonesfeatureexcludes" class="command" data-i18n-text="Excludes"></div>
+              <div id="bonesfeaturepivots" class="command" data-i18n-text="Pivots"></div>
             </div>
           </div>
 
           <div class="vbar"></div>
 
           <div class="row">
-            <div class="text label" data-i18n-text="Helper"></div>
+            <div class="text label" data-i18n-text="Helpers"></div>
             <div id="boneshelpers" class="rowWrap">
+            </div>
+          </div>
+
+          <div class="vbar"></div>
+
+          <div class="row">
+            <div class="text label" data-i18n-text="Sensitivity"></div>
+            <div class="column">
+              <div class="row">
+                <div class="command" data-target="dynamicbones-sensitivity" data-range-reset="1">
+                  <svg viewBox="-2 -2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M11 9V13.1707C9.83481 13.5825 9 14.6938 9 16C9 17.6569 10.3431 19 12 19C13.6569 19 15 17.6569 15 16C15 14.6938 14.1652 13.5825 13 13.1707V9H11ZM11 16C11 15.4477 11.4477 15 12 15C12.5523 15 13 15.4477 13 16C13 16.5523 12.5523 17 12 17C11.4477 17 11 16.5523 11 16Z" fill="currentColor" />
+                    <path d="M12 5C15.866 5 19 8.13401 19 12V13H17V12C17 9.23858 14.7614 7 12 7C9.23858 7 7 9.23858 7 12V13H5V12C5 8.13401 8.13401 5 12 5Z" fill="currentColor" />
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M12 23C18.0751 23 23 18.0751 23 12C23 5.92487 18.0751 1 12 1C5.92487 1 1 5.92487 1 12C1 18.0751 5.92487 23 12 23ZM12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21Z" fill="currentColor" />
+                  </svg>
+                </div>
+                <input type="range" min="0" max="1.5" step="0.05" value="1" data-item="dynamicbones-sensitivity" data-type="value" data-range="float" data-dynamicbones-sensitivity="">
+                <div class="text">1</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="text label" data-i18n-text="Movement"></div>
+            <div class="column">
+              <div class="row">
+                <div class="command" data-target="dynamicbones-movement" data-range-reset="1">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 21.5L17.5 13L13 10L15 2.5L6.5 11L11 14L9 21.5Z" fill="currentColor" />
+                  </svg>
+                </div>
+                <input type="range" min="0" max="1.5" step="0.05" value="1" data-item="dynamicbones-movement" data-type="value" data-range="float" data-dynamicbones-movement="">
+                <div class="text">1</div>
+              </div>
             </div>
           </div>
 
@@ -4659,7 +4751,8 @@ document.addEventListener('DOMContentLoaded', async function(e) {
             <div class="rowWrap">
               <div id="bonetypepoint" class="command bonetype selected">point</div>
               <div id="bonetypelink" class="command bonetype">link</div>
-              <div id="bonetypemix" class="command bonetype">mix</div>
+              <div id="bonetypemix1" class="command bonetype">mix1</div>
+              <div id="bonetypemix2" class="command bonetype">mix2</div>
               <div id="bonetypefull" class="command bonetype">full</div>
             </div>
           </div>
@@ -5095,6 +5188,29 @@ document.addEventListener('DOMContentLoaded', async function(e) {
                 </div>
                 <input type="range" min="-3.2" max="3.2" step="0.1" value="0" data-item="camera-roty" data-type="value" data-range="radian" data-camera-roty="roty">
                 <div class="text">0 rad</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="vbar"></div>
+
+          <div class="row">
+            <div class="text label" data-i18n-text="FPS"></div>
+            <div class="column">
+              <div class="row">
+                <div class="command" data-target="camera-fps" data-range-reset="30">
+                  <svg viewBox="-2 -2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6 7C5.44772 7 5 7.44772 5 8C5 8.55228 5.44772 9 6 9C6.55228 9 7 8.55228 7 8C7 7.44772 6.55228 7 6 7Z" fill="currentColor"/>
+                    <path d="M17 8C17 7.44772 17.4477 7 18 7C18.5523 7 19 7.44772 19 8C19 8.55228 18.5523 9 18 9C17.4477 9 17 8.55228 17 8Z" fill="currentColor"/>
+                    <path d="M6 11C5.44772 11 5 11.4477 5 12C5 12.5523 5.44772 13 6 13C6.55228 13 7 12.5523 7 12C7 11.4477 6.55228 11 6 11Z" fill="currentColor"/>
+                    <path d="M17 12C17 11.4477 17.4477 11 18 11C18.5523 11 19 11.4477 19 12C19 12.5523 18.5523 13 18 13C17.4477 13 17 12.5523 17 12Z" fill="currentColor"/>
+                    <path d="M6 15C5.44772 15 5 15.4477 5 16C5 16.5523 5.44772 17 6 17C6.55228 17 7 16.5523 7 16C7 15.4477 6.55228 15 6 15Z" fill="currentColor"/>
+                    <path d="M17 16C17 15.4477 17.4477 15 18 15C18.5523 15 19 15.4477 19 16C19 16.5523 18.5523 17 18 17C17.4477 17 17 16.5523 17 16Z" fill="currentColor"/>
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M4 3C2.34315 3 1 4.34315 1 6V18C1 19.6569 2.34315 21 4 21H20C21.6569 21 23 19.6569 23 18V6C23 4.34315 21.6569 3 20 3H4ZM20 5H4C3.44772 5 3 5.44772 3 6V18C3 18.5523 3.44772 19 4 19H20C20.5523 19 21 18.5523 21 18V6C21 5.44772 20.5523 5 20 5Z" fill="currentColor"/>
+                  </svg>
+                </div>
+                <input type="range" min="24" max="60" step="1" value="30" data-item="camera-fps" data-type="value" data-range="float" data-camera-fps="">
+                <div class="text">30</div>
               </div>
             </div>
           </div>

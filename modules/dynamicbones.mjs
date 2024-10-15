@@ -25,17 +25,23 @@
 import * as THREE from 'three';
 
 // Temporary variables
-let tmp;
+let tmp,tmp2,tmp3;
 const arr = [0,0,0,0];
 const v = new THREE.Vector3();
+const v2 = new THREE.Vector3();
 const w = new THREE.Vector3();
+const w2 = new THREE.Vector3();
+const p = new THREE.Plane();
+const r = new THREE.Ray();
 const e = new THREE.Euler();
 const q = new THREE.Quaternion();
-const qq = new THREE.Quaternion();
+const q2 = new THREE.Quaternion();
 const m = new THREE.Matrix4();
 const minv = new THREE.Matrix4();
 
 // Axis
+const origin = new THREE.Vector3();
+const forward = new THREE.Vector3(0, 0, 1);
 const axisx = new THREE.Vector3(1, 0, 0);
 const axisy = new THREE.Vector3(0, 1, 0);
 const axisz = new THREE.Vector3(0, 0, 1);
@@ -46,24 +52,57 @@ class DynamicBones {
   constructor( opt = null ) {
     this.opt = Object.assign({
       warmupMs: 2000,
-      helperBoneColor: 0xff0000,
+      sensitivityFactor: 1, // Sensitivity to external forces
+      movementFactor: 1, // Scale movement
+      isExcludes: true, // Use excludes
+      isPivots: true, // Use pivots
+      isLimits: true, // Use limits
+      helperBoneColor1: 0xff0000,
+      helperBoneColor2: 0xf7c5cc,
       helperLinkColor1: 0xff0000,
-      helperLinkColor2: 0x0000ff
+      helperLinkColor2: 0x0000ff,
+      helperExcludesColor: 0xaaaaff
     }, opt || {});
 
+    this.scene = null;
     this.armature = null;
     this.config = [];
-    this.types = { point: 0, link: 1, mix: 2, full: 3 };
     this.data = []; // Dynamic bones data
     this.dict = {}; // Dictionary from bone name to data object
+    this.objectsUpdate = []; // Matrices to be update in order
     this.helpers = {
-      active: false,
-      points: { bones: [], object: null },
-      lines: { bones: [], object: null }
+      isActive: false,
+      isShowAll: false,
+      points: { bones: [], pivots: [], object: null },
+      lines: { bones: [], object: null },
+      excludes: { bones: [], deltaLocals: [], radii: [], objects: [] }
     };
     this.running = false;
     this.timerMs = 0; // Warm-up timer
 
+  }
+
+  /**
+  * Get option value.
+  *
+  * @param {string} key Option name
+  * @return {any} Option value
+  */
+  getOptionValue(key) {
+    return this.opt[key];
+  }
+
+  /**
+  * Set option value.
+  *
+  * @param {string} key Option name
+  * @param {any} val Option value
+  */
+  setOptionValue(key,val) {
+    this.opt[key] = val;
+    if ( this.helpers.isActive ) {
+      this.showHelpers();
+    }
   }
 
   /**
@@ -83,41 +122,34 @@ class DynamicBones {
   * @return {any} Property value
   */
   getValue(name, key) {
+    if ( this.scene === null ) {
+      throw new Error("Dynamic bones has not been setup yet.");
+    }
     if ( !this.dict.hasOwnProperty(name) ) {
       throw new Error("Dynamic bone '"+name+"' not found.");
     }
     const d = this.dict[name];
     let val;
     if ( key === "type" ) {
-      val = Object.keys(this.types).find(x => this.types[x] === d.type);
+      val = d.type;
     } else if ( key === "stiffness" ) {
-      if ( d.k.every( x => x === d.k[0] ) ) {
-        val = d.k[0];
-      } else {
-        val = [...d.k];
-      }
+      val = d.k.every( x => x === d.k[0] ) ? d.k[0] : [...d.k];
     } else if ( key === "damping" ) {
-      if ( d.c.every( x => x === d.c[0] ) ) {
-        val = d.c[0];
-      } else {
-        val = [...d.c];
-      }
+      val = d.c.every( x => x === d.c[0] ) ? d.c[0] : [...d.c];
     } else if ( key === "external" ) {
-      if ( d.ext < 1.0 ) {
-        val = d.ext
-      } else {
-        val = null;
-      }
+      val = ( d.ext < 1.0 ) ? d.ext : null;
     } else if ( key === "limits" ) {
-      val = d.limits?.map( x => {
-        if ( x === null ) {
-          return null;
-        } else {
-          return [...x];
-        }
-      });
+      val = d.limits?.map( x => ( x === null ) ? null : [...x] );
     } else if ( key === "deltaLocal" ) {
       val = d.dl ? [...d.dl] : null;
+    } else if ( key === "excludes" ) {
+      val = d.excludes ? [...d.excludes.map( x => {
+        const o = { bone: x.bone.name.slice(), radius: x.radius };
+        if ( x.deltaLocal ) {
+          o.deltaLocal = [...x.deltaLocal];
+        }
+        return o;
+      })] : null;
     } else if ( key === "deltaWorld" ) {
       val = d.dw ? [...d.dw] : null;
     } else if ( key === "pivot" ) {
@@ -138,18 +170,36 @@ class DynamicBones {
   * @param {any} val Property value
   */
   setValue(name, key, val) {
+    if ( this.scene === null ) {
+      throw new Error("Dynamic bones has not been setup yet.");
+    }
     if ( !this.dict.hasOwnProperty(name) ) {
       throw new Error("Dynamic bone '"+name+"' not found.");
     }
     const d = this.dict[name];
     if ( key === "type" ) {
-
       if ( !val ) throw new Error("Parameter 'type' not set.");
       if ( typeof val !== "string" ) throw new Error( "Type must be a string." );
-      if ( !this.types.hasOwnProperty(val), "Type '" + val + "' not supported." );
-      d.type = this.types[val];
-      d.dim = d.type === 3 ? 4 : 3;
-
+      switch(val) {
+      case "point":
+        d.isPoint = true; d.isX = true; d.isY = true; d.isZ = true; d.isT = false;
+        break;
+      case "link":
+        d.isPoint = false; d.isX = true; d.isY = false; d.isZ = true; d.isT = false;
+        break;
+      case "mix1":
+        d.isPoint = false; d.isX = true; d.isY = true; d.isZ = true; d.isT = false;
+        break;
+      case "mix2":
+        d.isPoint = false; d.isX = true; d.isY = false; d.isZ = true; d.isT = true;
+        break;
+      case "full":
+        d.isPoint = false; d.isX = true; d.isY = true; d.isZ = true; d.isT = true;
+        break;
+      default:
+        throw new Error( "Unknown type'" + val + "'." );
+      }
+      d.type = val.slice();
     } else if ( key === "stiffness" ) {
       if ( !val ) throw new Error( "Parameter 'stiffness' not set." );
       if ( !Number.isNaN(val) && val >= 0 ) {
@@ -191,6 +241,38 @@ class DynamicBones {
         ];
       }
 
+    } else if ( key === "excludes" ) {
+
+      if ( val === null || val === undefined ) {
+        d.excludes = null;
+      } else {
+        if ( !Array.isArray(val) ) throw new Error( "Excludes (if set) must null, or an array." );
+        d.excludes = [];
+        val.forEach( (x,i) => {
+          if ( !x.bone ) throw new Error("Bone not specified in #" + i + " exclude." );
+          if ( typeof x.bone !== "string" || x.bone.length === 0 ) throw new Error("Bone name must be a non-empty string in #" + i + " exclude." );
+          const bone = this.armature.getObjectByName( x.bone );
+          if ( !bone ) throw new Error("Bone '" + x.bone + "' not found in #" + i + " exclude." );
+          if ( Number.isNaN(x.radius) && x.radius >= 0 ) throw new Error("Radius must be a non-negative number in #" + i + " exclude." );
+
+          const o = {
+            bone: bone, // Bone object
+            radius: x.radius, // Radius
+            radiusSq: x.radius * x.radius, // Radius squared
+            deltaLocal: null
+          };
+
+          if ( x.deltaLocal ) {
+            if ( !Array.isArray(x.deltaLocal) || x.deltaLocal.length !== 3 || x.deltaLocal.some( y => Number.isNaN(y) ) ) throw new Error("deltaLocal must be an array of three numbers in #" + i + " exclude." );
+            o.deltaLocal = [...x.deltaLocal];
+          }
+
+          d.excludes.push(o);
+        });
+      }
+
+      this.showHelpers();
+
     } else if ( key === "helper" ) {
 
       if ( val === null || val === undefined ) {
@@ -208,7 +290,7 @@ class DynamicBones {
         d.pivot = null;
       } else {
         if ( val !== false && val !== true ) throw new Error( "Pivot, if set, must be false or true." );
-        if ( val === true && d.type === "point" ) throw new Error( "Point type bone can't be a pivot." );
+        if ( val === true && d.type === 0 ) throw new Error( "Point type bone can't be a pivot." );
         d.pivot = val;
       }
 
@@ -248,12 +330,72 @@ class DynamicBones {
 
       const o = { bone: d.name.slice() };
       ["type","stiffness","damping","external","deltaLocal",
-      "deltaWorld","limits","pivot","helper"].forEach( x => {
+      "deltaWorld","limits","excludes","pivot","helper"].forEach( x => {
         tmp = this.getValue(d.name,x);
         if ( tmp ) o[x] = tmp;
       });
       return o;
     });
+  }
+
+  /**
+  * Sort bones so that they get updated in optimal order.
+  */
+  sortBones() {
+
+    if ( this.scene === null ) {
+      throw new Error("Dynamic bones has not been setup yet.");
+    }
+
+    // Order for all bones
+    let i = 0;
+    const objectsOrder = new WeakMap();
+    this.armature.traverse( x => {
+      if ( !objectsOrder.has(x) ) {
+        objectsOrder.set(x,i);
+        i++;
+      }
+    });
+
+    // Order data
+    this.data.sort( (a,b) => objectsOrder.get(a.bone) - objectsOrder.get(b.bone) );
+
+    // Find children
+    this.data.forEach( x => {
+      tmp = this.dict[x.boneParent.name];
+      if ( tmp ) {
+        if ( !tmp.children ) tmp.children = [];
+        tmp.children.push(x);
+      }
+    });
+
+    // Get all dynamic bones, excluded bones, and their ancestry, only unique
+    this.objectsUpdate = [];
+    const objectsSet = new WeakSet();
+    const getParents = (x) => {
+      return (x.parent?.isBone) ? [x,...getParents( x.parent )] : [x];
+    };
+    const addObject = (x) => {
+      const o = getParents(x);
+      o.forEach( y => {
+        if ( !objectsSet.has(y) ) {
+          this.objectsUpdate.push(y);
+          objectsSet.add(y);
+        }
+      });
+    };
+    this.data.forEach( x => {
+      addObject(x.bone);
+      if ( x.excludes ) {
+        x.excludes.forEach( y => {
+          addObject(y.bone);
+        });
+      }
+    });
+
+    // Sort in optimal order
+    this.objectsUpdate.sort( (a,b) => objectsOrder.get(a) - objectsOrder.get(b) );
+
   }
 
 
@@ -307,9 +449,9 @@ class DynamicBones {
         name: name, // Bone name
         bone: bone, // Bone object
         boneParent: bone.parent, /// Bone's parent object
-        vBasis: bone.position.clone(), // Local position
+        vBasis: bone.position.clone(), // Original local position
         vWorld: bone.parent.getWorldPosition(v).clone(), // World position, parent
-        qBasis: bone.parent.quaternion.clone(), // Local quaternion, parent
+        qBasis: bone.parent.quaternion.clone(), // Original quaternion, parent
         l: bone.position.length(), // Bone length
         p: [0,0,0,0], // Relative position [m]
         v: [0,0,0,0], // Velocity [m/s]
@@ -317,6 +459,12 @@ class DynamicBones {
         ev: [0,0,0,0], // External velocity [m/s]
         ea: [0,0,0,0] //  External acceleration [m/s^2]
       };
+
+      // Set pivot/gravity baseline
+      o.boneParent.matrixWorld.decompose( v, q, w ); // World quaternion q
+      v.copy(forward).applyQuaternion(q).setY(0).normalize(); // Project to XZ-plane
+      q.premultiply( q2.setFromUnitVectors(forward,v).invert() ).normalize();
+      o.qWorldInverseYaw = q.clone().normalize(); // Only the yaw rotation
 
       // Add to data and dictionary
       this.data.push(o);
@@ -329,6 +477,7 @@ class DynamicBones {
         this.setValue(name, "damping", item.damping);
         this.setValue(name, "external", item.external);
         this.setValue(name, "limits", item.limits);
+        this.setValue(name, "excludes", item.excludes);
         this.setValue(name, "deltaLocal", item.deltaLocal);
         this.setValue(name, "deltaWorld", item.deltaWorld);
         this.setValue(name, "pivot", item.pivot);
@@ -337,39 +486,16 @@ class DynamicBones {
         check( false, id + error );
       }
 
-      // Set gravity baseline
-      if ( o.type > 0 ) {
-
-        // Remove the yaw from the world quaternion
-        // - Get world quaternion
-        // - Extract the forward direction (Z-axis) and project it
-        //   onto the XZ-plane (remove the Y component)
-        // - Create a quaternion that represents only the yaw rotation
-        bone.parent.matrixWorld.decompose( v, q, tmp );
-        v.copy(axisz).applyQuaternion(q).setComponent(1,0).normalize();
-        q.premultiply( qq.setFromUnitVectors(axisz,v).invert() );
-        o.qWorldInverseYaw = q.clone().normalize();
-      }
-
     });
 
-    // Order data and find roots
-    let i = 0;
-    this.armature.traverse( x => {
-      if ( x.isBone && this.dict.hasOwnProperty(x.name) ) {
-        this.dict[x.name].index = i;
-        i++;
-      }
-    });
-    this.data.sort( (a,b) => a.index - b.index );
-    this.data.forEach( x => {
-      x.isRoot = !this.dict.hasOwnProperty(x.boneParent.name);
-    });
+    // Sort bones
+    this.sortBones();
 
     // We are OK to go!
     this.start();
 
   }
+
 
   /**
   * Animate dynamic bones.
@@ -380,22 +506,31 @@ class DynamicBones {
     // Are we running?
     if ( !this.running ) return;
 
+    let i,j,l,k,d;
+
     // Timing
-    const ds = dt / 1000; // delta time [s]
     this.timerMs += dt; // Warmup timer
     if ( dt > 1000) this.timerMs = 0; // Odd update, so we warmup
+    dt /= 1000; // delta time to seconds [s]
+
+    // Update all bone matrices in optimal order, only once
+    for( i=0, l=this.objectsUpdate.length; i<l; i++ ) {
+      d = this.objectsUpdate[i];
+      d.updateMatrix();
+      if ( d.parent === null ) {
+				d.matrixWorld.copy( d.matrix );
+			} else {
+				d.matrixWorld.multiplyMatrices( d.parent.matrixWorld, d.matrix );
+			}
+      d.matrixWorldNeedsUpdate = false;
+    }
 
     // Data
-    for( let i=0, l=this.data.length; i<l; i++ ) {
-      const d = this.data[i];
+    for( i=0, l=this.data.length; i<l; i++ ) {
+      d = this.data[i];
 
       // Get parent's world displacement and update world position
       v.copy(d.vWorld); // Previous position
-      if ( d.isRoot ) {
-        d.bone.updateWorldMatrix( true, false ); // Roots update parents
-      } else {
-        d.bone.updateMatrixWorld();
-      }
       m.copy( d.boneParent.matrixWorld );
       minv.copy(m).invert();
       d.vWorld.setFromMatrixPosition( m ); // Update position
@@ -407,18 +542,38 @@ class DynamicBones {
         v.setLength(0.5);
       }
 
-      arr[0] = d.ext * v.x;
-      arr[1] = d.ext * v.y;
-      arr[2] = d.ext * -v.z;
-      arr[3] = d.ext * v.length() / 3; // TODO: Hack, fix this in later versions
+      // External effect, parent
+      v.applyQuaternion(d.bone.quaternion);
+      arr[0] = v.x;
+      arr[1] = v.y;
+      arr[2] = -v.z;
+      arr[3] = v.length() / 3; // TODO: Hack, fix this in later versions
 
-      // Simulate each dimension using Velocity Verlet integration
-      for( let j=0, l=d.dim; j<l; j++ ) {
+      // External effect, children
+      if ( d.children ) {
+        for( j=0, k=d.children.length; j<k; j++ ) {
+          tmp = d.children[j];
+          arr[0] -= tmp.v[0] * dt / 3;
+          arr[1] -= tmp.v[1] * dt / 3;
+          arr[2] += tmp.v[2] * dt / 3;
+          arr[3] -= tmp.v[3] * dt / 3;
+        }
+      }
+
+      // External effect, scale
+      tmp = this.opt.sensitivityFactor;
+      arr[0] *= d.ext * tmp;
+      arr[1] *= d.ext * tmp;
+      arr[2] *= d.ext * tmp;
+      arr[3] *= d.ext * tmp;
+
+
+      if ( d.isX ) {
 
         // External force/velocity due to drag
-        tmp = arr[j] / ds;
-        d.ea[j] = (tmp - d.ev[j]) / ds; // External acceleration
-        d.ev[j] = tmp; // External velocity
+        tmp = arr[0] / dt;
+        d.ea[0] = (tmp - d.ev[0]) / dt; // External acceleration
+        d.ev[0] = tmp; // External velocity
 
         // VELOCITY VERLET INTEGRATION
         //
@@ -436,28 +591,69 @@ class DynamicBones {
         // 5. Corrected velocity:
         //      v_n+1 = v_n + 1/2 * (a_n + a_n+1) * dt
         //
-        d.a[j] = - d.k[j] * d.p[j] - d.c[j] * d.v[j] - d.ea[j];
-        d.p[j] += d.v[j] * ds + d.a[j] * ds * ds / 2 + arr[j];
-        tmp = d.v[j] + d.a[j] * ds / 2;
-        tmp = - d.k[j] * d.p[j] - d.c[j] * tmp - d.ea[j];
-        d.v[j] = d.v[j] + (tmp + d.a[j]) * ds / 2; // Iterated velocity
+        d.a[0] = - d.k[0] * d.p[0] - d.c[0] * d.v[0] - d.ea[0];
+        d.p[0] += d.v[0] * dt + d.a[0] * dt * dt / 2 + arr[0];
+        tmp = d.v[0] + d.a[0] * dt / 2;
+        tmp = - d.k[0] * d.p[0] - d.c[0] * tmp - d.ea[0];
+        d.v[0] = d.v[0] + (tmp + d.a[0]) * dt / 2; // Iterated velocity
+      }
 
+      if ( d.isY ) {
+        tmp = arr[1] / dt;
+        d.ea[1] = (tmp - d.ev[1]) / dt; // External acceleration
+        d.ev[1] = tmp; // External velocity
+
+        d.a[1] = - d.k[1] * d.p[1] - d.c[1] * d.v[1] - d.ea[1];
+        d.p[1] += d.v[1] * dt + d.a[1] * dt * dt / 2 + arr[1];
+        tmp = d.v[1] + d.a[1] * dt / 2;
+        tmp = - d.k[1] * d.p[1] - d.c[1] * tmp - d.ea[1];
+        d.v[1] = d.v[1] + (tmp + d.a[1]) * dt / 2; // Iterated velocity
+      }
+
+      if ( d.isZ ) {
+        tmp = arr[2] / dt;
+        d.ea[2] = (tmp - d.ev[2]) / dt; // External acceleration
+        d.ev[2] = tmp; // External velocity
+
+        d.a[2] = - d.k[2] * d.p[2] - d.c[2] * d.v[2] - d.ea[2];
+        d.p[2] += d.v[2] * dt + d.a[2] * dt * dt / 2 + arr[2];
+        tmp = d.v[2] + d.a[2] * dt / 2;
+        tmp = - d.k[2] * d.p[2] - d.c[2] * tmp - d.ea[2];
+        d.v[2] = d.v[2] + (tmp + d.a[2]) * dt / 2; // Iterated velocity
+      }
+
+      if ( d.isT ) {
+        tmp = arr[3] / dt;
+        d.ea[3] = (tmp - d.ev[3]) / dt; // External acceleration
+        d.ev[3] = tmp; // External velocity
+
+        d.a[3] = - d.k[3] * d.p[3] - d.c[3] * d.v[3] - d.ea[3];
+        d.p[3] += d.v[3] * dt + d.a[3] * dt * dt / 2 + arr[3];
+        tmp = d.v[3] + d.a[3] * dt / 2;
+        tmp = - d.k[3] * d.p[3] - d.c[3] * tmp - d.ea[3];
+        d.v[3] = d.v[3] + (tmp + d.a[3]) * dt / 2; // Iterated velocity
       }
 
       // Warmup
       if ( this.timerMs < this.opt.warmupMs ) {
-        // d.bone.position.copy( d.vBasis );
-        for( let j=0, l=d.dim; j<l; j++ ){
-          d.v[j] *= 0.0001;
-          d.p[j] *= 0.0001;
-        }
+        d.v[0] *= 0.0001; d.p[0] *= 0.0001;
+        d.v[1] *= 0.0001; d.p[1] *= 0.0001;
+        d.v[2] *= 0.0001; d.p[2] *= 0.0001;
+        d.v[3] *= 0.0001; d.p[3] *= 0.0001;
       }
 
-      // Delta positions
+      // Positions relative to basis
       arr[0] = d.p[0];
       arr[1] = d.p[1];
       arr[2] = d.p[2];
       arr[3] = d.p[3];
+
+      // Scale movement
+      tmp = this.opt.movementFactor;
+      arr[0] *= tmp;
+      arr[1] *= tmp;
+      arr[2] *= tmp;
+      arr[3] *= tmp;
 
       // Delta local
       if ( d.dl ) {
@@ -486,7 +682,7 @@ class DynamicBones {
       }
 
       // Limits
-      if ( d.limits ) {
+      if ( d.limits && this.opt.isLimits ) {
         tmp = d.limits;
         if ( tmp[0] ) {
           if ( tmp[0][0] !== null && arr[0] < tmp[0][0] ) arr[0] = tmp[0][0];
@@ -507,49 +703,108 @@ class DynamicBones {
       }
 
       // Apply move
-      if ( d.type === 0 ) {
+      if ( d.isPoint ) {
 
         // Point: set position
         d.bone.position.set(
           d.vBasis.x + arr[0],
           d.vBasis.y + arr[1],
-          d.vBasis.z + arr[2]
+          d.vBasis.z - arr[2]
         );
 
       } else {
 
-        // Link: set parent quaternion
+        // Baseline orientation, either original or free hanging
         d.boneParent.quaternion.copy(d.qBasis);
-
-        // Pivot, EXPERIMENTAL
-        if ( d.pivot ) {
-          d.boneParent.getWorldQuaternion(q);
-          v.copy(axisz).applyQuaternion(q).setComponent(1,0).normalize();
-          q.premultiply( qq.setFromUnitVectors(axisz,v).invert() );
+        if ( d.pivot && this.opt.isPivots ) {
+          d.boneParent.updateWorldMatrix(false,false);
+          d.boneParent.matrixWorld.decompose( v, q, w );
+          v.copy(forward).applyQuaternion(q).setY(0).normalize();
+          q.premultiply( q2.setFromUnitVectors(forward,v).invert() ).normalize();
           d.boneParent.quaternion.multiply(q.invert());
           d.boneParent.quaternion.multiply(d.qWorldInverseYaw);
         }
 
-        tmp = Math.atan( arr[0] / d.l );
-        q.setFromAxisAngle(axisz, -tmp);
-        d.boneParent.quaternion.multiply(q);
-        tmp = Math.atan( arr[2] / d.l );
-        q.setFromAxisAngle(axisx, -tmp);
-        d.boneParent.quaternion.multiply(q);
-        if ( d.type === 3 ) {
-          // Full: twist the bones
+        if ( d.isZ ) {
+          tmp = Math.atan( arr[0] / d.l );
+          q.setFromAxisAngle(axisz, -tmp);
+          d.boneParent.quaternion.multiply(q);
+        }
+
+        if ( d.isY ) {
+          tmp = d.l / 3;
+          tmp = tmp * Math.tanh( arr[1] / tmp );
+          d.bone.position.setLength( d.l + tmp );
+        }
+
+        if ( d.isX ) {
+          tmp = Math.atan( arr[2] / d.l );
+          q.setFromAxisAngle(axisx, -tmp);
+          d.boneParent.quaternion.multiply(q);
+        }
+
+        if ( d.isT ) {
           tmp = 1.5 * Math.tanh( arr[3] * 1.5 );
           q.setFromAxisAngle(axisy, -tmp);
           d.boneParent.quaternion.multiply(q);
         }
-        d.boneParent.updateMatrixWorld();
 
-        if ( d.type > 1 ) {
-          // Mix/full: set length, limit delta to on third of the length
-          tmp = d.l / 3;
-          tmp = tmp * Math.tanh( arr[1] / tmp );
-          d.bone.position.setLength( d.l + tmp );
-          d.bone.updateMatrixWorld();
+        // Update world
+        d.boneParent.updateWorldMatrix(false,true);
+
+        // Excluded zones
+        if ( d.excludes && this.opt.isExcludes ) {
+          for( j=0, k=d.excludes.length; j<k; j++ ) {
+            tmp = d.excludes[j];
+
+            // Zone and the bone
+            w.set(0,0,0);
+            if ( tmp.deltaLocal ) {
+              w.x += tmp.deltaLocal[0];
+              w.y += tmp.deltaLocal[1];
+              w.z += tmp.deltaLocal[2];
+            }
+            w.applyMatrix4(tmp.bone.matrixWorld);
+            minv.copy(d.boneParent.matrixWorld).invert();
+            w.applyMatrix4(minv);
+            v.copy(d.bone.position);
+
+            // Continue, if the bone is not inside the zone OR
+            // the spheres do not intersect (e.g. one inside the other)
+            if ( v.distanceToSquared(w) >= tmp.radiusSq ) continue;
+            tmp3 = v.length();
+            tmp2 = w.length();
+            if ( tmp2 > tmp.radius + tmp3 ) continue;
+            if ( tmp2 < Math.abs( tmp.radius - tmp3 ) ) continue;
+
+            // Intersection circle
+            tmp2 = (tmp2*tmp2 + tmp3*tmp3 - tmp.radiusSq) / (2 * tmp2);
+            w.normalize(); // Normal vector
+            w2.copy(w).multiplyScalar(tmp2); // Center
+            tmp2 = Math.sqrt(tmp3*tmp3 - tmp2 * tmp2); // Radius
+
+            // Project the bone on the circle
+            v.subVectors(v,w2).projectOnPlane(w).normalize().multiplyScalar(tmp2);
+
+            // Direction vector the defines the correct half of the intersection circle
+            v2.subVectors(d.vBasis,w2).projectOnPlane(w).normalize();
+
+            // Check that the point is on the right half, if not, project
+            tmp3 = v2.dot(v);
+            if ( tmp3 < 0 ) {
+              tmp3 = Math.sqrt(tmp2 * tmp2 - tmp3 * tmp3); // Projection factor
+              v2.multiplyScalar(tmp3);
+              v.add(v2);
+            }
+
+            // Rotate
+            v.add(w2).normalize();
+            w.copy(d.bone.position).normalize();
+            q.setFromUnitVectors(w,v);
+            d.boneParent.quaternion.premultiply(q);
+            d.boneParent.updateWorldMatrix(false,true);
+
+          }
         }
 
       }
@@ -557,7 +812,7 @@ class DynamicBones {
     }
 
     // Update helper
-    if ( this.helpers.active ) {
+    if ( this.helpers.isActive ) {
       this.updateHelpers();
     }
 
@@ -566,39 +821,87 @@ class DynamicBones {
   /**
   * Add dynamic bone helpers to the scene.
   *
-  * @param {boolean} [all=false] If true, add all, otherwise only flagged bones
+  * @param {boolean} all Show all or just flagged, if not set, use previous mode
+  * @param {boolean} [keepSetting=false] If true, keep the previos all setting
   */
-  showHelpers(all=false) {
+  showHelpers(all) {
 
     // Remove previous helpers, if any
     this.hideHelpers();
+    this.helpers.isShowAll = (all === undefined) ? this.helpers.isShowAll : (all === true);
 
     // Find out the bones with helper set to true
     tmp = this.helpers;
     this.data.forEach( d => {
-      if ( all || d.helper === true ) {
-        tmp.active = true;
+      if ( this.helpers.isShowAll || d.helper === true ) {
         tmp.points.bones.push( d.bone );
+        tmp.points.pivots.push( d.pivot );
         if ( d.type !== 0 ) {
           tmp.lines.bones.push( d.bone );
+        }
+        if ( d.excludes ) {
+          d.excludes.forEach( x => {
+            let found = false;
+            for( let i=0; i<tmp.excludes.bones.length; i++ ) {
+              if ( tmp.excludes.bones[i] !== x.bone ) continue;
+              if ( tmp.excludes.radii[i] !== x.radius ) continue;
+              if ( tmp.excludes.deltaLocals[i] === null && x.deltaLocal !== null ) continue;
+              if ( tmp.excludes.deltaLocals[i] !== null && x.deltaLocal === null ) continue;
+              if ( tmp.excludes.deltaLocals[i] !== null && tmp.excludes.deltaLocals[i].some( (y,j) => y !== x.deltaLocal[j] ) ) continue;
+              found = true;
+              break;
+            }
+            if ( !found ) {
+              tmp.excludes.bones.push( x.bone );
+              tmp.excludes.radii.push( x.radius );
+              tmp.excludes.deltaLocals.push( x.deltaLocal ? [...x.deltaLocal] : null );
+              tmp.excludes.objects.push( null );
+            }
+          });
         }
       }
     });
 
-    let geom, vertices, colors, material;
+    // Create constraint helpers
+    tmp = this.helpers.excludes;
+    if ( this.opt.isExcludes && tmp.bones.length ) {
+      tmp.bones.forEach( (x,i) => {
+        const geom = new THREE.SphereGeometry( tmp.radii[i], 6, 6 );
+        const material = new THREE.MeshBasicMaterial( {
+          depthTest: false, depthWrite: false, toneMapped: false,
+          transparent: true, wireframe: true,
+          color: this.opt.helperExcludesColor
+        });
+        tmp.objects[i] = new THREE.Mesh( geom, material );
+        tmp.objects[i].renderOrder = 997;
+        x.add(tmp.objects[i]);
+        if ( tmp.deltaLocals[i] ) {
+          tmp.objects[i].position.set(
+            tmp.deltaLocals[i][0],
+            tmp.deltaLocals[i][1],
+            tmp.deltaLocals[i][2]
+          );
+        }
+      });
+    }
 
     // Create points helpers
     tmp = this.helpers.points;
     if ( tmp.bones.length ) {
-      geom = new THREE.BufferGeometry();
-      vertices = Array( tmp.bones.length ).fill([0,0,0]).flat();
+      this.helpers.isActive = true;
+      const geom = new THREE.BufferGeometry();
+      const vertices = tmp.bones.map( x => [0,0,0] ).flat();
       geom.setAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
-      material = new THREE.PointsMaterial( {
+      const c1 = new THREE.Color( this.opt.helperBoneColor1 );
+      const c2 = new THREE.Color( this.opt.helperBoneColor2 );
+      const colors = tmp.pivots.map( x => (x && this.opt.isPivots) ? [c2.r,c2.g,c2.b] : [c1.r,c1.g,c1.b] ).flat();
+      geom.setAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
+      const material = new THREE.PointsMaterial( {
         depthTest: false, depthWrite: false, toneMapped: false,
-        transparent: true, color: this.opt.helperBoneColor, size: 0.2
+        transparent: true, size: 0.2, vertexColors: true
       });
       tmp.object = new THREE.Points( geom, material );
-      tmp.object.renderOrder = 999;
+      tmp.object.renderOrder = 998;
       tmp.object.matrix = this.armature.matrixWorld;
       tmp.object.matrixAutoUpdate = false;
       this.scene.add(tmp.object);
@@ -607,15 +910,14 @@ class DynamicBones {
     // Create lines helper
     tmp = this.helpers.lines;
     if ( tmp.bones.length ) {
-      this.helpers.active = true;
-      geom = new THREE.BufferGeometry();
-      vertices = Array( tmp.bones.length ).fill([0,0,0,0,0,0]).flat();
+      const geom = new THREE.BufferGeometry();
+      const vertices = tmp.bones.map( x => [0,0,0,0,0,0] ).flat();
       geom.setAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
       const c1 = new THREE.Color( this.opt.helperLinkColor1 );
       const c2 = new THREE.Color( this.opt.helperLinkColor2 );
-      colors = Array( tmp.bones.length ).fill([c1.r,c1.g,c1.b,c2.r,c2.g,c2.b]).flat();
+      const colors = tmp.bones.map( x => [c1.r,c1.g,c1.b,c2.r,c2.g,c2.b] ).flat();
       geom.setAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
-      material = new THREE.LineBasicMaterial( {
+      const material = new THREE.LineBasicMaterial( {
         vertexColors: true, depthTest: false, depthWrite: false,
         toneMapped: false, transparent: true
       });
@@ -671,16 +973,33 @@ class DynamicBones {
   */
   hideHelpers() {
 
+    // Hide points and lines
     [ this.helpers.points, this.helpers.lines ].forEach( x => {
       x.bones = [];
       if ( x.object ) {
+        this.scene.remove( x.object );
         x.object.geometry.dispose();
         x.object.material.dispose();
-        this.scene.remove( x.object );
         x.object = null
       }
     });
-    this.helpers.active = false;
+
+    // Hide contraints
+    tmp = this.helpers.excludes;
+    tmp.objects.forEach( (y,i) => {
+      if ( y ) {
+        tmp.bones[i].remove( y );
+        y.geometry.dispose();
+        y.material.dispose();
+      }
+    });
+    tmp.bones = [];
+    tmp.deltaLocals = [];
+    tmp.radii = [];
+    tmp.objects = [];
+
+    // De-activate
+    this.helpers.isActive = false;
 
   }
 
@@ -724,6 +1043,7 @@ class DynamicBones {
     this.config = [];
     this.data = [];
     this.dict = {};
+    this.objectsUpdate = [];
     this.timerMs = 0;
 
   }
