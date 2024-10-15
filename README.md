@@ -4,7 +4,8 @@
 
 Video | Description
 --- | ---
-<span style="display: block; min-width:400px">[<img src="images/dynamicbones.jpg" width="400"/>](https://youtu.be/YUbDIWkskuw)</span> | A short demo of the dynamic bones feature 🦴🦴 See Appendix E for more details.
+<span style="display: block; min-width:400px">[<img src="images/dynamicbones2.jpg" width="400"/>](https://youtu.be/4Y9NFnENH5s)</span> | Having a good hair day — a follow-up to our previous video about dynamic bones. This time, we're focusing on pivot bones and exclude zones. See Appendix E for more details.
+[<img src="images/dynamicbones.jpg" width="400"/>](https://youtu.be/YUbDIWkskuw) | A short demo of the dynamic bones feature 🦴🦴
 [<img src="images/screenshot4.jpg" width="400"/>](https://youtu.be/OA6LBZjkzJI) | I chat with Jenny and Harri. The close-up view allows you to evaluate the accuracy of lip-sync in both English and Finnish. Using GPT-3.5 and Microsoft text-to-speech.
 [<img src="images/screenshot5.jpg" width="400"/>](https://youtu.be/fJrYGaGCAGo) | A short demo of how AI can control the avatar's movements. Using OpenAI's function calling and Google TTS with the TalkingHead's built-in viseme generation.
 [<img src="images/screenshot6.jpg" width="400"/>](https://youtu.be/6XRxALY1Iwg) | Michael lip-syncs to two MP3 audio tracks using OpenAI's Whisper and TalkingHead's `speakAudio` method. He kicks things off with some casual talk, but then goes all out by trying to tackle an old Meat Loaf classic. 🤘 Keep rockin', Michael! 🎤😂
@@ -194,7 +195,7 @@ Method | Description
 `setMood(mood)` | Set avatar mood.
 `playBackgroundAudio(url)` | Play background audio such as ambient sounds/music in a loop.
 `stopBackgroundAudio()` | Stop playing the background audio.
-`setMixerGain(speech, background, [fadeSecs=0])` | The amount of gain for speech and background audio (see Web Audio API / GainNode for more information). Optional `fadeSecs` parameter sets exponential fade in/out time in seconds.
+`setMixerGain(speech, [background=null], [fadeSecs=0])` | The amount of gain for speech and background audio (see Web Audio API / GainNode for more information). Value `null` means no change. Optional `fadeSecs` parameter sets exponential fade in/out time in seconds.
 `playAnimation(url, [onprogress=null], [dur=10], [ndx=0], [scale=0.01])` | Play Mixamo animation file for `dur` seconds, but full rounds and at least once. If the FBX file includes several animations, the parameter `ndx` specifies the index. Since Mixamo rigs have a scale 100 and RPM a scale 1, the `scale` factor can be used to scale the positions.
 `stopAnimation()` | Stop the current animation started by `playAnimation`.
 `playPose(url, [onprogress=null], [dur=5], [ndx=0], [scale=0.01])` | Play the initial pose of a Mixamo animation file for `dur` seconds. If the FBX file includes several animations, the parameter `ndx` specifies the index. Since Mixamo rigs have a scale 100 and RPM a scale 1, the `scale` factor can be used to scale the positions.
@@ -260,6 +261,7 @@ Licenses, attributions and notes related to the `index.html` web app assets:
 
 - The app uses [Marked](https://github.com/markedjs/marked) Markdown parser and [DOMPurify](https://github.com/cure53/DOMPurify) XSS sanitizer.
 - Fira Sans Condensed and Fira Sans Extra Condensed fonts are licensed under the SIL Open Font License, version 1.1, available with a FAQ at [http://scripts.sil.org/OFL](http://scripts.sil.org/OFL). Digitized data copyright (c) 2012-2015, The Mozilla Foundation and Telefonica S.A.
+- SVG icons from [css.gg](https://github.com/astrit/css.gg), MIT License (versions prior to license update).
 - Example avatar "brunette.glb" was created at [Ready Player Me](https://readyplayer.me/). The avatar is free to all developers for non-commercial use under the [CC BY-NC 4.0 DEED](https://creativecommons.org/licenses/by-nc/4.0/). If you want to integrate Ready Player Me avatars into a commercial app or game, you must sign up as a Ready Player Me developer.
 - Example animation `walking.fbx` and the pose `dance.fbx` are from Mixamo, a subsidiary of Adobe Inc. [Mixamo](https://www.mixamo.com) service is free and its animations/poses (>2000) can be used royalty free for personal, commercial, and non-profit projects. Raw animation files can't be distributed outside the project team and can't be used to train ML models.
 - Background view examples are from [Virtual Backgrounds](https://virtualbackgrounds.site)
@@ -607,24 +609,16 @@ try {
     lipsyncLang: 'en',
     modelDynamicBones: [
       {
-        bone: "ponytail1",
-        type: "full",
-        stiffness: 20,
-        damping: 2,
+        bone: "ponytail1", type: "full", stiffness: 20, damping: 2,
         limits: [null,null,[null,0.01],null],
       },
       {
-        bone: "ponytail2",
-        type: "full",
-        stiffness: 200,
-        damping: 10,
+        bone: "ponytail2", type: "full", stiffness: 200, damping: 10,
         pivot: true
       },
       {
-        bone: "ponytail3",
-        type: "full",
-        stiffness: 400,
-        damping: 10
+        bone: "ponytail3", type: "full", stiffness: 400, damping: 10,
+        excludes: [{"bone":"Head","deltaLocal":[0,0.05,0.02],"radius":0.13}]
       }
     ]
   });
@@ -639,7 +633,7 @@ can be configured using the following properties:
 Property | Description | Example
 --- | --- | ---
 `bone` | The name of the bone in your custom skeleton. Note that each dynamic bone must have a parent bone. | `bone: "ponytail1"`
-`type` | <ul><li>`"point"` updates only the bone's local position [x,y,z]. It is fast to calculate, but may cause skinned meshes to deform unnaturally.</li><li>`"link"` updates only the parent's quaternions.</li><li>`"mix"` uses both positions (stretch) and quaternions (rotations).</li><li>`"full"` adds bone twist to the mix.</li></ul> | `type: "full"`
+`type` | <ul><li>`"point"` updates only the bone's local position [x,y,z]. It is fast to calculate, but may cause skinned meshes to deform unnaturally.</li><li>`"link"` updates only the parent's quaternions (XZ rotations).</li><li>`"mix1"` mixes XZ rotations with a stretch (bone length, position change).</li><li>`"mix2"` mixes XZ rotations with a twist (Y rotations).</li><li>`"full"` all the above.</li></ul> | `type: "full"`
 `stiffness` | Mass-normalized spring constant `k` [m/s^2]. Either a non-negative number or an array with separate values for each dimension [x, y, z, t]. The forth value t, twist, is only used when the type is "full". | `stiffness: 20`
 `damping` | Mass-normalized damping coefficient `c` [1/s]. Either a non-negative number or an array with separate values for each dimension [x, y, z, t]. The forth value t, twist, is only used when the type is "full". | `damping: 2`
 `external` | External scaling factor between [0,1] that can be used to scale down the external forces caused by parent's movement. If set to `0`, the bone is rigid and moves with its parent without experiencing any external force. If set to `1`, the bone follows its parent with a lag (inertia) and feels the force.  OPTIONAL, default value `1.0` | `external: 0.7`
@@ -647,6 +641,7 @@ Property | Description | Example
 `deltaLocal` | Local position translation [dx,dy,dz] in meters [m]. OPTIONAL, default `null` | `deltaLocal: [0,0.01,0]`
 `deltaWorld` | World position translation [dx,dy,dz] in meters [m]. OPTIONAL, default `null` | `deltaWorld: [0,-0.02,0]`
 `pivot` | If `true`, the bone becomes a free-hanging bone along the Y-axis. This means that the parent's X/Z rotations are automatically compensated. Use with caution, as this requires additional computational effort, and the `limits` do not apply as usual. OPTIONAL, default `false` | `pivot: true`
+`excludes` | Sets one or more spherical excluded zones that act as invisible force fields, limiting the movement of the bone. An array of objects in the format `{ bone, deltaLocal, radius}` in which `bone` specifies the center bone name, `deltaLocal` (optional) offset [x,y,z] relative to center bone, and `radius` in meters. OPTIONAL, default `null` | `excludes: [ { bone: "Head", deltaLocal: [0,0.05,0.02], radius: 0.13 } ]`
 `helper` | If `true`, add a helper object to the scene to assist with visualizing the bone during testing. If the dynamic bone type is "point", displays only a square, otherwise also the line from parent to the bone. OPTIONAL, default `false` | `helper: true`
 
 
