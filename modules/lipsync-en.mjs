@@ -13,7 +13,7 @@ class LipsyncEn {
 
     // English words to Oculus visemes, algorithmic rules adapted from:
     //   NRL Report 7948, "Automatic Translation of English Text to Phonetics by Means of Letter-to-Sound Rules" (1976)
-    //   by HONEY SUE EL.OVITZ, RODNEY W. JOHNSON, ASTRID McHUGH, AND JOHN E. SHORE
+    //   by HONEY SUE ELOVITZ, RODNEY W. JOHNSON, ASTRID McHUGH, AND JOHN E. SHORE
     //   Available at: https://apps.dtic.mil/sti/pdfs/ADA021929.pdf
     this.rules = {
       'A': [
