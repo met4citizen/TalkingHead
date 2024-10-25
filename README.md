@@ -4,8 +4,8 @@
 
 Video | Description
 --- | ---
-<span style="display: block; min-width:400px">[<img src="images/dynamicbones2.jpg" width="400"/>](https://youtu.be/4Y9NFnENH5s)</span> | Having a good hair day — a follow-up to our previous video about dynamic bones. This time, we're focusing on pivot bones and exclude zones. See Appendix E for more details.
-[<img src="images/dynamicbones.jpg" width="400"/>](https://youtu.be/YUbDIWkskuw) | A short demo of the dynamic bones feature 🦴🦴
+<span style="display: block; min-width:400px">[<img src="images/dynamicbones2.jpg" width="400"/>](https://youtu.be/4Y9NFnENH5s)</span> | Having a good hair day — a follow-up to our previous video about dynamic bones. This time, we're focusing on pivot bones and excluded zones. See Appendix E for more details.
+[<img src="images/dynamicbones.jpg" width="400"/>](https://youtu.be/YUbDIWkskuw) | A short intro for the dynamic bones feature 🦴🦴 See Appendix E for more details.
 [<img src="images/screenshot4.jpg" width="400"/>](https://youtu.be/OA6LBZjkzJI) | I chat with Jenny and Harri. The close-up view allows you to evaluate the accuracy of lip-sync in both English and Finnish. Using GPT-3.5 and Microsoft text-to-speech.
 [<img src="images/screenshot5.jpg" width="400"/>](https://youtu.be/fJrYGaGCAGo) | A short demo of how AI can control the avatar's movements. Using OpenAI's function calling and Google TTS with the TalkingHead's built-in viseme generation.
 [<img src="images/screenshot6.jpg" width="400"/>](https://youtu.be/6XRxALY1Iwg) | Michael lip-syncs to two MP3 audio tracks using OpenAI's Whisper and TalkingHead's `speakAudio` method. He kicks things off with some casual talk, but then goes all out by trying to tackle an old Meat Loaf classic. 🤘 Keep rockin', Michael! 🎤😂
@@ -137,6 +137,9 @@ Option | Description
 `lightSpotDispersion` | Spot light dispersion. Default is `1`.
 `avatarMood` | The mood of the avatar. Supported moods: `"neutral"`, `"happy"`, `"angry"`, `"sad"`, `"fear"`, `"disgust"`, `"love"`, `"sleep"`. Default is `"neutral"`.
 `avatarMute`| Mute the avatar. This can be helpful option if you want to output subtitles without audio and lip-sync. Default is `false`.
+`avatarIdleEyeContact` | The average proportion of eye contact while idle in the range [0,1]. Default is `0.2`. [&#8805;`v1.3`]
+`avatarSpeakingEyeContact` | The average proportion of eye contact while speaking in the range [0,1]. Default is `0.5`. [&#8805;`v1.3`]
+`avatarListeningEyeContact` | The average proportion of eye contact while actively listening in the range [0,1]. Default is `0.7`. [&#8805;`v1.3`]
 `markedOptions` | Options for Marked markdown parser. Default is `{ mangle:false, headerIds:false, breaks: true }`.
 `statsNode` | Parent DOM element for the three.js stats display. If `null`, don't use. Default is `null`.
 `statsStyle` | CSS style for the stats element. If `null`, use the three.js default style. Default is `null`.
@@ -182,7 +185,7 @@ The following table lists some of the key methods. See the source code for the r
 
 Method | Description
 --- | ---
-`showAvatar(avatar, [onprogress=null])` | Load and show the specified avatar. The `avatar` object must include the `url` for GLB file. Optional properties are `body` for either male `M` or female `F` body form, `lipsyncLang`, `baseline` object for blend shape baseline, `modelDynamicBones` for dynamic bones (see Appendix E), `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood` and `avatarMute`.
+`showAvatar(avatar, [onprogress=null])` | Load and show the specified avatar. The `avatar` object must include the `url` for GLB file. Optional properties are `body` for either male `M` or female `F` body form, `lipsyncLang`, `lipsyncHeadMovement`, `baseline` object for blend shape baseline, `modelDynamicBones` for dynamic bones (see Appendix E), `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood`, `avatarMute`, `avatarIdleEyeContact`, `avatarSpeakingEyeContact`, and `avatarListeningEyeContact`.
 `setView(view, [opt])` | Set view. Supported views are `"full"`, `"mid"`, `"upper"`  and `"head"`. The `opt` object can be used to set `cameraDistance`, `cameraX`, `cameraY`, `cameraRotateX`, `cameraRotateY`.
 `setLighting(opt)` | Change lighting settings. The `opt` object can be used to set `lightAmbientColor`, `lightAmbientIntensity`, `lightDirectColor`, `lightDirectIntensity`, `lightDirectPhi`, `lightDirectTheta`, `lightSpotColor`, `lightSpotIntensity`, `lightSpotPhi`, `lightSpotTheta`, `lightSpotDispersion`.
 `speakText(text, [opt={}], [onsubtitles=null], [excludes=[]])` | Add the `text` string to the speech queue. The text can contain face emojis. Options `opt` can be used to set text-specific `lipsyncLang`, `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood`, `avatarMute`. Optional callback function `onsubtitles` is called whenever a new subtitle is to be written with the parameter of the added string. The optional `excludes` is an array of [start,end] indices to be excluded from audio but to be included in the subtitles.
@@ -192,6 +195,7 @@ Method | Description
 `speakMarker(onmarker)` | Add a marker to the speech queue. The callback function `onmarker` is called when the queue processes the marker.
 `lookAt(x,y,t)` | Make the avatar's head turn to look at the screen position (`x`,`y`) for `t` milliseconds.
 `lookAtCamera(t)` | Make the avatar's head turn to look at the camera for `t` milliseconds.
+`makeEyeContact(t)` | Make the avatar maintain eye contact with the person in front of it for (at least) `t` milliseconds [&#8805;`v1.3`]
 `setMood(mood)` | Set avatar mood.
 `playBackgroundAudio(url)` | Play background audio such as ambient sounds/music in a loop.
 `stopBackgroundAudio()` | Stop playing the background audio.
@@ -324,7 +328,7 @@ if they can be used/integrated in some way to the project.
 
 ---
 
-### See also
+### References
 
 [1] [Finnish pronunciation](https://en.wiktionary.org/wiki/Appendix:Finnish_pronunciation), Wiktionary
 
@@ -633,9 +637,9 @@ can be configured using the following properties:
 Property | Description | Example
 --- | --- | ---
 `bone` | The name of the bone in your custom skeleton. Note that each dynamic bone must have a parent bone. | `bone: "ponytail1"`
-`type` | <ul><li>`"point"` updates only the bone's local position [x,y,z]. It is fast to calculate, but may cause skinned meshes to deform unnaturally.</li><li>`"link"` updates only the parent's quaternions (XZ rotations).</li><li>`"mix1"` mixes XZ rotations with a stretch (bone length, position change).</li><li>`"mix2"` mixes XZ rotations with a twist (Y rotations).</li><li>`"full"` all the above.</li></ul> | `type: "full"`
-`stiffness` | Mass-normalized spring constant `k` [m/s^2]. Either a non-negative number or an array with separate values for each dimension [x, y, z, t]. The forth value t, twist, is only used when the type is "full". | `stiffness: 20`
-`damping` | Mass-normalized damping coefficient `c` [1/s]. Either a non-negative number or an array with separate values for each dimension [x, y, z, t]. The forth value t, twist, is only used when the type is "full". | `damping: 2`
+`type` | <ul><li>`"point"` updates only the bone's local position [x,y,z]. It is fast to calculate, but may cause skinned meshes to deform unnaturally.</li><li>`"link"` updates only the parent's quaternions (XZ rotations).</li><li>`"mix1"` mixes XZ rotations with a stretch (bone length, position change).</li><li>`"mix2"` mixes XZ rotations with a twist (Y rotations).</li><li>`"full"` link with both stretch and twist.</li></ul> | `type: "full"`
+`stiffness` | Mass-normalized spring constant `k` [m/s^2]. Either a non-negative number or an array with separate values for each dimension [x, y, z, t]. | `stiffness: 20`
+`damping` | Mass-normalized damping coefficient `c` [1/s]. Either a non-negative number or an array with separate values for each dimension [x, y, z, t]. | `damping: 2`
 `external` | External scaling factor between [0,1] that can be used to scale down the external forces caused by parent's movement. If set to `0`, the bone is rigid and moves with its parent without experiencing any external force. If set to `1`, the bone follows its parent with a lag (inertia) and feels the force.  OPTIONAL, default value `1.0` | `external: 0.7`
 `limits` | Sets the limiting range [low, high] for each dimension [x, y, z, t] in meters [m]. This can help prevent situations in which meshes overlap due to sudden movements or when the amplitude becomes unrealistic. Limits are applied in local space. OPTIONAL, default `null` (no limit) | `limits: [null,null,[null,0.01],null]`
 `deltaLocal` | Local position translation [dx,dy,dz] in meters [m]. OPTIONAL, default `null` | `deltaLocal: [0,0.01,0]`
@@ -650,7 +654,7 @@ a matter of trial and error. Turn on the helper property or use the test app
 to fine-tune the settings while running animations typical to your use case.
 
 > [!TIP]
-> For dynamic bones of type `point`, you can simulate gravity by applying
+> For dynamic bones of type `"point"`, you can simulate gravity by applying
 a `deltaWorld` translation down the Y-axis and compensating for
 the initial stretch in the rest pose by applying `deltaLocal` translation
 up the Y-axis.
