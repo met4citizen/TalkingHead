@@ -1961,6 +1961,7 @@ async function geminiSendMessage(node,msgs) {
                   fn = canditate?.content?.parts?.[0]?.functionCall;
                   if ( !fn ) {
                     node.dataset.markdown += canditate?.content?.parts?.[0]?.text || '';
+                    node.dataset.output += canditate?.content?.parts?.[0]?.text || '';
                     tts += canditate?.content?.parts?.[0]?.text || '';
                   }
 
@@ -2907,7 +2908,7 @@ function testerUpdateMorphData() {
 }
 
 function testerGetValue(mt,v) {
-  if ( mt.startsWith('headRotate') || mt.startsWith('eyesRotate') ) {
+  if ( mt.startsWith('headRotate') || mt.startsWith('bodyRotate') || mt.startsWith('eyesRotate') ) {
     return ( v === null || v === undefined ) ? 0 : v;
   } else {
     return ( v === null || v === undefined ) ? -0.1 : v;
@@ -2915,7 +2916,7 @@ function testerGetValue(mt,v) {
 }
 
 function testerGetFixedValue(mt,v) {
-  if ( mt.startsWith('headRotate') || mt.startsWith('eyesRotate') ) {
+  if ( mt.startsWith('headRotate') || mt.startsWith('bodyRotate') || mt.startsWith('eyesRotate') ) {
     return ( v === 0 ? null : v);
   } else {
     return ( v >= 0 ? v : null);
@@ -2923,7 +2924,7 @@ function testerGetFixedValue(mt,v) {
 }
 
 function testerGetMin(mt) {
-  if ( mt.startsWith('headRotate') ) {
+  if ( mt.startsWith('headRotate') || mt.startsWith('bodyRotate') ) {
     return -0.5;
   } else if ( mt.startsWith('eyesRotate') ) {
     return -1;
@@ -2933,15 +2934,15 @@ function testerGetMin(mt) {
 }
 
 function testerGetMax(mt) {
-  return mt.startsWith('headRotate') ? 0.5 : 1;
+  return (mt.startsWith('headRotate') || mt.startsWith('bodyRotate')) ? 0.5 : 1;
 }
 
 function testerGetStep(mt) {
-  return ( mt.startsWith('headRotate') || mt.startsWith('eyesRotate') ) ? 0.05 : 0.1;
+  return ( mt.startsWith('headRotate') || mt.startsWith('bodyRotate') || mt.startsWith('eyesRotate') ) ? 0.05 : 0.1;
 }
 
 function testerGetLabel(mt,v) {
-  if ( mt.startsWith('headRotate') || mt.startsWith('eyesRotate') ) {
+  if ( mt.startsWith('headRotate') || mt.startsWith('bodyRotate') || mt.startsWith('eyesRotate') ) {
     return (v ? v : '');
   } else {
     return ( v>=0 ? v : '');
@@ -3632,22 +3633,26 @@ document.addEventListener('DOMContentLoaded', async function(e) {
         url: url,
         body: cfg('avatar-body')
       };
-      try {
-        await head.showAvatar( o, progressUpdate );
-        headLoaded();
-        d3.select("[data-camera-frame].selected").dispatch('click');
-      } catch(error) {
-        errorShow(error);
+      if ( url !== head.avatar?.url ) {
+        try {
+          await head.showAvatar( o, progressUpdate );
+          headLoaded();
+          d3.select("[data-camera-frame].selected").dispatch('click');
+        } catch(error) {
+          errorShow(error);
+        }
       }
     } else {
       const name = e.attr('data-avatar-name');
       d3.selectAll("[data-pose],[data-animation],#pause").classed("selected",false);
-      try {
-        await head.showAvatar( site.avatars[name], progressUpdate );
-        headLoaded();
-        d3.select("[data-camera-frame].selected").dispatch('click');
-      } catch(error) {
-        errorShow(error);
+      if ( site.avatars[name].url !== head.avatar?.url ) {
+        try {
+          await head.showAvatar( site.avatars[name], progressUpdate );
+          headLoaded();
+          d3.select("[data-camera-frame].selected").dispatch('click');
+        } catch(error) {
+          errorShow(error);
+        }
       }
     }
   });
