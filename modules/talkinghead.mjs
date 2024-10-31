@@ -1949,6 +1949,9 @@ class TalkingHead {
         }
         o.ts[i+1] = o.ts[i] + val;
       });
+    } else {
+      let l = Object.values(a.vs).reduce( (acc,val) => (val.length > acc) ? val.length : acc, 0);
+      o.ts = Array(l+1).fill(0);
     }
     o.ts = o.ts.map( x => this.animClock + delay + x * scaleTime );
 
