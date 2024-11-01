@@ -138,9 +138,9 @@ Option | Description
 `avatarMood` | The mood of the avatar. Supported moods: `"neutral"`, `"happy"`, `"angry"`, `"sad"`, `"fear"`, `"disgust"`, `"love"`, `"sleep"`. Default is `"neutral"`.
 `avatarMute`| Mute the avatar. This can be helpful option if you want to output subtitles without audio and lip-sync. Default is `false`.
 `avatarIdleEyeContact` | The average proportion of eye contact while idle in the range [0,1]. Default is `0.2`. [&#8805;`v1.3`]
+`avatarIdleHeadMove` | The average proportion of head movement while idle in the range [0,1]. Default is `0.5`. [&#8805;`v1.3`]
 `avatarSpeakingEyeContact` | The average proportion of eye contact while speaking in the range [0,1]. Default is `0.5`. [&#8805;`v1.3`]
-`avatarListeningEyeContact` | The average proportion of eye contact while actively listening in the range [0,1]. Default is `0.7`. [&#8805;`v1.3`]
-`markedOptions` | Options for Marked markdown parser. Default is `{ mangle:false, headerIds:false, breaks: true }`.
+`avatarSpeakingHeadMove` | The average proportion of head movement while speaking in the range [0,1]. Default is `0.5`. [&#8805;`v1.3`]
 `statsNode` | Parent DOM element for the three.js stats display. If `null`, don't use. Default is `null`.
 `statsStyle` | CSS style for the stats element. If `null`, use the three.js default style. Default is `null`.
 

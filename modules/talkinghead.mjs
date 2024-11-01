@@ -64,8 +64,6 @@ class TalkingHead {
   * @property {numeric} [avatarIdleHeadMove] Eye contact while idle [0,1]
   * @property {numeric} [avatarSpeakingEyeContact] Eye contact while speaking [0,1]
   * @property {numeric} [avatarSpeakingHeadMove] Eye contact while speaking [0,1]
-  * @property {numeric} [avatarListeningEyeContact] Eye contact while listening [0,1]
-  * @property {numeric} [avatarListeningHeadMove] Eye contact while listening [0,1]
   * @property {Object[]} [modelDynamicBones] Config for Dynamic Bones feature
   */
 
@@ -165,8 +163,6 @@ class TalkingHead {
       avatarIdleHeadMove: 0.5,
       avatarSpeakingEyeContact: 0.5,
       avatarSpeakingHeadMove: 0.5,
-      avatarListeningEyeContact: 0.7,
-      avatarListeningHeadMove: 0.5,
       statsNode: null,
       statsStyle: null
     };
@@ -358,19 +354,36 @@ class TalkingHead {
     this.animTemplateEyes = { name: 'eyes',
       idle: { alt: [
         {
-          p: () => ( this.avatar?.hasOwnProperty('avatarIdleEyeContact') ? !this.avatar.avatarIdleEyeContact : this.opt.avatarIdleEyeContact ),
-          dt: [ [200,500],[500,1500],100,[3000,8000,1,2] ],
-          vs: { eyesRotateY: [[-0.6,0.6]], eyesRotateX: [[-0.2,0.6]], eyeContact: [null,null,1,1],  }
+          p: () => ( this.avatar?.hasOwnProperty('avatarIdleEyeContact') ? this.avatar.avatarIdleEyeContact : this.opt.avatarIdleEyeContact ),
+          delay: [200,5000], dt: [ 200,[2000,5000],[3000,10000,1,2] ],
+          vs: {
+            headMove: [ this.avatar?.hasOwnProperty('avatarIdleHeadMove') ? this.avatar.avatarIdleHeadMove : this.opt.avatarIdleHeadMove ],
+            eyesRotateY: [[-0.6,0.6]], eyesRotateX: [[-0.2,0.6]],
+            eyeContact: [null,1]
+          }
         },
-        { delay: [200,5000], dt: [ [200,500],[100,5000,2] ], vs: { eyesRotateY: [[-0.6,0.6]], eyesRotateX: [[-0.2,0.6]] } }
+        {
+          delay: [200,5000], dt: [ 200,[2000,5000,1,2] ], vs: {
+            headMove: [ this.avatar?.hasOwnProperty('avatarIdleHeadMove') ? this.avatar.avatarIdleHeadMove : this.opt.avatarIdleHeadMove ],
+            eyesRotateY: [[-0.6,0.6]], eyesRotateX: [[-0.2,0.6]]
+          }
+        }
       ]},
       speaking: { alt: [
         {
-          p: () => ( this.avatar?.hasOwnProperty('avatarSpeakingEyeContact') ? !this.avatar.avatarSpeakingEyeContact : this.opt.avatarSpeakingEyeContact ),
-          dt: [ 0, [3000,8000,1,2], [200,500],[500,1500] ],
-          vs: { eyeContact: [1,null], eyesRotateY: [null,[-0.6,0.6]], eyesRotateX: [null,[-0.2,0.6]] }
+          p: () => ( this.avatar?.hasOwnProperty('avatarSpeakingEyeContact') ? this.avatar.avatarSpeakingEyeContact : this.opt.avatarSpeakingEyeContact ),
+          delay: [200,5000], dt: [ 0, [3000,10000,1,2], [2000,5000] ],
+          vs: { eyeContact: [1,null],
+            headMove: [null,( this.avatar?.hasOwnProperty('avatarSpeakingHeadMove') ? this.avatar.avatarSpeakingHeadMove : this.opt.avatarSpeakingHeadMove ),null],
+            eyesRotateY: [null,[-0.6,0.6]], eyesRotateX: [null,[-0.2,0.6]]
+          }
         },
-        { delay: [200,5000], dt: [ [200,500],[100,5000,2] ], vs: { eyesRotateY: [[-0.6,0.6]], eyesRotateX: [[-0.2,0.6]] } }
+        {
+          delay: [200,5000], dt: [ 200,[2000,5000,1,2] ], vs: {
+            headMove: [( this.avatar?.hasOwnProperty('avatarSpeakingHeadMove') ? this.avatar.avatarSpeakingHeadMove : this.opt.avatarSpeakingHeadMove ),null],
+            eyesRotateY: [[-0.6,0.6]], eyesRotateX: [[-0.2,0.6]]
+          }
+        }
       ]}
     };
     this.animTemplateBlink = { name: 'blink', alt: [
@@ -385,11 +398,11 @@ class TalkingHead {
         anims: [
           { name: 'breathing', delay: 1500, dt: [ 1200,500,1000 ], vs: { chestInhale: [0.5,0.5,0] } },
           { name: 'pose', alt: [
-            { p: 0.4, delay: [5000,20000], vs: { pose: ['side'] } },
-            { p: 0.4, delay: [5000,20000], vs: { pose: ['hip'] },
-              'M': { delay: [5000,20000], vs: { pose: ['wide'] } }
+            { p: 0.5, delay: [5000,30000], vs: { pose: ['side'] } },
+            { p: 0.3, delay: [5000,30000], vs: { pose: ['hip'] },
+              'M': { delay: [5000,30000], vs: { pose: ['wide'] } }
             },
-            { delay: [5000,20000], vs: { pose: ['straight'] } }
+            { delay: [5000,30000], vs: { pose: ['straight'] } }
           ]},
           { name: 'head',
             idle: { delay: [0,1000], dt: [ [200,5000] ], vs: { bodyRotateX: [[-0.04,0.10]], bodyRotateY: [[-0.3,0.3]], bodyRotateZ: [[-0.08,0.08]] } },
@@ -409,21 +422,21 @@ class TalkingHead {
           { name: 'pose',
             idle: {
               alt: [
-                { p: 0.6, delay: [5000,20000], vs: { pose: ['side'] } },
-                { p: 0.2, delay: [5000,20000], vs: { pose: ['hip'] },
-                  'M': { delay: [5000,20000], vs: { pose: ['side'] } }
+                { p: 0.6, delay: [5000,30000], vs: { pose: ['side'] } },
+                { p: 0.2, delay: [5000,30000], vs: { pose: ['hip'] },
+                  'M': { delay: [5000,30000], vs: { pose: ['side'] } }
                 },
-                { p: 0.1, delay: [5000,20000], vs: { pose: ['straight'] } },
+                { p: 0.1, delay: [5000,30000], vs: { pose: ['straight'] } },
                 { delay: [5000,10000], vs: { pose: ['wide'] } },
                 { delay: [1000,3000], vs: { pose: ['turn'] } },
               ]
             },
             speaking: {
               alt: [
-                { p: 0.4, delay: [5000,20000], vs: { pose: ['side'] } },
-                { p: 0.4, delay: [5000,20000], vs: { pose: ['straight'] } },
+                { p: 0.4, delay: [5000,30000], vs: { pose: ['side'] } },
+                { p: 0.4, delay: [5000,30000], vs: { pose: ['straight'] } },
                 { delay: [5000,20000], vs: { pose: ['hip'] },
-                  'M': { delay: [5000,20000], vs: { pose: ['wide'] } }
+                  'M': { delay: [5000,30000], vs: { pose: ['wide'] } }
                 },
               ]
             }
@@ -444,10 +457,10 @@ class TalkingHead {
         anims: [
           { name: 'breathing', delay: 500, dt: [ 1000,500,1000 ], vs: { chestInhale: [0.7,0.7,0] } },
           { name: 'pose', alt: [
-            { p: 0.4, delay: [5000,20000], vs: { pose: ['side'] } },
-            { p: 0.4, delay: [5000,20000], vs: { pose: ['straight'] } },
-            { p: 0.2, delay: [5000,20000], vs: { pose: ['hip'] },
-              'M': { delay: [5000,20000], vs: { pose: ['wide'] } }
+            { p: 0.4, delay: [5000,30000], vs: { pose: ['side'] } },
+            { p: 0.4, delay: [5000,30000], vs: { pose: ['straight'] } },
+            { p: 0.2, delay: [5000,30000], vs: { pose: ['hip'] },
+              'M': { delay: [5000,30000], vs: { pose: ['wide'] } }
             },
           ]},
           { name: 'head',
@@ -466,10 +479,10 @@ class TalkingHead {
         anims: [
           { name: 'breathing', delay: 1500, dt: [ 1000,500,1000 ], vs: { chestInhale: [0.3,0.3,0] } },
           { name: 'pose', alt: [
-            { p: 0.4, delay: [5000,20000], vs: { pose: ['side'] } },
-            { p: 0.4, delay: [5000,20000], vs: { pose: ['straight'] } },
-            { delay: [5000,10000], vs: { pose: ['side'] },
-              full: { delay: [5000,10000], vs: { pose: ['oneknee'] } }
+            { p: 0.4, delay: [5000,30000], vs: { pose: ['side'] } },
+            { p: 0.4, delay: [5000,30000], vs: { pose: ['straight'] } },
+            { delay: [5000,20000], vs: { pose: ['side'] },
+              full: { delay: [5000,20000], vs: { pose: ['oneknee'] } }
             },
           ]},
           { name: 'head',
@@ -488,11 +501,11 @@ class TalkingHead {
         anims: [
           { name: 'breathing', delay: 500, dt: [ 1000,500,1000 ], vs: { chestInhale: [0.7,0.7,0] } },
           { name: 'pose', alt: [
-            { p: 0.8, delay: [5000,20000], vs: { pose: ['side'] } },
-            { delay: [5000,20000], vs: { pose: ['straight'] } },
-            { delay: [5000,10000], vs: { pose: ['wide'] } },
-            { delay: [5000,10000], vs: { pose: ['side'] },
-              full: { delay: [5000,10000], vs: { pose: ['oneknee'] } }
+            { p: 0.8, delay: [5000,30000], vs: { pose: ['side'] } },
+            { delay: [5000,30000], vs: { pose: ['straight'] } },
+            { delay: [5000,20000], vs: { pose: ['wide'] } },
+            { delay: [5000,20000], vs: { pose: ['side'] },
+              full: { delay: [5000,20000], vs: { pose: ['oneknee'] } }
             },
           ]},
           { name: 'head',
@@ -511,7 +524,7 @@ class TalkingHead {
         anims: [
           { name: 'breathing', delay: 1500, dt: [ 1000,500,1000 ], vs: { chestInhale: [0.5,0.5,0] } },
           { name: 'pose', alt: [
-            { delay: [5000,10000], vs: { pose: ['side'] } },
+            { delay: [5000,20000], vs: { pose: ['side'] } },
           ]},
           { name: 'head',
             idle: { delay: [100,500], dt: [ [200,5000] ], vs: { bodyRotateX: [[-0.04,0.10]], bodyRotateY: [[-0.2,0.2]], bodyRotateZ: [[-0.08,0.08]] } },
@@ -529,10 +542,10 @@ class TalkingHead {
         anims: [
           { name: 'breathing', delay: 1500, dt: [ 1500,500,1500 ], vs: { chestInhale: [0.8,0.8,0] } },
           { name: 'pose', alt: [
-            { p: 0.4, delay: [5000,20000], vs: { pose: ['side'] } },
-            { p: 0.2, delay: [5000,20000], vs: { pose: ['straight'] } },
-            { p: 0.2, delay: [5000,20000], vs: { pose: ['hip'] },
-              'M': { delay: [5000,20000], vs: { pose: ['side'] } }
+            { p: 0.4, delay: [5000,30000], vs: { pose: ['side'] } },
+            { p: 0.2, delay: [5000,30000], vs: { pose: ['straight'] } },
+            { p: 0.2, delay: [5000,30000], vs: { pose: ['hip'] },
+              'M': { delay: [5000,30000], vs: { pose: ['side'] } }
             },
             { delay: [5000,10000], vs: { pose: ['side'] },
               full: { delay: [5000,10000], vs: { pose: ['kneel'] } }
@@ -660,15 +673,15 @@ class TalkingHead {
       'bodyRotateZ', 'headRotateX', 'headRotateY', 'headRotateZ','chestInhale'
     ];
     this.mtEasingDefault = this.sigmoidFactory(5); // Morph target default ease in/out
-    this.mtAccDefault = 0.04; // Acceleration [rad / s^2]
+    this.mtAccDefault = 0.01; // Acceleration [rad / s^2]
     this.mtAccExceptions = {
-      eyeBlinkLeft: 0.4, eyeBlinkRight: 0.4,
-      headRotateX: 0.1, headRotateY: 0.1, headRotateZ: 0.1
+      eyeBlinkLeft: 0.1, eyeBlinkRight: 0.1, eyeLookOutLeft: 0.1,
+      eyeLookInLeft: 0.1, eyeLookOutRight: 0.1, eyeLookInRight: 0.1
     };
     this.mtMaxVDefault = 5; // Maximum velocity [rad / s]
     this.mtMaxVExceptions = {
       bodyRotateX: 1, bodyRotateY: 1, bodyRotateZ: 1,
-      headRotateX: 1, headRotateY: 1, headRotateZ: 1
+      // headRotateX: 1, headRotateY: 1, headRotateZ: 1
     };
     this.mtBaselineDefault = 0; // Default baseline value
     this.mtBaselineExceptions = {
@@ -1051,14 +1064,14 @@ class TalkingHead {
 
       // Morph target data structure
       mtTemp[x] = {
-        needsUpdate: true, fixed: null, system: null, base: null,
-        easing: this.mtEasingDefault,
+        fixed: null, system: null, systemd: null, newvalue: null, ref: null,
+        easing: this.mtEasingDefault, base: null, v: 0, needsUpdate: true,
         acc: (this.mtAccExceptions.hasOwnProperty(x) ? this.mtAccExceptions[x] : this.mtAccDefault) / 1000,
         maxv: (this.mtMaxVExceptions.hasOwnProperty(x) ? this.mtMaxVExceptions[x] : this.mtMaxVDefault) / 1000,
         limit: this.mtLimits.hasOwnProperty(x) ? this.mtLimits[x] : null,
         onchange: this.mtOnchange.hasOwnProperty(x) ? this.mtOnchange[x] : null,
         baseline: this.avatar.baseline?.hasOwnProperty(x) ? this.avatar.baseline[x] : (this.mtBaselineExceptions.hasOwnProperty(x) ? this.mtBaselineExceptions[x] : this.mtBaselineDefault ),
-        newvalue: null, ref: null, ms: [], is: []
+        ms: [], is: []
       };
       mtTemp[x].value = mtTemp[x].baseline;
       mtTemp[x].applied = mtTemp[x].baseline;
@@ -1066,7 +1079,7 @@ class TalkingHead {
       // Copy previous values
       const y = this.mtAvatar[x];
       if ( y ) {
-        [ 'needsUpdate','fixed','system','base','value','limited' ].forEach( z => {
+        [ 'fixed','system','systemd','base','v','value','applied' ].forEach( z => {
           mtTemp[x][z] = y[z];
         });
       }
@@ -1343,39 +1356,41 @@ class TalkingHead {
       // - system: System value, which overrides animations
       // - newvalue: Animation value
       // - baseline: Baseline value when none of the above applies
-      let p = null;
+      let target = null;
       let newvalue = null;
       if ( o.fixed !== null ) {
-        p = o.fixed;
+        target = o.fixed;
         o.system = null;
+        o.systemd = null;
         o.newvalue = null;
         if ( o.ref && o.ref.hasOwnProperty(mt) ) delete o.ref[mt];
         o.ref = null;
         o.base = null;
-        if ( o.value === p.target ) {
+        if ( o.value === target ) {
           o.needsUpdate = false;
           continue;
         }
       } else if ( o.system !== null ) {
-        p = o.system;
+        target = o.system;
         o.newvalue = null;
         if ( o.ref && o.ref.hasOwnProperty(mt) ) delete o.ref[mt];
         o.ref = null;
         o.base = null;
-        if ( p.hasOwnProperty('d') ) {
-          if ( p.d === 0 ) {
-            p = null;
+        if ( o.systemd !== null ) {
+          if ( o.systemd === 0 ) {
+            target = null;
             o.system = null;
+            o.systemd = null;
           } else {
-            p.d -= dt;
-            if ( p.d < 0 ) p.d = 0;
-            if ( p.target === o.value ) {
-              p = null;
+            o.systemd -= dt;
+            if ( o.systemd < 0 ) o.systemd= 0;
+            if ( o.value === target ) {
+              target = null;
             }
           }
-        } else if ( p.target === o.value ) {
-          p = null;
-          o.needsUpdate = false;
+        } else if ( o.value === target ) {
+          target = null;
+          o.system = null;
         }
       } else if ( o.newvalue !== null ) {
         o.ref = null;
@@ -1383,31 +1398,51 @@ class TalkingHead {
         newvalue = o.newvalue;
         o.newvalue = null;
       } else if ( o.base !== null ) {
-        p = o.base;
+        target = o.base;
         o.ref = null;
-        if ( o.value === o.base.target ) {
-          p = null;
+        if ( o.value === target ) {
+          target = null;
           o.base = null;
           o.needsUpdate = false;
         }
       } else {
         o.ref = null;
         if ( o.baseline !== null && o.value !== o.baseline ) {
-          p = o.base = { target: o.baseline };
+          target = o.baseline;
+          o.base = o.baseline;
         } else {
           o.needsUpdate = false;
         }
       }
 
       // Calculate new value using exponential smoothing
-      if ( p !== null ) {
-        p.acc = p.acc || o.acc;
-        p.maxv = p.maxv || o.maxv;
-        p.v = p.v || p.maxv/1000;
-        if ( p.v < p.maxv ) p.v += p.acc * dt;
-        newvalue = o.value + (p.target - o.value) * ( 1 - Math.exp(- p.v * dt) );
-        if ( Math.abs(newvalue-p.target) < 0.005 ) newvalue = p.target;
-        p.v = (newvalue - o.value) / (dt+0.0001);
+      if ( target !== null ) {
+        let diff = target - o.value;
+        if ( diff >= 0 ) {
+          if ( diff < 0.005 ) {
+            newvalue = target;
+            o.v = 0;
+          } else {
+            if ( o.v < o.maxv ) o.v += o.acc * dt;
+            if ( o.v >= 0 ) {
+              newvalue = o.value + diff * ( 1 - Math.exp(- o.v * dt) );
+            } else {
+              newvalue = o.value + o.v * dt * ( 1 - Math.exp(o.v * dt) );
+            }
+          }
+        } else {
+          if ( diff > -0.005 ) {
+            newvalue = target;
+            o.v = 0;
+          } else {
+            if ( o.v > -o.maxv ) o.v -= o.acc * dt;
+            if ( o.v >= 0 ) {
+              newvalue = o.value + o.v * dt * ( 1 - Math.exp(- o.v * dt) );
+            } else {
+              newvalue = o.value + diff * ( 1 - Math.exp( o.v * dt) );
+            }
+          }
+        }
       }
 
       // Check limits and whether we need to actually update the morph target
@@ -1699,11 +1734,7 @@ class TalkingHead {
   * @return {number} Value
   */
   getValue(mt) {
-    const x = this.mtAvatar[mt];
-    if ( x ) {
-      return x.value;
-    }
-    return 0;
+    return this.mtAvatar[mt]?.value;
   }
 
   /**
@@ -1713,10 +1744,8 @@ class TalkingHead {
   * @param {number} [ms=null] Transition time in milliseconds.
   */
   setValue(mt,val,ms=null) {
-    const x = this.mtAvatar[mt];
-    if ( x ) {
-      x.system = (val === null) ? null : { target: val, d: ms };
-      x.needsUpdate = true;
+    if ( this.mtAvatar.hasOwnProperty(mt) ) {
+      Object.assign(this.mtAvatar[mt],{ system: val, systemd: ms, needsUpdate: true });
     }
   }
 
@@ -1781,7 +1810,7 @@ class TalkingHead {
   /**
   * Get baseline value for the morph target.
   * @param {string} mt Morph target name
-  * @return {number} Value, undefined if not in baseline
+  * @return {number} Value, null if not in baseline
   */
   getBaselineValue( mt ) {
     if ( mt === 'eyesRotateY' ) {
@@ -1801,11 +1830,7 @@ class TalkingHead {
       if ( u === undefined ) return undefined;
       return d - u;
     } else {
-      const x = this.mtAvatar[mt];
-      if ( x ) {
-        return x.baseline;
-      }
-      return undefined;
+      return this.mtAvatar[mt]?.baseline;
     }
   }
 
@@ -1824,11 +1849,8 @@ class TalkingHead {
       this.setBaselineValue('eyesLookDown', (val === null) ? null : (val>0 ? val : 0) );
       this.setBaselineValue('eyesLookUp', (val === null) ? null : (val>0 ? 0 : -val) );
     } else {
-      const x = this.mtAvatar[mt];
-      if ( x ) {
-        x.base = null;
-        x.baseline = val;
-        x.needsUpdate = true;
+      if ( this.mtAvatar.hasOwnProperty(mt) ) {
+        Object.assign(this.mtAvatar[mt],{ base: null, baseline: val, needsUpdate: true });
       }
     }
   }
@@ -1836,31 +1858,27 @@ class TalkingHead {
   /**
   * Get fixed value for the morph target.
   * @param {string} mt Morph target name
-  * @return {number} Value, undefined if not fixed
+  * @return {number} Value, null if not fixed
   */
   getFixedValue( mt ) {
     if ( mt === 'eyesRotateY' ) {
       const ll = this.getFixedValue('eyeLookOutLeft');
-      if ( ll === undefined ) return undefined;
+      if ( ll === null ) return null;
       const lr = this.getFixedValue('eyeLookInLeft');
-      if ( lr === undefined ) return undefined;
+      if ( lr === null ) return null;
       const rl = this.getFixedValue('eyeLookOutRight');
-      if ( rl === undefined ) return undefined;
+      if ( rl === null ) return null;
       const rr = this.getFixedValue('eyeLookInRight');
-      if ( rr === undefined ) return undefined;
+      if ( rr === null ) return null;
       return ll - lr;
     } else if ( mt === 'eyesRotateX' ) {
       const d = this.getFixedValue('eyesLookDown');
-      if ( d === undefined ) return undefined;
+      if ( d === null ) return null;
       const u = this.getFixedValue('eyesLookUp');
-      if ( u === undefined ) return undefined;
+      if ( u === null ) return null;
       return d - u;
     } else {
-      const x = this.mtAvatar[mt];
-      if ( x && x.fixed !== null ) {
-        return x.fixed.target;
-      }
-      return undefined;
+      return this.mtAvatar[mt]?.fixed;
     }
   }
 
@@ -1879,10 +1897,8 @@ class TalkingHead {
       this.setFixedValue('eyesLookDown', (val === null) ? null : (val>0 ? val : 0 ), ms );
       this.setFixedValue('eyesLookUp', (val === null) ? null : (val>0 ? 0 : -val ), ms );
     } else {
-      const x = this.mtAvatar[mt];
-      if ( x ) {
-        x.fixed = ( val === null ) ? null : { target: val };
-        x.needsUpdate = true;
+      if ( this.mtAvatar.hasOwnProperty(mt) ) {
+        Object.assign(this.mtAvatar[mt],{ fixed: val, needsUpdate: true });
       }
     }
   }
@@ -2117,7 +2133,7 @@ class TalkingHead {
 
             // Start value and target
             const m = this.mtAvatar[mt];
-            if ( vs[j] === null ) vs[j] = this.getValue(mt); // Fill-in start value
+            if ( vs[j] === null ) vs[j] = m.value; // Fill-in start value
             if ( j === k - 1 ) {
               m.newvalue = vs[j];
             } else {
@@ -2151,7 +2167,7 @@ class TalkingHead {
           } else if ( mt === 'eyeContact' && vs[j] !== null ) {
             isEyeContact = Boolean(vs[j]);
           } else if ( mt === 'headMove' && vs[j] !== null ) {
-            isHeadMove = Boolean(vs[j]);
+            isHeadMove = Math.random() < vs[j];
             vs[j] = null;
           } else if ( vs[j] !== null ) {
             tasks.push({ mt: mt, val: vs[j] });
@@ -2255,39 +2271,33 @@ class TalkingHead {
       e.y = Math.max(-0.9,Math.min(0.9, -2.5 * e.y));
 
       if ( isEyeContact ) {
-        i = this.mtAvatar['eyesLookDown'];
-        if ( i.system === null ) i.system = { };
-        i.system.target = e.x < 0 ? -e.x : 0;
-        i.needsUpdate = true;
-        i = this.mtAvatar['eyesLookUp'];
-        if ( i.system === null ) i.system = { };
-        i.system.target = e.x < 0 ? 0 : e.x;
-        i.needsUpdate = true;
-        i = this.mtAvatar['eyeLookInLeft'];
-        if ( i.system === null ) i.system = { };
-        i.system.target = e.y < 0 ? -e.y : 0;
-        i.needsUpdate = true;
-        i = this.mtAvatar['eyeLookOutLeft'];
-        if ( i.system === null ) i.system = { };
-        i.system.target = e.y < 0 ? 0 : e.y;
-        i.needsUpdate = true;
-        i = this.mtAvatar['eyeLookInRight'];
-        if ( i.system === null ) i.system = { };
-        i.system.target = e.y < 0 ? 0 : e.y;
-        i.needsUpdate = true;
-        i = this.mtAvatar['eyeLookOutRight'];
-        if ( i.system === null ) i.system = { };
-        i.system.target = e.y < 0 ? -e.y : 0;
-        i.needsUpdate = true;
-      }
+        Object.assign( this.mtAvatar['eyesLookDown'], { system: e.x < 0 ? -e.x : 0, needsUpdate: true });
+        Object.assign( this.mtAvatar['eyesLookUp'], { system: e.x < 0 ? 0 : e.x, needsUpdate: true });
+        Object.assign( this.mtAvatar['eyeLookInLeft'], { system: e.y < 0 ? -e.y : 0, needsUpdate: true });
+        Object.assign( this.mtAvatar['eyeLookOutLeft'], { system: e.y < 0 ? 0 : e.y, needsUpdate: true });
+        Object.assign( this.mtAvatar['eyeLookInRight'], { system: e.y < 0 ? 0 : e.y, needsUpdate: true });
+        Object.assign( this.mtAvatar['eyeLookOutRight'], { system: e.y < 0 ? -e.y : 0, needsUpdate: true });
 
-      // Head move
-      if ( isHeadMove ) {
-        /* i = this.mtAvatar['headRotateY'];
-        if ( i.system === null ) {
-          i.system = { target: e.y, d: 4000 };
-          i.needsUpdate = true;
-        } */
+        // Head move
+        if ( isHeadMove ) {
+          i = - this.mtAvatar['bodyRotateY'].value;
+          j = this.gaussianRandom(-0.2,0.2);
+          this.animQueue.push( this.animFactory({ name: "headmove",
+            dt: [[1000,2000],[1000,2000,1,2],[1000,2000],[1000,2000,1,2]], vs: {
+              headRotateY: [i,i,0], headRotateX: [j,j,0], headRotateZ: [-i/4,-i/4,0]
+            }
+          }));
+        }
+
+      } else {
+        i = this.mtAvatar['eyeLookInLeft'].value + this.mtAvatar['eyeLookOutLeft'].value;
+        j = this.gaussianRandom(-0.2,0.2);
+        this.animQueue.push( this.animFactory({ name: "headmove",
+          dt: [[1000,2000],[1000,2000,1,2],[1000,2000],[1000,2000,1,2]], vs: {
+            headRotateY: [null,i,i,0], headRotateX: [null,j,j,0], headRotateZ: [null,-i/4,-i/4,0],
+            eyeLookInLeft: [null,0], eyeLookOutLeft: [null,0], eyeLookInRight: [null,0], eyeLookOutRight: [null,0]
+          }
+        }));
       }
 
     }
@@ -2297,8 +2307,7 @@ class TalkingHead {
       i = this.mtRandomized[ Math.floor( Math.random() * this.mtRandomized.length ) ];
       j = this.mtAvatar[i];
       if ( !j.needsUpdate ) {
-        j.base = { target: (this.mood.baseline[i] || 0) + ( 1 + vol/255 ) * Math.random() / 5, d: Math.random() * 2000 + 1000 };
-        j.needsUpdate = true;
+        Object.assign(j,{ base: (this.mood.baseline[i] || 0) + ( 1 + vol/255 ) * Math.random() / 5, needsUpdate: true });
       }
     }
 
@@ -3162,7 +3171,8 @@ class TalkingHead {
           eyesRotateY: [ - 5 * droty ],
           browInnerUp: [[0,0.7]],
           mouthLeft: [[0,0.7]],
-          mouthRight: [[0,0.7]]
+          mouthRight: [[0,0.7]],
+          eyeContact: [0]
         }
       };
       this.animQueue.push( this.animFactory( templateLookAt ) );
