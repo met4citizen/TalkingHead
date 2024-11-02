@@ -2293,7 +2293,12 @@ function headLoaded(firsttime=false) {
           head.getMorphTargetNames().forEach( mt => {
             const el = d3.select('#' + CSS.escape(mt));
             if ( !el.empty() ) {
-              el.property("value",testerGetValue(mt,null)).dispatch("change");
+              let v = testerGetValue(mt,null);
+              if ( parseFloat(el.property("value")) !== v ) {
+                el.property("value",v);
+                d3.select(el.node().nextElementSibling).html(testerGetLabel(mt,v));
+                head.setFixedValue(mt,testerGetFixedValue(mt,v));
+              }
             }
           });
 
@@ -2301,29 +2306,36 @@ function headLoaded(firsttime=false) {
           d3.selectAll(".emoji").classed("selected",false);
           if ( selected ) {
             d3.selectAll(".emoji").classed("selected",false);
+            testerUpdateMorphData();
           } else {
             e.classed("selected",true);
 
             // Animate
-            head.playGesture(name);
+            head.playGesture(name,3);
 
-            // Update morphs
-            const o = head.animEmojis[name];
-            if ( o ) {
-              head.getMorphTargetNames().forEach( mt => {
-                let val = null;
-                if ( o.vs &&  o.vs[mt] ) {
-                  val = o.vs[mt][o.vs[mt].length-1];
-                  if ( Array.isArray(val) ) val = val[val.length-1];
-                }
-                const el = d3.select('#' + CSS.escape(mt));
-                if ( !el.empty() ) {
-                  el.property("value",testerGetValue(mt,val)).dispatch("change");
-                }
-              });
-            }
+            setTimeout( () => {
+              const o = head.animEmojis[name];
+              if ( o ) {
+                head.getMorphTargetNames().forEach( mt => {
+                  let val = null;
+                  if ( o.vs &&  o.vs[mt] ) {
+                    val = o.vs[mt][o.vs[mt].length-1];
+                    if ( Array.isArray(val) ) val = val[val.length-1];
+                  }
+                  const el = d3.select('#' + CSS.escape(mt));
+                  if ( !el.empty() ) {
+                    let v = testerGetValue(mt,val);
+                    if ( parseFloat(el.property("value")) !== v ) {
+                      el.property("value",v);
+                      d3.select(el.node().nextElementSibling).html(testerGetLabel(mt,v));
+                      head.setFixedValue(mt,testerGetFixedValue(mt,v));
+                    }
+                  }
+                });
+                testerUpdateMorphData();
+              }
+            }, 3500);
           }
-          testerUpdateMorphData();
         })
         .html(em);
     }
