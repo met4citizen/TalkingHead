@@ -163,6 +163,7 @@ class TalkingHead {
       avatarIdleHeadMove: 0.5,
       avatarSpeakingEyeContact: 0.5,
       avatarSpeakingHeadMove: 0.5,
+      avatarIgnoreCamera: false,
       listeningSilenceThresholdLevel: 40,
       listeningSilenceThresholdMs: 2000,
       listeningSilenceDurationMax: 10000,
@@ -3169,11 +3170,62 @@ class TalkingHead {
   }
 
   /**
+  * Look ahead.
+  * @param {number} t Time in milliseconds
+  */
+  lookAhead(t) {
+
+    if ( t ) {
+
+      // Randomize head/eyes ratio
+      let drotx = (Math.random() - 0.5) / 4;
+      let droty = (Math.random() - 0.5) / 4;
+
+      // Remove old, if any
+      let old = this.animQueue.findIndex( y => y.template.name === 'lookat' );
+      if ( old !== -1 ) {
+        this.animQueue.splice(old, 1);
+      }
+
+      // Add new anim
+      const templateLookAt = {
+        name: 'lookat',
+        dt: [750,t],
+        vs: {
+          bodyRotateX: [ drotx ],
+          bodyRotateY: [ droty ],
+          eyesRotateX: [ - 3 * drotx + 0.1 ],
+          eyesRotateY: [ - 5 * droty ],
+          browInnerUp: [[0,0.7]],
+          mouthLeft: [[0,0.7]],
+          mouthRight: [[0,0.7]],
+          eyeContact: [0],
+          headMove: [0]
+        }
+      };
+      this.animQueue.push( this.animFactory( templateLookAt ) );
+    }
+
+  }
+
+  /**
   * Turn head and eyes to look at the camera.
   * @param {number} t Time in milliseconds
   */
   lookAtCamera(t) {
-    this.lookAt( null, null, t );
+
+    if ( this.avatar.hasOwnProperty('avatarIgnoreCamera') ) {
+      if ( this.avatar.avatarIgnoreCamera ) {
+        this.lookAhead(t);
+      } else {
+        this.lookAt( null, null, t );
+      }
+    } else if ( this.opt.avatarIgnoreCamera ) {
+      this.lookAhead(t);
+    } else {
+      this.lookAt( null, null, t );
+    }
+
   }
 
   /**

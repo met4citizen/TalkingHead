@@ -142,6 +142,7 @@ Option | Description
 `avatarIdleHeadMove` | The average proportion of head movement while idle in the range [0,1]. Default is `0.5`. [&#8805;`v1.3`]
 `avatarSpeakingEyeContact` | The average proportion of eye contact while speaking in the range [0,1]. Default is `0.5`. [&#8805;`v1.3`]
 `avatarSpeakingHeadMove` | The average proportion of head movement while speaking in the range [0,1]. Default is `0.5`. [&#8805;`v1.3`]
+`avatarIgnoreCamera` | If set to `true`, makes the avatar to ignore the camera and speak to whatever it is facing. Default is `false`. [&#8805;`v1.3`]
 `listeningSilenceThresholdLevel` |  Silence detection threshold in the range of [0,100]. If the volume stays below the level for the set duration, a `"stop"` event is triggered. Default is `40`. [&#8805;`v1.3`]
 `listeningSilenceThresholdMs` | Silence detection duration in milliseconds. If the volume stays below the level for the set duration, a `"stop"` event is triggered. Default is `2000`. [&#8805;`v1.3`]
 `listeningSilenceDurationMax` | Maximum silence in milliseconds before `"maxsilence"` event is triggered. Default is `10000`. [&#8805;`v1.3`]
@@ -192,7 +193,7 @@ The following table lists some of the key methods. See the source code for the r
 
 Method | Description
 --- | ---
-`showAvatar(avatar, [onprogress=null])` | Load and show the specified avatar. The `avatar` object must include the `url` for GLB file. Optional properties are `body` for either male `M` or female `F` body form, `lipsyncLang`, `lipsyncHeadMovement`, `baseline` object for blend shape baseline, `modelDynamicBones` for dynamic bones (see Appendix E), `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood`, `avatarMute`, `avatarIdleEyeContact`, `avatarSpeakingEyeContact`, and `avatarListeningEyeContact`.
+`showAvatar(avatar, [onprogress=null])` | Load and show the specified avatar. The `avatar` object must include the `url` for GLB file. Optional properties are `body` for either male `M` or female `F` body form, `lipsyncLang`, `lipsyncHeadMovement`, `baseline` object for blend shape baseline, `modelDynamicBones` for dynamic bones (see Appendix E), `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood`, `avatarMute`, `avatarIdleEyeContact`, `avatarSpeakingEyeContact`, `avatarListeningEyeContact`, and `avatarIgnoreCamera`.
 `setView(view, [opt])` | Set view. Supported views are `"full"`, `"mid"`, `"upper"`  and `"head"`. The `opt` object can be used to set `cameraDistance`, `cameraX`, `cameraY`, `cameraRotateX`, `cameraRotateY`.
 `setLighting(opt)` | Change lighting settings. The `opt` object can be used to set `lightAmbientColor`, `lightAmbientIntensity`, `lightDirectColor`, `lightDirectIntensity`, `lightDirectPhi`, `lightDirectTheta`, `lightSpotColor`, `lightSpotIntensity`, `lightSpotPhi`, `lightSpotTheta`, `lightSpotDispersion`.
 `speakText(text, [opt={}], [onsubtitles=null], [excludes=[]])` | Add the `text` string to the speech queue. The text can contain face emojis. Options `opt` can be used to set text-specific `lipsyncLang`, `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood`, `avatarMute`. Optional callback function `onsubtitles` is called whenever a new subtitle is to be written with the parameter of the added string. The optional `excludes` is an array of [start,end] indices to be excluded from audio but to be included in the subtitles.
@@ -201,7 +202,8 @@ Method | Description
 `speakBreak(t)` | Add a break of `t` milliseconds to the speech queue.
 `speakMarker(onmarker)` | Add a marker to the speech queue. The callback function `onmarker` is called when the queue processes the marker.
 `lookAt(x,y,t)` | Make the avatar's head turn to look at the screen position (`x`,`y`) for `t` milliseconds.
-`lookAtCamera(t)` | Make the avatar's head turn to look at the camera for `t` milliseconds.
+`lookAhead(t)` | Make avatar look ahead for `t` milliseconds.
+`lookAtCamera(t)` | Make the avatar's head turn to look at the camera for `t` milliseconds. If `avatarIgnoreCamera` is set to `true`, looks ahead for `t` milliseconds.
 `makeEyeContact(t)` | Make the avatar maintain eye contact with the person in front of it for (at least) `t` milliseconds [&#8805;`v1.3`]
 `setMood(mood)` | Set avatar mood.
 `playBackgroundAudio(url)` | Play background audio such as ambient sounds/music in a loop.
