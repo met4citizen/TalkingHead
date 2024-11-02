@@ -163,6 +163,12 @@ class TalkingHead {
       avatarIdleHeadMove: 0.5,
       avatarSpeakingEyeContact: 0.5,
       avatarSpeakingHeadMove: 0.5,
+      listeningSilenceThresholdLevel: 40,
+      listeningSilenceThresholdMs: 2000,
+      listeningSilenceDurationMax: 10000,
+      listeningActiveThresholdLevel: 75,
+      listeningActiveThresholdMs: 300,
+      listeningActiveDurationMax: 240000,
       statsNode: null,
       statsStyle: null
     };
@@ -759,6 +765,20 @@ class TalkingHead {
     this.volumeHeadCurrent = 0;
     this.volumeHeadVelocity = 0.15;
     this.volumeHeadEasing = this.sigmoidFactory(3);
+
+    // Listening
+    this.isListening = false;
+    this.listeningAnalyzer = null;
+    this.listeningActive = false;
+    this.listeningVolume = 0;
+    this.listeningSilenceThresholdLevel = this.opt.listeningSilenceThresholdLevel;
+    this.listeningSilenceThresholdMs = this.opt.listeningSilenceThresholdMs;
+    this.listeningSilenceDurationMax = this.opt.listeningSilenceDurationMax;
+    this.listeningActiveThresholdLevel = this.opt.listeningActiveThresholdLevel;
+    this.listeningActiveThresholdMs = this.opt.listeningActiveThresholdMs;
+    this.listeningActiveDurationMax = this.opt.listeningActiveDurationMax;
+    this.listeningTimer = 0;
+    this.listeningTimerTotal = 0;
 
     // Create a lookup table for base64 decoding
     const b64Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
@@ -2104,9 +2124,58 @@ class TalkingHead {
       this.stats.begin();
     }
 
-    // Speech volume
-    vol = 0;
+    // Listening
+    if ( this.isListening ) {
+
+      // Get input max volume
+      this.listeningAnalyzer.getByteFrequencyData(this.volumeFrequencyData);
+      for (i=2, l=10; i<l; i++) {
+        if (this.volumeFrequencyData[i] > vol) {
+          vol = this.volumeFrequencyData[i];
+        }
+      }
+
+      this.listeningVolume = (this.listeningVolume + vol) / 2;
+      if ( this.listeningActive ) {
+        this.listeningTimerTotal += dt;
+        if ( this.listeningVolume < this.listeningSilenceThresholdLevel ) {
+          this.listeningTimer += dt;
+          if ( this.listeningTimer > this.listeningSilenceThresholdMs ) {
+            if ( this.listeningOnchange ) this.listeningOnchange('stop',this.listeningTimer);
+            this.listeningActive = false;
+            this.listeningTimer = 0;
+            this.listeningTimerTotal = 0;
+          }
+        } else {
+          this.listeningTimer *= 0.5;
+        }
+        if ( this.listeningTimerTotal > this.listeningActiveDurationMax ) {
+          if ( this.listeningOnchange ) this.listeningOnchange('maxactive');
+          this.listeningTimerTotal = 0;
+        }
+      } else {
+        this.listeningTimerTotal += dt;
+        if ( this.listeningVolume > this.listeningActiveThresholdLevel ) {
+          this.listeningTimer += dt;
+          if ( this.listeningTimer > this.listeningActiveThresholdMs ) {
+            if ( this.listeningOnchange ) this.listeningOnchange('start');
+            this.listeningActive = true;
+            this.listeningTimer = 0;
+            this.listeningTimerTotal = 0;
+          }
+        } else {
+          this.listeningTimer *= 0.5;
+        }
+        if ( this.listeningTimerTotal > this.listeningSilenceDurationMax ) {
+          if ( this.listeningOnchange ) this.listeningOnchange('maxsilence');
+          this.listeningTimerTotal = 0;
+        }
+      }
+    }
+
+    // Speaking
     if ( this.isSpeaking ) {
+      vol = 0;
       this.audioAnalyzerNode.getByteFrequencyData(this.volumeFrequencyData);
       for (i=2, l=10; i<l; i++) {
         if (this.volumeFrequencyData[i] > vol) {
@@ -2116,8 +2185,8 @@ class TalkingHead {
     }
 
     // Animation loop
-    let isEyeContact = false;
-    let isHeadMove = false;
+    let isEyeContact = null;
+    let isHeadMove = null;
     const tasks = [];
     for( i=0, l=this.animQueue.length; i<l; i++ ) {
       const x = this.animQueue[i];
@@ -2164,11 +2233,15 @@ class TalkingHead {
             // Update
             m.needsUpdate = true;
 
-          } else if ( mt === 'eyeContact' && vs[j] !== null ) {
+          } else if ( mt === 'eyeContact' && vs[j] !== null && isEyeContact !== false ) {
             isEyeContact = Boolean(vs[j]);
-          } else if ( mt === 'headMove' && vs[j] !== null ) {
-            isHeadMove = Math.random() < vs[j];
-            vs[j] = null;
+          } else if ( mt === 'headMove' && vs[j] !== null && isHeadMove !== false ) {
+            if ( vs[j] === 0 ) {
+              isHeadMove = false;
+            } else {
+              if ( Math.random() < vs[j] ) isHeadMove = true;
+              vs[j] = null;
+            }
           } else if ( vs[j] !== null ) {
             tasks.push({ mt: mt, val: vs[j] });
             vs[j] = null;
@@ -2320,7 +2393,7 @@ class TalkingHead {
 
 
     // Volume based head movement, set targets
-    if ( this.isSpeaking && isEyeContact ) {
+    if ( (this.isSpeaking || this.isListening) && isEyeContact ) {
       if ( vol > this.volumeMax ) {
         this.volumeHeadBase = 0.05;
         if ( Math.random() > 0.6 ) {
@@ -3172,7 +3245,8 @@ class TalkingHead {
           browInnerUp: [[0,0.7]],
           mouthLeft: [[0,0.7]],
           mouthRight: [[0,0.7]],
-          eyeContact: [0]
+          eyeContact: [0],
+          headMove: [0]
         }
       };
       this.animQueue.push( this.animFactory( templateLookAt ) );
@@ -3360,6 +3434,41 @@ class TalkingHead {
   stop() {
     this.isRunning = false;
     this.audioCtx.suspend();
+  }
+
+  /**
+  * Start listening incoming audio.
+  * @param {AnalyserNode} analyzer Analyzer node for incoming audio
+  * @param {Object} [opt={}] Options
+  * @param {function} [onchange=null] Callback function for start
+  */
+  startListening(analyzer, opt = {}, onchange = null) {
+    this.listeningAnalyzer = analyzer;
+    this.listeningAnalyzer.fftSize = 256;
+    this.listeningAnalyzer.smoothingTimeConstant = 0.1;
+    this.listeningAnalyzer.minDecibels = -70;
+    this.listeningAnalyzer.maxDecibels = -10;
+    this.listeningOnchange = (onchange && typeof onchange === 'function') ? onchange : null;
+
+    this.listeningSilenceThresholdLevel = opt?.hasOwnProperty('listeningSilenceThresholdLevel') ? opt.listeningSilenceThresholdLevel : this.opt.listeningSilenceThresholdLevel;
+    this.listeningSilenceThresholdMs = opt?.hasOwnProperty('listeningSilenceThresholdMs') ? opt.listeningSilenceThresholdMs : this.opt.listeningSilenceThresholdMs;
+    this.listeningSilenceDurationMax = opt?.hasOwnProperty('listeningSilenceDurationMax') ? opt.listeningSilenceDurationMax : this.opt.listeningSilenceDurationMax;
+    this.listeningActiveThresholdLevel = opt?.hasOwnProperty('listeningActiveThresholdLevel') ? opt.listeningActiveThresholdLevel : this.opt.listeningActiveThresholdLevel;
+    this.listeningActiveThresholdMs = opt?.hasOwnProperty('listeningActiveThresholdMs') ? opt.listeningActiveThresholdMs : this.opt.listeningActiveThresholdMs;
+    this.listeningActiveDurationMax = opt?.hasOwnProperty('listeningActiveDurationMax') ? opt.listeningActiveDurationMax : this.opt.listeningActiveDurationMax;
+
+    this.listeningActive = false;
+    this.listeningVolume = 0;
+    this.listeningTimer = 0;
+    this.listeningTimerTotal = 0;
+    this.isListening = true;
+  }
+
+  /**
+  * Stop animation cycle.
+  */
+  stopListening() {
+    this.isListening = false;
   }
 
   /**

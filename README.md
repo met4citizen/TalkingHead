@@ -86,7 +86,8 @@ const head = new TalkingHead( nodeAvatar, {
 });
 ```
 
-**FOR HOBBYISTS:** If you're just looking to experiment on your personal
+> [!TIP]
+> **FOR HOBBYISTS:** If you're just looking to experiment on your personal
 laptop without dealing with proxies, JSON Web Tokens, or Single Sign-On,
 take a look at the [minimal code example](https://github.com/met4citizen/TalkingHead/blob/main/examples/minimal.html).
 Simply download the file, add your Google TTS API key, and you'll
@@ -141,6 +142,12 @@ Option | Description
 `avatarIdleHeadMove` | The average proportion of head movement while idle in the range [0,1]. Default is `0.5`. [&#8805;`v1.3`]
 `avatarSpeakingEyeContact` | The average proportion of eye contact while speaking in the range [0,1]. Default is `0.5`. [&#8805;`v1.3`]
 `avatarSpeakingHeadMove` | The average proportion of head movement while speaking in the range [0,1]. Default is `0.5`. [&#8805;`v1.3`]
+`listeningSilenceThresholdLevel` |  Silence detection threshold in the range of [0,100]. If the volume stays below the level for the set duration, a `"stop"` event is triggered. Default is `40`. [&#8805;`v1.3`]
+`listeningSilenceThresholdMs` | Silence detection duration in milliseconds. If the volume stays below the level for the set duration, a `"stop"` event is triggered. Default is `2000`. [&#8805;`v1.3`]
+`listeningSilenceDurationMax` | Maximum silence in milliseconds before `"maxsilence"` event is triggered. Default is `10000`. [&#8805;`v1.3`]
+`listeningActiveThresholdLevel` | Activity detection threshold in the range of [0,100]. If the volume stays above the set level for the set duration, a `"start"` event is triggered. Default is `90`. [&#8805;`v1.3`]
+`listeningActiveThresholdMs` | Activity detection duration in milliseconds. If the volume stays above the set level for the set duration, a `"start"` event is triggered. Default is `400`. [&#8805;`v1.3`]
+`listeningActiveDurationMax` | Maximum activity in milliseconds before `"maxactive"` event is triggered. Default is `240000`. [&#8805;`v1.3`]
 `statsNode` | Parent DOM element for the three.js stats display. If `null`, don't use. Default is `null`.
 `statsStyle` | CSS style for the stats element. If `null`, use the three.js default style. Default is `null`.
 
@@ -206,6 +213,8 @@ Method | Description
 `stopPose()` | Stop the current pose started by `playPose`.
 `playGesture(name, [dur=3], [mirror=false], [ms=1000])` | Play a named hand gesture and/or animated emoji for `dur` seconds with the `ms` transition time. The available hand gestures are `handup`, `index`, `ok`, `thumbup`, `thumbdown`, `side`, `shrug`. By default, hand gestures are done with the left hand. If you want the right handed version, set `mirror` to true. You can also use `playGesture` to play emojis. See Appendix D for more details. [&#8805;`v1.2`]
 `stopGesture([ms=1000])` | Stop the gesture with `ms` transition time. [&#8805;`v1.2`]
+`startListening(analyzer, [opt={}], [onchange=null])` | Start listening `analyzer` AudioNode. The `opt` object can be used to set options `listeningSilenceThresholdLevel`, `listeningSilenceThresholdMs`, `listeningSilenceDurationMax`, `listeningActiveThresholdLevel`, `listeningActiveThresholdMs`, `listeningActiveDurationMax`. The callback function `onchange` is called, when the state changes with one the following parameter: `start`, `stop`, `maxsilence`, `maxactive`. [&#8805;`v1.3`]
+`stopListening` | Stop listening the incoming audio. [&#8805;`v1.3`]
 `start` | Start/re-start the Talking Head animation loop.
 `stop` | Stop the Talking Head animation loop.
 
@@ -471,7 +480,6 @@ The steps that are common to all new languages:
   - Property `visemes` is an array of Oculus OVR viseme codes. Each viseme is one of the strings: `'aa'`, `'E'`, `'I'`, `'O'`, `'U'`, `'PP'`, `'SS'`, `'TH'`, `'CH'`, `'FF'`, `'kk'`, `'nn'`, `'RR'`, `'DD'`, `'sil'`. See the reference images here: https://developer.oculus.com/documentation/unity/audio-ovrlipsync-viseme-reference/
   - Property `times` is an array of starting times, one entry for each viseme in `visemes`. Starting times are to be given in relative units. They will be scaled later on based on the word timestamps that we get from the TTS engine.
   - Property `durations` is an array of relative durations, one entry for each viseme in `visemes`. Durations are to be given in relative units. They will be scaled later on based on the word timestamps that we get from the TTS engine.
-- (OPTIONAL) Add the new module `"xx"` to `lipsyncModules` parameter array in the `talkinghead.mjs` file.
 
 The difficult part is to actually make the conversion from words to visemes.
 What is the best approach depends on the language. Here are some typical
