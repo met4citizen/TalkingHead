@@ -1644,7 +1644,7 @@ async function openaiSendMessage(node,msgs) {
             let idx = 0;
             ['.','!','?','\n'].forEach( x => {
               let tmp = tts.lastIndexOf(x,ndx);
-              if ( tmp > ndx ) ndx = tmp + 1;
+              if ( tmp > idx ) idx = tmp + 1;
             });
             if ( idx > 10 ) {
               let s = tts.substring(0, idx);
