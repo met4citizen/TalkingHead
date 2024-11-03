@@ -708,7 +708,10 @@ async function microsoftSpeak(s, node=null, onprocessed=null) {
       ssml: ssml,
       node: node,
       onprocessed: onprocessed,
-      speak: { audio: [], words: [], wtimes: [], wdurations: [], visemes: [], vtimes: [], vdurations: [] }
+      speak: {
+        audio: [], words: [], wtimes: [], wdurations: [],
+        visemes: [], vtimes: [], vdurations: [], markers: [], mtimes: []
+      }
      } );
   }
 
@@ -740,6 +743,7 @@ async function microsoftProcessQueue() {
         const config = window.SpeechSDK.SpeechConfig.fromEndpoint(endpoint);
         config.setProperty("SpeechServiceConnection_Endpoint",endpoint);
         config.speechSynthesisOutputFormat = window.SpeechSDK.SpeechSynthesisOutputFormat.Raw22050Hz16BitMonoPcm;
+        config.setProperty(window.SpeechSDK.PropertyId.SpeechServiceResponse_RequestSentenceBoundary, "true");
         microsoftSynthesizer = new window.SpeechSDK.SpeechSynthesizer(config,null);
 
         // Viseme conversion from Microsoft to Oculus
@@ -795,9 +799,15 @@ async function microsoftProcessQueue() {
               o.words.push( word );
               o.wtimes.push( time );
               o.wdurations.push( duration );
+            } else if ( e.boundaryType === "SentenceBoundary" ) {
+              if ( time > 500 ) {
+                o.markers.push( () => { head.lookAtCamera(500); });
+                o.mtimes.push( time - 500 );
+              }
             }
           }
         };
+
       }
 
       // Speak the SSML
@@ -1632,7 +1642,10 @@ async function openaiSendMessage(node,msgs) {
           // Speak
           if ( tts ) {
             let idx = 0;
-            ['.','!','?','\n'].forEach( x => idx = tts.lastIndexOf(x,idx) + 1 );
+            ['.','!','?','\n'].forEach( x => {
+              let tmp = tts.lastIndexOf(x,ndx);
+              if ( tmp > ndx ) ndx = tmp + 1;
+            });
             if ( idx > 10 ) {
               let s = tts.substring(0, idx);
               if ( s && s.length ) {
@@ -1754,7 +1767,7 @@ function geminiBuildMessage() {
   return msgs;
 }
 
-// Send messages to Vertex AI API and handle streamed response
+// Send messages to Gemini API and handle streamed response
 async function geminiSendMessage(node,msgs) {
 
   // Create a new AbortController instance
@@ -1919,7 +1932,10 @@ async function geminiSendMessage(node,msgs) {
             break;
           } else {
             let ndx = 0;
-            ['.','!','?','\n'].forEach( x => ndx = tts.lastIndexOf(x,ndx) + 1 );
+            ['.','!','?','\n'].forEach( x => {
+              let tmp = tts.lastIndexOf(x,ndx);
+              if ( tmp > ndx ) ndx = tmp + 1;
+            });
             if ( ndx > 10 ) {
               if ( cfg('voice-type') === 'eleven' ) {
                 await elevenSpeak( tts.substring(0, ndx) + " ", node );
