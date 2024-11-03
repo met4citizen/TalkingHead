@@ -696,6 +696,13 @@ class TalkingHead {
       eyeLookOutLeft: null, eyeLookInLeft: null, eyeLookOutRight: null,
       eyeLookInRight: null, eyesLookDown: null, eyesLookUp: null
     };
+    this.mtMinDefault = 0;
+    this.mtMinExceptions = {
+      bodyRotateX: -1, bodyRotateY: -1, bodyRotateZ: -1,
+      headRotateX: -1, headRotateY: -1, headRotateZ: -1
+    };
+    this.mtMaxDefault = 1;
+    this.mtMaxExceptions = {};
     this.mtLimits = {
       eyeBlinkLeft: (v) => ( Math.max(v, ( this.mtAvatar['eyesLookDown'].value + this.mtAvatar['browDownLeft'].value ) / 2) ),
       eyeBlinkRight: (v) => ( Math.max(v, ( this.mtAvatar['eyesLookDown'].value + this.mtAvatar['browDownRight'].value ) / 2 ) )
@@ -1086,6 +1093,8 @@ class TalkingHead {
       // Morph target data structure
       mtTemp[x] = {
         fixed: null, system: null, systemd: null, newvalue: null, ref: null,
+        min: (this.mtMinExceptions.hasOwnProperty(x) ? this.mtMinExceptions[x] : this.mtMinDefault),
+        max: (this.mtMaxExceptions.hasOwnProperty(x) ? this.mtMaxExceptions[x] : this.mtMaxDefault),
         easing: this.mtEasingDefault, base: null, v: 0, needsUpdate: true,
         acc: (this.mtAccExceptions.hasOwnProperty(x) ? this.mtAccExceptions[x] : this.mtAccDefault) / 1000,
         maxv: (this.mtMaxVExceptions.hasOwnProperty(x) ? this.mtMaxVExceptions[x] : this.mtMaxVDefault) / 1000,
@@ -1481,6 +1490,8 @@ class TalkingHead {
       }
 
       o.applied = newvalue;
+      if ( o.applied < o.min ) o.applied = o.min;
+      if ( o.applied > o.max ) o.applied = o.max;
 
       // Apply value
       switch(mt) {
@@ -2376,6 +2387,9 @@ class TalkingHead {
       }
 
     }
+
+    // Make sure we do not overshoot
+    if ( dt > 2 * this.animFrameDur ) dt = 2 * this.animFrameDur;
 
     // Randomize facial expression by changing baseline
     if ( this.viewName !== 'full' ) {
