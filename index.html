@@ -2276,6 +2276,7 @@ function reconnectEffect() {
 
 // Talking Head
 let head;
+let morphTimer = null;
 
 function headLoaded(firsttime=false) {
 
@@ -2288,6 +2289,12 @@ function headLoaded(firsttime=false) {
         .on('click', function(ev) {
           const e = d3.select(this);
           const name = e.text();
+
+          // Clear timeouts
+          if ( morphTimer ) {
+            clearTimeout(morphTimer);
+            morphTimer = null;
+          }
 
           // Clear morphs
           head.getMorphTargetNames().forEach( mt => {
@@ -2313,7 +2320,8 @@ function headLoaded(firsttime=false) {
             // Animate
             head.playGesture(name,3);
 
-            setTimeout( () => {
+            morphTimer = setTimeout( () => {
+              morphTimer = null;
               const o = head.animEmojis[name];
               if ( o ) {
                 head.getMorphTargetNames().forEach( mt => {
