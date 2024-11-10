@@ -101,7 +101,7 @@ Option | Description
 `ttsEndpoint` | Text-to-speech backend/endpoint/proxy implementing the Google Text-to-Speech API.
 `ttsApikey` | If you don't want to use a proxy or JWT, you can use Google TTS endpoint directly and provide your API key here. **NOTE: I recommend that you don't use this in production and never put your API key in any client-side code.**
 `ttsLang` | Google text-to-speech language. Default is `"fi-FI"`.
-`ttsVoice` | Google text-to-speech voice. Default is `"fi-FI-Standard-A"`.
+`ttsVoice` | Google text-to-speech voice. The used voice must support SSML and \<mark> tags that are needed to get word-level timestamps. Currently, Google supports SSML and \<mark> tags when using Standard, Wavenet, Neural2, News, or Casual voice types. Default voice is `"fi-FI-Standard-A"`.
 `ttsRate` | Google text-to-speech rate in the range [0.25, 4.0]. Default is `1.0`.
 `ttsPitch` | Google text-to-speech pitch in the range [-20.0, 20.0]. Default is `0`.
 `ttsVolume` | Google text-to-speech volume gain (in dB) in the range [-96.0, 16.0]. Default is `0`.
@@ -215,7 +215,7 @@ Method | Description
 `stopPose()` | Stop the current pose started by `playPose`.
 `playGesture(name, [dur=3], [mirror=false], [ms=1000])` | Play a named hand gesture and/or animated emoji for `dur` seconds with the `ms` transition time. The available hand gestures are `handup`, `index`, `ok`, `thumbup`, `thumbdown`, `side`, `shrug`. By default, hand gestures are done with the left hand. If you want the right handed version, set `mirror` to true. You can also use `playGesture` to play emojis. See Appendix D for more details. [&#8805;`v1.2`]
 `stopGesture([ms=1000])` | Stop the gesture with `ms` transition time. [&#8805;`v1.2`]
-`startListening(analyzer, [opt={}], [onchange=null])` | Start listening `analyzer` AudioNode. The `opt` object can be used to set options `listeningSilenceThresholdLevel`, `listeningSilenceThresholdMs`, `listeningSilenceDurationMax`, `listeningActiveThresholdLevel`, `listeningActiveThresholdMs`, `listeningActiveDurationMax`. The callback function `onchange` is called, when the state changes with one the following parameter: `start`, `stop`, `maxsilence`, `maxactive`. [&#8805;`v1.3`]
+`startListening(analyzer, [opt={}], [onchange=null])` | Start listening `analyzer` AnalyserNode. The `opt` object can be used to set options `listeningSilenceThresholdLevel`, `listeningSilenceThresholdMs`, `listeningSilenceDurationMax`, `listeningActiveThresholdLevel`, `listeningActiveThresholdMs`, `listeningActiveDurationMax`. The callback function `onchange` is called, when the state changes with one of the following parameter: `start`, `stop`, `maxsilence`, `maxactive`. [&#8805;`v1.3`]
 `stopListening` | Stop listening the incoming audio. [&#8805;`v1.3`]
 `start` | Start/re-start the Talking Head animation loop.
 `stop` | Stop the Talking Head animation loop.
