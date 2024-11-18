@@ -4,7 +4,7 @@
   <title>Talking Head - MP3 example</title>
 
   <style>
-    body, html { width:100%; height:100%; margin: 0; padding: 0; background-color: dimgray; color: white; }
+    body, html { width:100%; height:100%; margin: 0; padding: 0; background-color: #202020; color: white; }
     #avatar { display: block; position: absolute; top: 0; left: 0; right: 40%; bottom: 0; }
     #controls { display: flex; flex-direction: column; gap: 10px; position: absolute; top: 50px; left: Calc( 60% + 50px); right: 50px; bottom: 50px;  }
     #load { font-family: Arial; font-size: 20px; }
@@ -16,9 +16,9 @@
   <script type="importmap">
   { "imports":
     {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js/+esm",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/",
-      "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.2/modules/talkinghead.mjs"
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js/+esm",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+      "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.3/modules/talkinghead.mjs"
     }
   }
   </script>
@@ -164,6 +164,15 @@
       nodePlay.addEventListener('click', function() {
         if ( audio ) {
           head.speakAudio( audio );
+        }
+      });
+
+      // Pause animation when document is not visible
+      document.addEventListener("visibilitychange", async function (ev) {
+        if (document.visibilityState === "visible") {
+          head.start();
+        } else {
+          head.stop();
         }
       });
 

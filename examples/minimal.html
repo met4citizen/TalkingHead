@@ -4,20 +4,20 @@
   <title>Talking Head - minimal example</title>
 
   <style>
-    body, html { width:100%; height:100%; max-width: 800px; margin: auto; position: relative; background-color: dimgray; color: white; }
+    body, html { width:100%; height:100%; max-width: 800px; margin: auto; position: relative; background-color: #202020; color: white; }
     #avatar { display: block; width:100%; height:100%; }
     #controls { display: block; position: absolute; top: 10px; left: 10px; right: 10px; height: 50px; }
     #text { position: absolute; width: Calc( 100% - 110px ); height: 100%; top: 0; left: 0; bottom: 0; right: 110px; font-family: Arial; font-size: 20px; }
-    #speak { block; position: absolute; top: 0; bottom: 0; right: 0; height: 100%; width: 100px; font-family: Arial; font-size: 20px; }
+    #speak { display: block; position: absolute; top: 0; bottom: 0; right: 0; height: 100%; width: 100px; font-family: Arial; font-size: 20px; }
     #loading { display: block; position: absolute; bottom: 10px; left: 10px; right: 10px; height: 50px; font-family: Arial; font-size: 20px; }
   </style>
 
   <script type="importmap">
   { "imports":
     {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js/+esm",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/",
-      "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.2/modules/talkinghead.mjs"
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js/+esm",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+      "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.3/modules/talkinghead.mjs"
     }
   }
   </script>
@@ -73,6 +73,15 @@
           }
         } catch (error) {
           console.log(error);
+        }
+      });
+
+      // Pause animation when document is not visible
+      document.addEventListener("visibilitychange", async function (ev) {
+        if (document.visibilityState === "visible") {
+          head.start();
+        } else {
+          head.stop();
         }
       });
 
