@@ -106,7 +106,6 @@ class LipsyncFi {
       })
       .replace(/(\d)\,(\d)/g, '$1 pilkku $2') // Number separator
       .replace(/\d+/g, this.numberToFinnishWords.bind(this)) // Numbers to words
-      .replace(/(\D)\1\1+/g, "$1$1") // max 2 repeating chars
       .replaceAll('  ',' ') // Only one repeating space
       .normalize('NFD').replace(/[\u0300-\u0307\u0309\u030b-\u036f]/g, '').normalize('NFC') // Remove non-Finnish diacritics
       .trim();
