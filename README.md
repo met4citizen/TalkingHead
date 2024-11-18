@@ -5,7 +5,7 @@
 Video | Description
 --- | ---
 <span style="display: block; min-width:400px">[<img src="images/dynamicbones2.jpg" width="400"/>](https://youtu.be/4Y9NFnENH5s)</span> | Having a good hair day — a follow-up to our previous video about dynamic bones. This time, we're focusing on pivot bones and excluded zones. See Appendix E for more details.
-[<img src="images/dynamicbones.jpg" width="400"/>](https://youtu.be/YUbDIWkskuw) | A short intro for the dynamic bones feature 🦴🦴 See Appendix E for more details.
+[<img src="images/dynamicbones.jpg" width="400"/>](https://youtu.be/YUbDIWkskuw) | A short intro for the dynamic bones feature 🦴🦴 Using a custom model with rigged hair. See Appendix E for more details.
 [<img src="images/screenshot4.jpg" width="400"/>](https://youtu.be/OA6LBZjkzJI) | I chat with Jenny and Harri. The close-up view allows you to evaluate the accuracy of lip-sync in both English and Finnish. Using GPT-3.5 and Microsoft text-to-speech.
 [<img src="images/screenshot5.jpg" width="400"/>](https://youtu.be/fJrYGaGCAGo) | A short demo of how AI can control the avatar's movements. Using OpenAI's function calling and Google TTS with the TalkingHead's built-in viseme generation.
 [<img src="images/screenshot6.jpg" width="400"/>](https://youtu.be/6XRxALY1Iwg) | Michael lip-syncs to two MP3 audio tracks using OpenAI's Whisper and TalkingHead's `speakAudio` method. He kicks things off with some casual talk, but then goes all out by trying to tackle an old Meat Loaf classic. 🤘 Keep rockin', Michael! 🎤😂
@@ -61,9 +61,9 @@ modules from a CDN:
 <script type="importmap">
 { "imports":
   {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js/+esm",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/",
-    "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.2/modules/talkinghead.mjs"
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js/+esm",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+    "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.3/modules/talkinghead.mjs"
   }
 }
 </script>
@@ -266,6 +266,9 @@ const microsoftTTSProxy = [
   "wss://" + window.location.host + "/mstts/",
   "/cognitiveservices/websocket/v1"
 ];
+const grokChatCompletionsProxy = "/grok/v1/chat/completions"; // Grok-beta
+const llamaChatCompletionsProxy = "/llama/v1/chat/completions"; // Local llama.cpp
+const localWhisperCppProxy = "/whisper/"; // Local whisper.cpp
 ```
 
 3. The test app's UI supports both Finnish and English. If you want to add another language, you need to add an another entry to the `i18n` object.
@@ -600,9 +603,9 @@ It simulates Newton's equations of motions using a spring-damper model and the
 [velocity Verlet integration](https://en.wikipedia.org/wiki/Verlet_integration)
 method.
 
-Standard Ready Player Me 3D avatars don't include features
-like hair bones, so you'll need to add the dynamic bones and their weights to
-the model yourself. Here's an example of rigged hair in Blender.
+Standard Ready Player Me 3D avatars don't yet include features like hair bones.
+Until they do, you'll need to add the dynamic bones and weights to the model
+yourself. Here's an example of rigged hair in Blender.
 
 <img src="images/ponytail.jpg"/>
 
