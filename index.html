@@ -391,11 +391,11 @@
 <script type="importmap">
 { "imports":
   {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js/+esm",
-    "three/examples/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/",
-    "dompurify": "https://cdn.jsdelivr.net/npm/dompurify@3.0.6/+esm",
-    "marked": "https://cdn.jsdelivr.net/npm/marked@11.2.0/+esm"
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js/+esm",
+    "three/examples/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+    "dompurify": "https://cdn.jsdelivr.net/npm/dompurify@3.1.7/+esm",
+    "marked": "https://cdn.jsdelivr.net/npm/marked@14.1.3/+esm"
   }
 }
 </script>
@@ -417,12 +417,15 @@ const googleTTSProxy = "/gtts/";
 const elevenTTSProxy = [
   "wss://" + window.location.host + "/elevenlabs/",
   "/v1/text-to-speech/",
-  "/stream-input?model_id=eleven_multilingual_v2&output_format=pcm_22050"
+  "/stream-input?model_id=eleven_turbo_v2_5&output_format=pcm_22050"
 ];
 const microsoftTTSProxy = [
   "wss://" + window.location.host + "/mstts/",
   "/cognitiveservices/websocket/v1"
 ];
+const grokChatCompletionsProxy = "/grok/v1/chat/completions"; // Grok-beta
+const llamaChatCompletionsProxy = "/llama/v1/chat/completions"; // Local llama.cpp server proxy
+const localWhisperCppProxy = "/whisper/"; // Local whisper.cpp server proxy
 
 
 // I18n internationalization
@@ -840,87 +843,181 @@ let whisperAudio = null;
 let whisperLipsyncLang = 'en';
 
 async function whisperLoadMP3(file) {
-  try {
-    d3.select("#playmp3").classed("disabled", true);
 
-    const form = new FormData();
-    form.append("file", file);
-    form.append("model", "whisper-1");
-    form.append("response_format", "verbose_json" );
-    form.append("prompt","[The following is a full verbatim transcription without additional details, comments or emojis:]");
-    form.append("timestamp_granularities[]", "word" );
-    form.append("timestamp_granularities[]", "segment" );
-    const response = await fetch( openaiAudioTranscriptionsProxy , {
-      method: "POST",
-      body: form,
-      headers: {
-        "Authorization": "Bearer " + await jwtGet()
-      }
-    });
-    if ( response.ok ) {
-      const json = await response.json();
-      d3.select("#jsonmp3").property("value", JSON.stringify(json) );
+  if ( cfg("whisper-type") === "openai" ) {
+    try {
+      d3.select("#playmp3").classed("disabled", true);
 
-      // Fetch audio
-      if ( json.words && json.words.length ) {
-        var reader = new FileReader();
-        reader.readAsArrayBuffer(file);
-        reader.onload = async readerEvent => {
-          let arraybuffer = readerEvent.target.result;
-          let audiobuffer = await head.audioCtx.decodeAudioData(arraybuffer);
-
-          // Set lip-sync language
-          whisperLipsyncLang = json.language.substring(0,2);
-
-          // Add words to the audio object
-          whisperAudio = {
-            audio: audiobuffer,
-            words: [],
-            wtimes: [],
-            wdurations: [],
-            markers: [],
-            mtimes: []
-          };
-          json.words.forEach( x => {
-            // Word
-            whisperAudio.words.push( x.word );
-
-            // Starting time
-            let t = 1000 * x.start;
-            if ( t > 150 ) t -= 150;
-            whisperAudio.wtimes.push( t );
-
-            // Duration
-            let d = 1000 * (x.end - x.start);
-            if ( d > 20 ) d -= 20;
-            whisperAudio.wdurations.push( d  );
-          });
-
-          // Add timed callback markers to the audio object
-          const startSegment = async () => {
-            // Look at the camera
-            head.lookAtCamera(500);
-            head.speakWithHands();
-          };
-          json.segments.forEach( x => {
-            if ( x.start > 2 && x.text.length > 10 ) {
-              whisperAudio.markers.push( startSegment );
-              whisperAudio.mtimes.push( 1000 * x.start - 1000 );
-            }
-          });
-
-          d3.select("#playmp3").classed("disabled", false);
+      const form = new FormData();
+      form.append("file", file);
+      form.append("model", "whisper-1");
+      form.append("response_format", "verbose_json" );
+      form.append("prompt","[The following is a full verbatim transcription without additional details, comments or emojis:]");
+      form.append("timestamp_granularities[]", "word" );
+      form.append("timestamp_granularities[]", "segment" );
+      const response = await fetch( openaiAudioTranscriptionsProxy , {
+        method: "POST",
+        body: form,
+        headers: {
+          "Authorization": "Bearer " + await jwtGet()
         }
+      });
+      if ( response.ok ) {
+        const json = await response.json();
+        d3.select("#jsonmp3").property("value", JSON.stringify(json) );
+
+        // Fetch audio
+        if ( json.words && json.words.length ) {
+          var reader = new FileReader();
+          reader.readAsArrayBuffer(file);
+          reader.onload = async readerEvent => {
+            let arraybuffer = readerEvent.target.result;
+            let audiobuffer = await head.audioCtx.decodeAudioData(arraybuffer);
+
+            // Set lip-sync language
+            whisperLipsyncLang = json.language.substring(0,2);
+
+            // Add words to the audio object
+            whisperAudio = {
+              audio: audiobuffer,
+              words: [],
+              wtimes: [],
+              wdurations: [],
+              markers: [],
+              mtimes: []
+            };
+            json.words.forEach( x => {
+              // Word
+              whisperAudio.words.push( x.word );
+
+              // Starting time
+              let t = 1000 * x.start;
+              if ( t > 150 ) t -= 150;
+              whisperAudio.wtimes.push( t );
+
+              // Duration
+              let d = 1000 * (x.end - x.start);
+              if ( d > 20 ) d -= 20;
+              whisperAudio.wdurations.push( d  );
+            });
+
+            // Add timed callback markers to the audio object
+            const startSegment = async () => {
+              // Look at the camera
+              head.lookAtCamera(500);
+              head.speakWithHands();
+            };
+            json.segments.forEach( x => {
+              if ( x.start > 2 && x.text.length > 10 ) {
+                whisperAudio.markers.push( startSegment );
+                whisperAudio.mtimes.push( 1000 * x.start - 1000 );
+              }
+            });
+
+            d3.select("#playmp3").classed("disabled", false);
+          }
+        }
+
+      } else {
+        d3.select("#jsonmp3").property("value", 'Error: ' + response.status + ' ' + response.statusText );
+        console.log(response);
       }
 
-    } else {
-      d3.select("#jsonmp3").property("value", 'Error: ' + response.status + ' ' + response.statusText );
-      console.log(response);
+    } catch (error) {
+      console.log(error);
     }
+  } else if ( cfg("whisper-type") === "local" ) {
+    try {
+      d3.select("#playmp3").classed("disabled", true);
 
-  } catch (error) {
-    console.log(error);
+      const form = new FormData();
+      form.append("file", file);
+      form.append("temperature","0.0");
+      form.append("temperature_inc", "0.2");
+      form.append("response_format", "verbose_json");
+      const response = await fetch( localWhisperCppProxy + 'inference' , {
+        method: "POST",
+        body: form,
+        headers: {
+          "Authorization": "Bearer " + await jwtGet()
+        }
+      });
+      if ( response.ok ) {
+        const json = await response.json();
+        d3.select("#jsonmp3").property("value", JSON.stringify(json) );
+
+        // Fetch audio
+        if ( json.segments && json.segments.length ) {
+          var reader = new FileReader();
+          reader.readAsArrayBuffer(file);
+          reader.onload = async readerEvent => {
+            let arraybuffer = readerEvent.target.result;
+            let audiobuffer = await head.audioCtx.decodeAudioData(arraybuffer);
+
+            // Set lip-sync language
+            whisperLipsyncLang = json.language.substring(0,2);
+
+            // Add words to the audio object
+            whisperAudio = {
+              audio: audiobuffer,
+              words: [],
+              wtimes: [],
+              wdurations: [],
+              markers: [],
+              mtimes: []
+            };
+
+            // Add timed callback markers to the audio object
+            const startSegment = async () => {
+              // Look at the camera
+              head.lookAtCamera(500);
+              head.speakWithHands();
+            };
+
+            json.segments.forEach( (x,i) => {
+              if ( x.words && x.words.length ) {
+
+                // Look at camera
+                if ( x.start > 2 && x.text.length > 10 ) {
+                  whisperAudio.markers.push( startSegment );
+                  whisperAudio.mtimes.push( 1000 * x.start - 1000 );
+                }
+
+                // Word-level timestamps
+                x.words.forEach( y => {
+
+                  // Word
+                  whisperAudio.words.push( y.word );
+
+                  // Starting time
+                  let t = 1000 * y.start;
+                  if ( t > 150 ) t -= 150;
+                  whisperAudio.wtimes.push( t );
+
+                  // Duration
+                  let d = 1000 * (y.end - y.start);
+                  if ( d <= 50 ) d = 50;
+                  if ( d > 20 ) d -= 20;
+                  whisperAudio.wdurations.push( d  );
+
+                });
+              }
+            });
+
+            d3.select("#playmp3").classed("disabled", false);
+          }
+        }
+
+      } else {
+        d3.select("#jsonmp3").property("value", 'Error: ' + response.status + ' ' + response.statusText );
+        console.log(response);
+      }
+
+    } catch (error) {
+      console.log(error);
+    }
   }
+
 }
 
 
@@ -970,34 +1067,78 @@ async function recordingRecord() {
           const file = new File([event.data], 'file.'+recordingMediaType.ext, { type: recordingMediaType.type });
           const form = new FormData();
           form.append("file", file);
-          form.append("model", "whisper-1");
-          const lang = cfg('theme-lang') || 'en';
-          form.append("language", lang);
-          const response = await fetch( openaiAudioTranscriptionsProxy , {
-            method: "POST",
-            body: form,
-            headers: {
-              "Authorization": "Bearer " + await jwtGet()
-            }
-          });
 
-          // Append text to input
-          if ( response.ok ) {
-            let json;
-            try {
-              json = await response.json();
-            } catch(error) {
-              console.error("Invalid response from OpenAI");
-            }
-            if ( json && json.text ) {
-              const e = d3.select("#input");
-              let text = e.property("value");
-              if ( text ) {
-                e.property("value", text + ' ' + json.text );
-              } else {
-                e.property("value", json.text );
+          if ( cfg("whisper-type") === "openai" ) {
+
+            form.append("model", "whisper-1");
+            const lang = cfg('theme-lang') || 'en';
+            form.append("language", lang);
+            const response = await fetch( openaiAudioTranscriptionsProxy , {
+              method: "POST",
+              body: form,
+              headers: {
+                "Authorization": "Bearer " + await jwtGet()
+              }
+            });
+
+            // Append text to input
+            if ( response.ok ) {
+              let json;
+              try {
+                json = await response.json();
+              } catch(error) {
+                console.error("Invalid response from OpenAI");
+              }
+              if ( json && json.text ) {
+                const e = d3.select("#input");
+                let text = e.property("value");
+                if ( text ) {
+                  e.property("value", text + ' ' + json.text );
+                } else {
+                  e.property("value", json.text );
+                }
               }
             }
+          } else if ( cfg("whisper-type") === "local" ) {
+
+            form.append("temperature","0.0");
+            form.append("temperature_inc", "0.2");
+            form.append("response_format", "json");
+
+            const response = await fetch( localWhisperCppProxy + 'inference' , {
+              method: "POST",
+              body: form,
+              headers: {
+                "Authorization": "Bearer " + await jwtGet()
+              }
+            });
+
+            // Append text to input
+            if ( response.ok ) {
+              let json;
+              try {
+                json = await response.json();
+              } catch(error) {
+                console.error("Invalid response from local Whisper");
+              }
+              if ( json && json.text ) {
+                const e = d3.select("#input");
+                let text = e.property("value");
+
+                let s = json.text
+                  .replace(/\[[^\]]+\]/g, '')
+                  .replaceAll(/[^\p{L}\p{N},\.\p{Quotation_Mark}!€\$\+\p{Dash_Punctuation}%&\?\(\)\* ]/ug,"")
+                  .replaceAll("  "," ")
+                  .trim();
+
+                if ( text ) {
+                  e.property("value", text + ' ' + s );
+                } else {
+                  e.property("value", s );
+                }
+              }
+            }
+
           }
 
         }
@@ -1679,6 +1820,326 @@ async function openaiSendMessage(node,msgs) {
       }
 
     } while( fn.id ); // Repeat, if this iteration was a function call
+
+  } catch (error) {
+    if ( signal.aborted ) error = "aborted";
+    console.error(error);
+    addText( node, ' [' + error + ']');
+  } finally {
+    aiController = null; // Reset the AbortController instance
+    if ( elevenSocket ) {
+      elevenSpeak("",null);
+    }
+    microsoftSpeak(null);
+
+    // When this marker has been reached, stop blinking
+    head.speakMarker( () => {
+      d3.selectAll('.blink').classed("blink",false);
+    });
+  }
+}
+
+// Grok-beta
+
+// Send messages to local LLama API and handle streamed response
+async function grokSendMessage(node,msgs) {
+
+  // Create a new AbortController instance
+  aiController = new AbortController();
+  const signal = aiController.signal;
+
+  // Chat completion
+  try {
+    // Message body
+    const body = {
+      model: cfg('ai-model'),
+      messages: msgs.map( x => {
+        const {role,content,name} = x;
+        return (name ? {role,content,name} : {role,content});
+      }),
+      temperature: cfg('ai-grok-temperature'),
+      presence_penalty: cfg('ai-grok-presence'),
+      frequency_penalty: cfg('ai-grok-frequency'),
+      max_tokens: cfg('ai-grok-output'),
+      stream: true
+    };
+    const stop = cfg('ai-grok-stop');
+    if ( stop && stop.length ) {
+      body.stop = [ stop ];
+    }
+    const user = cfg('ai-grok-user');
+    if ( user && user.length ) {
+      body.user = user;
+    }
+
+    // Elements
+    node.dataset.output = '';
+    let tts = '';
+
+    // Fetch the response from the Llama.cpp server
+    tts = '';
+    const res = await fetch( grokChatCompletionsProxy, {
+      method: "POST",
+      mode: "cors",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + await jwtGet()
+      },
+      body: JSON.stringify(body),
+      signal
+    });
+
+    if ( res.ok ) {
+
+      // Read the response as a stream of data
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let exclude = null; // Exclude object
+
+      while (true) {
+        let { done, value } = await reader.read();
+
+        // Extract text data
+        if ( value ) {
+          decoder.decode(value).split('\n').forEach( data => {
+            if ( data.startsWith("data: ") ) {
+              let line = data.substring(6).trim();
+              if ( line === '[DONE]' ) {
+                done = true;
+              } else {
+                let obj;
+                try {
+                  obj = JSON.parse( line );
+                } catch(error) {
+                  throw new Error( "Error JSON parsing line: " + line );
+                }
+
+                if ( obj && obj.error ) throw new Error( obj.error.message || ''+res.status );
+                node.dataset.output += obj?.choices?.[0]?.delta?.content || '';
+                tts += obj?.choices?.[0]?.delta?.content || '';
+
+              }
+            }
+          });
+        }
+
+        // Break, if done
+        if (done) {
+
+
+          if ( tts ) {
+            if ( cfg('voice-type') === 'eleven' ) {
+              await elevenSpeak( tts.trimStart() + " ", node );
+            } else if ( cfg('voice-type') === 'microsoft' ) {
+              await microsoftSpeak( tts.trimStart() + " ", node );
+            } else {
+              exclude = excludesProcess(tts,exclude);
+              await head.speakText( tts, {
+                lipsyncLang: cfg('voice-lipsync-lang'),
+                ttsVoice: cfg('voice-google-id'),
+                ttsRate: cfg('voice-google-rate'),
+                ttsPitch: cfg('voice-google-pitch')
+              }, addText.bind(null,node), exclude.excludes );
+            }
+          }
+
+          break;
+        }
+
+        // Speak
+        if ( tts ) {
+          let idx = 0;
+          ['.','!','?','\n'].forEach( x => {
+            let tmp = tts.lastIndexOf(x,idx);
+            if ( tmp > idx ) idx = tmp + 1;
+          });
+          if ( idx > 10 ) {
+            let s = tts.substring(0, idx);
+            if ( s && s.length ) {
+              tts = tts.substring(idx).trimStart();
+              if ( cfg('voice-type') === 'eleven' ) {
+                await elevenSpeak( s + " ", node );
+              } else if ( cfg('voice-type') === 'microsoft' ) {
+                await microsoftSpeak( s + " ", node );
+              } else {
+                exclude = excludesProcess(s,exclude);
+                await head.speakText( s, {
+                  lipsyncLang: cfg('voice-lipsync-lang'),
+                  ttsVoice: cfg('voice-google-id'),
+                  ttsRate: cfg('voice-google-rate'),
+                  ttsPitch: cfg('voice-google-pitch')
+                }, addText.bind(null,node), exclude.excludes );
+              }
+            }
+          }
+        }
+
+      }
+
+    } else {
+      console.error( await res.text() );
+      throw new Error( json.error ? json.error.message : ''+res.status );
+    }
+
+  } catch (error) {
+    if ( signal.aborted ) error = "aborted";
+    console.error(error);
+    addText( node, ' [' + error + ']');
+  } finally {
+    aiController = null; // Reset the AbortController instance
+    if ( elevenSocket ) {
+      elevenSpeak("",null);
+    }
+    microsoftSpeak(null);
+
+    // When this marker has been reached, stop blinking
+    head.speakMarker( () => {
+      d3.selectAll('.blink').classed("blink",false);
+    });
+  }
+}
+
+// Llama
+
+// Send messages to local LLama API and handle streamed response
+async function llamaSendMessage(node,msgs) {
+
+  // Create a new AbortController instance
+  aiController = new AbortController();
+  const signal = aiController.signal;
+
+  // Chat completion
+  try {
+    // Message body
+    const body = {
+      model: cfg('ai-model'),
+      messages: msgs.map( x => {
+        const {role,content,name} = x;
+        return (name ? {role,content,name} : {role,content});
+      }),
+      temperature: cfg('ai-openai-temperature'),
+      presence_penalty: cfg('ai-openai-presence'),
+      frequency_penalty: cfg('ai-openai-frequency'),
+      max_tokens: cfg('ai-openai-output'),
+      stream: true
+    };
+    const stop = cfg('ai-llama-stop');
+    if ( stop && stop.length ) {
+      body.stop = [ stop ];
+    }
+    const user = cfg('ai-llama-user');
+    if ( user && user.length ) {
+      body.user = user;
+    }
+
+    // Elements
+    node.dataset.output = '';
+    let tts = '';
+
+    // Fetch the response from the Llama.cpp server
+    tts = '';
+    const res = await fetch( llamaChatCompletionsProxy, {
+      method: "POST",
+      mode: "cors",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + await jwtGet()
+      },
+      body: JSON.stringify(body),
+      signal
+    });
+
+    if ( res.ok ) {
+
+      // Read the response as a stream of data
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let exclude = null; // Exclude object
+
+      while (true) {
+        let { done, value } = await reader.read();
+
+        // Extract text data
+        if ( value ) {
+          decoder.decode(value).split('\n').forEach( data => {
+            if ( data.startsWith("data: ") ) {
+              let line = data.substring(6).trim();
+              if ( line === '[DONE]' ) {
+                done = true;
+              } else {
+                let obj;
+                try {
+                  obj = JSON.parse( line );
+                } catch(error) {
+                  throw new Error( "Error JSON parsing line: " + line );
+                }
+
+                if ( obj && obj.error ) throw new Error( obj.error.message || ''+res.status );
+                node.dataset.output += obj?.choices?.[0]?.delta?.content || '';
+                tts += obj?.choices?.[0]?.delta?.content || '';
+
+              }
+            }
+          });
+        }
+
+        // Break, if done
+        if (done) {
+
+
+          if ( tts ) {
+            if ( cfg('voice-type') === 'eleven' ) {
+              await elevenSpeak( tts.trimStart() + " ", node );
+            } else if ( cfg('voice-type') === 'microsoft' ) {
+              await microsoftSpeak( tts.trimStart() + " ", node );
+            } else {
+              exclude = excludesProcess(tts,exclude);
+              await head.speakText( tts, {
+                lipsyncLang: cfg('voice-lipsync-lang'),
+                ttsVoice: cfg('voice-google-id'),
+                ttsRate: cfg('voice-google-rate'),
+                ttsPitch: cfg('voice-google-pitch')
+              }, addText.bind(null,node), exclude.excludes );
+            }
+          }
+
+          break;
+        }
+
+        // Speak
+        if ( tts ) {
+          let idx = 0;
+          ['.','!','?','\n'].forEach( x => {
+            let tmp = tts.lastIndexOf(x,idx);
+            if ( tmp > idx ) idx = tmp + 1;
+          });
+          if ( idx > 10 ) {
+            let s = tts.substring(0, idx);
+            if ( s && s.length ) {
+              tts = tts.substring(idx).trimStart();
+              if ( cfg('voice-type') === 'eleven' ) {
+                await elevenSpeak( s + " ", node );
+              } else if ( cfg('voice-type') === 'microsoft' ) {
+                await microsoftSpeak( s + " ", node );
+              } else {
+                exclude = excludesProcess(s,exclude);
+                await head.speakText( s, {
+                  lipsyncLang: cfg('voice-lipsync-lang'),
+                  ttsVoice: cfg('voice-google-id'),
+                  ttsRate: cfg('voice-google-rate'),
+                  ttsPitch: cfg('voice-google-pitch')
+                }, addText.bind(null,node), exclude.excludes );
+              }
+            }
+          }
+        }
+
+      }
+
+    } else {
+      console.error( await res.text() );
+      throw new Error( json.error ? json.error.message : ''+res.status );
+    }
 
   } catch (error) {
     if ( signal.aborted ) error = "aborted";
@@ -3260,6 +3721,26 @@ document.addEventListener('DOMContentLoaded', async function(e) {
 
           const nodeOutput = addMessage(false);
           geminiSendMessage(nodeOutput,m);
+        } else if ( cfg('ai-model').startsWith("llama") ) {
+          const m = openaiBuildMessage();
+
+          const nodeInput = addMessage(true);
+          nodeInput.dataset.input = text;
+          addText(nodeInput,text);
+          e.property("value","");
+
+          const nodeOutput = addMessage(false);
+          llamaSendMessage(nodeOutput,m);
+        } else if ( cfg('ai-model').startsWith("grok") ) {
+          const m = openaiBuildMessage();
+
+          const nodeInput = addMessage(true);
+          nodeInput.dataset.input = text;
+          addText(nodeInput,text);
+          e.property("value","");
+
+          const nodeOutput = addMessage(false);
+          grokSendMessage(nodeOutput,m);
         }
 
       }
@@ -3892,6 +4373,13 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     }
   });
 
+  // Whisper
+  d3.selectAll("[data-whisper-type]").on('click.command', function(ev) {
+    const e = d3.select(this);
+    d3.selectAll("[data-whisper-type]").classed('selected',false);
+    e.classed('selected',true);
+  });
+
   // Dynamic bones
   d3.select("[data-dynamicbones-sensitivity]").on('input.command change.command keyup.command', function(ev) {
     let factor = parseFloat( d3.select("[data-dynamicbones-sensitivity]").property("value") );
@@ -3921,6 +4409,8 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     e.classed('selected',true);
     d3.select("#ai-openai").style("display", (e.attr("data-ai-model").startsWith('gpt') ) ? "flex" : "none" );
     d3.select("#ai-gemini").style("display", (e.attr("data-ai-model").startsWith('gemini') ) ? "flex" : "none" );
+    d3.select("#ai-grok").style("display", (e.attr("data-ai-model").startsWith('grok') ) ? "flex" : "none" );
+    d3.select("#ai-llama").style("display", (e.attr("data-ai-model").startsWith('llama') ) ? "flex" : "none" );
   });
 
   d3.select("#session-duplicate").on('click', function(ev) {
@@ -4168,8 +4658,9 @@ document.addEventListener('DOMContentLoaded', async function(e) {
               <div class="rowWrap">
                 <div class="command selected" data-item="ai-model" data-type="option" data-ai-model="gpt-4o-mini">GPT-4o-mini</div>
                 <div class="command" data-item="ai-model" data-type="option" data-ai-model="gpt-4o">GPT-4o</div>
-                <div class="command" data-item="ai-model" data-type="option" data-ai-model="gpt-4">GPT-4</div>
+                <div class="command" data-item="ai-model" data-type="option" data-ai-model="grok-beta">Grok-beta</div>
                 <div class="command" data-item="ai-model" data-type="option" data-ai-model="gemini-1.5-pro">Gemini-1.5-pro</div>
+                <div class="command" data-item="ai-model" data-type="option" data-ai-model="llama">Llama</div>
               </div>
             </div>
           </div>
@@ -4275,6 +4766,210 @@ document.addEventListener('DOMContentLoaded', async function(e) {
             <div class="row">
               <div class="text label" data-i18n-text="ai-user"></div>
               <input type="text" data-i18n-placeholder="ai-username" data-item="ai-openai-user" data-type="value" data-ai-openai-user="">
+            </div>
+          </div>
+
+          <div id="ai-grok" class="column">
+            <div class="row">
+              <div class="text label" data-i18n-text="System"></div>
+              <textarea data-i18n-placeholder="ai-system" rows="1" autocapitalize="sentences" data-item="ai-openai-system" data-type="value" data-ai-openai-system=""></textarea>
+            </div>
+            <div class="row">
+              <div class="text label" data-i18n-text="Example1"></div>
+              <textarea data-i18n-placeholder="ai-user1" rows="1" autocapitalize="sentences" data-item="ai-openai-user1" data-type="value" data-ai-openai-user1=""></textarea>
+            </div>
+            <div class="row">
+              <div class="text label"></div>
+              <textarea data-i18n-placeholder="ai-ai1" rows="1" autocapitalize="sentences" data-item="ai-openai-ai1" data-type="value" data-ai-openai-ai1=""></textarea>
+            </div>
+            <div class="row">
+              <div class="text label" data-i18n-text="Example2"></div>
+              <textarea data-i18n-placeholder="ai-user2" rows="1" autocapitalize="sentences" data-item="ai-openai-user2" data-type="value" data-ai-openai-user2=""></textarea>
+            </div>
+            <div class="row">
+              <div class="text label"></div>
+              <textarea data-i18n-placeholder="ai-ai2" rows="1" autocapitalize="sentences" data-item="ai-openai-ai2" data-type="value" data-ai-openai-ai2=""></textarea>
+            </div>
+
+            <div class="vbar"></div>
+
+            <div class="row">
+              <div class="text label" data-i18n-text="Adjust"></div>
+              <div class="column">
+                <div class="row">
+                  <div class="command" data-target="ai-grok-temperature" data-range-reset="1.0">
+                    <svg viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M336 972.8c-60.8-128-28.8-201.6 19.2-268.8 51.2-76.8 64-150.4 64-150.4s41.6 51.2 25.6 134.4c70.4-80 83.2-208 73.6-256 160 112 230.4 358.4 137.6 537.6 492.8-281.6 121.6-700.8 57.6-745.6 22.4 48 25.6 128-19.2 166.4-73.6-281.6-256-336-256-336 22.4 144-76.8 300.8-172.8 419.2-3.2-57.6-6.4-96-38.4-153.6-6.4 105.6-86.4 188.8-108.8 294.4C89.6 758.4 140.8 860.8 336 972.8L336 972.8z"  fill="currentColor" />
+                    </svg>
+                  </div>
+                  <input type="range" min="0" max="2" step="0.1" value="1.0" data-range="float" data-item="ai-grok-temperature" data-type="value" data-ai-grok-temperature="">
+                  <div class="text">1.0</div>
+                </div>
+                <div class="row">
+                  <div class="command" data-target="ai-grok-presence" data-range-reset="0.0">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M9.00967 5.12761H11.0097C12.1142 5.12761 13.468 5.89682 14.0335 6.8457L16.5089 11H21.0097C21.562 11 22.0097 11.4477 22.0097 12C22.0097 12.5523 21.562 13 21.0097 13H16.4138L13.9383 17.1543C13.3729 18.1032 12.0191 18.8724 10.9145 18.8724H8.91454L12.4138 13H5.42485L3.99036 15.4529H1.99036L4.00967 12L4.00967 11.967L2.00967 8.54712H4.00967L5.44417 11H12.5089L9.00967 5.12761Z" fill="currentColor" />
+                    </svg>
+                  </div>
+                  <input type="range" min="-1" max="2" step="0.1" value="0.0" data-range="float" data-item="ai-grok-presence" data-type="value" data-ai-grok-presence="">
+                  <div class="text">0.0</div>
+                </div>
+                <div class="row">
+                  <div class="command" data-target="ai-grok-frequency" data-range-reset="0.0">
+                    <svg viewBox="-2 -2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M21.2635 2.29289C20.873 1.90237 20.2398 1.90237 19.8493 2.29289L18.9769 3.16525C17.8618 2.63254 16.4857 2.82801 15.5621 3.75165L4.95549 14.3582L10.6123 20.0151L21.2189 9.4085C22.1426 8.48486 22.338 7.1088 21.8053 5.99367L22.6777 5.12132C23.0682 4.7308 23.0682 4.09763 22.6777 3.70711L21.2635 2.29289ZM16.9955 10.8035L10.6123 17.1867L7.78392 14.3582L14.1671 7.9751L16.9955 10.8035ZM18.8138 8.98525L19.8047 7.99429C20.1953 7.60376 20.1953 6.9706 19.8047 6.58007L18.3905 5.16586C18 4.77534 17.3668 4.77534 16.9763 5.16586L15.9853 6.15683L18.8138 8.98525Z" fill="currentColor" />
+                      <path d="M2 22.9502L4.12171 15.1717L9.77817 20.8289L2 22.9502Z" fill="currentColor" />
+                    </svg>
+                  </div>
+                  <input type="range" min="-2" max="2" step="0.1" value="0.0" data-range="float" data-item="ai-grok-frequency" data-type="value" data-ai-grok-frequency="">
+                  <div class="text">0.0</div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="text label" data-i18n-text="Limits"></div>
+              <div class="column">
+                <div class="row">
+                  <div class="command" data-target="ai-grok-dialog" data-range-reset="4">
+                    <svg viewBox="-100 -100 1224 1224" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M170.65984 42.65984l682.65984 0q53.00224 0 90.50112 37.49888t37.49888 90.50112l0 469.34016q0 53.00224-37.49888 90.50112t-90.50112 37.49888l-341.34016 0-298.65984 213.34016 0-213.34016-42.65984 0q-53.00224 0-90.50112-37.49888t-37.49888-90.50112l0-469.34016q0-53.00224 37.49888-90.50112t90.50112-37.49888zM853.34016 128l-682.65984 0q-17.67424 0-30.16704 12.4928t-12.4928 30.16704l0 469.34016q0 17.67424 12.4928 30.16704t30.16704 12.4928l128 0 0 132.99712 185.99936-132.99712 368.66048 0q17.67424 0 30.16704-12.4928t12.4928-30.16704l0-469.34016q0-17.67424-12.4928-30.16704t-30.16704-12.4928z" fill="currentColor" />
+                    </svg>
+                  </div>
+                  <input type="range" min="2" max="10" step="2" value="4" data-range="dialog" data-item="ai-grok-dialog" data-type="value" data-ai-grok-dialog="">
+                  <div class="text">4 sanomaa</div>
+                </div>
+                <div class="row">
+                  <div class="command" data-target="ai-grok-input" data-range-reset="2000">
+                    <svg viewBox="-1 -1 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M9 4C9 2.34315 10.3431 1 12 1C13.6569 1 15 2.34315 15 4V12C15 13.6569 13.6569 15 12 15C10.3431 15 9 13.6569 9 12V4ZM13 4V12C13 12.5523 12.5523 13 12 13C11.4477 13 11 12.5523 11 12V4C11 3.44772 11.4477 3 12 3C12.5523 3 13 3.44772 13 4Z" fill="currentColor" />
+                      <path d="M18 12C18 14.973 15.8377 17.441 13 17.917V21H17V23H7V21H11V17.917C8.16229 17.441 6 14.973 6 12V9H8V12C8 14.2091 9.79086 16 12 16C14.2091 16 16 14.2091 16 12V9H18V12Z" fill="currentColor" />
+                    </svg>
+                  </div>
+                  <input type="range" min="100" max="4000" step="100" value="2000" data-range="word" data-item="ai-grok-input" data-type="value" data-ai-grok-input="">
+                  <div class="text">1000 sanaa</div>
+                </div>
+                <div class="row">
+                  <div class="command" data-target="ai-grok-output" data-range-reset="1000">
+                    <svg viewBox="-2 -2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M12 18.939C14.2091 18.939 16 17.1482 16 14.939C16 12.7299 14.2091 10.939 12 10.939C9.79086 10.939 8 12.7299 8 14.939C8 17.1482 9.79086 18.939 12 18.939ZM12 16.939C13.1046 16.939 14 16.0436 14 14.939C14 13.8345 13.1046 12.939 12 12.939C10.8954 12.939 10 13.8345 10 14.939C10 16.0436 10.8954 16.939 12 16.939Z" fill="currentColor" />
+                      <path d="M12 9.04401C13.1046 9.04401 14 8.14858 14 7.04401C14 5.93944 13.1046 5.04401 12 5.04401C10.8954 5.04401 10 5.93944 10 7.04401C10 8.14858 10.8954 9.04401 12 9.04401Z" fill="currentColor" />
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M7 1C5.34315 1 4 2.34315 4 4V20C4 21.6569 5.34315 23 7 23H17C18.6569 23 20 21.6569 20 20V4C20 2.34315 18.6569 1 17 1H7ZM17 3H7C6.44772 3 6 3.44772 6 4V20C6 20.5523 6.44772 21 7 21H17C17.5523 21 18 20.5523 18 20V4C18 3.44772 17.5523 3 17 3Z" fill="currentColor" />
+                    </svg>
+                  </div>
+                  <input type="range" min="100" max="4000" step="100" value="1000" data-range="word" data-item="ai-grok-output" data-type="value" data-ai-grok-output="">
+                  <div class="text">2000 sanaa</div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="text label" data-i18n-text="ai-stop"></div>
+              <input type="text" data-i18n-placeholder="ai-stopword" data-item="ai-grok-stop" data-type="value" data-ai-grok-stop="">
+            </div>
+            <div class="row">
+              <div class="text label" data-i18n-text="ai-user"></div>
+              <input type="text" data-i18n-placeholder="ai-username" data-item="ai-grok-user" data-type="value" data-ai-grok-user="">
+            </div>
+          </div>
+
+          <div id="ai-llama" class="column">
+            <div class="row">
+              <div class="text label" data-i18n-text="System"></div>
+              <textarea data-i18n-placeholder="ai-system" rows="1" autocapitalize="sentences" data-item="ai-openai-system" data-type="value" data-ai-openai-system=""></textarea>
+            </div>
+            <div class="row">
+              <div class="text label" data-i18n-text="Example1"></div>
+              <textarea data-i18n-placeholder="ai-user1" rows="1" autocapitalize="sentences" data-item="ai-openai-user1" data-type="value" data-ai-openai-user1=""></textarea>
+            </div>
+            <div class="row">
+              <div class="text label"></div>
+              <textarea data-i18n-placeholder="ai-ai1" rows="1" autocapitalize="sentences" data-item="ai-openai-ai1" data-type="value" data-ai-openai-ai1=""></textarea>
+            </div>
+            <div class="row">
+              <div class="text label" data-i18n-text="Example2"></div>
+              <textarea data-i18n-placeholder="ai-user2" rows="1" autocapitalize="sentences" data-item="ai-openai-user2" data-type="value" data-ai-openai-user2=""></textarea>
+            </div>
+            <div class="row">
+              <div class="text label"></div>
+              <textarea data-i18n-placeholder="ai-ai2" rows="1" autocapitalize="sentences" data-item="ai-openai-ai2" data-type="value" data-ai-openai-ai2=""></textarea>
+            </div>
+
+            <div class="vbar"></div>
+
+            <div class="row">
+              <div class="text label" data-i18n-text="Adjust"></div>
+              <div class="column">
+                <div class="row">
+                  <div class="command" data-target="ai-llama-temperature" data-range-reset="1.0">
+                    <svg viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M336 972.8c-60.8-128-28.8-201.6 19.2-268.8 51.2-76.8 64-150.4 64-150.4s41.6 51.2 25.6 134.4c70.4-80 83.2-208 73.6-256 160 112 230.4 358.4 137.6 537.6 492.8-281.6 121.6-700.8 57.6-745.6 22.4 48 25.6 128-19.2 166.4-73.6-281.6-256-336-256-336 22.4 144-76.8 300.8-172.8 419.2-3.2-57.6-6.4-96-38.4-153.6-6.4 105.6-86.4 188.8-108.8 294.4C89.6 758.4 140.8 860.8 336 972.8L336 972.8z"  fill="currentColor" />
+                    </svg>
+                  </div>
+                  <input type="range" min="0" max="2" step="0.1" value="1.0" data-range="float" data-item="ai-llama-temperature" data-type="value" data-ai-llama-temperature="">
+                  <div class="text">1.0</div>
+                </div>
+                <div class="row">
+                  <div class="command" data-target="ai-llama-presence" data-range-reset="0.0">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M9.00967 5.12761H11.0097C12.1142 5.12761 13.468 5.89682 14.0335 6.8457L16.5089 11H21.0097C21.562 11 22.0097 11.4477 22.0097 12C22.0097 12.5523 21.562 13 21.0097 13H16.4138L13.9383 17.1543C13.3729 18.1032 12.0191 18.8724 10.9145 18.8724H8.91454L12.4138 13H5.42485L3.99036 15.4529H1.99036L4.00967 12L4.00967 11.967L2.00967 8.54712H4.00967L5.44417 11H12.5089L9.00967 5.12761Z" fill="currentColor" />
+                    </svg>
+                  </div>
+                  <input type="range" min="-1" max="2" step="0.1" value="0.0" data-range="float" data-item="ai-llama-presence" data-type="value" data-ai-llama-presence="">
+                  <div class="text">0.0</div>
+                </div>
+                <div class="row">
+                  <div class="command" data-target="ai-llama-frequency" data-range-reset="0.0">
+                    <svg viewBox="-2 -2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M21.2635 2.29289C20.873 1.90237 20.2398 1.90237 19.8493 2.29289L18.9769 3.16525C17.8618 2.63254 16.4857 2.82801 15.5621 3.75165L4.95549 14.3582L10.6123 20.0151L21.2189 9.4085C22.1426 8.48486 22.338 7.1088 21.8053 5.99367L22.6777 5.12132C23.0682 4.7308 23.0682 4.09763 22.6777 3.70711L21.2635 2.29289ZM16.9955 10.8035L10.6123 17.1867L7.78392 14.3582L14.1671 7.9751L16.9955 10.8035ZM18.8138 8.98525L19.8047 7.99429C20.1953 7.60376 20.1953 6.9706 19.8047 6.58007L18.3905 5.16586C18 4.77534 17.3668 4.77534 16.9763 5.16586L15.9853 6.15683L18.8138 8.98525Z" fill="currentColor" />
+                      <path d="M2 22.9502L4.12171 15.1717L9.77817 20.8289L2 22.9502Z" fill="currentColor" />
+                    </svg>
+                  </div>
+                  <input type="range" min="-2" max="2" step="0.1" value="0.0" data-range="float" data-item="ai-llama-frequency" data-type="value" data-ai-llama-frequency="">
+                  <div class="text">0.0</div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="text label" data-i18n-text="Limits"></div>
+              <div class="column">
+                <div class="row">
+                  <div class="command" data-target="ai-llama-dialog" data-range-reset="4">
+                    <svg viewBox="-100 -100 1224 1224" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M170.65984 42.65984l682.65984 0q53.00224 0 90.50112 37.49888t37.49888 90.50112l0 469.34016q0 53.00224-37.49888 90.50112t-90.50112 37.49888l-341.34016 0-298.65984 213.34016 0-213.34016-42.65984 0q-53.00224 0-90.50112-37.49888t-37.49888-90.50112l0-469.34016q0-53.00224 37.49888-90.50112t90.50112-37.49888zM853.34016 128l-682.65984 0q-17.67424 0-30.16704 12.4928t-12.4928 30.16704l0 469.34016q0 17.67424 12.4928 30.16704t30.16704 12.4928l128 0 0 132.99712 185.99936-132.99712 368.66048 0q17.67424 0 30.16704-12.4928t12.4928-30.16704l0-469.34016q0-17.67424-12.4928-30.16704t-30.16704-12.4928z" fill="currentColor" />
+                    </svg>
+                  </div>
+                  <input type="range" min="2" max="10" step="2" value="4" data-range="dialog" data-item="ai-llama-dialog" data-type="value" data-ai-llama-dialog="">
+                  <div class="text">4 sanomaa</div>
+                </div>
+                <div class="row">
+                  <div class="command" data-target="ai-llama-input" data-range-reset="2000">
+                    <svg viewBox="-1 -1 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M9 4C9 2.34315 10.3431 1 12 1C13.6569 1 15 2.34315 15 4V12C15 13.6569 13.6569 15 12 15C10.3431 15 9 13.6569 9 12V4ZM13 4V12C13 12.5523 12.5523 13 12 13C11.4477 13 11 12.5523 11 12V4C11 3.44772 11.4477 3 12 3C12.5523 3 13 3.44772 13 4Z" fill="currentColor" />
+                      <path d="M18 12C18 14.973 15.8377 17.441 13 17.917V21H17V23H7V21H11V17.917C8.16229 17.441 6 14.973 6 12V9H8V12C8 14.2091 9.79086 16 12 16C14.2091 16 16 14.2091 16 12V9H18V12Z" fill="currentColor" />
+                    </svg>
+                  </div>
+                  <input type="range" min="100" max="4000" step="100" value="2000" data-range="word" data-item="ai-llama-input" data-type="value" data-ai-llama-input="">
+                  <div class="text">1000 sanaa</div>
+                </div>
+                <div class="row">
+                  <div class="command" data-target="ai-llama-output" data-range-reset="1000">
+                    <svg viewBox="-2 -2 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M12 18.939C14.2091 18.939 16 17.1482 16 14.939C16 12.7299 14.2091 10.939 12 10.939C9.79086 10.939 8 12.7299 8 14.939C8 17.1482 9.79086 18.939 12 18.939ZM12 16.939C13.1046 16.939 14 16.0436 14 14.939C14 13.8345 13.1046 12.939 12 12.939C10.8954 12.939 10 13.8345 10 14.939C10 16.0436 10.8954 16.939 12 16.939Z" fill="currentColor" />
+                      <path d="M12 9.04401C13.1046 9.04401 14 8.14858 14 7.04401C14 5.93944 13.1046 5.04401 12 5.04401C10.8954 5.04401 10 5.93944 10 7.04401C10 8.14858 10.8954 9.04401 12 9.04401Z" fill="currentColor" />
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M7 1C5.34315 1 4 2.34315 4 4V20C4 21.6569 5.34315 23 7 23H17C18.6569 23 20 21.6569 20 20V4C20 2.34315 18.6569 1 17 1H7ZM17 3H7C6.44772 3 6 3.44772 6 4V20C6 20.5523 6.44772 21 7 21H17C17.5523 21 18 20.5523 18 20V4C18 3.44772 17.5523 3 17 3Z" fill="currentColor" />
+                    </svg>
+                  </div>
+                  <input type="range" min="100" max="4000" step="100" value="1000" data-range="word" data-item="ai-llama-output" data-type="value" data-ai-llama-output="">
+                  <div class="text">2000 sanaa</div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="text label" data-i18n-text="ai-stop"></div>
+              <input type="text" data-i18n-placeholder="ai-stopword" data-item="ai-llama-stop" data-type="value" data-ai-llama-stop="">
+            </div>
+            <div class="row">
+              <div class="text label" data-i18n-text="ai-user"></div>
+              <input type="text" data-i18n-placeholder="ai-username" data-item="ai-llama-user" data-type="value" data-ai-llama-user="">
             </div>
           </div>
 
