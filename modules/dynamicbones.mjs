@@ -499,7 +499,7 @@ class DynamicBones {
 
   /**
   * Animate dynamic bones.
-  * @param {number} t High precision timestamp in ms.
+  * @param {number} dt Delta time in ms.
   */
   update(dt) {
 
