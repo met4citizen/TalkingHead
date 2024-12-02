@@ -250,17 +250,18 @@
   code { font-family: monospace; font-size: 1rem; }
   #directory div:first-child div[data-entry-move="up"] { visibility: hidden; }
   #directory div:last-child div[data-entry-move="down"] { visibility: hidden; }
-  #right textarea {
+  .apikey, #right textarea {
     flex: 1; min-height: 2rem; margin: auto; background: transparent;
     border: 0; font-family: "SansRegular"; font-size: 1.4rem; padding: 0 6px;
     line-height: 2rem; resize: none; outline: none; color: var(--colorUserText);
     pointer-events: auto;
   }
+  .apikey { -webkit-text-security: square; }
   #right textarea[data-item="ai-openai-ai1"], #right textarea[data-item="ai-openai-ai2"],
   #right textarea[data-item="ai-gemini-ai1"], #right textarea[data-item="ai-gemini-ai2"] {
     color: var(--colorSystemText);
   }
-  #right textarea::placeholder { color: inherit; opacity: 0.3; }
+  .apikey::placeholder, #right textarea::placeholder { color: inherit; opacity: 0.3; }
   .emoji { cursor: pointer; pointer-events: auto; }
   #morphs .label { width: calc( 2.5 * var(--widthLabel) ); }
   #right-sessions { scrollbar-gutter: stable; }
@@ -407,7 +408,7 @@ import { TalkingHead } from "./modules/talkinghead.mjs";
 import dompurify from 'dompurify';
 import { marked } from 'marked';
 
-// API endpoints/proxys
+// API proxys
 const jwtEndpoint = "/app/jwt/get"; // Get JSON Web Token for Single Sign-On
 const openaiChatCompletionsProxy = "/openai/v1/chat/completions";
 const openaiModerationsProxy = "/openai/v1/moderations";
@@ -426,6 +427,20 @@ const microsoftTTSProxy = [
 const grokChatCompletionsProxy = "/grok/v1/chat/completions"; // Grok-beta
 const llamaChatCompletionsProxy = "/llama/v1/chat/completions"; // Local llama.cpp server proxy
 const localWhisperCppProxy = "/whisper/"; // Local whisper.cpp server proxy
+
+
+// Direct API endpoints
+const openaiChatCompletionsEndpoint = "https://api.openai.com/v1/chat/completions";
+const openaiModerationsEndpoint = "https://api.openai.com/v1/moderations";
+const openaiAudioTranscriptionsEndpoint = "https://api.openai.com/v1/audio/transcriptions";
+const geminiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/";
+const googleTTSEndpoint = "https://eu-texttospeech.googleapis.com/v1beta1/text:synthesize";
+const elevenTTSEndpoint = [
+  "wss://api.elevenlabs.io/v1/text-to-speech/",
+  "/stream-input?model_id=eleven_turbo_v2_5&output_format=pcm_22050"
+];
+const microsoftTTSEndpoint = "wss://northeurope.tts.speech.microsoft.com/cognitiveservices/websocket/v1";
+const grokChatCompletionsEndpoint = "https://api.x.ai/v1/chat/completions";
 
 
 // I18n internationalization
@@ -583,12 +598,21 @@ async function elevenSpeak(s,node=null) {
       }
     ];
 
-    // Build the URL
-    let url = elevenTTSProxy[0];
-    url += await jwtGet();
-    url += elevenTTSProxy[1];
-    url += cfg('voice-eleven-id');
-    url += elevenTTSProxy[2];
+    // Endpoint/proxy and authentication
+    let url;
+    const apikey = d3.select("#apikey-eleven").property("value");
+    if ( apikey ) {
+      url = elevenTTSEndpoint[0];
+      url += cfg('voice-eleven-id');
+      url += elevenTTSEndpoint[1];
+      elevenInputMsgs[0]["xi_api_key"] = apikey;
+    } else {
+      url = elevenTTSProxy[0];
+      url += await jwtGet();
+      url += elevenTTSProxy[1];
+      url += cfg('voice-eleven-id');
+      url += elevenTTSProxy[2];
+    }
 
     // Make the connection
     elevenSocket = new WebSocket(url);
@@ -738,12 +762,20 @@ async function microsoftProcessQueue() {
       }
     } else {
 
-      // If we do not a speech synthesizer, create a new
+      // If we do not have a speech synthesizer, create a new
       if ( !microsoftSynthesizer ) {
 
         // Create a new speech synthesizer
-        const endpoint = microsoftTTSProxy[0] + await jwtGet() + microsoftTTSProxy[1];
-        const config = window.SpeechSDK.SpeechConfig.fromEndpoint(endpoint);
+        let endpoint;
+        let config;
+        const apikey = d3.select("#apikey-microsoft").property("value");
+        if ( apikey ) {
+          endpoint = microsoftTTSEndpoint;
+          config = window.SpeechSDK.SpeechConfig.fromEndpoint(endpoint, apikey);
+        } else {
+          endpoint = microsoftTTSProxy[0] + await jwtGet() + microsoftTTSProxy[1];
+          config = window.SpeechSDK.SpeechConfig.fromEndpoint(endpoint);
+        }
         config.setProperty("SpeechServiceConnection_Endpoint",endpoint);
         config.speechSynthesisOutputFormat = window.SpeechSDK.SpeechSynthesisOutputFormat.Raw22050Hz16BitMonoPcm;
         config.setProperty(window.SpeechSDK.PropertyId.SpeechServiceResponse_RequestSentenceBoundary, "true");
@@ -855,12 +887,23 @@ async function whisperLoadMP3(file) {
       form.append("prompt","[The following is a full verbatim transcription without additional details, comments or emojis:]");
       form.append("timestamp_granularities[]", "word" );
       form.append("timestamp_granularities[]", "segment" );
-      const response = await fetch( openaiAudioTranscriptionsProxy , {
+
+      // Endpoint/proxy and authentication
+      let url;
+      let headers = {};
+      const apikey = d3.select("#apikey-openai").property("value");
+      if ( apikey ) {
+        url = openaiAudioTranscriptionsEndpoint;
+        headers["Authorization"] = "Bearer " + apikey;
+      } else {
+        url = openaiAudioTranscriptionsProxy;
+        headers["Authorization"] = "Bearer " + await jwtGet()
+      }
+
+      const response = await fetch( url , {
         method: "POST",
         body: form,
-        headers: {
-          "Authorization": "Bearer " + await jwtGet()
-        }
+        headers: headers
       });
       if ( response.ok ) {
         const json = await response.json();
@@ -1547,15 +1590,24 @@ async function openaiModerateMessage(msgs) {
     modMsgs.push( { content: full } );
   }
 
+  // Endpoint/proxy and authentication
+  let url;
+  let headers = { "Content-Type": "application/json" };
+  const apikey = d3.select("#apikey-openai").property("value");
+  if ( apikey ) {
+    url = openaiModerationsEndpoint;
+    headers["Authorization"] = "Bearer " + apikey;
+  } else {
+    url = openaiModerationsProxy;
+    headers["Authorization"] = "Bearer " + await jwtGet()
+  }
+
   const text = modMsgs.map( x => x.content );
   try {
-    const res = await fetch( openaiModerationsProxy, {
+    const res = await fetch( url, {
       method: "POST",
       mode: "cors",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + await jwtGet()
-      },
+      headers: headers,
       body: JSON.stringify({
         input: text
       })
@@ -1602,6 +1654,18 @@ async function openaiSendMessage(node,msgs) {
   // Create a new AbortController instance
   aiController = new AbortController();
   const signal = aiController.signal;
+
+  // Endpoint/proxy and authentication
+  let url;
+  let headers = { "Content-Type": "application/json" };
+  const apikey = d3.select("#apikey-openai").property("value");
+  if ( apikey ) {
+    url = openaiChatCompletionsEndpoint;
+    headers["Authorization"] = "Bearer " + apikey;
+  } else {
+    url = openaiChatCompletionsProxy;
+    headers["Authorization"] = "Bearer " + await jwtGet()
+  }
 
   // Chat completion
   try {
@@ -1675,13 +1739,10 @@ async function openaiSendMessage(node,msgs) {
       fn = { id: '', name: '', arguments: '' };
 
       // Fetch the response from the OpenAI API
-      const res = await fetch( openaiChatCompletionsProxy, {
+      const res = await fetch( url, {
         method: "POST",
         mode: "cors",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer " + await jwtGet()
-        },
+        headers: headers,
         body: JSON.stringify(body),
         signal
       });
@@ -1848,6 +1909,18 @@ async function grokSendMessage(node,msgs) {
   aiController = new AbortController();
   const signal = aiController.signal;
 
+  // Endpoint/proxy and authentication
+  let url;
+  let headers = { "Content-Type": "application/json" };
+  const apikey = d3.select("#apikey-grok").property("value");
+  if ( apikey ) {
+    url = grokChatCompletionsEndpoint;
+    headers["Authorization"] = "Bearer " + apikey;
+  } else {
+    url = grokChatCompletionsProxy;
+    headers["Authorization"] = "Bearer " + await jwtGet()
+  }
+
   // Chat completion
   try {
     // Message body
@@ -1878,13 +1951,10 @@ async function grokSendMessage(node,msgs) {
 
     // Fetch the response from the Llama.cpp server
     tts = '';
-    const res = await fetch( grokChatCompletionsProxy, {
+    const res = await fetch( url, {
       method: "POST",
       mode: "cors",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + await jwtGet()
-      },
+      headers: headers,
       body: JSON.stringify(body),
       signal
     });
@@ -2328,13 +2398,22 @@ async function geminiSendMessage(node,msgs) {
 
       fn = null;
 
+      // Endpoint/proxy and authentication
+      let url;
+      let headers = { "Content-Type": "application/json; charset=utf-8" };
+      const apikey = d3.select("#apikey-gemini").property("value");
+      if ( apikey ) {
+        url = geminiEndpoint + cfg("ai-model") + ':streamGenerateContent?alt=sse';
+        headers["x-goog-api-key"] = apikey;
+      } else {
+        url = geminiProxy + cfg("ai-model") + ':streamGenerateContent?alt=sse';
+        headers["Authorization"] = "Bearer " + await jwtGet()
+      }
+
       // Fetch the response from the Vertex AI API
-      const res = await fetch( geminiProxy + cfg("ai-model") + ':streamGenerateContent?alt=sse', {
+      const res = await fetch( url, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json; charset=utf-8",
-          "Authorization": "Bearer " + await jwtGet()
-        },
+        headers: headers,
         body: JSON.stringify(body),
         signal
       });
@@ -4547,6 +4626,27 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     }
   });
 
+  // API keys
+  d3.select("#apikey-gtts").on('input change keyup paste', function (ev) {
+    const e = d3.select(this);
+    const apikey = e.property("value");
+
+    // Change the API key
+    if ( apikey ) {
+      head.opt.ttsEndpoint = googleTTSEndpoint;
+      head.opt.ttsApikey = apikey;
+      head.opt.jwtGet = null;
+    } else {
+      head.opt.ttsEndpoint = googleTTSProxy;
+      head.opt.ttsApikey = null;
+      head.opt.jwtGet = jwtGet;
+    }
+  });
+
+  d3.select("#apikey-microsoft").on('input change keyup paste', function (ev) {
+    microsoftSpeak(null); // Closes the current connection, if any
+  });
+
   try {
 
     // Get token
@@ -6174,6 +6274,42 @@ document.addEventListener('DOMContentLoaded', async function(e) {
           <div class="row">
             <div class="text label" data-i18n-text="JSON"></div>
             <input id="json" type="text" placeholder="JSON">
+          </div>
+
+          <div class="vbar"></div>
+
+          <div class="row">
+            <div class="text">Note: API keys are not stored for security reasons.</div>
+          </div>
+
+          <div class="row">
+            <div class="text label" style="width: 8rem">OpenAI</div>
+            <input id="apikey-openai" class="apikey" type="text" placeholder="API key not specified; using proxy/JWT">
+          </div>
+
+          <div class="row">
+            <div class="text label" style="width: 8rem">Gemini</div>
+            <input id="apikey-gemini" class="apikey" type="text" placeholder="API key not specified; using proxy/JWT">
+          </div>
+
+          <div class="row">
+            <div class="text label" style="width: 8rem">Grok</div>
+            <input id="apikey-grok" class="apikey" type="text" placeholder="API key not specified; using proxy/JWT">
+          </div>
+
+          <div class="row">
+            <div class="text label" style="width: 8rem">GoogleTTS</div>
+            <input id="apikey-gtts" class="apikey" type="text" placeholder="API key not specified; using proxy/JWT">
+          </div>
+
+          <div class="row">
+            <div class="text label" style="width: 8rem">MicrosoftTTS</div>
+            <input id="apikey-microsoft" class="apikey" type="text" placeholder="API key not specified; using proxy/JWT">
+          </div>
+
+          <div class="row">
+            <div class="text label" style="width: 8rem">ElevenLabs</div>
+            <input id="apikey-eleven" class="apikey" type="text" placeholder="API key not specified; using proxy/JWT">
           </div>
 
         </div>

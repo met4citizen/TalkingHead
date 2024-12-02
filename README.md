@@ -232,25 +232,31 @@ the TalkingHead class. It includes various integrations with several paid
 services. If you only want to use the TalkingHead class in your own app,
 there is no need to install and configure the `index.html` app.*
 
-The web app `index.html` shows how to integrate and use
-the class with [ElevenLabs WebSocket API](https://elevenlabs.io),
+In addition to testing and development, the test app be used as an example of
+how to integrate the TalkingHead class with [ElevenLabs WebSocket API](https://elevenlabs.io),
 [Microsoft Azure Speech SDK](https://github.com/microsoft/cognitive-services-speech-sdk-js),
-[OpenAI API](https://openai.com) and
-[Gemini Pro API](https://cloud.google.com/vertex-ai).
+[OpenAI](https://openai.com),
+[Gemini](https://ai.google.dev/gemini-api) and
+[Grok](https://docs.x.ai).
 
-You can preview the app's UI [here](https://met4citizen.github.io/TalkingHead/).
-Please note that since the API proxies for the text-to-speech and
-AI services are missing, the avatar does not speak or lip-sync, and
-you can't chat with it.
+You can try out the test app online [here on GitHub](https://met4citizen.github.io/TalkingHead/).
+By default, the text-to-speech and AI features will not work, but you
+can activate them by navigating to the settings menu (☰) and pasting
+your own API key in the relevant field(s). Your API keys will not be stored,
+so you will need to re-enter them each time you reload the page.
 
-If you want to configure and use the app `index.html`, do the following:
+To set up the test app in your local environment, follow these steps:
 
-1. Copy the whole project to your own server.
+1. Copy the latest files to your own web server, for example:
 
-2. Create the needed API proxies as described in Appendix B and check/update your endpoint/proxy configuration in `index.html`:
+```bash
+git clone --depth 1 https://github.com/met4citizen/TalkingHead.git && rm -r TalkingHead/.git
+```
+
+2. Create the needed API proxies as described in Appendix B and check/update your proxy configuration in `index.html`:
 
 ```javascript
-// API endpoints/proxys
+// API proxys
 const jwtEndpoint = "/app/jwt/get"; // Get JSON Web Token for Single Sign-On
 const openaiChatCompletionsProxy = "/openai/v1/chat/completions";
 const openaiModerationsProxy = "/openai/v1/moderations";
@@ -271,7 +277,7 @@ const llamaChatCompletionsProxy = "/llama/v1/chat/completions"; // Local llama.c
 const localWhisperCppProxy = "/whisper/"; // Local whisper.cpp
 ```
 
-3. The test app's UI supports both Finnish and English. If you want to add another language, you need to add an another entry to the `i18n` object.
+3. The test app's UI supports Finnish and English. If you want to add another language, you need to add an another entry to the `i18n` object.
 
 4. Add you own background images, videos, audio files, avatars etc. in the directory structure and update your site configuration `siteconfig.js` accordingly. The keys are in English, but the entries can include translations to other languages.
 
