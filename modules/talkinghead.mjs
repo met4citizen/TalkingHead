@@ -30,6 +30,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import Stats from 'three/addons/libs/stats.module.js';
 
 import{ DynamicBones } from './dynamicbones.mjs';
+import { Blendshapes } from './blendshapes.mjs';
 
 // Temporary objects for animation loop
 const q = new THREE.Quaternion();
@@ -2195,6 +2196,8 @@ class TalkingHead {
           vol = this.volumeFrequencyData[i];
         }
       }
+      // Animate speaking blendshapes
+      if(this.currentBlendshapes && this.currentBlendshapes.isActive()) this.currentBlendshapes.update();
     }
 
     // Animation loop
@@ -2890,6 +2893,18 @@ class TalkingHead {
       o.audio = r.audio;
     }
 
+    // Use blendshapes for lipsync animation if provided.
+    if (Array.isArray(r.blendshapeFrames)) {
+      o.blendshapes = new Blendshapes(
+        r.blendshapeFrames,
+        this.mtAvatar,
+        this.objectHead,
+        this.objectLeftEye,
+        this.objectRightEye,
+        r.blendshapeFrameRate
+      );
+    }
+
     if ( onsubtitles ) {
       o.onSubtitles = onsubtitles;
     }
@@ -2942,6 +2957,7 @@ class TalkingHead {
       this.audioSpeechSource.connect(this.audioAnalyzerNode);
       this.audioSpeechSource.addEventListener('ended', () => {
         this.audioSpeechSource.disconnect();
+        if(this.currentBlendshapes) this.currentBlendshapes.stop();
         this.playAudio(true);
       }, { once: true });
 
@@ -2956,6 +2972,12 @@ class TalkingHead {
           }
           this.animQueue.push(x);
         });
+      }
+
+      // Blendshapes
+      if(item.blendshapes) {
+        this.currentBlendshapes = item.blendshapes;
+        this.currentBlendshapes.start();
       }
 
       // Play, dealy in seconds so pre-animations can be played
@@ -2997,7 +3019,7 @@ class TalkingHead {
         this.speakWithHands();
 
         // Make a playlist
-        this.audioPlaylist.push({ anim: line.anim, audio: line.audio });
+        this.audioPlaylist.push({ anim: line.anim, audio: line.audio, blendshapes: line.blendshapes || null });
         this.onSubtitles = line.onSubtitles || null;
         this.resetLips();
         if ( line.mood ) this.setMood( line.mood );
@@ -3158,6 +3180,7 @@ class TalkingHead {
     this.isSpeaking = false;
     this.isAudioPlaying = false;
     this.animQueue = this.animQueue.filter( x  => x.template.name !== 'viseme' && x.template.name !== 'subtitles' );
+    if ( this.currentBlendshapes ) this.currentBlendshapes.stop();
     if ( this.armature ) {
       this.resetLips();
       this.render();
@@ -3172,6 +3195,7 @@ class TalkingHead {
     this.audioPlaylist.length = 0;
     this.speechQueue.length = 0;
     this.animQueue = this.animQueue.filter( x  => x.template.name !== 'viseme' && x.template.name !== 'subtitles' );
+    if ( this.currentBlendshapes ) this.currentBlendshapes.stop();
     this.stateName = 'idle';
     this.isSpeaking = false;
     this.isAudioPlaying = false;
