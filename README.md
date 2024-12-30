@@ -197,7 +197,7 @@ Method | Description
 `setView(view, [opt])` | Set view. Supported views are `"full"`, `"mid"`, `"upper"`  and `"head"`. The `opt` object can be used to set `cameraDistance`, `cameraX`, `cameraY`, `cameraRotateX`, `cameraRotateY`.
 `setLighting(opt)` | Change lighting settings. The `opt` object can be used to set `lightAmbientColor`, `lightAmbientIntensity`, `lightDirectColor`, `lightDirectIntensity`, `lightDirectPhi`, `lightDirectTheta`, `lightSpotColor`, `lightSpotIntensity`, `lightSpotPhi`, `lightSpotTheta`, `lightSpotDispersion`.
 `speakText(text, [opt={}], [onsubtitles=null], [excludes=[]])` | Add the `text` string to the speech queue. The text can contain face emojis. Options `opt` can be used to set text-specific `lipsyncLang`, `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood`, `avatarMute`. Optional callback function `onsubtitles` is called whenever a new subtitle is to be written with the parameter of the added string. The optional `excludes` is an array of [start,end] indices to be excluded from audio but to be included in the subtitles.
-`speakAudio(audio, [opt={}], [onsubtitles=null])` | Add a new `audio` object to the speech queue. In audio object, property `audio` is either `AudioBuffer` or an array of PCM 16bit LE audio chunks. Property `words` is an array of words, `wtimes` is an array of corresponding starting times in milliseconds, and `wdurations` an array of durations in milliseconds. If the Oculus viseme IDs are know, they can be given in optional `visemes`, `vtimes` and `vdurations` arrays. The object also supports optional timed callbacks using `markers` and `mtimes`. The `opt` object can be used to set text-specific `lipsyncLang`.
+`speakAudio(audio, [opt={}], [onsubtitles=null])` | Add a new `audio` object to the speech queue. In audio object, property `audio` is either `AudioBuffer` or an array of PCM 16bit LE audio chunks. Property `words` is an array of words, `wtimes` is an array of corresponding starting times in milliseconds, and `wdurations` an array of durations in milliseconds. If the Oculus viseme IDs are known, they can be given in optional `visemes`, `vtimes` and `vdurations` arrays. The object also supports optional timed callbacks using `markers` and `mtimes`. In addition, you can provide an optional `anim` as an animation template object that can drive your own blendshape or morph target data in sync with audio playback. See Appendix F for more details. The `opt` object can be used to set text-specific `lipsyncLang`.
 `speakEmoji(e)` | Add an emoji `e` to the speech queue.
 `speakBreak(t)` | Add a break of `t` milliseconds to the speech queue.
 `speakMarker(onmarker)` | Add a marker to the speech queue. The callback function `onmarker` is called when the queue processes the marker.
@@ -677,3 +677,31 @@ to fine-tune the settings while running animations typical to your use case.
 a `deltaWorld` translation down the Y-axis and compensating for
 the initial stretch in the rest pose by applying `deltaLocal` translation
 up the Y-axis.
+
+---
+
+### Appendix F: Using Blendshapes with Audio (Advanced)
+
+You can optionally provide an animation template object to drive custom blendshapes or morph targets in sync with audio playback. This is especially useful when you have a series of facial animation frames from external sources, such as Azure TTS 3D blenshapes or motion capture data, and want them to play alongside the spoken audio. Below is the general format of the animation template object:
+
+```js
+{
+  name: "blendshapes",
+  dt: [ 33, 33, 33, ... ],  // durations in milliseconds for each frame
+  vs: {
+    "mouthRollLower": [ 0, 0.05, 0.1, ... ],
+    "jawOpen": [ 0, 0.2, 0.4, ... ],
+    // ... additional blendshape keys
+  }
+}
+
+```
+ - `name`: A simple string identifier, for example "blendshapes".
+ - `dt`: An array of per-frame durations (in ms). Each entry determines how long to stay on (or blend to) that frame before moving to the next one.
+ - `vs`: An object in which each key is the name of a blendshape, and each value is an array of values for each corresponding frame in dt.
+
+During audio playback, these frames will automatically be scheduled to match the timeline of your audio. This ensures your custom facial expressions (e.g., jawOpen, mouthRollLower, etc.) animate in perfect sync with the spoken content.
+
+For a practical example of how to use this feature with Azure Text-to-Speech facial blendshapes, refer to examples/azure-blendshapes.html in the repository. This example demonstrates how to integrate blendshape animations derived from Azure’s output into your application.
+
+**Note**: Be aware of a potential quality issue when using Azure blendshapes for lip-sync. The lip-sync may appear somewhat unnatural—for instance, the mouth might open too widely, and the lips may fail to touch on phonemes/visemes where they should. This might be because unlike Oculus visemes, which are specifically designed for accurate lip-syncing, Azure's output relies on ARKit blendshapes—a more generic standard for facial expressions rather than precise lip movements. Furthermore, Azure’s blendshapes are likely optimized for their own avatar system and not specifically for RPM avatars.

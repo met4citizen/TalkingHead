@@ -1943,9 +1943,10 @@ class TalkingHead {
   * @param {number} [loop=false] Number of loops, false if not looped
   * @param {number} [scaleTime=1] Scale template times
   * @param {number} [scaleValue=1] Scale template values
+  * @param {boolean} [noClockOffset=false] Do not apply clock offset
   * @return {Object} New animation object.
   */
-  animFactory( t, loop = false, scaleTime = 1, scaleValue = 1 ) {
+  animFactory( t, loop = false, scaleTime = 1, scaleValue = 1, noClockOffset = false ) {
     const o = { template: t, ts: [0], vs: {} };
 
     // Follow the hierarchy of objects
@@ -2002,7 +2003,11 @@ class TalkingHead {
       let l = Object.values(a.vs).reduce( (acc,val) => (val.length > acc) ? val.length : acc, 0);
       o.ts = Array(l+1).fill(0);
     }
-    o.ts = o.ts.map( x => this.animClock + delay + x * scaleTime );
+    if ( noClockOffset ) {
+      o.ts = o.ts.map( x => delay + x * scaleTime );
+    } else {
+      o.ts = o.ts.map( x => this.animClock + delay + x * scaleTime );
+    }
 
     // Values
     for( let [mt,vs] of Object.entries(a.vs) ) {
@@ -2824,7 +2829,7 @@ class TalkingHead {
             });
           }
 
-          // If visemes were not specified, calculate them based on the word
+          // If visemes were not specified, calculate visemes based on the words
           if ( !r.visemes ) {
             const wrd = this.lipsyncPreProcessText(word, lipsyncLang);
             const val = this.lipsyncWordsToVisemes(wrd, lipsyncLang);
@@ -2851,7 +2856,7 @@ class TalkingHead {
         }
       }
 
-      // If visemes were specifies, use them
+      // If visemes were specified, use them
       if ( r.visemes ) {
         for( let i=0; i<r.visemes.length; i++ ) {
           const viseme = r.visemes[i];
@@ -2888,6 +2893,16 @@ class TalkingHead {
 
     if ( r.audio ) {
       o.audio = r.audio;
+    }
+
+    // Blend shapes animation
+    if (r.anim?.name) {
+      let animObj = this.animFactory(r.anim, false, 1, 1, true);  
+      if (!o.anim) {
+        o.anim = [ animObj ];
+      } else {
+        o.anim.push(animObj);
+      }
     }
 
     if ( onsubtitles ) {
@@ -3157,7 +3172,7 @@ class TalkingHead {
     this.stateName = 'idle';
     this.isSpeaking = false;
     this.isAudioPlaying = false;
-    this.animQueue = this.animQueue.filter( x  => x.template.name !== 'viseme' && x.template.name !== 'subtitles' );
+    this.animQueue = this.animQueue.filter( x  => x.template.name !== 'viseme' && x.template.name !== 'subtitles' && x.template.name !== 'blendshapes' );
     if ( this.armature ) {
       this.resetLips();
       this.render();
@@ -3171,7 +3186,7 @@ class TalkingHead {
     try { this.audioSpeechSource.stop(); } catch(error) {}
     this.audioPlaylist.length = 0;
     this.speechQueue.length = 0;
-    this.animQueue = this.animQueue.filter( x  => x.template.name !== 'viseme' && x.template.name !== 'subtitles' );
+    this.animQueue = this.animQueue.filter( x  => x.template.name !== 'viseme' && x.template.name !== 'subtitles' && x.template.name !== 'blendshapes' );
     this.stateName = 'idle';
     this.isSpeaking = false;
     this.isAudioPlaying = false;
