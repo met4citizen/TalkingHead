@@ -30,7 +30,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import Stats from 'three/addons/libs/stats.module.js';
 
 import{ DynamicBones } from './dynamicbones.mjs';
-import { Blendshapes } from './blendshapes.mjs';
+import { blendshapeMap } from "./blendshapemap.mjs";
 
 // Temporary objects for animation loop
 const q = new THREE.Quaternion();
@@ -678,7 +678,8 @@ class TalkingHead {
     this.mtAvatar = {};
     this.mtCustoms = [
       "handFistLeft","handFistRight",'bodyRotateX', 'bodyRotateY',
-      'bodyRotateZ', 'headRotateX', 'headRotateY', 'headRotateZ','chestInhale'
+      'bodyRotateZ', 'headRotateX', 'headRotateY', 'headRotateZ','chestInhale',
+      'headRoll', 'leftEyeRoll', 'rightEyeRoll'
     ];
     this.mtEasingDefault = this.sigmoidFactory(5); // Morph target default ease in/out
     this.mtAccDefault = 0.01; // Acceleration [rad / s^2]
@@ -700,7 +701,8 @@ class TalkingHead {
     this.mtMinDefault = 0;
     this.mtMinExceptions = {
       bodyRotateX: -1, bodyRotateY: -1, bodyRotateZ: -1,
-      headRotateX: -1, headRotateY: -1, headRotateZ: -1
+      headRotateX: -1, headRotateY: -1, headRotateZ: -1,
+      headRoll: -1, leftEyeRoll: -1, rightEyeRoll: -1
     };
     this.mtMaxDefault = 1;
     this.mtMaxExceptions = {};
@@ -1561,6 +1563,20 @@ class TalkingHead {
         this.poseDelta.props['LeftArm.scale'] = dneg;
         this.poseDelta.props['RightArm.scale'] = dneg;
         break;
+      
+      case 'headRoll':
+        // TODO there is slight flicker, root cause to be found.
+        const rollRadians = newvalue * THREE.MathUtils.degToRad(30);
+        this.poseTarget.props['Head.quaternion'].z = rollRadians
+        break;
+
+      case 'leftEyeRoll':
+        this.objectLeftEye.rotation.y = newvalue * THREE.MathUtils.degToRad(30);
+        break;
+
+      case 'rightEyeRoll':
+        this.objectRightEye.rotation.y = newvalue * THREE.MathUtils.degToRad(30);
+        break;
 
       default:
         for( let i=0,l=o.ms.length; i<l; i++ ) {
@@ -2196,8 +2212,6 @@ class TalkingHead {
           vol = this.volumeFrequencyData[i];
         }
       }
-      // Animate speaking blendshapes
-      if(this.currentBlendshapes && this.currentBlendshapes.isActive()) this.currentBlendshapes.update();
     }
 
     // Animation loop
@@ -2827,8 +2841,8 @@ class TalkingHead {
             });
           }
 
-          // If visemes were not specified, calculate them based on the word
-          if ( !r.visemes ) {
+          // If visemes and blendshapes were not specified, calculate visemes based on the words
+          if ( !r.visemes && !r.blendshapeFrames ) {
             const wrd = this.lipsyncPreProcessText(word, lipsyncLang);
             const val = this.lipsyncWordsToVisemes(wrd, lipsyncLang);
             if ( val && val.visemes && val.visemes.length ) {
@@ -2854,7 +2868,7 @@ class TalkingHead {
         }
       }
 
-      // If visemes were specifies, use them
+      // If visemes were specified, use them
       if ( r.visemes ) {
         for( let i=0; i<r.visemes.length; i++ ) {
           const viseme = r.visemes[i];
@@ -2893,16 +2907,32 @@ class TalkingHead {
       o.audio = r.audio;
     }
 
-    // Use blendshapes for lipsync animation if provided.
-    if (Array.isArray(r.blendshapeFrames)) {
-      o.blendshapes = new Blendshapes(
-        r.blendshapeFrames,
-        this.mtAvatar,
-        this.objectHead,
-        this.objectLeftEye,
-        this.objectRightEye,
-        r.blendshapeFrameRate
-      );
+    // Blend shapes
+    if (Array.isArray(r.blendshapeFrames) && r.blendshapeFrames.length > 0) {
+      const ts = [0];
+      const frameRate = r.blendshapeFrameRate || 60;
+      for (let i = 1; i <= r.blendshapeFrames.length; i++) {
+        ts.push(ts[i - 1] + (1000 / frameRate));
+      }
+
+      const vs = {};
+      blendshapeMap.forEach((mtName, i) => {
+        const arr = r.blendshapeFrames.map(frame => frame[i]);
+        arr.unshift(null);
+        vs[mtName] = arr;
+      });
+
+      const blendshapesAnim = {
+        template: { name: 'blendshapes' },
+        ts: ts,
+        vs: vs
+      };
+
+      if (!o.anim) {
+        o.anim = [ blendshapesAnim ];
+      } else {
+        o.anim.push(blendshapesAnim);
+      }
     }
 
     if ( onsubtitles ) {
@@ -2957,7 +2987,6 @@ class TalkingHead {
       this.audioSpeechSource.connect(this.audioAnalyzerNode);
       this.audioSpeechSource.addEventListener('ended', () => {
         this.audioSpeechSource.disconnect();
-        if(this.currentBlendshapes) this.currentBlendshapes.stop();
         this.playAudio(true);
       }, { once: true });
 
@@ -2972,12 +3001,6 @@ class TalkingHead {
           }
           this.animQueue.push(x);
         });
-      }
-
-      // Blendshapes
-      if(item.blendshapes) {
-        this.currentBlendshapes = item.blendshapes;
-        this.currentBlendshapes.start();
       }
 
       // Play, dealy in seconds so pre-animations can be played
@@ -3019,7 +3042,7 @@ class TalkingHead {
         this.speakWithHands();
 
         // Make a playlist
-        this.audioPlaylist.push({ anim: line.anim, audio: line.audio, blendshapes: line.blendshapes || null });
+        this.audioPlaylist.push({ anim: line.anim, audio: line.audio });
         this.onSubtitles = line.onSubtitles || null;
         this.resetLips();
         if ( line.mood ) this.setMood( line.mood );
@@ -3179,8 +3202,7 @@ class TalkingHead {
     this.stateName = 'idle';
     this.isSpeaking = false;
     this.isAudioPlaying = false;
-    this.animQueue = this.animQueue.filter( x  => x.template.name !== 'viseme' && x.template.name !== 'subtitles' );
-    if ( this.currentBlendshapes ) this.currentBlendshapes.stop();
+    this.animQueue = this.animQueue.filter( x  => x.template.name !== 'viseme' && x.template.name !== 'subtitles' && x.template.name !== 'blendshapes' );
     if ( this.armature ) {
       this.resetLips();
       this.render();
@@ -3194,8 +3216,7 @@ class TalkingHead {
     try { this.audioSpeechSource.stop(); } catch(error) {}
     this.audioPlaylist.length = 0;
     this.speechQueue.length = 0;
-    this.animQueue = this.animQueue.filter( x  => x.template.name !== 'viseme' && x.template.name !== 'subtitles' );
-    if ( this.currentBlendshapes ) this.currentBlendshapes.stop();
+    this.animQueue = this.animQueue.filter( x  => x.template.name !== 'viseme' && x.template.name !== 'subtitles' && x.template.name !== 'blendshapes' );
     this.stateName = 'idle';
     this.isSpeaking = false;
     this.isAudioPlaying = false;
