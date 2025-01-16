@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Talking Head - Azure 3D Blendshapes Example</title>
+  <style>
+    body, html {
+      width: 100%;
+      height: 100%;
+      max-width: 800px;
+      margin: auto;
+      position: relative;
+      background-color: #202020;
+      color: white;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    /* The main 3D avatar container */
+    #avatar {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Controls container at top */
+    #controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      height: 40px;
+    }
+
+    #text {
+      flex: 1;
+      font-size: 20px;
+      height: 100%;
+      padding: 5px;
+      box-sizing: border-box;
+    }
+
+    #speak {
+      width: 100px;
+      height: 100%;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    /* Settings toggle button */
+    #settings-button {
+      width: 80px;
+      height: 100%;
+      font-size: 16px;
+      background: #333;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #settings-button:hover {
+      background: #444;
+    }
+
+    /* Collapsible Settings Panel */
+    #settings-panel {
+      position: absolute;
+      top: 60px;
+      right: 10px;
+      width: 220px;
+      background-color: #333;
+      padding: 10px;
+      border-radius: 5px;
+      display: none; /* hidden by default */
+      z-index: 998;
+    }
+    #settings-panel label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+      font-size: 0.9rem;
+    }
+    #settings-panel input {
+      width: calc(100% - 10px);
+      padding: 5px;
+      margin-top: 5px;
+      font-size: 0.9rem;
+      box-sizing: border-box;
+    }
+
+    /* When the body gets a class "show-settings", show the panel */
+    body.show-settings #settings-panel {
+      display: block;
+    }
+
+    /* Loading text at bottom-left */
+    #loading {
+      display: block;
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      right: 10px;
+      height: 40px;
+      font-size: 20px;
+    }
+  </style>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js/+esm",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+        "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@latest/modules/talkinghead.mjs"
+      }
+    }
+  </script>
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/microsoft-cognitiveservices-speech-sdk@latest/distrib/browser/microsoft.cognitiveservices.speech.sdk.bundle-min.js"></script>
+  
+  <script type="module">
+    import { TalkingHead } from "talkinghead";
+
+    // Azure blend shape map.
+    // The Azure blend shapes are expected to be in the order specified below.
+    export const AzureBlendshapeMap = [
+    /* 0  */ "eyeBlinkLeft",
+    /* 1  */ "eyeLookDownLeft",
+    /* 2  */ "eyeLookInLeft",
+    /* 3  */ "eyeLookOutLeft",
+    /* 4  */ "eyeLookUpLeft",
+    /* 5  */ "eyeSquintLeft",
+    /* 6  */ "eyeWideLeft",
+    /* 7  */ "eyeBlinkRight",
+    /* 8  */ "eyeLookDownRight",
+    /* 9  */ "eyeLookInRight",
+    /* 10 */ "eyeLookOutRight",
+    /* 11 */ "eyeLookUpRight",
+    /* 12 */ "eyeSquintRight",
+    /* 13 */ "eyeWideRight",
+    /* 14 */ "jawForward",
+    /* 15 */ "jawLeft",
+    /* 16 */ "jawRight",
+    /* 17 */ "jawOpen",
+    /* 18 */ "mouthClose",
+    /* 19 */ "mouthFunnel",
+    /* 20 */ "mouthPucker",
+    /* 21 */ "mouthLeft",
+    /* 22 */ "mouthRight",
+    /* 23 */ "mouthSmileLeft",
+    /* 24 */ "mouthSmileRight",
+    /* 25 */ "mouthFrownLeft",
+    /* 26 */ "mouthFrownRight",
+    /* 27 */ "mouthDimpleLeft",
+    /* 28 */ "mouthDimpleRight",
+    /* 29 */ "mouthStretchLeft",
+    /* 30 */ "mouthStretchRight",
+    /* 31 */ "mouthRollLower",
+    /* 32 */ "mouthRollUpper",
+    /* 33 */ "mouthShrugLower",
+    /* 34 */ "mouthShrugUpper",
+    /* 35 */ "mouthPressLeft",
+    /* 36 */ "mouthPressRight",
+    /* 37 */ "mouthLowerDownLeft",
+    /* 38 */ "mouthLowerDownRight",
+    /* 39 */ "mouthUpperUpLeft",
+    /* 40 */ "mouthUpperUpRight",
+    /* 41 */ "browDownLeft",
+    /* 42 */ "browDownRight",
+    /* 43 */ "browInnerUp",
+    /* 44 */ "browOuterUpLeft",
+    /* 45 */ "browOuterUpRight",
+    /* 46 */ "cheekPuff",
+    /* 47 */ "cheekSquintLeft",
+    /* 48 */ "cheekSquintRight",
+    /* 49 */ "noseSneerLeft",
+    /* 50 */ "noseSneerRight",
+    /* 51 */ "tongueOut",
+    /* 52 */ "headRotateZ",
+    /* 53 */ // "leftEyeRoll", // Not supported
+    /* 54 */ // "rightEyeRoll" // Not supported
+  ];
+
+    let head;
+    let microsoftSynthesizer = null;
+    
+    function resetSpeakData() {
+      speak = {
+        audio: [],
+        visemes: [],
+        vtimes: [],
+        anim: {}
+      };
+      azureBlendShapesBuffer = {};
+      azureBlendShapes = {
+        frames: [],
+        frameRate: 60,
+      };
+    }
+
+    let azureBlendShapesBuffer = {};
+    let azureBlendShapes = {};
+    let speak = null;
+    resetSpeakData();
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      console.log("Loading Talking Head...");
+      const nodeAvatar = document.getElementById('avatar');
+      const nodeSpeak = document.getElementById('speak');
+      const nodeLoading = document.getElementById('loading');
+      const azureRegion = document.getElementById('azure-region');
+      const azureTTSKey = document.getElementById('azure-key');
+      const settingsButton = document.getElementById('settings-button');
+
+      // Initialize TalkingHead
+      head = new TalkingHead(nodeAvatar, {
+        ttsEndpoint: "/gtts/",
+        cameraView: "upper",
+      });
+
+      // Show "Loading..." by default
+      nodeLoading.textContent = "Loading...";
+
+      // Load the avatar
+      try {
+        await head.showAvatar(
+          {
+            url: 'https://models.readyplayer.me/64bfa15f0e72c63d7c3934a6.glb?morphTargets=ARKit,Oculus+Visemes,mouthOpen,mouthSmile,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png',
+            body: 'F',
+          },
+          (ev) => {
+            if (ev.lengthComputable) {
+              const percent = Math.round((ev.loaded / ev.total) * 100);
+              nodeLoading.textContent = `Loading ${percent}%`;
+            } else {
+              nodeLoading.textContent = `Loading... ${Math.round(ev.loaded / 1024)} KB`;
+            }
+          }
+        );
+        // Hide the loading element once fully loaded
+        nodeLoading.style.display = 'none';
+      } catch (error) {
+        console.error("Error loading avatar:", error);
+        nodeLoading.textContent = "Failed to load avatar.";
+      }
+
+      // Handle speech button click
+      nodeSpeak.addEventListener('click', () => {
+        const text = document.getElementById('text').value.trim();
+        if (text) {
+          const ssml = textToSSML(text);
+          azureSpeak(ssml);
+        }
+      });
+
+      // Pause/resume animation on visibility change
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+          head.start();
+        } else {
+          head.stop();
+        }
+      });
+
+      // Convert input text to SSML
+      function textToSSML(text) {
+        return `
+          <speak version="1.0" xmlns:mstts="http://www.w3.org/2001/mstts" xml:lang="en-US">
+            <voice name="en-US-EmmaNeural">
+              <mstts:viseme type="FacialExpression" />
+              ${text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')}
+            </voice>
+          </speak>`;
+      }
+
+      // Perform Azure TTS
+      function azureSpeak(ssml) {
+        if (!microsoftSynthesizer) {
+          // Retrieve config from input fields
+          const regionValue = azureRegion.value.trim();
+          const keyValue = azureTTSKey.value.trim();
+          if (!regionValue || !keyValue) {
+            console.error("Azure TTS region/key missing!");
+            alert("Please enter your Azure TTS key and region in the settings panel.");
+            return;
+          }
+
+          const config = window.SpeechSDK.SpeechConfig.fromSubscription(keyValue, regionValue);
+          config.speechSynthesisOutputFormat =
+            window.SpeechSDK.SpeechSynthesisOutputFormat.Raw22050Hz16BitMonoPcm;
+          microsoftSynthesizer = new window.SpeechSDK.SpeechSynthesizer(config, null);
+
+          // Viseme (blendshape) handling
+          microsoftSynthesizer.visemeReceived = (s, e) => {
+            try {
+              if (e.animation) {
+                const animation = JSON.parse(e.animation);
+                const frameIndex = animation.FrameIndex;
+                const currentLength = azureBlendShapes.frames.length;
+                if (frameIndex === currentLength) {
+                  azureBlendShapes.frames.push(...animation.BlendShapes);
+                  let nextIndex = frameIndex + 1;
+                  while (azureBlendShapesBuffer[nextIndex]) {
+                    azureBlendShapes.frames.push(...azureBlendShapesBuffer[nextIndex]);
+                    delete azureBlendShapesBuffer[nextIndex];
+                    nextIndex++;
+                  }
+                } else if (frameIndex > currentLength) {
+                  azureBlendShapesBuffer[frameIndex] = animation.BlendShapes;
+                } else {
+                  console.warn("Out-of-order viseme received and buffered:", frameIndex);
+                }
+              }
+            } catch (error) {
+              console.error("Error processing viseme data:", error);
+            }
+          };
+        }
+
+        // Perform TTS
+        microsoftSynthesizer.speakSsmlAsync(
+          ssml,
+          (result) => {
+            if (result.reason === window.SpeechSDK.ResultReason.SynthesizingAudioCompleted) {
+              speak.audio = [ result.audioData ];
+
+              const vs = {};
+              AzureBlendshapeMap.forEach((mtName, i) => {
+                const arr = azureBlendShapes.frames.map(frame => frame[i]);
+                arr.unshift(0);
+                vs[mtName] = arr;
+              });
+
+              speak.anim = {
+                name: "blendshapes",
+                dt: Array.from({length: azureBlendShapes.frames.length}, () => 1000 / azureBlendShapes.frameRate),
+                vs: vs,
+              }
+              head.speakAudio(speak, {}, null);
+              resetSpeakData();
+            }
+          },
+          (error) => {
+            console.error("Azure speech synthesis error:", error);
+            resetSpeakData();
+          }
+        );
+      }
+
+      // Toggle the settings panel on/off
+      settingsButton.addEventListener('click', () => {
+        document.body.classList.toggle('show-settings');
+      });
+    });
+  </script>
+</head>
+
+<body>
+  <!-- 3D Avatar -->
+  <div id="avatar"></div>
+
+  <!-- Controls at the top -->
+  <div id="controls">
+    <input id="text" type="text" value="Hello, how are you?" />
+    <button id="speak">Speak</button>
+    <button id="settings-button">Settings</button>
+  </div>
+
+  <!-- Collapsible Settings Panel -->
+  <div id="settings-panel">
+    <label for="azure-key">Azure Key</label>
+    <input id="azure-key" type="text" aria-label="Azure key" placeholder="Enter Azure Key">
+
+    <label for="azure-region">Azure Region</label>
+    <input id="azure-region" type="text" aria-label="Azure region" placeholder="Enter Azure Region">
+  </div>
+
+  <!-- Loading or error display -->
+  <div id="loading"></div>
+</body>
+</html>
