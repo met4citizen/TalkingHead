@@ -294,21 +294,24 @@ class LipsyncEn {
   }
 
   convert_tens(num){
-    if (num<10) return this.ones[num];
-    else if (num>=10 && num<20) {
+    if (num < 10){
+      return (Number(num) != 0 && num.toString().startsWith("0") ? "oh " : "") + this.ones[Number(num)];
+    } else if (num>=10 && num<20) {
       return this.teens[num-10];
     } else {
       return this.tens[Math.floor(num/10)]+" "+this.ones[num%10];
     }
   }
-
+ 
   convertNumberToWords(num){
-    if (num==0) {
+    if(num == "0"){
       return "zero";
+    } else if(num.startsWith('0')){
+      return this.convert_digit_by_digit(num);
     } else if ((num<1000&&num>99)||(num>10000&&num<1000000)) { //read area and zip codes digit by digit
       return this.convert_digit_by_digit(num);
     } else if ((num > 1000 && num < 2000)||(num>2009&&num<3000)) { //read years as two sets of two digits
-      return this.convert_sets_of_two(num);
+      return (num % 100 != 0 ? this.convert_sets_of_two(num) : this.convert_tens(num.substring(0, 2)) + " hundred");
     } else {
       return this.convert_millions(num);
     }
