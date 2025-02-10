@@ -2,17 +2,16 @@
 
 ### Demo Videos
 
+*All the demo videos are real-time screen captures from a Chrome browser running
+the TalkingHead test web app without any post-processing.*
+
 Video | Description
 --- | ---
-<span style="display: block; min-width:400px">[<img src="images/dynamicbones2.jpg" width="400"/>](https://youtu.be/4Y9NFnENH5s)</span> | Having a good hair day — a follow-up to our previous video about dynamic bones. This time, we're focusing on pivot bones and excluded zones. See Appendix E for more details.
-[<img src="images/dynamicbones.jpg" width="400"/>](https://youtu.be/YUbDIWkskuw) | A short intro for the dynamic bones feature 🦴🦴 Using a custom model with rigged hair. See Appendix E for more details.
+<span style="display: block; min-width:400px">[<img src="images/dynamicbones.jpg" width="400"/>](https://youtu.be/YUbDIWkskuw)<br>[<img src="images/dynamicbones2.jpg" width="400"/>](https://youtu.be/4Y9NFnENH5s)</span> | Having a good hair day – A two-part introduction to the TalkingHead's dynamic bones feature 🦴🦴 and built-in physics engine. Using custom models with rigged hair and two different hairstyles. See Appendix E for more details.
 [<img src="images/screenshot4.jpg" width="400"/>](https://youtu.be/OA6LBZjkzJI) | I chat with Jenny and Harri. The close-up view allows you to evaluate the accuracy of lip-sync in both English and Finnish. Using GPT-3.5 and Microsoft text-to-speech.
 [<img src="images/screenshot5.jpg" width="400"/>](https://youtu.be/fJrYGaGCAGo) | A short demo of how AI can control the avatar's movements. Using OpenAI's function calling and Google TTS with the TalkingHead's built-in viseme generation.
 [<img src="images/screenshot6.jpg" width="400"/>](https://youtu.be/6XRxALY1Iwg) | Michael lip-syncs to two MP3 audio tracks using OpenAI's Whisper and TalkingHead's `speakAudio` method. He kicks things off with some casual talk, but then goes all out by trying to tackle an old Meat Loaf classic. 🤘 Keep rockin', Michael! 🎤😂
 [<img src="images/screenshot3.jpg" width="400"/>](https://youtu.be/SfnqRnWKT40) | Julia and I showcase some of the features of the TalkingHead class and the test app including the settings, some poses and animations.
-
-*All the demo videos are real-time screen captures from a Chrome browser running
-the TalkingHead test web app without any post-processing.*
 
 ---
 
@@ -33,17 +32,26 @@ Video/App | Use Case
 
 Talking Head (3D) is a JavaScript class featuring a 3D avatar that can
 speak and lip-sync in real-time. The class supports
-[Ready Player Me](https://readyplayer.me/) full-body 3D avatars (GLB),
-[Mixamo](https://www.mixamo.com) animations (FBX), and subtitles.
-It also knows a set of emojis, which it can convert into facial expressions.
+[Ready Player Me](https://readyplayer.me/) full-body 3D avatars (GLB) and
+[Mixamo](https://www.mixamo.com) animations (FBX).
+It also knows a set of emojis and can convert them into facial expressions.
+
+You can create your own 3D avatar for free using the Ready Player Me service.
+Alternatively, you can use a custom 3D avatar by making it compatible with
+RPM models. See Appendix A for more details.
 
 By default, the class uses
 [Google Cloud TTS](https://cloud.google.com/text-to-speech) for text-to-speech
 and has a built-in lip-sync support for English, Finnish, and Lithuanian (beta).
 New lip-sync languages can be added by creating new lip-sync language modules.
-It is also possible to integrate the class with an external TTS service, such as
-[Microsoft Azure Speech SDK](https://github.com/microsoft/cognitive-services-speech-sdk-js)
-or [ElevenLabs WebSocket API](https://elevenlabs.io).
+
+It is also possible to integrate the TalkingHead class with any external
+TTS service that can provide word-level timestamps, such as the
+[ElevenLabs WebSocket API](https://elevenlabs.io).
+By using a TTS engine that outputs viseme IDs or
+blend shape data, such as the
+[Microsoft Azure Speech SDK](https://github.com/microsoft/cognitive-services-speech-sdk-js),
+you can extend TalkingHead's lip-sync support to 100+ languages.
 
 The class uses [ThreeJS](https://github.com/mrdoob/three.js/) / WebGL for 3D
 rendering.
@@ -95,62 +103,62 @@ have a basic web app template with a talking head.
 
 The following table lists all the available options and their default values:
 
-Option | Description
---- | ---
-`jwsGet` | Function to get the JSON Web Token (JWT). See Appendix B for more information.
-`ttsEndpoint` | Text-to-speech backend/endpoint/proxy implementing the Google Text-to-Speech API.
-`ttsApikey` | If you don't want to use a proxy or JWT, you can use Google TTS endpoint directly and provide your API key here. **NOTE: I recommend that you don't use this in production and never put your API key in any client-side code.**
-`ttsLang` | Google text-to-speech language. Default is `"fi-FI"`.
-`ttsVoice` | Google text-to-speech voice. The used voice must support SSML and \<mark> tags that are needed to get word-level timestamps. Currently, Google supports SSML and \<mark> tags when using Standard, Wavenet, Neural2, News, or Casual voice types. Default voice is `"fi-FI-Standard-A"`.
-`ttsRate` | Google text-to-speech rate in the range [0.25, 4.0]. Default is `1.0`.
-`ttsPitch` | Google text-to-speech pitch in the range [-20.0, 20.0]. Default is `0`.
-`ttsVolume` | Google text-to-speech volume gain (in dB) in the range [-96.0, 16.0]. Default is `0`.
-`ttsTrimStart` | Trim the viseme sequence start relative to the beginning of the audio (shift in milliseconds). Default is `0`.
-`ttsTrimEnd` | Trim the viseme sequence end relative to the end of the audio (shift in milliseconds). Default is `300`.
-`mixerGainSpeech` | The amount of gain for speech. See Web Audio API / GainNode for more information. Default value is `null` (system default) [&#8805;`v1.3`].
-`mixerGainBackground` | The amount of gain for background audio. See Web Audio API / GainNode for more information. Default value is `null` (system default) [&#8805;`v1.3`].
-`lipsyncModules`| Lip-sync modules to load dynamically at start-up. Limiting the number of language modules improves the loading time and memory usage. Default is `["en", "fi", "lt"]`. [&#8805;`v1.2`]
-`lipsyncLang`| Lip-sync language. Default is `"fi"`.
-`pcmSampleRate` | PCM (signed 16bit little endian) sample rate used in `speakAudio` in Hz. Default is `22050`.
-`modelRoot` | The root name of the armature. Default is `Armature`.
-`modelPixelRatio` | Sets the device's pixel ratio. Default is `1`.
-`modelFPS` | Frames per second. Note that actual frame rate will be a bit lower than the set value. Default is `30`.
-`modelMovementFactor` | A factor in the range [0,1] limiting the avatar's upper body movement when standing. Default is `1`.  [&#8805;`v1.2`]
-`cameraView` | Initial view. Supported views are `"full"`, `"mid"`, `"upper"`  and `"head"`. Default is `"full"`.
-`cameraDistance` | Camera distance offset for initial view in meters. Default is `0`.
-`cameraX` | Camera position offset in X direction in meters. Default is `0`.
-`cameraY` | Camera position offset in Y direction in meters. Default is `0`.
-`cameraRotateX` | Camera rotation offset in X direction in radians. Default is `0`.
-`cameraRotateY` | Camera rotation offset in Y direction in radians. Default is `0`.
-`cameraRotateEnable` | If true, the user is allowed to rotate the 3D model. Default is `true`.
-`cameraPanEnable` | If true, the user is allowed to pan the 3D model. Default is `false`.
-`cameraZoomEnable` | If true, the user is allowed to zoom the 3D model. Default is `false`.
-`lightAmbientColor` | Ambient light color. The value can be a hexadecimal color or CSS-style string. Default is `0xffffff`.
-`lightAmbientIntensity` | Ambient light intensity. Default is `2`.
-`lightDirectColor` | Direction light color. The value can be a hexadecimal color or CSS-style string. Default is `0x8888aa`.
-`lightDirectIntensity` | Direction light intensity. Default is `30`.
-`lightDirectPhi` | Direction light phi angle. Default is `0.1`.
-`lightDirectTheta` | Direction light theta angle. Default is `2`.
-`lightSpotColor` | Spot light color. The value can be a hexadecimal color or CSS-style string. Default is `0x3388ff`.
-`lightSpotIntensity` | Spot light intensity. Default is `0`.
-`lightSpotPhi` | Spot light phi angle. Default is `0.1`.
-`lightSpotTheta` | Spot light theta angle. Default is `4`.
-`lightSpotDispersion` | Spot light dispersion. Default is `1`.
-`avatarMood` | The mood of the avatar. Supported moods: `"neutral"`, `"happy"`, `"angry"`, `"sad"`, `"fear"`, `"disgust"`, `"love"`, `"sleep"`. Default is `"neutral"`.
-`avatarMute`| Mute the avatar. This can be helpful option if you want to output subtitles without audio and lip-sync. Default is `false`.
-`avatarIdleEyeContact` | The average proportion of eye contact while idle in the range [0,1]. Default is `0.2`. [&#8805;`v1.3`]
-`avatarIdleHeadMove` | The average proportion of head movement while idle in the range [0,1]. Default is `0.5`. [&#8805;`v1.3`]
-`avatarSpeakingEyeContact` | The average proportion of eye contact while speaking in the range [0,1]. Default is `0.5`. [&#8805;`v1.3`]
-`avatarSpeakingHeadMove` | The average proportion of head movement while speaking in the range [0,1]. Default is `0.5`. [&#8805;`v1.3`]
-`avatarIgnoreCamera` | If set to `true`, makes the avatar to ignore the camera and speak to whatever it is facing. Default is `false`. [&#8805;`v1.3`]
-`listeningSilenceThresholdLevel` |  Silence detection threshold in the range of [0,100]. If the volume stays below the level for the set duration, a `"stop"` event is triggered. Default is `40`. [&#8805;`v1.3`]
-`listeningSilenceThresholdMs` | Silence detection duration in milliseconds. If the volume stays below the level for the set duration, a `"stop"` event is triggered. Default is `2000`. [&#8805;`v1.3`]
-`listeningSilenceDurationMax` | Maximum silence in milliseconds before `"maxsilence"` event is triggered. Default is `10000`. [&#8805;`v1.3`]
-`listeningActiveThresholdLevel` | Activity detection threshold in the range of [0,100]. If the volume stays above the set level for the set duration, a `"start"` event is triggered. Default is `90`. [&#8805;`v1.3`]
-`listeningActiveThresholdMs` | Activity detection duration in milliseconds. If the volume stays above the set level for the set duration, a `"start"` event is triggered. Default is `400`. [&#8805;`v1.3`]
-`listeningActiveDurationMax` | Maximum activity in milliseconds before `"maxactive"` event is triggered. Default is `240000`. [&#8805;`v1.3`]
-`statsNode` | Parent DOM element for the three.js stats display. If `null`, don't use. Default is `null`.
-`statsStyle` | CSS style for the stats element. If `null`, use the three.js default style. Default is `null`.
+Option | Description | Default
+--- | --- | ---
+`jwsGet` | Function to get the JSON Web Token (JWT). See Appendix B for more information. | `null`
+`ttsEndpoint` | Text-to-speech backend/endpoint/proxy implementing the Google Text-to-Speech API. | `null`
+`ttsApikey` | If you don't want to use a proxy or JWT, you can use Google TTS endpoint directly and provide your API key here. **NOTE: I recommend that you don't use this in production and never put your API key in any client-side code.** | `null`
+`ttsLang` | Google text-to-speech language. | `"fi-FI"`
+`ttsVoice` | Google text-to-speech voice. The used voice must support SSML and \<mark> tags that are needed to get word-level timestamps. Currently, Google supports SSML and \<mark> tags when using Standard, Wavenet, Neural2, News, or Casual voice types. | `"fi-FI-Standard-A"`
+`ttsRate` | Google text-to-speech rate in the range [0.25, 4.0]. | `1.0`
+`ttsPitch` | Google text-to-speech pitch in the range [-20.0, 20.0]. | `0`
+`ttsVolume` | Google text-to-speech volume gain (in dB) in the range [-96.0, 16.0]. | `0`
+`ttsTrimStart` | Trim the viseme sequence start relative to the beginning of the audio (shift in milliseconds). | `0`
+`ttsTrimEnd` | Trim the viseme sequence end relative to the end of the audio (shift in milliseconds). | `300`
+`mixerGainSpeech` | The amount of gain for speech. See Web Audio API / GainNode for more information. [&#8805;`v1.3`] | `null`
+`mixerGainBackground` | The amount of gain for background audio. See Web Audio API / GainNode for more information. [&#8805;`v1.3`] | `null`
+`lipsyncModules`| Lip-sync modules to load dynamically at start-up. Limiting the number of language modules improves the loading time and memory usage. [&#8805;`v1.2`] | `["en", "fi", "lt"]`
+`lipsyncLang`| Lip-sync language. | `"fi"`
+`pcmSampleRate` | PCM (signed 16bit little endian) sample rate used in `speakAudio` in Hz. | `22050`
+`modelRoot` | The root name of the armature. | `Armature`
+`modelPixelRatio` | Sets the device's pixel ratio. | `1`
+`modelFPS` | Frames per second. Note that actual frame rate will be a bit lower than the set value. | `30`
+`modelMovementFactor` | A factor in the range [0,1] limiting the avatar's upper body movement when standing. [&#8805;`v1.2`] | `1`
+`cameraView` | Initial view. Supported views are `"full"`, `"mid"`, `"upper"`  and `"head"`. | `"full"`
+`cameraDistance` | Camera distance offset for initial view in meters. | `0`
+`cameraX` | Camera position offset in X direction in meters. | `0`
+`cameraY` | Camera position offset in Y direction in meters. | `0`
+`cameraRotateX` | Camera rotation offset in X direction in radians. | `0`
+`cameraRotateY` | Camera rotation offset in Y direction in radians. | `0`
+`cameraRotateEnable` | If true, the user is allowed to rotate the 3D model. | `true`
+`cameraPanEnable` | If true, the user is allowed to pan the 3D model. | `false`
+`cameraZoomEnable` | If true, the user is allowed to zoom the 3D model. | `false`
+`lightAmbientColor` | Ambient light color. The value can be a hexadecimal color or CSS-style string. | `0xffffff`
+`lightAmbientIntensity` | Ambient light intensity. | `2`
+`lightDirectColor` | Direction light color. The value can be a hexadecimal color or CSS-style string. | `0x8888aa`
+`lightDirectIntensity` | Direction light intensity. | `30`
+`lightDirectPhi` | Direction light phi angle. | `0.1`
+`lightDirectTheta` | Direction light theta angle. | `2`
+`lightSpotColor` | Spot light color. The value can be a hexadecimal color or CSS-style string. | `0x3388ff`
+`lightSpotIntensity` | Spot light intensity. | `0`
+`lightSpotPhi` | Spot light phi angle. | `0.1`
+`lightSpotTheta` | Spot light theta angle. | `4`
+`lightSpotDispersion` | Spot light dispersion. | `1`
+`avatarMood` | The mood of the avatar. Supported moods: `"neutral"`, `"happy"`, `"angry"`, `"sad"`, `"fear"`, `"disgust"`, `"love"`, `"sleep"`. | `"neutral"`
+`avatarMute`| Mute the avatar. This can be helpful option if you want to output subtitles without audio and lip-sync. | `false`
+`avatarIdleEyeContact` | The average proportion of eye contact while idle in the range [0,1]. [&#8805;`v1.3`] | `0.2`
+`avatarIdleHeadMove` | The average proportion of head movement while idle in the range [0,1]. [&#8805;`v1.3`] | `0.5`
+`avatarSpeakingEyeContact` | The average proportion of eye contact while speaking in the range [0,1]. [&#8805;`v1.3`] | `0.5`
+`avatarSpeakingHeadMove` | The average proportion of head movement while speaking in the range [0,1]. [&#8805;`v1.3`] | `0.5`
+`avatarIgnoreCamera` | If set to `true`, makes the avatar to ignore the camera and speak to whatever it is facing. [&#8805;`v1.3`] | `false`
+`listeningSilence`<br>`ThresholdLevel` |  Silence detection threshold in the range of [0,100]. If the volume stays below the level for the set duration, a `"stop"` event is triggered. [&#8805;`v1.3`] | `40`
+`listeningSilence`<br>`ThresholdMs` | Silence detection duration in milliseconds. If the volume stays below the level for the set duration, a `"stop"` event is triggered. [&#8805;`v1.3`] | `2000`
+`listeningSilence`<br>`DurationMax` | Maximum silence in milliseconds before `"maxsilence"` event is triggered. [&#8805;`v1.3`] | `10000`
+`listeningActive`<br>`ThresholdLevel` | Activity detection threshold in the range of [0,100]. If the volume stays above the set level for the set duration, a `"start"` event is triggered. [&#8805;`v1.3`] | `90`
+`listeningActive`<br>`ThresholdMs` | Activity detection duration in milliseconds. If the volume stays above the set level for the set duration, a `"start"` event is triggered. [&#8805;`v1.3`] | `400`
+`listeningActive`<br>`DurationMax` | Maximum activity in milliseconds before `"maxactive"` event is triggered. [&#8805;`v1.3`] | `240000`
+`statsNode` | Parent DOM element for the three.js stats display. If `null`, don't use. | `null`
+`statsStyle` | CSS style for the stats element. If `null`, use the three.js default style. | `null`
 
 Once the instance has been created, you can load and display your avatar.
 Refer to Appendix A for how to make your avatar:
@@ -605,7 +613,8 @@ head.playGesture("🫤",3);
 
 If you want your character's hair or other body parts to wiggle as
 the character moves, you can use TalkingHead's Dynamic Bones feature.
-It simulates Newton's equations of motions using a spring-damper model and the
+The built-in physics engine simulates Newton's equations
+of motions using a spring-damper model and the
 [velocity Verlet integration](https://en.wikipedia.org/wiki/Verlet_integration)
 method.
 
