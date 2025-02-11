@@ -1498,40 +1498,40 @@ class TalkingHead {
       switch(mt) {
 
       case 'headRotateX':
-        this.poseDelta.props['Head.quaternion'].x = newvalue + this.mtAvatar['bodyRotateX'].applied;
+        this.poseDelta.props['Head.quaternion'].x = o.applied + this.mtAvatar['bodyRotateX'].applied;
         break;
 
       case 'headRotateY':
-        this.poseDelta.props['Head.quaternion'].y = newvalue + this.mtAvatar['bodyRotateY'].applied;
+        this.poseDelta.props['Head.quaternion'].y = o.applied + this.mtAvatar['bodyRotateY'].applied;
         break;
 
       case 'headRotateZ':
-        this.poseDelta.props['Head.quaternion'].z = newvalue + this.mtAvatar['bodyRotateZ'].applied;
+        this.poseDelta.props['Head.quaternion'].z = o.applied + this.mtAvatar['bodyRotateZ'].applied;
         break;
 
       case 'bodyRotateX':
-        this.poseDelta.props['Head.quaternion'].x = newvalue + this.mtAvatar['headRotateX'].applied;
-        this.poseDelta.props['Spine1.quaternion'].x = newvalue/2;
-        this.poseDelta.props['Spine.quaternion'].x = newvalue/8;
-        this.poseDelta.props['Hips.quaternion'].x = newvalue/24;
+        this.poseDelta.props['Head.quaternion'].x = o.applied + this.mtAvatar['headRotateX'].applied;
+        this.poseDelta.props['Spine1.quaternion'].x = o.applied/2;
+        this.poseDelta.props['Spine.quaternion'].x = o.applied/8;
+        this.poseDelta.props['Hips.quaternion'].x = o.applied/24;
         break;
 
       case 'bodyRotateY':
-        this.poseDelta.props['Head.quaternion'].y = newvalue + this.mtAvatar['headRotateY'].applied;
-        this.poseDelta.props['Spine1.quaternion'].y = newvalue/2;
-        this.poseDelta.props['Spine.quaternion'].y = newvalue/2;
-        this.poseDelta.props['Hips.quaternion'].y = newvalue/4;
-        this.poseDelta.props['LeftUpLeg.quaternion'].y = newvalue/2;
-        this.poseDelta.props['RightUpLeg.quaternion'].y = newvalue/2;
-        this.poseDelta.props['LeftLeg.quaternion'].y = newvalue/4;
-        this.poseDelta.props['RightLeg.quaternion'].y = newvalue/4;
+        this.poseDelta.props['Head.quaternion'].y = o.applied + this.mtAvatar['headRotateY'].applied;
+        this.poseDelta.props['Spine1.quaternion'].y = o.applied/2;
+        this.poseDelta.props['Spine.quaternion'].y = o.applied/2;
+        this.poseDelta.props['Hips.quaternion'].y = o.applied/4;
+        this.poseDelta.props['LeftUpLeg.quaternion'].y = o.applied/2;
+        this.poseDelta.props['RightUpLeg.quaternion'].y = o.applied/2;
+        this.poseDelta.props['LeftLeg.quaternion'].y = o.applied/4;
+        this.poseDelta.props['RightLeg.quaternion'].y = o.applied/4;
         break;
 
       case 'bodyRotateZ':
-        this.poseDelta.props['Head.quaternion'].z = newvalue + this.mtAvatar['headRotateZ'].applied;
-        this.poseDelta.props['Spine1.quaternion'].z = newvalue/12;
-        this.poseDelta.props['Spine.quaternion'].z = newvalue/12;
-        this.poseDelta.props['Hips.quaternion'].z = newvalue/24;
+        this.poseDelta.props['Head.quaternion'].z = o.applied + this.mtAvatar['headRotateZ'].applied;
+        this.poseDelta.props['Spine1.quaternion'].z = o.applied/12;
+        this.poseDelta.props['Spine.quaternion'].z = o.applied/12;
+        this.poseDelta.props['Hips.quaternion'].z = o.applied/24;
         break;
 
       case 'handFistLeft':
@@ -1541,18 +1541,18 @@ class TalkingHead {
         'HandRing', 'HandPinky'].forEach( (x,i) => {
           if ( i === 0 ) {
             this.poseDelta.props[side+x+'1.quaternion'].x = 0;
-            this.poseDelta.props[side+x+'2.quaternion'].z = (side === 'Left' ? -1 : 1) * newvalue;
-            this.poseDelta.props[side+x+'3.quaternion'].z = (side === 'Left' ? -1 : 1) * newvalue;
+            this.poseDelta.props[side+x+'2.quaternion'].z = (side === 'Left' ? -1 : 1) * o.applied;
+            this.poseDelta.props[side+x+'3.quaternion'].z = (side === 'Left' ? -1 : 1) * o.applied;
           } else {
-            this.poseDelta.props[side+x+'1.quaternion'].x = newvalue;
-            this.poseDelta.props[side+x+'2.quaternion'].x = 1.5 * newvalue;
-            this.poseDelta.props[side+x+'3.quaternion'].x = 1.5 * newvalue;
+            this.poseDelta.props[side+x+'1.quaternion'].x = o.applied;
+            this.poseDelta.props[side+x+'2.quaternion'].x = 1.5 * o.applied;
+            this.poseDelta.props[side+x+'3.quaternion'].x = 1.5 * o.applied;
           }
         });
         break;
 
       case 'chestInhale':
-        const scale = newvalue/20;
+        const scale = o.applied/20;
         const d = { x: scale, y: (scale/2), z: (3 * scale) };
         const dneg = { x: (1/(1+scale) - 1), y: (1/(1 + scale/2) - 1), z: (1/(1 + 3 * scale) - 1) };
         this.poseDelta.props['Spine1.scale'] = d;
@@ -1563,7 +1563,7 @@ class TalkingHead {
 
       default:
         for( let i=0,l=o.ms.length; i<l; i++ ) {
-          o.ms[i][o.is[i]] = newvalue;
+          o.ms[i][o.is[i]] = o.applied;
         }
 
       }
@@ -2381,7 +2381,7 @@ class TalkingHead {
         }
 
       } else {
-        i = this.mtAvatar['eyeLookInLeft'].value + this.mtAvatar['eyeLookOutLeft'].value;
+        i = this.mtAvatar['eyeLookInLeft'].value - this.mtAvatar['eyeLookOutLeft'].value;
         j = this.gaussianRandom(-0.2,0.2);
         this.animQueue.push( this.animFactory({ name: "headmove",
           dt: [[1000,2000],[1000,2000,1,2],[1000,2000],[1000,2000,1,2]], vs: {
@@ -2897,7 +2897,7 @@ class TalkingHead {
 
     // Blend shapes animation
     if (r.anim?.name) {
-      let animObj = this.animFactory(r.anim, false, 1, 1, true);  
+      let animObj = this.animFactory(r.anim, false, 1, 1, true);
       if (!o.anim) {
         o.anim = [ animObj ];
       } else {
