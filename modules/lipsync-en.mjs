@@ -331,7 +331,7 @@ class LipsyncEn {
       .replace( this.symbolsReg, (symbol) => {
         return ' ' + this.symbols[symbol] + ' ';
       })
-      .replace(/(\d)\,(\d)/g, '$1 point $2') // Number separator
+      .replace(/(\d)\.(\d)/g, '$1 point $2') // Number separator
       .replace(/\d+/g, this.convertNumberToWords.bind(this)) // Numbers to words
       .replace(/(\D)\1\1+/g, "$1$1") // max 2 repeating chars
       .replaceAll('  ',' ') // Only one repeating space
