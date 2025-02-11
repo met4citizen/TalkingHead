@@ -2964,7 +2964,7 @@ class TalkingHead {
       let delay = 0;
       if ( item.anim ) {
         // Find the lowest negative time point, if any
-        delay = Math.abs(Math.max(0, Math.min( ...item.anim.map( x => Math.min(...x.ts) ) ) ) );
+        delay = Math.abs(Math.min(0, ...item.anim.map( x => Math.min(...x.ts) ) ) );
         item.anim.forEach( x => {
           for(let i=0; i<x.ts.length; i++) {
             x.ts[i] = this.animClock + x.ts[i] + delay;
