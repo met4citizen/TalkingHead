@@ -96,6 +96,8 @@
 
           // Add words to the audio object
           result.timestamps_map.forEach( x => {
+            if ( x.word === '__break__' ) return; // Ignore breaks
+
             const start = Math.round(1000 * parseFloat(x.start));
             const end = Math.round(1000 * parseFloat(x.end));
             const duration = Math.round(end - start);
