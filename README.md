@@ -71,7 +71,7 @@ modules from a CDN:
   {
     "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js/+esm",
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
-    "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.3/modules/talkinghead.mjs"
+    "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.4/modules/talkinghead.mjs"
   }
 }
 </script>
@@ -114,7 +114,7 @@ Option | Description | Default
 `ttsPitch` | Google text-to-speech pitch in the range [-20.0, 20.0]. | `0`
 `ttsVolume` | Google text-to-speech volume gain (in dB) in the range [-96.0, 16.0]. | `0`
 `ttsTrimStart` | Trim the viseme sequence start relative to the beginning of the audio (shift in milliseconds). | `0`
-`ttsTrimEnd` | Trim the viseme sequence end relative to the end of the audio (shift in milliseconds). | `300`
+`ttsTrimEnd` | Trim the viseme sequence end relative to the end of the audio (shift in milliseconds). | `400`
 `mixerGainSpeech` | The amount of gain for speech. See Web Audio API / GainNode for more information. [&#8805;`v1.3`] | `null`
 `mixerGainBackground` | The amount of gain for background audio. See Web Audio API / GainNode for more information. [&#8805;`v1.3`] | `null`
 `lipsyncModules`| Lip-sync modules to load dynamically at start-up. Limiting the number of language modules improves the loading time and memory usage. [&#8805;`v1.2`] | `["en", "fi", "lt"]`

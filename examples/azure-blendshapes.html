@@ -112,14 +112,14 @@
       "imports": {
         "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js/+esm",
         "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
-        "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@latest/modules/talkinghead.mjs"
+        "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.4/modules/talkinghead.mjs"
       }
     }
   </script>
 
   <script
     src="https://cdn.jsdelivr.net/npm/microsoft-cognitiveservices-speech-sdk@latest/distrib/browser/microsoft.cognitiveservices.speech.sdk.bundle-min.js"></script>
-  
+
   <script type="module">
     import { TalkingHead } from "talkinghead";
 
@@ -185,7 +185,7 @@
 
     let head;
     let microsoftSynthesizer = null;
-    
+
     function resetSpeakData() {
       speak = {
         audio: [],
