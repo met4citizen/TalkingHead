@@ -30,6 +30,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import Stats from 'three/addons/libs/stats.module.js';
 
 import{ DynamicBones } from './dynamicbones.mjs';
+const workletUrl = new URL('./playback-worklet.js', import.meta.url);
 
 // Temporary objects for animation loop
 const q = new THREE.Quaternion();
@@ -880,6 +881,11 @@ class TalkingHead {
     // Dynamic Bones
     this.dynamicbones = new DynamicBones();
 
+    // Realtime speech streaming mode
+    this.isStreaming = false;
+    this.streamingWorkletNode = null;
+    this.streamAudioStartTime = 0;
+    this.workletLoaded = false;
   }
 
   /**
@@ -3193,6 +3199,148 @@ class TalkingHead {
     if ( this.armature ) {
       this.resetLips();
       this.render();
+    }
+  }
+
+  /**
+  * Start speaking in streaming mode.
+  * @param opt optional settings inlcude gain and sapleRate
+  * @onAudioStart optional callback when audio playback starts
+  * @onAudioEnd optional callback when audio streaming is automatically ended.
+  */
+  async sstartSpeaking(opt = {}, onAudioStart = null, onAudioEnd = null) {
+    this.stopSpeaking(); // Stop the speech queue mode
+
+    if (opt.gain !== undefined) {
+      console.warn('Setting streaming gain not implemented yet');
+    }
+
+    if(opt.sampleRate !== undefined) {
+      console.warn('Setting other sample rate not implemented yet');
+    }
+
+    if (!this.workletLoaded) {
+      await this.audioCtx.audioWorklet.addModule(workletUrl.href);     
+      this.workletLoaded = true;
+    }
+
+    this.streamingWorkletNode = new AudioWorkletNode(this.audioCtx, 'playback-worklet');
+    this.streamingWorkletNode.connect(this.audioCtx.destination);
+
+    this.streamingWorkletNode.port.onmessage = (event) => {
+
+      if(event.data.type === 'playback-started') {
+        this.streamAudioStartTime = this.animClock;
+        this.speakWithHands();
+        if (onAudioStart) onAudioStart();
+      }
+
+      if (event.data.type === 'playback-ended') {
+        this.sstopSpeaking();
+        if (onAudioEnd) onAudioEnd();
+      }
+    };
+
+
+    this.resetLips();
+    this.lookAtCamera(500);
+    if ( opt.mood ) this.setMood( opt.mood );
+
+    this.isStreaming = true;
+    this.isSpeaking = true;
+    this.stateName = "speaking"
+    this.streamAudioStartTime = 0;
+
+    if ( this.audioCtx.state === "suspended" || this.audioCtx.state === "interrupted" ) {
+      this.audioCtx.resume();
+    }
+  }
+
+  /**
+  * Notify if no more streaming data is coming.
+  * Actual stop occurs after finishing speaking.
+  */
+  notifyStreamEnd() {
+    if (!this.isStreaming || !this.streamingWorkletNode) return;
+
+    this.streamingWorkletNode.port.postMessage({ type: 'no-more-data' });
+  }
+
+
+  /**
+   * Stop speaking streaming mode
+   */
+  sstopSpeaking() {
+    if (this.streamingWorkletNode) {
+      try {
+        this.streamingWorkletNode.disconnect();
+
+      } catch(e) { 
+        console.error('Error disconnecting streamingWorkletNode:', e);
+        /* ignore */ 
+      }
+      this.streamingWorkletNode = null;
+    }
+    this.isStreaming = false;
+    this.isSpeaking = false;
+    this.stateName = "idle";
+    this.streamAudioStartTime = 0;
+    if ( this.armature ) {
+      this.resetLips();
+      this.render();
+    }
+  }
+
+  /**
+  * stream speak audio and lipsync. Audio must be 16bit PCM format.
+  * @param r Audio object with viseme data
+  */
+  sspeakAudio(r) {
+    if (!this.isStreaming || !this.streamingWorkletNode) return;
+
+    if(r.audio) {
+      const pcmData = new Int16Array(r.audio);
+      // Post audio chunk to the AudioWorklet for playback
+      this.streamingWorkletNode.port.postMessage(pcmData);
+    }
+
+    if(r.visemes || r.anims || r.words) {
+      let audioStart = this.streamAudioStartTime;
+      if(audioStart === 0) {
+        console.warn("DEBUG streamed audio data has not been received yet! ");
+        audioStart = this.animClock + 100; // add some delay waiting for audio.
+      }
+
+      // If visemes were included, add them to animation queue
+      if ( r.visemes ) {
+        for( let i=0; i<r.visemes.length; i++ ) {
+          const viseme = r.visemes[i];
+          const time = audioStart + r.vtimes[i];
+          const duration = r.vdurations[i];
+          const animObj = {
+            template: { name: 'viseme' },
+            ts: [ time - 2 * duration/3, time + duration/2, time + duration + duration/2 ],
+            vs: {
+              ['viseme_'+viseme]: [null,(viseme === 'PP' || viseme === 'FF') ? 0.9 : 0.6, 0]
+            }
+          }
+          this.animQueue.push(animObj);
+        }
+      }
+
+      if (r.words) {
+        console.log("DEBUG words streaming not implemented yet")
+      }
+
+      // If blendshapes anims are provided, add them to animQueue
+      if (r.anims) {
+        for (let i = 0; i < r.anims.length; i++) {
+            let anim = r.anims[i];
+            anim.delay += audioStart;
+            let animObj = this.animFactory(anim, false, 1, 1, true);
+            this.animQueue.push(animObj);
+        }
+      }
     }
   }
 
