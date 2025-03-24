@@ -747,23 +747,7 @@ class TalkingHead {
 
 
     // Audio context and playlist
-    this.audioCtx = new AudioContext();
-    this.audioSpeechSource = this.audioCtx.createBufferSource();
-    this.audioBackgroundSource = this.audioCtx.createBufferSource();
-    this.audioBackgroundGainNode = this.audioCtx.createGain();
-    this.audioSpeechGainNode = this.audioCtx.createGain();
-    this.audioAnalyzerNode = this.audioCtx.createAnalyser();
-    this.audioAnalyzerNode.fftSize = 256;
-    this.audioAnalyzerNode.smoothingTimeConstant = 0.1;
-    this.audioAnalyzerNode.minDecibels = -70;
-    this.audioAnalyzerNode.maxDecibels = -10;
-    this.audioReverbNode = this.audioCtx.createConvolver();
-    this.setReverb(null); // Set dry impulse as default
-    this.audioBackgroundGainNode.connect(this.audioReverbNode);
-    this.audioAnalyzerNode.connect(this.audioSpeechGainNode);
-    this.audioSpeechGainNode.connect(this.audioReverbNode);
-    this.audioReverbNode.connect(this.audioCtx.destination);
-    this.setMixerGain( this.opt.mixerGainSpeech, this.opt.mixerGainBackground ); // Volume
+    this.initAudioGraph();
     this.audioPlaylist = [];
 
     // Volume based head movement
@@ -881,10 +865,57 @@ class TalkingHead {
     // Dynamic Bones
     this.dynamicbones = new DynamicBones();
 
-    // Realtime speech streaming mode
+    // Stream speech mode
     this.isStreaming = false;
     this.streamingWorkletNode = null;
     this.streamAudioStartTime = 0;
+  }
+
+  /**
+  * Helper that re/creates the audio context and the other nodes.
+  * @param {number} sampleRate
+  */
+  initAudioGraph(sampleRate = null) {
+    // Close existing context if it exists
+    if (this.audioCtx && this.audioCtx.state !== 'closed') {
+      this.audioCtx.close();
+    }
+
+    // Create a new context
+    if (sampleRate) {
+      this.audioCtx = new AudioContext({ sampleRate });
+    } else {
+      this.audioCtx = new AudioContext();
+    }
+    
+    // Create audio nodes
+    this.audioSpeechSource = this.audioCtx.createBufferSource();
+    this.audioBackgroundSource = this.audioCtx.createBufferSource();
+    this.audioBackgroundGainNode = this.audioCtx.createGain();
+    this.audioSpeechGainNode = this.audioCtx.createGain();
+    this.audioStreamGainNode = this.audioCtx.createGain();
+    this.audioAnalyzerNode = this.audioCtx.createAnalyser();
+    this.audioAnalyzerNode.fftSize = 256;
+    this.audioAnalyzerNode.smoothingTimeConstant = 0.1;
+    this.audioAnalyzerNode.minDecibels = -70;
+    this.audioAnalyzerNode.maxDecibels = -10;
+    this.audioReverbNode = this.audioCtx.createConvolver();
+    
+    // Connect nodes
+    this.audioBackgroundGainNode.connect(this.audioReverbNode);
+    this.audioAnalyzerNode.connect(this.audioSpeechGainNode);
+    this.audioSpeechGainNode.connect(this.audioReverbNode);
+    this.audioStreamGainNode.connect(this.audioReverbNode);
+    this.audioReverbNode.connect(this.audioCtx.destination);
+    
+    // Apply reverb and mixer settings
+    this.setReverb(this.currentReverb || null);
+    this.setMixerGain(
+      this.opt.mixerGainSpeech, 
+      this.opt.mixerGainBackground
+    );
+    
+    // Reset stream worklet loaded flag to reload with the new context
     this.workletLoaded = false;
   }
 
@@ -3203,30 +3234,56 @@ class TalkingHead {
   }
 
   /**
-  * Start speaking in streaming mode.
+  * Start streaming mode.
   * @param opt optional settings inlcude gain and sapleRate
   * @onAudioStart optional callback when audio playback starts
   * @onAudioEnd optional callback when audio streaming is automatically ended.
   */
-  async sstartSpeaking(opt = {}, onAudioStart = null, onAudioEnd = null) {
+  async streamStart(opt = {}, onAudioStart = null, onAudioEnd = null) {
     this.stopSpeaking(); // Stop the speech queue mode
 
-    if (opt.gain !== undefined) {
-      console.warn('Setting streaming gain not implemented yet');
+    if (opt.sampleRate !== undefined) {
+      const sr = opt.sampleRate;    
+      if (
+        typeof sr === 'number' &&
+        sr >= 8000 &&
+        sr <= 96000
+      ) {
+        if (sr !== this.audioCtx.sampleRate) {
+          this.initAudioContext(sr);
+        }
+      } else {
+        console.warn(
+          'Invalid sampleRate provided. It must be a number between 8000 and 96000 Hz.'
+        );
+      }
     }
-
-    if(opt.sampleRate !== undefined) {
-      console.warn('Setting other sample rate not implemented yet');
+    
+    if (opt.gain !== undefined) {
+      this.audioStreamGainNode.gain.value = opt.gain;
     }
 
     if (!this.workletLoaded) {
-      await this.audioCtx.audioWorklet.addModule(workletUrl.href);     
-      this.workletLoaded = true;
+      try {
+        const loadPromise = this.audioCtx.audioWorklet.addModule(workletUrl.href);
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Worklet loading timed out")), 5000)
+        );
+        await Promise.race([loadPromise, timeoutPromise]);
+        this.workletLoaded = true;
+      } catch (error) {
+        console.error("Failed to load audio worklet:", error);
+        throw new Error("Failed to initialize streaming speech");
+      }
     }
 
+    // Create and connect worklet node
     this.streamingWorkletNode = new AudioWorkletNode(this.audioCtx, 'playback-worklet');
-    this.streamingWorkletNode.connect(this.audioCtx.destination);
-
+    
+    // Connect worklet through stream gain node for volume control
+    this.streamingWorkletNode.connect(this.audioStreamGainNode);
+    this.streamingWorkletNode.connect(this.audioAnalyzerNode);
+  
     this.streamingWorkletNode.port.onmessage = (event) => {
 
       if(event.data.type === 'playback-started') {
@@ -3236,11 +3293,10 @@ class TalkingHead {
       }
 
       if (event.data.type === 'playback-ended') {
-        this.sstopSpeaking();
+        this.streamStop();
         if (onAudioEnd) onAudioEnd();
       }
     };
-
 
     this.resetLips();
     this.lookAtCamera(500);
@@ -3251,16 +3307,24 @@ class TalkingHead {
     this.stateName = "speaking"
     this.streamAudioStartTime = 0;
 
+    // If Web Audio API is suspended, try to resume it
     if ( this.audioCtx.state === "suspended" || this.audioCtx.state === "interrupted" ) {
-      this.audioCtx.resume();
+      const resume = this.audioCtx.resume();
+      const timeout = new Promise((_r, rej) => setTimeout(() => rej("p2"), 1000));
+      try {
+        await Promise.race([resume, timeout]);
+      } catch(e) {
+        console.log("Can't play audio. Web Audio API suspended. This is often due to calling some speak method before the first user action, which is typically prevented by the browser.");
+        return;
+      }
     }
   }
 
   /**
   * Notify if no more streaming data is coming.
-  * Actual stop occurs after finishing speaking.
+  * Actual stop occurs after audio playback.
   */
-  notifyStreamEnd() {
+  streamNotifyEnd() {
     if (!this.isStreaming || !this.streamingWorkletNode) return;
 
     this.streamingWorkletNode.port.postMessage({ type: 'no-more-data' });
@@ -3268,9 +3332,9 @@ class TalkingHead {
 
 
   /**
-   * Stop speaking streaming mode
+   * Stop streaming mode
    */
-  sstopSpeaking() {
+  streamStop() {
     if (this.streamingWorkletNode) {
       try {
         this.streamingWorkletNode.disconnect();
@@ -3292,10 +3356,10 @@ class TalkingHead {
   }
 
   /**
-  * stream speak audio and lipsync. Audio must be 16bit PCM format.
-  * @param r Audio object with viseme data
+  * stream audio and lipsync. Audio must be in 16 bit PCM format.
+  * @param r Audio object with viseme data.
   */
-  sspeakAudio(r) {
+  streamAudio(r) {
     if (!this.isStreaming || !this.streamingWorkletNode) return;
 
     if(r.audio) {

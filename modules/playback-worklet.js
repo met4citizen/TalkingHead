@@ -2,7 +2,6 @@ class PlaybackWorklet extends AudioWorkletProcessor {
   constructor() {
     super();
     this.port.onmessage = this.handleMessage.bind(this);
-    this.port.on;
     this.buffer = [];
     this.framesOfSilence = -1;    // -1 = haven't started receiving data yet
     this.silenceThreshold = 1000;  // e.g. ~1000 blocks of silence
@@ -15,7 +14,7 @@ class PlaybackWorklet extends AudioWorkletProcessor {
       return;
     }
 
-    if (event.data.type === 'no-more-data') {
+    if (event.data.type === "no-more-data") {
       // The main thread says no more audio chunks will arrive
       this.noMoreData = true;
       return;
@@ -31,7 +30,7 @@ class PlaybackWorklet extends AudioWorkletProcessor {
     // Detect start of audio
     if(this.buffer.length > 0 && this.framesOfSilence === -1) {
       this.framesOfSilence = 0;
-      this.port.postMessage({ type: 'playback-started' });
+      this.port.postMessage({ type: "playback-started" });
     }
     
     // Silence tracker
@@ -54,15 +53,15 @@ class PlaybackWorklet extends AudioWorkletProcessor {
 
     // If noMoreData was set AND we have fully drained the buffer => end
     if (this.noMoreData && this.buffer.length === 0) {
-      this.port.postMessage({ type: 'playback-ended' });
-      console.warn('[PlaybackWorklet] ended after noMoreData + buffer consumed');
+      this.port.postMessage({ type: "playback-ended" });
+      console.warn("[PlaybackWorklet] ended after noMoreData + buffer consumed");
       return false;
     }
 
     // Fallback silence detection logic
     if (this.framesOfSilence > this.silenceThreshold) {
-      this.port.postMessage({ type: 'playback-ended' });
-      console.warn('playback-ended signal detected after silence');
+      this.port.postMessage({ type: "playback-ended" });
+      console.warn("playback-ended signal detected after silence");
       this.framesOfSilence = -1; // Reset to avoid sending multiple signals
       return false;
     }
