@@ -867,8 +867,9 @@ class TalkingHead {
 
     // Stream speech mode
     this.isStreaming = false;
-    this.streamingWorkletNode = null;
+    this.streamWorkletNode = null;
     this.streamAudioStartTime = 0;
+    this.streamLipsyncLang = null;
   }
 
   /**
@@ -3235,11 +3236,12 @@ class TalkingHead {
 
   /**
   * Start streaming mode.
-  * @param opt optional settings inlcude gain and sapleRate
+  * @param opt optional settings inlcude gain, sampleRate, and lipsyncLang
   * @onAudioStart optional callback when audio playback starts
   * @onAudioEnd optional callback when audio streaming is automatically ended.
+  * @onSubtitles optional callback to play subtitles
   */
-  async streamStart(opt = {}, onAudioStart = null, onAudioEnd = null) {
+  async streamStart(opt = {}, onAudioStart = null, onAudioEnd = null, onSubtitles = null) {
     this.stopSpeaking(); // Stop the speech queue mode
 
     if (opt.sampleRate !== undefined) {
@@ -3278,13 +3280,13 @@ class TalkingHead {
     }
 
     // Create and connect worklet node
-    this.streamingWorkletNode = new AudioWorkletNode(this.audioCtx, 'playback-worklet');
+    this.streamWorkletNode = new AudioWorkletNode(this.audioCtx, 'playback-worklet');
     
     // Connect worklet through stream gain node for volume control
-    this.streamingWorkletNode.connect(this.audioStreamGainNode);
-    this.streamingWorkletNode.connect(this.audioAnalyzerNode);
+    this.streamWorkletNode.connect(this.audioStreamGainNode);
+    this.streamWorkletNode.connect(this.audioAnalyzerNode);
   
-    this.streamingWorkletNode.port.onmessage = (event) => {
+    this.streamWorkletNode.port.onmessage = (event) => {
 
       if(event.data.type === 'playback-started') {
         this.streamAudioStartTime = this.animClock;
@@ -3301,6 +3303,8 @@ class TalkingHead {
     this.resetLips();
     this.lookAtCamera(500);
     if ( opt.mood ) this.setMood( opt.mood );
+    if ( opt.lipsyncLang ) this.streamLipsyncLang = opt.lipsyncLang;
+    this.onSubtitles = onSubtitles || null;
 
     this.isStreaming = true;
     this.isSpeaking = true;
@@ -3325,9 +3329,9 @@ class TalkingHead {
   * Actual stop occurs after audio playback.
   */
   streamNotifyEnd() {
-    if (!this.isStreaming || !this.streamingWorkletNode) return;
+    if (!this.isStreaming || !this.streamWorkletNode) return;
 
-    this.streamingWorkletNode.port.postMessage({ type: 'no-more-data' });
+    this.streamWorkletNode.port.postMessage({ type: 'no-more-data' });
   }
 
 
@@ -3335,15 +3339,15 @@ class TalkingHead {
    * Stop streaming mode
    */
   streamStop() {
-    if (this.streamingWorkletNode) {
+    if (this.streamWorkletNode) {
       try {
-        this.streamingWorkletNode.disconnect();
+        this.streamWorkletNode.disconnect();
 
       } catch(e) { 
-        console.error('Error disconnecting streamingWorkletNode:', e);
+        console.error('Error disconnecting streamWorkletNode:', e);
         /* ignore */ 
       }
-      this.streamingWorkletNode = null;
+      this.streamWorkletNode = null;
     }
     this.isStreaming = false;
     this.isSpeaking = false;
@@ -3360,19 +3364,19 @@ class TalkingHead {
   * @param r Audio object with viseme data.
   */
   streamAudio(r) {
-    if (!this.isStreaming || !this.streamingWorkletNode) return;
+    if (!this.isStreaming || !this.streamWorkletNode) return;
 
     if(r.audio) {
       const pcmData = new Int16Array(r.audio);
       // Post audio chunk to the AudioWorklet for playback
-      this.streamingWorkletNode.port.postMessage(pcmData);
+      this.streamWorkletNode.port.postMessage(pcmData);
     }
 
     if(r.visemes || r.anims || r.words) {
       let audioStart = this.streamAudioStartTime;
       if(audioStart === 0) {
-        console.warn("DEBUG streamed audio data has not been received yet! ");
-        audioStart = this.animClock + 100; // add some delay waiting for audio.
+        // Lipsync data received before stream audio data. Add small delay waiting for audio.
+        audioStart = this.animClock + 100;
       }
 
       // If visemes were included, add them to animation queue
@@ -3392,8 +3396,51 @@ class TalkingHead {
         }
       }
 
-      if (r.words) {
-        console.log("DEBUG words streaming not implemented yet")
+      if (r.words && (this.onSubtitles || !r.visemes ) ) {
+        for( let i=0; i<r.words.length; i++ ) {
+          const word = r.words[i];
+          const time = r.wtimes[i];
+          let duration = r.wdurations[i];
+  
+          if ( word.length ) {
+            // If subtitles callback is available, add the subtitles
+            if ( this.onSubtitles ) {
+              this.animQueue.push( {
+                template: { name: 'subtitles' },
+                ts: [time],
+                vs: {
+                  subtitles: [' ' + word]
+                }
+              });
+            }
+  
+            // If visemes were not specified, calculate visemes based on the words
+            if ( !r.visemes ) {
+              const lipsyncLang = this.streamLipsyncLang || this.avatar.lipsyncLang || this.opt.lipsyncLang;
+              const wrd = this.lipsyncPreProcessText(word, lipsyncLang);
+              const val = this.lipsyncWordsToVisemes(wrd, lipsyncLang);
+              if ( val && val.visemes && val.visemes.length ) {
+                const dTotal = val.times[ val.visemes.length-1 ] + val.durations[ val.visemes.length-1 ];
+                const overdrive = Math.min(duration, Math.max( 0, duration - val.visemes.length * 150));
+                let level = 0.6 + this.convertRange( overdrive, [0,duration], [0,0.4]);
+                duration = Math.min( duration, val.visemes.length * 200 );
+                if ( dTotal > 0 ) {
+                  for( let j=0; j<val.visemes.length; j++ ) {
+                    const t = time + (val.times[j]/dTotal) * duration;
+                    const d = (val.durations[j]/dTotal) * duration;
+                    this.animQueue.push( {
+                      template: { name: 'viseme' },
+                      ts: [ t - Math.min(60,2*d/3), t + Math.min(25,d/2), t + d + Math.min(60,d/2) ],
+                      vs: {
+                        ['viseme_'+val.visemes[j]]: [null,(val.visemes[j] === 'PP' || val.visemes[j] === 'FF') ? 0.9 : level, 0]
+                      }
+                    });
+                  }
+                }
+              }
+            }
+          }
+        }
       }
 
       // If blendshapes anims are provided, add them to animQueue

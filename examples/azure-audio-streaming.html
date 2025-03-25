@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Talking Head - Azure Audio Streaming Example</title>
+  <title>Talking Head - Azure TTS Audio Streaming Example</title>
   <style>
     body, html {
       width: 100%;
@@ -265,7 +265,7 @@
 
           // Handle the synthesis results
           microsoftSynthesizer.synthesizing = (s, e) =>{
-            head.sspeakAudio({
+            head.streamAudio({
               audio: e.result.audioData,
               visemes: visemesbuffer.visemes.splice(0, visemesbuffer.visemes.length),
               vtimes: visemesbuffer.vtimes.splice(0, visemesbuffer.vtimes.length),
@@ -290,8 +290,8 @@
         }
 
         // Start stream speaking
-        head.sstartSpeaking(
-          {mood: "happy"},
+        head.streamStart(
+          {sampleRate: 48000, mood: "happy"},
           () => {
             console.log("Audio playback started.");
           },
@@ -323,10 +323,10 @@
                     vtimes: visemesbuffer.vtimes.splice(0, visemesbuffer.vtimes.length),
                     vdurations: visemesbuffer.vdurations.splice(0, visemesbuffer.vdurations.length),
                   }
-                 head.sspeakAudio(speak);
+                 head.streamAudio(speak);
                 }
                 
-                head.notifyStreamEnd();
+                head.streamNotifyEnd();
                 resetVisemeBuffer();
                 console.log("Speech synthesis completed.");
             }
