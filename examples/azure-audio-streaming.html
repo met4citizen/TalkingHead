@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <title>Talking Head - Azure TTS Audio Streaming Example</title>
   <style>
-    body, html {
+    body,
+    html {
       width: 100%;
       height: 100%;
       max-width: 800px;
@@ -60,6 +62,7 @@
       border-radius: 4px;
       cursor: pointer;
     }
+
     #settings-button:hover {
       background: #444;
     }
@@ -73,15 +76,18 @@
       background-color: #333;
       padding: 10px;
       border-radius: 5px;
-      display: none; /* hidden by default */
+      display: none;
+      /* hidden by default */
       z-index: 998;
     }
+
     #settings-panel label {
       display: block;
       margin-top: 10px;
       font-weight: bold;
       font-size: 0.9rem;
     }
+
     #settings-panel input {
       width: calc(100% - 10px);
       padding: 5px;
@@ -104,6 +110,23 @@
       right: 10px;
       height: 40px;
       font-size: 20px;
+    }
+
+    #subtitles {
+      position: absolute;
+      bottom: 50px;
+      left: 10%;
+      right: 10%;
+      text-align: center;
+      font-size: 1.2em;
+      color: #ffffff;
+      text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.7);
+      pointer-events: none;
+      z-index: 1000;
+      padding: 5px 10px;
+      border-radius: 5px;
+      background: rgba(0, 0, 0, 0.3);
+      display: none;
     }
   </style>
 
@@ -150,18 +173,24 @@
     let head;
     let microsoftSynthesizer = null;
 
-    function resetVisemeBuffer() {
+    function resetLipsyncBuffers() {
       visemesbuffer = {
         visemes: [],
         vtimes: [],
         vdurations: [],
       };
       prevViseme = null;
+      wordsbuffer = {
+        words: [],
+        wtimes: [],
+        wdurations: []
+      }
     }
 
     let visemesbuffer = null;
     let prevViseme = null;
-    resetVisemeBuffer();
+    let wordsbuffer = null;
+    resetLipsyncBuffers();
 
 
 
@@ -177,7 +206,7 @@
       azureTTSKey.value = sessionStorage.getItem('azureTTSKey') || '';
       azureRegion.value = sessionStorage.getItem('azureRegion') || '';
       [azureTTSKey, azureRegion].forEach(el => {
-        el.addEventListener('input', () => 
+        el.addEventListener('input', () =>
           sessionStorage.setItem(el.id === 'azure-key' ? 'azureTTSKey' : 'azureRegion', el.value.trim())
         );
       });
@@ -186,6 +215,7 @@
       head = new TalkingHead(nodeAvatar, {
         ttsEndpoint: "/gtts/",
         cameraView: "upper",
+        lipsyncLang: "en"
       });
 
       // Show "Loading..." by default
@@ -264,7 +294,7 @@
           microsoftSynthesizer = new window.SpeechSDK.SpeechSynthesizer(config, null);
 
           // Handle the synthesis results
-          microsoftSynthesizer.synthesizing = (s, e) =>{
+          microsoftSynthesizer.synthesizing = (s, e) => {
             head.streamAudio({
               audio: e.result.audioData,
               visemes: visemesbuffer.visemes.splice(0, visemesbuffer.visemes.length),
@@ -275,29 +305,61 @@
 
           // Viseme handling
           microsoftSynthesizer.visemeReceived = (s, e) => {
-              const vtime = e.audioOffset / 10000;
-              const viseme = visemeMap[e.visemeId];
-              if (!head.isStreaming) return;
-              if (prevViseme) {
-                let vduration = vtime  - prevViseme.vtime;
-                if (vduration < 40) vduration = 40;
-                visemesbuffer.visemes.push(prevViseme.viseme);
-                visemesbuffer.vtimes.push(prevViseme.vtime);
-                visemesbuffer.vdurations.push(vduration);
-              }
-              prevViseme = { viseme, vtime };
+            const vtime = e.audioOffset / 10000;
+            const viseme = visemeMap[e.visemeId];
+            if (!head.isStreaming) return;
+            if (prevViseme) {
+              let vduration = vtime - prevViseme.vtime;
+              if (vduration < 40) vduration = 40;
+              visemesbuffer.visemes.push(prevViseme.viseme);
+              visemesbuffer.vtimes.push(prevViseme.vtime);
+              visemesbuffer.vdurations.push(vduration);
+            }
+            prevViseme = { viseme, vtime };
+          };
+
+          // Process word boundaries and punctuations
+          microsoftSynthesizer.wordBoundary = function (s, e) {
+            const word = e.text;
+            const time = e.audioOffset / 10000;
+            const duration = e.duration / 10000;
+
+            if (e.boundaryType === "PunctuationBoundary" && wordsbuffer.words.length) {
+              wordsbuffer.words[wordsbuffer.words.length - 1] += word;
+              wordsbuffer.wdurations[wordsbuffer.wdurations.length - 1] += duration;
+            } else if (e.boundaryType === "WordBoundary" || e.boundaryType === "PunctuationBoundary") {
+              wordsbuffer.words.push(word);
+              wordsbuffer.wtimes.push(time);
+              wordsbuffer.wdurations.push(duration);
+            }
           };
         }
 
         // Start stream speaking
         head.streamStart(
-          {sampleRate: 48000, mood: "happy"},
+          { sampleRate: 48000, mood: "happy", gain: 0.5 },
           () => {
             console.log("Audio playback started.");
+            const subtitlesElement = document.getElementById("subtitles");
+            subtitlesElement.textContent = "";
+            subtitlesElement.style.display = "none";
           },
           () => {
             console.log("Audio playback ended.");
-          });
+            const subtitlesElement = document.getElementById("subtitles");
+            const displayDuration = Math.max(2000, subtitlesElement.textContent.length * 50);
+            setTimeout(() => {
+              subtitlesElement.textContent = "";
+              subtitlesElement.style.display = "none";
+            }, displayDuration);
+          },
+          (subtitleText) => {
+            console.log("subtitleText: ", subtitleText);
+            const subtitlesElement = document.getElementById("subtitles");
+            subtitlesElement.textContent += subtitleText;
+            subtitlesElement.style.display = subtitlesElement.textContent ? "block" : "none";
+          }
+        );
 
         // Perform TTS
         microsoftSynthesizer.speakSsmlAsync(
@@ -306,34 +368,37 @@
             if (result.reason === window.SpeechSDK.ResultReason.SynthesizingAudioCompleted) {
 
               if (prevViseme) {
-                  // Final viseme duration guess
-                  const finalDuration = 100; 
-                  // Add to visemesbuffer
-                  visemesbuffer.visemes.push(prevViseme.viseme);
-                  visemesbuffer.vtimes.push(prevViseme.vtime);
-                  visemesbuffer.vdurations.push(finalDuration);
-                  // Now clear the last viseme
-                  prevViseme = null;
+                // Final viseme duration guess
+                const finalDuration = 100;
+                // Add to visemesbuffer
+                visemesbuffer.visemes.push(prevViseme.viseme);
+                visemesbuffer.vtimes.push(prevViseme.vtime);
+                visemesbuffer.vdurations.push(finalDuration);
+                // Now clear the last viseme
+                prevViseme = null;
               }
-                // stream any remaining visemes
-                if (visemesbuffer.visemes.length) {
-                  const speak = {
-                    audio: null,
-                    visemes: visemesbuffer.visemes.splice(0, visemesbuffer.visemes.length),
-                    vtimes: visemesbuffer.vtimes.splice(0, visemesbuffer.vtimes.length),
-                    vdurations: visemesbuffer.vdurations.splice(0, visemesbuffer.vdurations.length),
-                  }
-                 head.streamAudio(speak);
+              // stream any remaining visemes
+              if (visemesbuffer.visemes.length) {
+                const speak = {
+                  audio: null,
+                  visemes: visemesbuffer.visemes.splice(0, visemesbuffer.visemes.length),
+                  vtimes: visemesbuffer.vtimes.splice(0, visemesbuffer.vtimes.length),
+                  vdurations: visemesbuffer.vdurations.splice(0, visemesbuffer.vdurations.length),
+                  words: wordsbuffer.words.splice(0, wordsbuffer.words.length),
+                  wtimes: wordsbuffer.wtimes.splice(0, wordsbuffer.wtimes.length),
+                  wdurations: wordsbuffer.wdurations.splice(0, wordsbuffer.wdurations.length)
                 }
-                
-                head.streamNotifyEnd();
-                resetVisemeBuffer();
-                console.log("Speech synthesis completed.");
+                head.streamAudio(speak);
+              }
+
+              head.streamNotifyEnd();
+              resetLipsyncBuffers();
+              console.log("Speech synthesis completed.");
             }
           },
           (error) => {
             console.error("Azure speech synthesis error:", error);
-            resetVisemeBuffer();
+            resetLipsyncBuffers();
           }
         );
       }
@@ -349,6 +414,7 @@
 <body>
   <!-- 3D Avatar -->
   <div id="avatar"></div>
+  <div id="subtitles"></div>
 
   <!-- Controls at the top -->
   <div id="controls">
@@ -369,4 +435,5 @@
   <!-- Loading or error display -->
   <div id="loading"></div>
 </body>
+
 </html>

@@ -3407,7 +3407,7 @@ class TalkingHead {
             if ( this.onSubtitles ) {
               this.animQueue.push( {
                 template: { name: 'subtitles' },
-                ts: [time],
+                ts: [audioStart + time],
                 vs: {
                   subtitles: [' ' + word]
                 }
