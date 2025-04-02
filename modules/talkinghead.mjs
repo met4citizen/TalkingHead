@@ -870,6 +870,7 @@ class TalkingHead {
     this.streamWorkletNode = null;
     this.streamAudioStartTime = 0;
     this.streamLipsyncLang = null;
+    this.streamLipsyncType = "visemes";
   }
 
   /**
@@ -3236,7 +3237,7 @@ class TalkingHead {
 
   /**
   * Start streaming mode.
-  * @param opt optional settings inlcude gain, sampleRate, and lipsyncLang
+  * @param opt optional settings inlcude gain, sampleRate, lipsyncLang, and lipsyncType
   * @onAudioStart optional callback when audio playback starts
   * @onAudioEnd optional callback when audio streaming is automatically ended.
   * @onSubtitles optional callback to play subtitles
@@ -3252,7 +3253,7 @@ class TalkingHead {
         sr <= 96000
       ) {
         if (sr !== this.audioCtx.sampleRate) {
-          this.initAudioContext(sr);
+          this.initAudioGraph(sr);
         }
       } else {
         console.warn(
@@ -3302,8 +3303,9 @@ class TalkingHead {
 
     this.resetLips();
     this.lookAtCamera(500);
-    if ( opt.mood ) this.setMood( opt.mood );
-    if ( opt.lipsyncLang ) this.streamLipsyncLang = opt.lipsyncLang;
+    opt.mood && this.setMood( opt.mood );
+    opt.lipsyncLang && (this.streamLipsyncLang = opt.lipsyncLang);
+    opt.lipsyncType && (this.streamLipsyncType = opt.lipsyncType);
     this.onSubtitles = onSubtitles || null;
 
     this.isStreaming = true;
@@ -3379,8 +3381,8 @@ class TalkingHead {
         audioStart = this.animClock + 100;
       }
 
-      // If visemes were included, add them to animation queue
-      if ( r.visemes ) {
+      // Process visemes
+      if ( r.visemes && this.streamLipsyncType == 'visemes') {
         for( let i=0; i<r.visemes.length; i++ ) {
           const viseme = r.visemes[i];
           const time = audioStart + r.vtimes[i];
@@ -3396,7 +3398,8 @@ class TalkingHead {
         }
       }
 
-      if (r.words && (this.onSubtitles || !r.visemes ) ) {
+      // Process words
+      if (r.words && (this.onSubtitles || this.streamLipsyncType == "words")) {
         for( let i=0; i<r.words.length; i++ ) {
           const word = r.words[i];
           const time = r.wtimes[i];
@@ -3414,8 +3417,8 @@ class TalkingHead {
               });
             }
   
-            // If visemes were not specified, calculate visemes based on the words
-            if ( !r.visemes ) {
+            // Calculate visemes based on the words
+            if ( this.streamLipsyncType == "words" ) {
               const lipsyncLang = this.streamLipsyncLang || this.avatar.lipsyncLang || this.opt.lipsyncLang;
               const wrd = this.lipsyncPreProcessText(word, lipsyncLang);
               const val = this.lipsyncWordsToVisemes(wrd, lipsyncLang);
@@ -3444,7 +3447,7 @@ class TalkingHead {
       }
 
       // If blendshapes anims are provided, add them to animQueue
-      if (r.anims) {
+      if (r.anims && this.streamLipsyncType == "blendshapes") {
         for (let i = 0; i < r.anims.length; i++) {
             let anim = r.anims[i];
             anim.delay += audioStart;
