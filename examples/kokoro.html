@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Talking Head - Kokoro TTS</title>
+
+  <style>
+    body, html { width:100%; height:100%; max-width: 800px; margin: auto; position: relative; background-color: #202020; color: white; }
+    #avatar { display: block; width:100%; height:100%; }
+    #controls { display: block; position: absolute; top: 10px; left: 10px; right: 10px; height: 40px; }
+    #text { position: absolute; width: Calc(100% - 140px ); height: 40px; top: 0; left: 0; right: 110px; padding: 0 10px; font-family: Arial; font-size: 20px; }
+    #speak { display: block; position: absolute; box-sizing: content-box; top: 0; bottom: 0; right: 10px; height: 40px; width: 85px; font-family: Arial; font-size: 20px; }
+    #info { display: block; position: absolute; bottom: 10px; left: 10px; right: 10px; height: 50px; font-family: Arial; font-size: 20px; }
+    #subtitles {
+      position: absolute; bottom: 6vh; left: 50%; transform: translateX(-50%);
+      font-family: Arial; font-size: max( min(5vh,5vw), 24px );
+      line-height: max( min(6vh,6vh), 20px ); z-index: 30;
+      height: Calc( 2 * max( min(6vh,6vh), 20px ));
+      max-height: Calc( 2 * max( min(6vh,6vh), 20px ));
+      width: 80%; text-align: center; overflow: hidden;
+    }
+  </style>
+
+  <script type="importmap">
+  { "imports":
+    {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js/+esm",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+      "@huggingface/transformers": "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.4.2/dist/transformers.min.js",
+      "phonemizer": "https://cdn.jsdelivr.net/npm/phonemizer@1.2.1/dist/phonemizer.min.js",
+      "talkinghead": "../modules/talkinghead.mjs",
+      "kokorotts": "./kokorotts.mjs"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import { TalkingHead } from "talkinghead";
+    import { KokoroTTS } from 'kokorotts';
+
+    let head;
+
+    // KOKORO TTS
+
+    // Initialize
+    const kokoro = new KokoroTTS({
+      voice: "af_bella",
+      speed: 1,
+      language: "en-us",
+    });
+    window.kokoro = kokoro;
+    const kokoroQueue = [];
+    kokoro.load();
+    let kokoroSentenceId = 0;
+
+    /**
+    * Add text to the speech queue.
+    * @param {string} text The text to be converted to speech
+    * @param {Object} [opt=null] TalkingHead options
+    * @param {subtitlesfn} [onsubtitles=null] Callback when a word is spoken.
+    */
+    async function kokoroSpeak(text, opt = null, onsubtitles = null) {
+
+      // Divide text to sentences, max length 500
+      const dividers = { "! ":1, ". ":1, "? ":1 };
+      const maxLen = 500;
+      const textLen = text.length;
+      const items = [];
+      const letters = [...text];
+      let lastSpace = 0;
+      let sentence = "";
+      let sentenceId = 0;
+      for( let i=0; i<textLen; i++ ) {
+        const letter = letters[i];
+        const isLast = i === (textLen-1);
+        const letterTwo = isLast ? null : (letter + letters[i+1]);
+        const isDivider = isLast ? false : dividers.hasOwnProperty(letterTwo);
+        if ( letter === ' ' ) lastSpace = i;
+        const isMax = i === maxLen;
+
+        sentence += letter;
+
+        let s = null;
+        if ( isMax ) {
+          if ( lastSpace === 0 ) lastSpace = i;
+          s = sentence.slice(0,lastSpace).trim();
+          sentence = sentence.slice(lastSpace+1);
+        } else if ( isLast || isDivider ) {
+          s = sentence.trim();
+          sentence = "";
+        }
+        if ( s ) {
+          const item = { text: s, opt, onsubtitles, status: 0 };
+          items.push(item);
+          kokoroQueue.push(item);
+          lastSpace = 0;
+          sentenceId++;
+        }
+
+      }
+
+      // Generate items
+      for( let i=0; i<items.length; i++ ) {
+        const item = items[i];
+        kokoro.generate(item.text, async (data) => {
+          data.audio = await head.audioCtx.decodeAudioData( data.audio );
+          item.audio = data;
+          item.status = 1;
+          kokoroProcessQueue();
+        });
+      }
+
+    }
+
+    /**
+    * Process the queue and call TalkingHead speakAudio.
+    */
+    function kokoroProcessQueue() {
+      while( kokoroQueue.length ) {
+        const item = kokoroQueue[0];
+        if ( item.status === 0 ) break; // The first item is not ready yet
+        kokoroQueue.shift();
+        if ( item.hasOwnProperty("audio") ) {
+          try {
+            head.speakAudio(
+              item.audio,
+              item.opt,
+              item.onsubtitles.bind(null,item.text.slice(),kokoroSentenceId)
+            );
+            kokoroSentenceId++;
+          } catch(error) {
+            console.log(error);
+          }
+        }
+      }
+    }
+
+    // SUBTITLES
+
+    let nodeSubtitles = null; // Subtitles element
+    let timerSubtitles; // Subtitles clear timer
+
+    /**
+    * Add the given word to subtitles and reset the clear timer.
+    * Play hand gestures for pre-defined keywords.
+    *
+    * @param {string} word Word to be added to subtitles.
+    * @param {number} [ms=2000] Timeout for clearing subtitles, in milliseconds
+    */
+    function addSubtitle(word, ms=2000) {
+
+      // Add the word and scroll to bottom
+      if ( word ) {
+        nodeSubtitles.textContent += word;
+        nodeSubtitles.scrollTop = nodeSubtitles.scrollHeight;
+      }
+
+      // Timeout to clear subtitles
+      if ( timerSubtitles ) {
+        clearTimeout(timerSubtitles);
+        timerSubtitles = null;
+      }
+      timerSubtitles = setTimeout( clearSubtitles, ms );
+    }
+
+
+    /**
+    * Clear subtitles.
+    *
+    * @param {number} [ms=0] Timeout for clearing subtitles, in milliseconds
+    */
+    function clearSubtitles(ms=0) {
+
+      if ( timerSubtitles ) {
+        clearTimeout(timerSubtitles);
+        timerSubtitles = null;
+      }
+      if ( ms > 0 ) {
+        timerSubtitles = setTimeout( clearSubtitles, ms );
+      } else {
+        nodeSubtitles.textContent = "";
+      }
+
+    }
+
+
+    document.addEventListener('DOMContentLoaded', async function(e) {
+
+      // Subtitles
+      nodeSubtitles = document.getElementById('subtitles');
+
+      // Instantiate the class
+      const nodeAvatar = document.getElementById('avatar');
+      head = new TalkingHead( nodeAvatar, {
+        ttsEndpoint: "N/A",
+        lipsyncModules: [],
+        cameraView: "upper",
+        mixerGainSpeech: 3
+      });
+
+      // Load and show the avatar
+      const nodeInfo = document.getElementById('info');
+      try {
+        nodeInfo.textContent = "Loading...";
+        await head.showAvatar( {
+          url: 'https://models.readyplayer.me/64bfa15f0e72c63d7c3934a6.glb?morphTargets=ARKit,Oculus+Visemes,mouthOpen,mouthSmile,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png',
+          body: 'F',
+          avatarMood: 'neutral',
+          lipsyncLang: 'en'
+        }, (ev) => {
+          if ( ev.lengthComputable ) {
+            let val = Math.min(100,Math.round(ev.loaded/ev.total * 100 ));
+            nodeInfo.textContent = "Loading " + val + "%";
+          }
+        });
+        nodeInfo.style.display = 'none';
+      } catch (error) {
+        console.log(error);
+        nodeInfo.textContent = error.toString();
+      }
+
+      // Speak when clicked
+      const nodeSpeak = document.getElementById('speak');
+      nodeSpeak.addEventListener('click', function () {
+        let text = document.getElementById('text').value;
+        let sentenceId;
+        kokoroSpeak(text, {}, (sentence,id,word) => {
+          if ( id !== sentenceId ) {
+            sentenceId = id;
+            clearSubtitles();
+          }
+          addSubtitle(word);
+        });
+      });
+
+      // Pause animation when document is not visible
+      document.addEventListener("visibilitychange", async function (ev) {
+        if (document.visibilityState === "visible") {
+          head.start();
+        } else {
+          head.stop();
+        }
+      });
+
+    });
+
+  </script>
+</head>
+
+<body>
+  <div id="avatar"></div>
+  <div id="controls">
+    <input id="text" type="text" placeholder="Text" value="Life is like a box of chocolates. You never know what you're gonna get.">
+    <input id="speak" type="button" value="Speak">
+  </div>
+  <div id="info"></div>
+  <div id="subtitles"></div>
+</body>
+
+</html>
