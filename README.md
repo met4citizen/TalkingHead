@@ -206,6 +206,10 @@ Method | Description
 `setLighting(opt)` | Change lighting settings. The `opt` object can be used to set `lightAmbientColor`, `lightAmbientIntensity`, `lightDirectColor`, `lightDirectIntensity`, `lightDirectPhi`, `lightDirectTheta`, `lightSpotColor`, `lightSpotIntensity`, `lightSpotPhi`, `lightSpotTheta`, `lightSpotDispersion`.
 `speakText(text, [opt={}], [onsubtitles=null], [excludes=[]])` | Add the `text` string to the speech queue. The text can contain face emojis. Options `opt` can be used to set text-specific `lipsyncLang`, `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood`, `avatarMute`. Optional callback function `onsubtitles` is called whenever a new subtitle is to be written with the parameter of the added string. The optional `excludes` is an array of [start,end] indices to be excluded from audio but to be included in the subtitles.
 `speakAudio(audio, [opt={}], [onsubtitles=null])` | Add a new `audio` object to the speech queue. In audio object, property `audio` is either `AudioBuffer` or an array of PCM 16bit LE audio chunks. Property `words` is an array of words, `wtimes` is an array of corresponding starting times in milliseconds, and `wdurations` an array of durations in milliseconds. If the Oculus viseme IDs are known, they can be given in optional `visemes`, `vtimes` and `vdurations` arrays. The object also supports optional timed callbacks using `markers` and `mtimes`. In addition, you can provide an optional `anim` as an animation template object that can drive your own blendshape or morph target data in sync with audio playback. See Appendix F for more details. The `opt` object can be used to set text-specific `lipsyncLang`.
+`streamStart(opt={},  onAudioStart = null, onAudioEnd = null, onSubtitles = null)` | Sets the talking head in streaming mode. See Appendix G for streaming instructions.
+`streamAudio(audio)` | Starts feeding audio chunks to talkinghead in the streaming mode. See Appendix G for streaming instructions.
+`streamNotifyEnd()` | Signals the end of streaming audio chunks to the talkinghead. See Appendix G for streaming instructions.
+`streamStop()` | Exits the streaming mode. See Appendix G for streaming instructions.
 `speakEmoji(e)` | Add an emoji `e` to the speech queue.
 `speakBreak(t)` | Add a break of `t` milliseconds to the speech queue.
 `speakMarker(onmarker)` | Add a marker to the speech queue. The callback function `onmarker` is called when the queue processes the marker.
@@ -714,3 +718,52 @@ During audio playback, these frames will automatically be scheduled to match the
 For a practical example of how to use this feature with Azure Text-to-Speech facial blendshapes, refer to examples/azure-blendshapes.html in the repository. This example demonstrates how to integrate blendshape animations derived from Azure’s output into your application.
 
 **Note**: Be aware of a potential quality issue when using Azure blendshapes for lip-sync. The lip-sync may appear somewhat unnatural—for instance, the mouth might open too widely, and the lips may fail to touch on phonemes/visemes where they should. This might be because unlike Oculus visemes, which are specifically designed for accurate lip-syncing, Azure's output relies on ARKit blendshapes—a more generic standard for facial expressions rather than precise lip movements. Furthermore, Azure’s blendshapes are likely optimized for their own avatar system and not specifically for RPM avatars.
+
+---
+
+### Appendix G: Streaming Audio and Lip-sync (Advanced)
+
+This low-level streaming interface is designed for real-time scenarios, such as speech-to-speech or live TTS integrations where latency must be minimized. Use this interface if you require direct, chunked audio playback and on-the-fly lip-sync updates. You can, for instance, integrate a real-time TTS pipeline (like Azure Speech SDK or another live audio source) that continuously streams audio and word/viseme data into TalkingHead.
+
+**Important:** The calling application must handle all aspects of managing and synchronizing the data streams (e.g., facial expressions, eye contact, hand gestures), as well as preventing concurrency issues, buffering multiple sources, or overlapping audio chunks. The system is designed to handle one stream at a time. Ensure streamStop is called before starting a new stream with streamStart.
+
+#### API Overview
+
+##### 1. `streamStart(opt={}, onAudioStart, onAudioEnd, onSubtitles)`
+
+Enters streaming mode using an `AudioWorklet` for low-latency playback. Parameters:
+
+- `opt` *(object, optional)* – Settings controlling streaming behavior:  
+  - `sampleRate` – A number in the range \[8000, 96000\].  
+  - `gain` – Sets the playback gain (volume) for the streaming audio.  
+  - `lipsyncLang` – Specifies lip-sync language if you want viseme generation using words. Defaults to avatar `lipsyncLang`, or to options `lipsyncLang` value. 
+  - `lipsyncType` – Specifies lip-sync data type. Can take one of the values `visemes` (default), `blendshapes`, and `words`.
+  - `mood` – Sets avatar mood upon starting the stream.  
+- `onAudioStart` *(function, optional)* – Callback invoked the moment audio playback starts.  
+- `onAudioEnd` *(function, optional)* – Callback invoked automatically once audio playback concludes.  
+- `onSubtitles` *(function, optional)* – Callback to handle showing subtitle text.
+
+Upon calling `streamStart`, all queued speech (`speakText`, `speakAudio`) is stopped, the engine enters streaming mode, and the avatar prepares for real-time lip-sync. You can then feed audio via `streamAudio()`.
+
+##### 2. `streamAudio(r)`
+
+Sends one chunk of PCM audio data (16-bit little-endian) plus lip-sync data. Parameters:
+
+- `r.audio` – An `ArrayBuffer` or typed array of **16-bit LE PCM** samples. These are played immediately.  
+- `r.visemes`, `r.vtimes`, `r.vdurations` *(optional)* – Directly schedule lip-sync visemes at specific times with specific durations. This is the default type of lip-sync data.
+- `r.words`, `r.wtimes`, `r.wdurations` *(optional)* – Per-word timings and durations (e.g. TTS), allowing the library to create subtitles and/or calculate visemes if the `lipsyncType` option is set to `words`.
+- `r.anims` *(optional)* – An array of blendshape animations that play in sync with the audio. Requires setting `lipsyncType` option to `blendshapes`.   
+
+Each call to `streamAudio()` schedules an immediate chunk for playback and any included lip-sync or subtitle data on the animation timeline. Include only lip-sync data as specified in the `lipsyncType` option via the `streamStart` call. You can include any number of visemes, anims, or words which are not necessarily associated with the included audio chunk. You need to buffer the lip-sync data in the application and send it alongside the audio chunks.
+
+##### 3. `streamNotifyEnd()`
+
+Signals that no more chunks are expected for the current streaming session. Playback stops automatically once queued audio finishes. This is useful for gracefully concluding real-time TTS streams when your pipeline has no additional data to send.
+
+##### 4. `streamStop()`
+
+Forces an immediate end to streaming mode, disconnecting the internal `AudioWorklet`. All queued lip-sync animations (visemes, blendshapes) are cleared, and the avatar reverts to its idle state. If needed, you can later re-start streaming via `streamStart()` again.
+
+#### Example Usage
+
+Refer to the example provided in the repository `azure-audio-streaming.html` on how to integrate this interface with Azure TTS streamed audio.
