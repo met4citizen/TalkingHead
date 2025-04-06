@@ -3429,7 +3429,7 @@ class TalkingHead {
                 duration = Math.min( duration, val.visemes.length * 200 );
                 if ( dTotal > 0 ) {
                   for( let j=0; j<val.visemes.length; j++ ) {
-                    const t = time + (val.times[j]/dTotal) * duration;
+                    const t = audioStart + time + (val.times[j]/dTotal) * duration;
                     const d = (val.durations[j]/dTotal) * duration;
                     this.animQueue.push( {
                       template: { name: 'viseme' },
