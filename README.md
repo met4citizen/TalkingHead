@@ -375,11 +375,12 @@ Washington, D. C., 1976. https://apps.dtic.mil/sti/pdfs/ADA021929.pdf
 
 **FOR HOBBYISTS:**
 
-1. Create your own full-body avatar free at [https://readyplayer.me](https://readyplayer.me)
+1. Create your own full-body avatar free at [Ready Player Me](https://readyplayer.me) / [Player Zero](https://playerzero.readyplayer.me/).
 
-2. Copy the given URL and add the following URL parameters in order to include all the needed morph targets:<br>`morphTargets=ARKit,Oculus+Visemes,mouthOpen,mouthSmile,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png`<br><br>Your final URL should look something like this:<br>`https://models.readyplayer.me/64bfa15f0e72c63d7c3934a6.glb?morphTargets=ARKit,Oculus+Visemes,mouthOpen,mouthSmile,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png`
+2. Copy your avatar’s unique ID (e.g., `64bfa15f0e72c63d7c3934a6`) and download the GLB file using one of the links below. Replace the ID with your own, and make sure to keep the URL parameters to include the necessary morph targets (blend shapes).<br><br>Ready Player Me:<br>`https://models.readyplayer.me/64bfa15f0e72c63d7c3934a6.glb?morphTargets=ARKit,Oculus+Visemes,mouthOpen,mouthSmile,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png`<br><br>Player Zero:<br>`https://avatars.readyplayer.me/67ebd62a688cd661ebe09988.glb?morphTargetsGroup=ARKit,Oculus+Visemes&morphTargets=mouthSmile,mouthOpen,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png`
 
-3. Use the URL to download the GLB file to your own web server.
+> [!IMPORTANT]  
+> The older Ready Player Me service has closed sign-ups for new partners as the company shifts its focus to Player Zero. However, you can still access the legacy editor at [https://readyplayer.me/avatar/](https://readyplayer.me/avatar/).
 
 **FOR 3D MODELERS:**
 
