@@ -22,6 +22,12 @@
 * SOFTWARE.
 */
 
+// IMPORTANT: Due to the inclusion of `phonemizer` module, which depends on
+// GPLv3-licensed eSpeak NG, any distribution of the example class must
+// comply with GPLv3 terms.
+//
+// See: https://github.com/espeak-ng/espeak-ng/blob/master/COPYING
+
 import { StyleTextToSpeech2Model, AutoTokenizer, Tensor, RawAudio } from "@huggingface/transformers";
 import { phonemize as espeakng } from "phonemizer";
 
@@ -51,7 +57,7 @@ class KokoroTTS {
     // IPA phonemes to Oculus visemes
     this.espeakToOculusViseme = {
       // Vowels
-      "i:": "I", "ɪ": "I", "e": "E", "æ": "aa", "aː": "aa", "ɒ": "O",
+      "iː": "I", "ɪ": "I", "e": "E", "æ": "aa", "aː": "aa", "ɒ": "O",
       "ɔː": "O", "ʊ": "U", "uː": "U", "ʌ": "aa", "ə": "E",
 
       // Diphthongs
