@@ -871,6 +871,7 @@ class TalkingHead {
     this.streamAudioStartTime = 0;
     this.streamLipsyncLang = null;
     this.streamLipsyncType = "visemes";
+    this.streamLipsyncQueue = [];
   }
 
   /**
@@ -3245,6 +3246,14 @@ class TalkingHead {
   async streamStart(opt = {}, onAudioStart = null, onAudioEnd = null, onSubtitles = null) {
     this.stopSpeaking(); // Stop the speech queue mode
 
+    this.isStreaming = true;
+    this.isSpeaking = true;
+    this.stateName = "speaking";
+    this.streamAudioStartTime = 0;
+    this.streamLipsyncQueue = [];
+    this.streamLipsyncType = opt.lipsyncType || this.streamLipsyncType || 'visemes';
+    this.streamLipsyncLang = opt.lipsyncLang || this.streamLipsyncLang || this.avatar.lipsyncLang || this.opt.lipsyncLang;
+
     if (opt.sampleRate !== undefined) {
       const sr = opt.sampleRate;    
       if (
@@ -3291,6 +3300,7 @@ class TalkingHead {
 
       if(event.data.type === 'playback-started') {
         this.streamAudioStartTime = this.animClock;
+        this._processStreamLipsyncQueue();
         this.speakWithHands();
         if (onAudioStart) onAudioStart();
       }
@@ -3304,14 +3314,7 @@ class TalkingHead {
     this.resetLips();
     this.lookAtCamera(500);
     opt.mood && this.setMood( opt.mood );
-    opt.lipsyncLang && (this.streamLipsyncLang = opt.lipsyncLang);
-    opt.lipsyncType && (this.streamLipsyncType = opt.lipsyncType);
     this.onSubtitles = onSubtitles || null;
-
-    this.isStreaming = true;
-    this.isSpeaking = true;
-    this.stateName = "speaking"
-    this.streamAudioStartTime = 0;
 
     // If Web Audio API is suspended, try to resume it
     if ( this.audioCtx.state === "suspended" || this.audioCtx.state === "interrupted" ) {
@@ -3362,99 +3365,125 @@ class TalkingHead {
   }
 
   /**
-  * stream audio and lipsync. Audio must be in 16 bit PCM format.
-  * @param r Audio object with viseme data.
-  */
-  streamAudio(r) {
-    if (!this.isStreaming || !this.streamWorkletNode) return;
+ * Processes all lipsync data items currently in the streamLipsyncQueue.
+ * This is called once the actual audio start time is known.
+ * @private
+ */
+  _processStreamLipsyncQueue() {
+    // console.log(`[TalkingHead] Processing ${this.streamLipsyncQueue.length} queued lipsync items.`);
+    while (this.streamLipsyncQueue.length > 0) {
+      const lipsyncPayload = this.streamLipsyncQueue.shift();
+      // Pass the now confirmed streamAudioStartTime
+      this._processLipsyncData(lipsyncPayload, this.streamAudioStartTime);
+    }
+  }
 
-    if(r.audio) {
-      const pcmData = new Int16Array(r.audio);
-      // Post audio chunk to the AudioWorklet for playback
-      this.streamWorkletNode.port.postMessage(pcmData);
+  /**
+   * Processes the lipsync data for the current audio stream.
+   * * @param {Object} r The lipsync data object.
+   * * @param {number} audioStart The start time of the audio stream.
+   * * @private
+   */
+  _processLipsyncData(r, audioStart) {
+    // Process visemes
+    if (r.visemes && this.streamLipsyncType == 'visemes') {
+      for (let i = 0; i < r.visemes.length; i++) {
+        const viseme = r.visemes[i];
+        const time = audioStart + r.vtimes[i];
+        const duration = r.vdurations[i];
+        const animObj = {
+          template: { name: 'viseme' },
+          ts: [time - 2 * duration / 3, time + duration / 2, time + duration + duration / 2],
+          vs: {
+            ['viseme_' + viseme]: [null, (viseme === 'PP' || viseme === 'FF') ? 0.9 : 0.6, 0]
+          }
+        }
+        this.animQueue.push(animObj);
+      }
     }
 
-    if(r.visemes || r.anims || r.words) {
-      let audioStart = this.streamAudioStartTime;
-      if(audioStart === 0) {
-        // Lipsync data received before stream audio data. Add small delay waiting for audio.
-        audioStart = this.animClock + 100;
-      }
+    // Process words
+    if (r.words && (this.onSubtitles || this.streamLipsyncType == "words")) {
+      for (let i = 0; i < r.words.length; i++) {
+        const word = r.words[i];
+        const time = r.wtimes[i];
+        let duration = r.wdurations[i];
 
-      // Process visemes
-      if ( r.visemes && this.streamLipsyncType == 'visemes') {
-        for( let i=0; i<r.visemes.length; i++ ) {
-          const viseme = r.visemes[i];
-          const time = audioStart + r.vtimes[i];
-          const duration = r.vdurations[i];
-          const animObj = {
-            template: { name: 'viseme' },
-            ts: [ time - 2 * duration/3, time + duration/2, time + duration + duration/2 ],
-            vs: {
-              ['viseme_'+viseme]: [null,(viseme === 'PP' || viseme === 'FF') ? 0.9 : 0.6, 0]
-            }
+        if (word.length) {
+          // If subtitles callback is available, add the subtitles
+          if (this.onSubtitles) {
+            this.animQueue.push({
+              template: { name: 'subtitles' },
+              ts: [audioStart + time],
+              vs: {
+                subtitles: [' ' + word]
+              }
+            });
           }
-          this.animQueue.push(animObj);
-        }
-      }
 
-      // Process words
-      if (r.words && (this.onSubtitles || this.streamLipsyncType == "words")) {
-        for( let i=0; i<r.words.length; i++ ) {
-          const word = r.words[i];
-          const time = r.wtimes[i];
-          let duration = r.wdurations[i];
-  
-          if ( word.length ) {
-            // If subtitles callback is available, add the subtitles
-            if ( this.onSubtitles ) {
-              this.animQueue.push( {
-                template: { name: 'subtitles' },
-                ts: [audioStart + time],
-                vs: {
-                  subtitles: [' ' + word]
-                }
-              });
-            }
-  
-            // Calculate visemes based on the words
-            if ( this.streamLipsyncType == "words" ) {
-              const lipsyncLang = this.streamLipsyncLang || this.avatar.lipsyncLang || this.opt.lipsyncLang;
-              const wrd = this.lipsyncPreProcessText(word, lipsyncLang);
-              const val = this.lipsyncWordsToVisemes(wrd, lipsyncLang);
-              if ( val && val.visemes && val.visemes.length ) {
-                const dTotal = val.times[ val.visemes.length-1 ] + val.durations[ val.visemes.length-1 ];
-                const overdrive = Math.min(duration, Math.max( 0, duration - val.visemes.length * 150));
-                let level = 0.6 + this.convertRange( overdrive, [0,duration], [0,0.4]);
-                duration = Math.min( duration, val.visemes.length * 200 );
-                if ( dTotal > 0 ) {
-                  for( let j=0; j<val.visemes.length; j++ ) {
-                    const t = audioStart + time + (val.times[j]/dTotal) * duration;
-                    const d = (val.durations[j]/dTotal) * duration;
-                    this.animQueue.push( {
-                      template: { name: 'viseme' },
-                      ts: [ t - Math.min(60,2*d/3), t + Math.min(25,d/2), t + d + Math.min(60,d/2) ],
-                      vs: {
-                        ['viseme_'+val.visemes[j]]: [null,(val.visemes[j] === 'PP' || val.visemes[j] === 'FF') ? 0.9 : level, 0]
-                      }
-                    });
-                  }
+          // Calculate visemes based on the words
+          if (this.streamLipsyncType == "words") {
+            const lipsyncLang = this.streamLipsyncLang || this.avatar.lipsyncLang || this.opt.lipsyncLang;
+            const wrd = this.lipsyncPreProcessText(word, lipsyncLang);
+            const val = this.lipsyncWordsToVisemes(wrd, lipsyncLang);
+            if (val && val.visemes && val.visemes.length) {
+              const dTotal = val.times[val.visemes.length - 1] + val.durations[val.visemes.length - 1];
+              const overdrive = Math.min(duration, Math.max(0, duration - val.visemes.length * 150));
+              let level = 0.6 + this.convertRange(overdrive, [0, duration], [0, 0.4]);
+              duration = Math.min(duration, val.visemes.length * 200);
+              if (dTotal > 0) {
+                for (let j = 0; j < val.visemes.length; j++) {
+                  const t = audioStart + time + (val.times[j] / dTotal) * duration;
+                  const d = (val.durations[j] / dTotal) * duration;
+                  this.animQueue.push({
+                    template: { name: 'viseme' },
+                    ts: [t - Math.min(60, 2 * d / 3), t + Math.min(25, d / 2), t + d + Math.min(60, d / 2)],
+                    vs: {
+                      ['viseme_' + val.visemes[j]]: [null, (val.visemes[j] === 'PP' || val.visemes[j] === 'FF') ? 0.9 : level, 0]
+                    }
+                  });
                 }
               }
             }
           }
         }
       }
+    }
 
-      // If blendshapes anims are provided, add them to animQueue
-      if (r.anims && this.streamLipsyncType == "blendshapes") {
-        for (let i = 0; i < r.anims.length; i++) {
-            let anim = r.anims[i];
-            anim.delay += audioStart;
-            let animObj = this.animFactory(anim, false, 1, 1, true);
-            this.animQueue.push(animObj);
-        }
+    // If blendshapes anims are provided, add them to animQueue
+    if (r.anims && this.streamLipsyncType == "blendshapes") {
+      for (let i = 0; i < r.anims.length; i++) {
+        let anim = r.anims[i];
+        anim.delay += audioStart;
+        let animObj = this.animFactory(anim, false, 1, 1, true);
+        this.animQueue.push(animObj);
       }
+    }
+  }
+
+  /**
+  * stream audio and lipsync. Audio must be in 16 bit PCM format.
+  * @param r Audio object with viseme data.
+  */
+  streamAudio(r) {
+    if (!this.isStreaming || !this.streamWorkletNode) return;
+
+    if (r.audio instanceof ArrayBuffer) {
+        this.streamWorkletNode.port.postMessage(r.audio, [r.audio]);
+    } else if (r.audio instanceof Int16Array) {
+      // Fallback: r.audio is an Int16Array
+      this.streamWorkletNode.port.postMessage(r.audio); // No transfer list, so it gets cloned
+    } else {
+      console.error("r.audio is not an ArrayBuffer or Int16Array. Cannot process audio of this type:", r.audio);
+    }
+
+    if(r.visemes || r.anims || r.words) {
+      if(!this.streamAudioStartTime) {
+        // Lipsync data received before audio playback start. Queue the lipsync data.
+        this.streamLipsyncQueue.push(r);
+        return;
+      }
+      this._processLipsyncData(r, this.streamAudioStartTime);
     }
   }
 
