@@ -25,6 +25,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import Stats from 'three/addons/libs/stats.module.js';
@@ -139,6 +140,8 @@ class TalkingHead {
       modelFPS: 30,
       modelMovementFactor: 1,
       cameraView: 'full',
+      dracoEnabled: false,
+      dracoDecoderPath: 'https://www.gstatic.com/draco/v1/decoders/',
       cameraDistance: 0,
       cameraX: 0,
       cameraY: 0,
@@ -773,6 +776,10 @@ class TalkingHead {
     this.listeningTimer = 0;
     this.listeningTimerTotal = 0;
 
+    // Draco loading
+    this.dracoEnabled = this.opt.dracoEnabled;
+    this.dracoDecoderPath = this.opt.dracoDecoderPath;
+
     // Create a lookup table for base64 decoding
     const b64Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
     this.b64Lookup = typeof Uint8Array === 'undefined' ? [] : new Uint8Array(256);
@@ -1081,6 +1088,14 @@ class TalkingHead {
 
     // Loader
     const loader = new GLTFLoader();
+
+    // Check if draco loading enabled
+    if ( this.dracoEnabled ) {
+      const dracoLoader = new DRACOLoader();
+      dracoLoader.setDecoderPath( this.dracoDecoderPath );
+      loader.setDRACOLoader( dracoLoader );
+    }
+
     let gltf = await loader.loadAsync( avatar.url, onprogress );
 
     // Check the gltf
