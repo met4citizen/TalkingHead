@@ -115,15 +115,17 @@ Option | Description | Default
 `ttsVolume` | Google text-to-speech volume gain (in dB) in the range [-96.0, 16.0]. | `0`
 `ttsTrimStart` | Trim the viseme sequence start relative to the beginning of the audio (shift in milliseconds). | `0`
 `ttsTrimEnd` | Trim the viseme sequence end relative to the end of the audio (shift in milliseconds). | `400`
-`mixerGainSpeech` | The amount of gain for speech. See Web Audio API / GainNode for more information. [&#8805;`v1.3`] | `null`
-`mixerGainBackground` | The amount of gain for background audio. See Web Audio API / GainNode for more information. [&#8805;`v1.3`] | `null`
-`lipsyncModules`| Lip-sync modules to load dynamically at start-up. Limiting the number of language modules improves the loading time and memory usage. [&#8805;`v1.2`] | `["en", "fi", "lt"]`
+`mixerGainSpeech` | The amount of gain for speech. See Web Audio API / GainNode for more information. | `null`
+`mixerGainBackground` | The amount of gain for background audio. See Web Audio API / GainNode for more information. | `null`
+`lipsyncModules`| Lip-sync modules to load dynamically at start-up. Limiting the number of language modules improves the loading time and memory usage. | `["en", "fi", "lt"]`
 `lipsyncLang`| Lip-sync language. | `"fi"`
 `pcmSampleRate` | PCM (signed 16bit little endian) sample rate used in `speakAudio` in Hz. | `22050`
 `modelRoot` | The root name of the armature. | `Armature`
 `modelPixelRatio` | Sets the device's pixel ratio. | `1`
 `modelFPS` | Frames per second. Note that actual frame rate will be a bit lower than the set value. | `30`
-`modelMovementFactor` | A factor in the range [0,1] limiting the avatar's upper body movement when standing. [&#8805;`v1.2`] | `1`
+`modelMovementFactor` | A factor in the range [0,1] limiting the avatar's upper body movement when standing. | `1`
+`dracoEnabled` | If `true`, use Draco geometry compression. [&#8805;`v1.5`] | `false`
+`dracoDecoderPath` | Draco decoder library path. [&#8805;`v1.5`] | `"https://www.gstatic.com/`<br>`draco/v1/decoders/"`
 `cameraView` | Initial view. Supported views are `"full"`, `"mid"`, `"upper"`  and `"head"`. | `"full"`
 `cameraDistance` | Camera distance offset for initial view in meters. | `0`
 `cameraX` | Camera position offset in X direction in meters. | `0`
@@ -146,17 +148,17 @@ Option | Description | Default
 `lightSpotDispersion` | Spot light dispersion. | `1`
 `avatarMood` | The mood of the avatar. Supported moods: `"neutral"`, `"happy"`, `"angry"`, `"sad"`, `"fear"`, `"disgust"`, `"love"`, `"sleep"`. | `"neutral"`
 `avatarMute`| Mute the avatar. This can be helpful option if you want to output subtitles without audio and lip-sync. | `false`
-`avatarIdleEyeContact` | The average proportion of eye contact while idle in the range [0,1]. [&#8805;`v1.3`] | `0.2`
-`avatarIdleHeadMove` | The average proportion of head movement while idle in the range [0,1]. [&#8805;`v1.3`] | `0.5`
-`avatarSpeakingEyeContact` | The average proportion of eye contact while speaking in the range [0,1]. [&#8805;`v1.3`] | `0.5`
-`avatarSpeakingHeadMove` | The average proportion of head movement while speaking in the range [0,1]. [&#8805;`v1.3`] | `0.5`
-`avatarIgnoreCamera` | If set to `true`, makes the avatar to ignore the camera and speak to whatever it is facing. [&#8805;`v1.3`] | `false`
-`listeningSilence`<br>`ThresholdLevel` |  Silence detection threshold in the range of [0,100]. If the volume stays below the level for the set duration, a `"stop"` event is triggered. [&#8805;`v1.3`] | `40`
-`listeningSilence`<br>`ThresholdMs` | Silence detection duration in milliseconds. If the volume stays below the level for the set duration, a `"stop"` event is triggered. [&#8805;`v1.3`] | `2000`
-`listeningSilence`<br>`DurationMax` | Maximum silence in milliseconds before `"maxsilence"` event is triggered. [&#8805;`v1.3`] | `10000`
-`listeningActive`<br>`ThresholdLevel` | Activity detection threshold in the range of [0,100]. If the volume stays above the set level for the set duration, a `"start"` event is triggered. [&#8805;`v1.3`] | `90`
-`listeningActive`<br>`ThresholdMs` | Activity detection duration in milliseconds. If the volume stays above the set level for the set duration, a `"start"` event is triggered. [&#8805;`v1.3`] | `400`
-`listeningActive`<br>`DurationMax` | Maximum activity in milliseconds before `"maxactive"` event is triggered. [&#8805;`v1.3`] | `240000`
+`avatarIdle`<br>`EyeContact` | The average proportion of eye contact while idle in the range [0,1]. | `0.2`
+`avatarIdle`<br>`HeadMove` | The average proportion of head movement while idle in the range [0,1]. | `0.5`
+`avatarSpeaking`<br>`EyeContact` | The average proportion of eye contact while speaking in the range [0,1]. | `0.5`
+`avatarSpeaking`<br>`HeadMove` | The average proportion of head movement while speaking in the range [0,1]. | `0.5`
+`avatarIgnoreCamera` | If set to `true`, makes the avatar to ignore the camera and speak to whatever it is facing. | `false`
+`listeningSilence`<br>`ThresholdLevel` |  Silence detection threshold in the range of [0,100]. If the volume stays below the level for the set duration, a `"stop"` event is triggered. | `40`
+`listeningSilence`<br>`ThresholdMs` | Silence detection duration in milliseconds. If the volume stays below the level for the set duration, a `"stop"` event is triggered. | `2000`
+`listeningSilence`<br>`DurationMax` | Maximum silence in milliseconds before `"maxsilence"` event is triggered. | `10000`
+`listeningActive`<br>`ThresholdLevel` | Activity detection threshold in the range of [0,100]. If the volume stays above the set level for the set duration, a `"start"` event is triggered. | `90`
+`listeningActive`<br>`ThresholdMs` | Activity detection duration in milliseconds. If the volume stays above the set level for the set duration, a `"start"` event is triggered. | `400`
+`listeningActive`<br>`DurationMax` | Maximum activity in milliseconds before `"maxactive"` event is triggered. | `240000`
 `statsNode` | Parent DOM element for the three.js stats display. If `null`, don't use. | `null`
 `statsStyle` | CSS style for the stats element. If `null`, use the three.js default style. | `null`
 
@@ -216,7 +218,7 @@ Method | Description
 `lookAt(x,y,t)` | Make the avatar's head turn to look at the screen position (`x`,`y`) for `t` milliseconds.
 `lookAhead(t)` | Make avatar look ahead for `t` milliseconds.
 `lookAtCamera(t)` | Make the avatar's head turn to look at the camera for `t` milliseconds. If `avatarIgnoreCamera` is set to `true`, looks ahead for `t` milliseconds.
-`makeEyeContact(t)` | Make the avatar maintain eye contact with the person in front of it for (at least) `t` milliseconds [&#8805;`v1.3`]
+`makeEyeContact(t)` | Make the avatar maintain eye contact with the person in front of it for (at least) `t` milliseconds.
 `setMood(mood)` | Set avatar mood.
 `playBackgroundAudio(url)` | Play background audio such as ambient sounds/music in a loop.
 `stopBackgroundAudio()` | Stop playing the background audio.
@@ -225,10 +227,10 @@ Method | Description
 `stopAnimation()` | Stop the current animation started by `playAnimation`.
 `playPose(url, [onprogress=null], [dur=5], [ndx=0], [scale=0.01])` | Play the initial pose of a Mixamo animation file for `dur` seconds. If the FBX file includes several animations, the parameter `ndx` specifies the index. Since Mixamo rigs have a scale 100 and RPM a scale 1, the `scale` factor can be used to scale the positions.
 `stopPose()` | Stop the current pose started by `playPose`.
-`playGesture(name, [dur=3], [mirror=false], [ms=1000])` | Play a named hand gesture and/or animated emoji for `dur` seconds with the `ms` transition time. The available hand gestures are `handup`, `index`, `ok`, `thumbup`, `thumbdown`, `side`, `shrug`. By default, hand gestures are done with the left hand. If you want the right handed version, set `mirror` to true. You can also use `playGesture` to play emojis. See Appendix D for more details. [&#8805;`v1.2`]
-`stopGesture([ms=1000])` | Stop the gesture with `ms` transition time. [&#8805;`v1.2`]
-`startListening(analyzer, [opt={}], [onchange=null])` | Start listening `analyzer` AnalyserNode. The `opt` object can be used to set options `listeningSilenceThresholdLevel`, `listeningSilenceThresholdMs`, `listeningSilenceDurationMax`, `listeningActiveThresholdLevel`, `listeningActiveThresholdMs`, `listeningActiveDurationMax`. The callback function `onchange` is called, when the state changes with one of the following parameter: `start`, `stop`, `maxsilence`, `maxactive`. [&#8805;`v1.3`]
-`stopListening` | Stop listening the incoming audio. [&#8805;`v1.3`]
+`playGesture(name, [dur=3], [mirror=false], [ms=1000])` | Play a named hand gesture and/or animated emoji for `dur` seconds with the `ms` transition time. The available hand gestures are `handup`, `index`, `ok`, `thumbup`, `thumbdown`, `side`, `shrug`. By default, hand gestures are done with the left hand. If you want the right handed version, set `mirror` to true. You can also use `playGesture` to play emojis. See Appendix D for more details.
+`stopGesture([ms=1000])` | Stop the gesture with `ms` transition time.
+`startListening(analyzer, [opt={}], [onchange=null])` | Start listening `analyzer` AnalyserNode. The `opt` object can be used to set options `listeningSilenceThresholdLevel`, `listeningSilenceThresholdMs`, `listeningSilenceDurationMax`, `listeningActiveThresholdLevel`, `listeningActiveThresholdMs`, `listeningActiveDurationMax`. The callback function `onchange` is called, when the state changes with one of the following parameter: `start`, `stop`, `maxsilence`, `maxactive`.
+`stopListening` | Stop listening the incoming audio.
 `start` | Start/re-start the Talking Head animation loop.
 `stop` | Stop the Talking Head animation loop.
 
@@ -669,17 +671,17 @@ can be configured using the following properties:
 
 Property | Description | Example
 --- | --- | ---
-`bone` | The name of the bone in your custom skeleton. Note that each dynamic bone must have a parent bone. | `bone: "ponytail1"`
-`type` | <ul><li>`"point"` updates only the bone's local position [x,y,z]. It is fast to calculate, but may cause skinned meshes to deform unnaturally.</li><li>`"link"` updates only the parent's quaternions (XZ rotations).</li><li>`"mix1"` mixes XZ rotations with a stretch (bone length, position change).</li><li>`"mix2"` mixes XZ rotations with a twist (Y rotations).</li><li>`"full"` link with both stretch and twist.</li></ul> | `type: "full"`
-`stiffness` | Mass-normalized spring constant `k` [m/s^2]. Either a non-negative number or an array with separate values for each dimension [x, y, z, t]. | `stiffness: 20`
-`damping` | Mass-normalized damping coefficient `c` [1/s]. Either a non-negative number or an array with separate values for each dimension [x, y, z, t]. | `damping: 2`
-`external` | External scaling factor between [0,1] that can be used to scale down the external forces caused by parent's movement. If set to `0`, the bone is rigid and moves with its parent without experiencing any external force. If set to `1`, the bone follows its parent with a lag (inertia) and feels the force.  OPTIONAL, default value `1.0` | `external: 0.7`
-`limits` | Sets the limiting range [low, high] for each dimension [x, y, z, t] in meters [m]. This can help prevent situations in which meshes overlap due to sudden movements or when the amplitude becomes unrealistic. Limits are applied in local space. OPTIONAL, default `null` (no limit) | `limits: [null,null,[null,0.01],null]`
-`deltaLocal` | Local position translation [dx,dy,dz] in meters [m]. OPTIONAL, default `null` | `deltaLocal: [0,0.01,0]`
-`deltaWorld` | World position translation [dx,dy,dz] in meters [m]. OPTIONAL, default `null` | `deltaWorld: [0,-0.02,0]`
-`pivot` | If `true`, the bone becomes a free-hanging bone along the Y-axis. This means that the parent's X/Z rotations are automatically compensated. Use with caution, as this requires additional computational effort, and the `limits` do not apply as usual. OPTIONAL, default `false` | `pivot: true`
-`excludes` | Sets one or more spherical excluded zones that act as invisible force fields, limiting the movement of the bone. An array of objects in the format `{ bone, deltaLocal, radius}` in which `bone` specifies the center bone name, `deltaLocal` (optional) offset [x,y,z] relative to center bone, and `radius` in meters. OPTIONAL, default `null` | `excludes: [ { bone: "Head", deltaLocal: [0,0.05,0.02], radius: 0.13 } ]`
-`helper` | If `true`, add a helper object to the scene to assist with visualizing the bone during testing. If the dynamic bone type is "point", displays only a square, otherwise also the line from parent to the bone. OPTIONAL, default `false` | `helper: true`
+`bone` | The name of the bone in your custom skeleton. Note that each dynamic bone must have a parent bone. | `"ponytail1"`
+`type` | <ul><li>`"point"` updates only the bone's local position [x,y,z]. It is fast to calculate, but may cause skinned meshes to deform unnaturally.</li><li>`"link"` updates only the parent's quaternions (XZ rotations).</li><li>`"mix1"` mixes XZ rotations with a stretch (bone length, position change).</li><li>`"mix2"` mixes XZ rotations with a twist (Y rotations).</li><li>`"full"` link with both stretch and twist.</li></ul> | `"full"`
+`stiffness` | Mass-normalized spring constant `k` [m/s^2]. Either a non-negative number or an array with separate values for each dimension [x, y, z, t]. | `20`
+`damping` | Mass-normalized damping coefficient `c` [1/s]. Either a non-negative number or an array with separate values for each dimension [x, y, z, t]. | `2`
+`external` | External scaling factor between [0,1] that can be used to scale down the external forces caused by parent's movement. If set to `0`, the bone is rigid and moves with its parent without experiencing any external force. If set to `1`, the bone follows its parent with a lag (inertia) and feels the force.  OPTIONAL, default value `1.0` | `0.7`
+`limits` | Sets the limiting range [low, high] for each dimension [x, y, z, t] in meters [m]. This can help prevent situations in which meshes overlap due to sudden movements or when the amplitude becomes unrealistic. Limits are applied in local space. OPTIONAL, default `null` (no limit) | `[null,null,[null,0.01],null]`
+`deltaLocal` | Local position translation [dx,dy,dz] in meters [m]. OPTIONAL, default `null` | `[0,0.01,0]`
+`deltaWorld` | World position translation [dx,dy,dz] in meters [m]. OPTIONAL, default `null` | `[0,-0.02,0]`
+`pivot` | If `true`, the bone becomes a free-hanging bone along the Y-axis. This means that the parent's X/Z rotations are automatically compensated. Use with caution, as this requires additional computational effort, and the `limits` do not apply as usual. OPTIONAL, default `false` | `true`
+`excludes` | Sets one or more spherical excluded zones that act as invisible force fields, limiting the movement of the bone. An array of objects in the format `{ bone, deltaLocal, radius}` in which `bone` specifies the center bone name, `deltaLocal` (optional) offset [x,y,z] relative to center bone, and `radius` in meters. OPTIONAL, default `null` | `[ { bone: "Head", deltaLocal: [0,0.05,0.02], radius: 0.13 } ]`
+`helper` | If `true`, add a helper object to the scene to assist with visualizing the bone during testing. If the dynamic bone type is "point", displays only a square, otherwise also the line from parent to the bone. OPTIONAL, default `false` | `true`
 
 
 Finding a good combination of `stiffness`, `damping`, and `external`, is mostly
