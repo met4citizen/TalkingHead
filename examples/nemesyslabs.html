@@ -19,7 +19,7 @@
     {
       "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js/+esm",
       "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
-      "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.4/modules/talkinghead.mjs"
+      "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.5/modules/talkinghead.mjs"
     }
   }
   </script>
@@ -90,6 +90,9 @@
             audio: null, words: [], wtimes: [], wdurations: []
           };
 
+          // Save the file
+          saveBase64AsFile(result.audio_base64,"nemesys.mp3");
+
           // AudioBuffer
           const buf = head.b64ToArrayBuffer(result.audio_base64);
           audio.audio = await head.audioCtx.decodeAudioData(buf);
@@ -140,6 +143,35 @@
         }
       }
     }
+
+    function saveBase64AsFile(base64, filename) {
+      // Remove the Base64 header (if present)
+      let base64String = base64.split(',')[1] || base64;
+
+      // Decode Base64 to binary
+      let binaryData = atob(base64String);
+      let byteArray = new Uint8Array(binaryData.length);
+
+      for (let i = 0; i < binaryData.length; i++) {
+          byteArray[i] = binaryData.charCodeAt(i);
+      }
+
+      // Create a Blob from binary data
+      let blob = new Blob([byteArray], { type: 'audio/mpeg' });
+
+      // Create a download link
+      let link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+
+      // Append the link to the document and trigger the click
+      document.body.appendChild(link);
+      link.click();
+
+      // Clean up
+      document.body.removeChild(link);
+  }
+
 
     document.addEventListener('DOMContentLoaded', async function(e) {
 
