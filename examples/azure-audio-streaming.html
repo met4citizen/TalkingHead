@@ -521,7 +521,7 @@
 
               if (speak.visemes || speak.words || speak.anims) {
                 // If we have any visemes, words, or blendshapes left, stream them
-                speak.audio = null;
+                speak.audio = new ArrayBuffer(0);
                 head.streamAudio(speak);
               }
 
