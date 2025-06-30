@@ -20,7 +20,8 @@ Video | Description
 Video/App | Use Case
 --- | ---
 <span style="display: block; min-width:400px">[<img src="images/olivia.jpg" width="400"/>](https://youtu.be/9GeXwjuslnQ)</span> | **Video conferencing**. A video conferencing solution with real-time transcription, contextual AI responses, and voice lip-sync. The app and demo, featuring Olivia, by [namnm](https://github.com/namnm) 👍
-[<img src="images/geminicompetition.jpg" width="400"/>](https://www.youtube.com/watch?v=Dl2o9kRvbLQ) | **Recycling Advisor 3D**. Snap a photo and get local recycling advice from a talking avatar. My entry for the [Gemini API Developer Competition](https://ai.google.dev/competition).
+[<img src="images/edgespeaker.png" width="400"/>](https://www.edgespeaker.com/) | **Fully in-browser AI you can talk to**. Uses [TalkingHead](https://github.com/met4citizen/TalkingHead), [HeadTTS (with Kokoro)](https://github.com/met4citizen/HeadTTS), [whisper-web](https://github.com/xenova/whisper-web), and [WebLLM (with Llama 3.2)](https://github.com/mlc-ai/web-llm). No APIs, no accounts. For more details, see [#115](https://github.com/met4citizen/TalkingHead/issues/115). — For best performance and WebGPU support, use a desktop version of Chrome or Edge: 👉 [EdgeSpeaker.com](https://www.edgespeaker.com/)
+[<img src="images/geminicompetition.jpg" width="400"/>](https://www.youtube.com/watch?v=Dl2o9kRvbLQ) | **Recycling Advisor 3D**. Snap a photo and get local recycling advice from a talking avatar. My entry for the [Gemini API Developer Competition](https://ai.google.dev/competition/projects/recycling-advisor-3d).
 [<img src="images/evertrail.jpg" width="400"/>](https://www.youtube.com/watch?v=OG1vwOit_Yk) | **Live Twitch adventure**. [Evertrail](https://evertrail.app) is an infinite, real-time generated world where all of your choices shape the outcome. Video clip and the app by [JPhilipp](https://github.com/JPhilipp) 👏👏
 [<img src="images/cliquevm.jpg" width="400"/>](https://www.youtube.com/watch?v=vNJ9Ifv-as8) | **Quantum physics using a blackboard**. David introduces us to the CHSH game and explores the mystery of quantum entanglement. For more information about the research project, see [CliqueVM](https://github.com/met4citizen/CliqueVM).
 [<img src="images/interactiveportfolio.jpg" width="400"/>](https://akshatrastogi.in/) | **Interactive Portfolio**. Click the image to open the app, where you can interview the virtual persona of its developer, [AkshatRastogi-1nC0re](https://github.com/AkshatRastogi-1nC0re) 👋
@@ -55,6 +56,10 @@ you can extend TalkingHead's lip-sync support to 100+ languages.
 
 The class uses [ThreeJS](https://github.com/mrdoob/three.js/) / WebGL for 3D
 rendering.
+
+> [!TIP]
+> If you're looking for a free English TTS that can output
+timestamps and viseme IDs, check out [HeadTTS](https://github.com/met4citizen/HeadTTS).
 
 ---
 
