@@ -3361,8 +3361,8 @@ class TalkingHead {
   streamStop() {
     if (this.streamWorkletNode) {
       try {
+        this.streamWorkletNode.port.postMessage({type: 'stop'});
         this.streamWorkletNode.disconnect();
-
       } catch(e) { 
         console.error('Error disconnecting streamWorkletNode:', e);
         /* ignore */ 
