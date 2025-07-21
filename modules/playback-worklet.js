@@ -25,6 +25,15 @@ class PlaybackWorklet extends AudioWorkletProcessor {
       return;
     }
 
+    if (data?.type === 'stop') {
+      this.stopRequested = true;
+      this.bufferQueue.length = 0;
+      this.currentChunk      = null;
+      this.currentChunkOffset = 0;
+      this.port.postMessage({ type: 'playback-ended' });
+      return;
+    }
+
     if (data instanceof ArrayBuffer) {
        this.bufferQueue.push(data);
        this.silenceFramesCount = 0; // Reset silence counter
@@ -45,6 +54,13 @@ class PlaybackWorklet extends AudioWorkletProcessor {
     if (!outputChannel) {
         // console.warn("No output channel available. Stopping.");
         return false;
+    }
+
+    if (this.stopRequested) {
+      outputChannel.fill(0);
+      this.stopRequested = false;
+      this.resetStateAfterEnd();
+     return false;
     }
 
     const blockSize = outputChannel.length; // Number of sample frames needed (typically 128)
