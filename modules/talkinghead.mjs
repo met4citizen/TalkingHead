@@ -728,6 +728,13 @@ class TalkingHead {
       'browOuterUpLeft', 'browOuterUpRight', 'cheekPuff', 'cheekSquintLeft',
       'cheekSquintRight'
     ];
+    this.mtExtras = [ // RPM Extras from ARKit, if missing
+      { key: "mouthOpen", mix: { jawOpen: 0.5 } },
+      { key: "mouthSmile", mix: { mouthSmileLeft: 0.8, mouthSmileRight: 0.8 } },
+      { key: "eyesClosed", mix: { eyeBlinkLeft: 1.0, eyeBlinkRight: 1.0 } },
+      { key: "eyesLookUp", mix: { eyeLookUpLeft: 1.0, eyeLookUpRight: 1.0 } },
+      { key: "eyesLookDown", mix: { eyeLookDownLeft: 1.0, eyeLookDownRight: 1.0 } }
+    ];
 
     // Anim queues
     this.animQueue = [];
@@ -1076,6 +1083,75 @@ class TalkingHead {
   }
 
   /**
+  * Adds a new mixed morph target based on the given sources.
+  * Note: This assumes that morphTargetsRelative === true (default for GLTF)
+  * 
+  * @param {Object[]} meshes Meshes to process
+  * @param {string} name New of the new morph target (a.k.a. shape key)
+  * @param {Object} sources Object of existing morph target values, e.g. { mouthOpen: 1.0 }
+  * @param {boolean} [override=false] If true, override existing morph target
+  */
+  addMixedMorphTarget(meshes, name, sources, override=false ) {
+  
+    meshes.forEach( x => {
+
+      // Skip, we already have a morph target with the same name and we do not override
+      if ( !override && x.morphTargetDictionary.hasOwnProperty(name) ) return;
+      
+      // Check if this mesh has any sources to add to the mix
+      const g = x.geometry;
+      let mixPos = null;
+      let mixNor = null;
+      for( const [k,v] of Object.entries(sources) ) {
+        if ( x.morphTargetDictionary.hasOwnProperty(k) ) {
+          const index = x.morphTargetDictionary[k];
+          const pos = g.morphAttributes.position[index];
+          const nor = g.morphAttributes.normal?.[index];
+
+          // Create position and normal
+          if ( !mixPos ) {
+            mixPos = new THREE.Float32BufferAttribute(pos.count * 3, 3);
+            if ( nor ) {
+              mixNor = new THREE.Float32BufferAttribute(pos.count * 3, 3);
+            }
+          }
+
+          // Update position
+          for (let i = 0; i < pos.count; i++) {
+            const dx = mixPos.getX(i) + pos.getX(i) * v;
+            const dy = mixPos.getY(i) + pos.getY(i) * v;
+            const dz = mixPos.getZ(i) + pos.getZ(i) * v;
+            mixPos.setXYZ(i, dx, dy, dz);
+          }
+
+          // Update normal
+          if ( nor ) {
+            for (let i = 0; i < pos.count; i++) {
+              const dx = mixNor.getX(i) + nor.getX(i) * v;
+              const dy = mixNor.getY(i) + nor.getY(i) * v;
+              const dz = mixNor.getZ(i) + nor.getZ(i) * v;
+              mixNor.setXYZ(i, dx, dy, dz);
+            }
+          }
+
+        }
+      }
+
+      // We found one or more sources, so we add the new mixed morph target
+      if ( mixPos ) {
+        g.morphAttributes.position.push(mixPos);
+        if ( mixNor ) {
+          g.morphAttributes.normal.push(mixNor);
+        }
+        const index = g.morphAttributes.position.length - 1;
+        x.morphTargetInfluences[index] = 0;
+        x.morphTargetDictionary[name] = index;
+      }
+
+    });
+  }
+
+  /**
   * Loader for 3D avatar model.
   * @param {string} avatar Avatar object with 'url' property to GLTF/GLB file.
   * @param {progressfn} [onprogress=null] Callback for progress
@@ -1144,12 +1220,22 @@ class TalkingHead {
     this.morphs.forEach( x => {
       Object.keys(x.morphTargetDictionary).forEach( y => keys.add(y) );
     });
+
+    // Add RPM extra blend shapes, if missing
+    this.mtExtras.forEach( x => {
+      if ( !keys.has(x.key) ) {
+        this.addMixedMorphTarget( this.morphs, x.key, x.mix );
+        keys.add(x.key);
+      }
+    });
+
+    // Create internal morph target data structure
     const mtTemp = {};
     keys.forEach( x => {
 
       // Morph target data structure
       mtTemp[x] = {
-        fixed: null, system: null, systemd: null, newvalue: null, ref: null,
+        fixed: null, realtime: null, system: null, systemd: null, newvalue: null, ref: null,
         min: (this.mtMinExceptions.hasOwnProperty(x) ? this.mtMinExceptions[x] : this.mtMinDefault),
         max: (this.mtMaxExceptions.hasOwnProperty(x) ? this.mtMaxExceptions[x] : this.mtMaxDefault),
         easing: this.mtEasingDefault, base: null, v: 0, needsUpdate: true,
