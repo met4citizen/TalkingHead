@@ -174,6 +174,7 @@ class TalkingHead {
       listeningActiveThresholdLevel: 75,
       listeningActiveThresholdMs: 300,
       listeningActiveDurationMax: 240000,
+      update: null,
       statsNode: null,
       statsStyle: null
     };
@@ -1439,6 +1440,7 @@ class TalkingHead {
 
       // Alternative target (priority order):
       // - fixed: Fixed value, typically user controlled
+      // - realtime: Realtime value, overriding everything except fixed
       // - system: System value, which overrides animations
       // - newvalue: Animation value
       // - baseline: Baseline value when none of the above applies
@@ -1456,6 +1458,10 @@ class TalkingHead {
           o.needsUpdate = false;
           continue;
         }
+      } else if ( o.realtime !== null ) {
+        o.ref = null;
+        o.base = null;
+        newvalue = o.realtime;
       } else if ( o.system !== null ) {
         target = o.system;
         o.newvalue = null;
@@ -2506,6 +2512,11 @@ class TalkingHead {
 
     // Update Dynamic Bones
     this.dynamicbones.update(dt);
+
+    // Custom update
+    if ( this.opt.update ) {
+      this.opt.update(dt);
+    }
 
     // Update morph targets
     this.updateMorphTargets(dt);
