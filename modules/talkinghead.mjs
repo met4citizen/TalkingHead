@@ -1277,6 +1277,7 @@ class TalkingHead {
   * @param {Object} [opt=null] Options
   */
   setView(view, opt = null) {
+    view = view || this.viewName;
     if ( view !== 'full' && view !== 'upper' && view !== 'head' && view !== 'mid' ) return;
     if ( !this.armature ) {
       this.opt.cameraView = view;
@@ -1286,10 +1287,17 @@ class TalkingHead {
     this.viewName = view || this.viewName;
     opt = opt || {};
 
+    // Camera controls
+    const cameraX = opt.hasOwnProperty("cameraX") ? opt.cameraX : this.opt.cameraX;
+    const cameraY = opt.hasOwnProperty("cameraY") ? opt.cameraY : this.opt.cameraY;
+    const cameraDistance = opt.hasOwnProperty("cameraDistance") ? opt.cameraDistance : this.opt.cameraDistance;
+    const cameraRotateX = opt.hasOwnProperty("cameraRotateX") ? opt.cameraRotateX : this.opt.cameraRotateX;
+    const cameraRotateY = opt.hasOwnProperty("cameraRotateY") ? opt.cameraRotateY : this.opt.cameraRotateY;
+
     const fov = this.camera.fov * ( Math.PI / 180 );
-    let x = - (opt.cameraX || this.opt.cameraX) * Math.tan( fov / 2 );
-    let y = ( 1 - (opt.cameraY || this.opt.cameraY)) * Math.tan( fov / 2 );
-    let z = (opt.cameraDistance || this.opt.cameraDistance);
+    let x = - cameraX * Math.tan( fov / 2 );
+    let y = ( 1 - cameraY) * Math.tan( fov / 2 );
+    let z = cameraDistance;
 
     switch(this.viewName) {
     case 'head':
@@ -1312,7 +1320,7 @@ class TalkingHead {
     x = x * z;
 
     this.controlsEnd = new THREE.Vector3(x, y, 0);
-    this.cameraEnd = new THREE.Vector3(x, y, z).applyEuler( new THREE.Euler( (opt.cameraRotateX || this.opt.cameraRotateX), (opt.cameraRotateY || this.opt.cameraRotateY), 0 ) );
+    this.cameraEnd = new THREE.Vector3(x, y, z).applyEuler( new THREE.Euler( cameraRotateX, cameraRotateY, 0 ) );
 
     if ( this.cameraClock === null ) {
       this.controls.target.copy( this.controlsEnd );
