@@ -17,15 +17,17 @@ Video | Description
 
 ### Use Case Examples
 
+*Some videos, apps, and projects in which the TalkingHead class has been used:*
+
 Video/App | Use Case
 --- | ---
 <span style="display: block; min-width:400px">[<img src="images/olivia.jpg" width="400"/>](https://youtu.be/9GeXwjuslnQ)</span> | **Video conferencing**. A video conferencing solution with real-time transcription, contextual AI responses, and voice lip-sync. The app and demo, featuring Olivia, by [namnm](https://github.com/namnm) 👍
-[<img src="images/edgespeaker.png" width="400"/>](https://www.edgespeaker.com/) | **Fully in-browser AI you can talk to**. Uses [TalkingHead](https://github.com/met4citizen/TalkingHead), [HeadTTS (with Kokoro)](https://github.com/met4citizen/HeadTTS), [whisper-web](https://github.com/xenova/whisper-web), and [WebLLM (with Llama 3.2)](https://github.com/mlc-ai/web-llm). No APIs, no accounts. For more details, see [#115](https://github.com/met4citizen/TalkingHead/issues/115). — For best performance and WebGPU support, use a desktop version of Chrome or Edge: 👉 [EdgeSpeaker.com](https://www.edgespeaker.com/)
+[<img src="images/edgespeaker.png" width="400"/>](https://www.edgespeaker.com/) | **Fully in-browser AI you can talk to**. Uses TalkingHead, [HeadTTS (with Kokoro)](https://github.com/met4citizen/HeadTTS), [whisper-web](https://github.com/xenova/whisper-web), and [WebLLM (with Llama 3.2)](https://github.com/mlc-ai/web-llm). No APIs, no accounts. For more details, see [#115](https://github.com/met4citizen/TalkingHead/issues/115). — For best performance and WebGPU support, use a desktop version of Chrome or Edge: 👉 [EdgeSpeaker.com](https://www.edgespeaker.com/)
 [<img src="images/geminicompetition.jpg" width="400"/>](https://www.youtube.com/watch?v=Dl2o9kRvbLQ) | **Recycling Advisor 3D**. Snap a photo and get local recycling advice from a talking avatar. My entry for the [Gemini API Developer Competition](https://ai.google.dev/competition/projects/recycling-advisor-3d).
 [<img src="images/evertrail.jpg" width="400"/>](https://www.youtube.com/watch?v=OG1vwOit_Yk) | **Live Twitch adventure**. [Evertrail](https://evertrail.app) is an infinite, real-time generated world where all of your choices shape the outcome. Video clip and the app by [JPhilipp](https://github.com/JPhilipp) 👏👏
 [<img src="images/cliquevm.jpg" width="400"/>](https://www.youtube.com/watch?v=vNJ9Ifv-as8) | **Quantum physics using a blackboard**. David introduces us to the CHSH game and explores the mystery of quantum entanglement. For more information about the research project, see [CliqueVM](https://github.com/met4citizen/CliqueVM).
 [<img src="images/interactiveportfolio.jpg" width="400"/>](https://akshatrastogi.in/) | **Interactive Portfolio**. Click the image to open the app, where you can interview the virtual persona of its developer, [AkshatRastogi-1nC0re](https://github.com/AkshatRastogi-1nC0re) 👋
-[<img src="images/datingprofile.jpg" width="400"/>](https://www.youtube.com/watch?v=Hv-ItCZ0qc4) | **Interactive Dating Profiles**. Researchers from the MIT Media Lab and Harvard used the TalkingHead class and data-driven AI to create digital twins that potential dating partners could interact with. Their paper (Baradari et al., 2025) was presented at [CHI 2025](https://programs.sigchi.org/chi/2025/program/content/194739)
+[<img src="images/datingprofile.jpg" width="400"/>](https://www.youtube.com/watch?v=Hv-ItCZ0qc4) | **Interactive Dating Profiles**. ❤️ Researchers from the MIT Media Lab and Harvard used the TalkingHead class and data-driven AI to create digital twins that potential dating partners could interact with. Their paper (Baradari et al., 2025) was presented at [CHI 2025](https://programs.sigchi.org/chi/2025/program/content/194739) 
 
 
 ---
@@ -68,8 +70,9 @@ timestamps and viseme IDs, check out [HeadTTS](https://github.com/met4citizen/He
 
 You can download the TalkingHead modules from
 [releases](https://github.com/met4citizen/TalkingHead/releases)
-(without dependencies). Alternatively, you can import all the needed
-modules from a CDN:
+(without dependencies). Alternatively, you can install them from
+[NPM](https://www.npmjs.com/package/@met4citizen/talkinghead)
+or import all the needed modules from a CDN:
 
 ```javascript
 <script type="importmap">
@@ -82,6 +85,13 @@ modules from a CDN:
 }
 </script>
 ```
+
+> [!TIP]
+> **FOR HOBBYISTS:** If you're just looking to experiment on your personal
+laptop without dealing with proxies, JSON Web Tokens, or Single Sign-On,
+take a look at the [minimal code example](https://github.com/met4citizen/TalkingHead/blob/main/examples/minimal.html).
+Simply download the file, add your Google TTS API key, and you'll
+have a basic web app template with a talking head.
 
 If you want to use the built-in Google TTS and lip-sync using
 Single Sign-On (SSO) functionality, give the class your TTS proxy endpoint and
@@ -100,14 +110,8 @@ const head = new TalkingHead( nodeAvatar, {
 });
 ```
 
-> [!TIP]
-> **FOR HOBBYISTS:** If you're just looking to experiment on your personal
-laptop without dealing with proxies, JSON Web Tokens, or Single Sign-On,
-take a look at the [minimal code example](https://github.com/met4citizen/TalkingHead/blob/main/examples/minimal.html).
-Simply download the file, add your Google TTS API key, and you'll
-have a basic web app template with a talking head.
-
-The following table lists all the available options and their default values:
+<details>
+  <summary>CLICK HERE to see all the available options.</summary>
 
 Option | Description | Default
 --- | --- | ---
@@ -165,8 +169,11 @@ Option | Description | Default
 `listeningActive`<br>`ThresholdLevel` | Activity detection threshold in the range of [0,100]. If the volume stays above the set level for the set duration, a `"start"` event is triggered. | `90`
 `listeningActive`<br>`ThresholdMs` | Activity detection duration in milliseconds. If the volume stays above the set level for the set duration, a `"start"` event is triggered. | `400`
 `listeningActive`<br>`DurationMax` | Maximum activity in milliseconds before `"maxactive"` event is triggered. | `240000`
+`update` | Custom callback function inside the `requestAnimationFrame` animation loop. Enables the app to do custom processing before rendering the 3D scene. If `null`, disabled. | `null`
 `statsNode` | Parent DOM element for the three.js stats display. If `null`, don't use. | `null`
 `statsStyle` | CSS style for the stats element. If `null`, use the three.js default style. | `null`
+
+</details>
 
 Once the instance has been created, you can load and display your avatar.
 Refer to Appendix A for how to make your avatar:
@@ -205,7 +212,8 @@ nodeSpeak.addEventListener('click', function () {
 });
 ```
 
-The following table lists some of the key methods. See the source code for the rest:
+<details>
+  <summary>CLICK HERE to see the key methods.</summary>
 
 Method | Description
 --- | ---
@@ -240,6 +248,8 @@ Method | Description
 `start` | Start/re-start the Talking Head animation loop.
 `stop` | Stop the Talking Head animation loop.
 
+</details>
+
 The class has been tested on the latest Chrome, Firefox, Safari,
 and Edge desktop browsers, as well as on iPad.
 
@@ -273,7 +283,7 @@ To set up the test app in your local environment, follow these steps:
 git clone --depth 1 https://github.com/met4citizen/TalkingHead.git && rm -r TalkingHead/.git
 ```
 
-2. Create the needed API proxies as described in Appendix B and check/update your proxy configuration in `index.html`:
+2. Optional: Create API proxies as described in Appendix B and check/update your proxy configuration in `index.html`:
 
 ```javascript
 // API proxys
@@ -385,7 +395,7 @@ Washington, D. C., 1976. https://apps.dtic.mil/sti/pdfs/ADA021929.pdf
 
 1. Create your own full-body avatar free at [Ready Player Me](https://readyplayer.me) / [Player Zero](https://playerzero.readyplayer.me/).
 
-2. Copy your avatar’s unique ID (e.g., `64bfa15f0e72c63d7c3934a6`) and download the GLB file using one of the links below. Replace the ID with your own, and make sure to keep the URL parameters to include the necessary morph targets (blend shapes).<br><br>Ready Player Me:<br>`https://models.readyplayer.me/64bfa15f0e72c63d7c3934a6.glb?morphTargets=ARKit,Oculus+Visemes,mouthOpen,mouthSmile,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png`<br><br>Player Zero:<br>`https://avatars.readyplayer.me/67ebd62a688cd661ebe09988.glb?morphTargetsGroup=ARKit,Oculus+Visemes&morphTargets=mouthSmile,mouthOpen,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png`
+2. Copy your avatar’s unique ID (e.g., `64bfa15f0e72c63d7c3934a6`) and download the GLB file using one of the links below. Replace the ID with your own, and make sure to keep the URL parameters to include the necessary morph targets (blend shapes).<br><br>Ready Player Me:<br>`https://models.readyplayer.me/64bfa15f0e72c63d7c3934a6.glb?morphTargets=ARKit,Oculus+Visemes,mouthOpen,mouthSmile,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png`<br><br>Player Zero:<br>`https://avatars.readyplayer.me/67ebd62a688cd661ebe09988.glb?morphTargetsGroup=ARKit,Oculus+Visemes&morphTargets=mouthSmile,mouthOpen,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png`<br><br>Depending on your use case, you can customize the texture format and texture quality (e.g. `textureFormat=webp&textureQuality=high`), the triangle count (e.g. `lod=1`), use Draco mesh compression (`useDracoMeshCompression=true`), and so on. See the full list of option [here](https://docs.readyplayer.me/ready-player-me/api-reference/rest-api/avatars/get-3d-avatars).
 
 > [!IMPORTANT]  
 > The older Ready Player Me service has closed sign-ups for new partners as the company shifts its focus to Player Zero. However, you can still access the legacy editor at [https://readyplayer.me/avatar/](https://readyplayer.me/avatar/).
@@ -405,6 +415,9 @@ following two pages:
 https://docs.readyplayer.me/ready-player-me/api-reference/avatars/morph-targets/apple-arkit
 https://docs.readyplayer.me/ready-player-me/api-reference/avatars/morph-targets/oculus-ovr-libsync
 
+> [!TIP]  
+> The additional blend shapes mentioned in the specs (`"mouthOpen"`, `"mouthSmile"`, `"eyesClosed"`, `"eyesLookUp"`, `"eyesLookDown"`) are not strictly required, as the TalkingHead class will automatically generate them from ARKit blend shapes if they are missing.
+
 The TalkingHead class supports both separated mesh and texture atlasing.
 
 Here are some Blender Python scripts that could be useful in converting
@@ -415,7 +428,7 @@ Script | Description
 [rename-mixamo-bones.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/rename-mixamo-bones.py) | If your model doesn't have a compatible rig, you can auto-rig your model easily at [Mixamo](https://www.mixamo.com) and use this Blender script to rename the Mixamo bones.
 [rename-rocketbox-shapekeys.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/rename-rocketbox-shapekeys.py) | Rename [Microsoft Rocketbox](https://github.com/microsoft/Microsoft-Rocketbox) model shape keys.
 [rename-avatarsdk-shapekeys.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/rename-avatarsdk-shapekeys.py) | Rename [Avatar SDK MetaPerson](https://github.com/avatarsdk) model shape keys.
-[build-extras-from-arkit.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/build-extras-from-arkit.py) | Build RPM extras (mouthOpen, mouthSmile, eyesClosed, eyesLookUp, eyesLookDown) from ARKit blendshapes.
+[build-extras-from-arkit.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/build-extras-from-arkit.py) | Build RPM extras (mouthOpen, mouthSmile, eyesClosed, eyesLookUp, eyesLookDown) from ARKit blendshapes. Note: The TalkingHead will generate these automatically if they're missing. However, building them yourself allows you to fine-tune them to your taste.
 [build-visemes-from-arkit.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/build-visemes-from-arkit.py) | Build Oculus visemes from ARKit blendshapes. As models are all different, you should fine-tune the script for best result. EXPERIMENTAL
 
 ---
@@ -672,8 +685,11 @@ try {
 }
 ```
 
-Each item in `modelDynamicBones` array represents a dynamic bone, which
-can be configured using the following properties:
+Each item in `modelDynamicBones` array represents one dynamic bone, which
+can be configured separately.
+
+<details>
+  <summary>CLICK HERE to see all the available properties.</summary>
 
 Property | Description | Example
 --- | --- | ---
@@ -689,6 +705,7 @@ Property | Description | Example
 `excludes` | Sets one or more spherical excluded zones that act as invisible force fields, limiting the movement of the bone. An array of objects in the format `{ bone, deltaLocal, radius}` in which `bone` specifies the center bone name, `deltaLocal` (optional) offset [x,y,z] relative to center bone, and `radius` in meters. OPTIONAL, default `null` | `[ { bone: "Head", deltaLocal: [0,0.05,0.02], radius: 0.13 } ]`
 `helper` | If `true`, add a helper object to the scene to assist with visualizing the bone during testing. If the dynamic bone type is "point", displays only a square, otherwise also the line from parent to the bone. OPTIONAL, default `false` | `true`
 
+</details>
 
 Finding a good combination of `stiffness`, `damping`, and `external`, is mostly
 a matter of trial and error. Turn on the helper property or use the test app
