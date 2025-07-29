@@ -333,9 +333,9 @@ class TalkingHead {
     this.poseWeightOnLeft = true; // Initial weight on left leg
     this.gesture = null; // Values that override pose properties
     this.poseCurrentTemplate = this.poseTemplates[this.poseName];
+    this.poseStraight = this.propsToThreeObjects( this.poseTemplates["straight"].props ); // Straight pose used as a reference
     this.poseBase = this.poseFactory( this.poseCurrentTemplate );
     this.poseTarget = this.poseFactory( this.poseCurrentTemplate );
-    this.poseStraight = this.propsToThreeObjects( this.poseTemplates["straight"].props ); // Straight pose used as a reference
     this.poseAvatar = null; // Set when avatar has been loaded
 
     // Avatar height in meters
