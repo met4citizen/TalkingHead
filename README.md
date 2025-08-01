@@ -7,7 +7,7 @@ the TalkingHead test web app without any post-processing.*
 
 Video | Description
 --- | ---
-<span style="display: block; min-width:400px">[<img src="images/dynamicbones.jpg" width="400"/>](https://youtu.be/YUbDIWkskuw)<br>[<img src="images/dynamicbones2.jpg" width="400"/>](https://youtu.be/4Y9NFnENH5s)</span> | Having a good hair day – A two-part introduction to the TalkingHead's dynamic bones feature 🦴🦴 and built-in physics engine. Using custom models with rigged hair and two different hairstyles. See Appendix E for more details.
+<span style="display: block; min-width:400px">[<img src="images/dynamicbones.jpg" width="400"/>](https://youtu.be/YUbDIWkskuw)<br>[<img src="images/dynamicbones2.jpg" width="400"/>](https://youtu.be/4Y9NFnENH5s)</span> | Having a good hair day! – A two-part introduction to the TalkingHead's dynamic bones feature 🦴🦴 and built-in physics engine. Using custom models with rigged hair and two different hairstyles. See Appendix E for more details.
 [<img src="images/screenshot4.jpg" width="400"/>](https://youtu.be/OA6LBZjkzJI) | I chat with Jenny and Harri. The close-up view allows you to evaluate the accuracy of lip-sync in both English and Finnish. Using GPT-3.5 and Microsoft text-to-speech.
 [<img src="images/screenshot5.jpg" width="400"/>](https://youtu.be/fJrYGaGCAGo) | A short demo of how AI can control the avatar's movements. Using OpenAI's function calling and Google TTS with the TalkingHead's built-in viseme generation.
 [<img src="images/screenshot6.jpg" width="400"/>](https://youtu.be/6XRxALY1Iwg) | Michael lip-syncs to two MP3 audio tracks using OpenAI's Whisper and TalkingHead's `speakAudio` method. He kicks things off with some casual talk, but then goes all out by trying to tackle an old Meat Loaf classic. 🤘 Keep rockin', Michael! 🎤😂
@@ -17,31 +17,32 @@ Video | Description
 
 ### Use Case Examples
 
-*Some videos, apps, and projects in which the TalkingHead class has been used:*
+*Some videos, apps, and projects using the TalkingHead class:*
 
 Video/App | Use Case
 --- | ---
 <span style="display: block; min-width:400px">[<img src="images/olivia.jpg" width="400"/>](https://youtu.be/9GeXwjuslnQ)</span> | **Video conferencing**. A video conferencing solution with real-time transcription, contextual AI responses, and voice lip-sync. The app and demo, featuring Olivia, by [namnm](https://github.com/namnm) 👍
 [<img src="images/edgespeaker.png" width="400"/>](https://www.edgespeaker.com/) | **Fully in-browser AI you can talk to**. Uses TalkingHead, [HeadTTS (with Kokoro)](https://github.com/met4citizen/HeadTTS), [whisper-web](https://github.com/xenova/whisper-web), and [WebLLM (with Llama 3.2)](https://github.com/mlc-ai/web-llm). No APIs, no accounts. For more details, see [#115](https://github.com/met4citizen/TalkingHead/issues/115). — For best performance and WebGPU support, use a desktop version of Chrome or Edge: 👉 [EdgeSpeaker.com](https://www.edgespeaker.com/)
 [<img src="images/geminicompetition.jpg" width="400"/>](https://www.youtube.com/watch?v=Dl2o9kRvbLQ) | **Recycling Advisor 3D**. Snap a photo and get local recycling advice from a talking avatar. My entry for the [Gemini API Developer Competition](https://ai.google.dev/competition/projects/recycling-advisor-3d).
-[<img src="images/evertrail.jpg" width="400"/>](https://www.youtube.com/watch?v=OG1vwOit_Yk) | **Live Twitch adventure**. [Evertrail](https://evertrail.app) is an infinite, real-time generated world where all of your choices shape the outcome. Video clip and the app by [JPhilipp](https://github.com/JPhilipp) 👏👏
+[<img src="images/evertrail.jpg" width="400"/>](https://www.youtube.com/watch?v=OG1vwOit_Yk) | **Live Twitch adventure**. [Evertrail](https://evertrail.app) is an infinite, real-time generated world where all of your choices shape the outcome. Video clip and the app by [JPhilipp](https://github.com/JPhilipp) 👏👏<br>**NEWS**: Featured at the AI Film Awards during the 2025 Cannes Film Festival!
 [<img src="images/cliquevm.jpg" width="400"/>](https://www.youtube.com/watch?v=vNJ9Ifv-as8) | **Quantum physics using a blackboard**. David introduces us to the CHSH game and explores the mystery of quantum entanglement. For more information about the research project, see [CliqueVM](https://github.com/met4citizen/CliqueVM).
 [<img src="images/interactiveportfolio.jpg" width="400"/>](https://akshatrastogi.in/) | **Interactive Portfolio**. Click the image to open the app, where you can interview the virtual persona of its developer, [AkshatRastogi-1nC0re](https://github.com/AkshatRastogi-1nC0re) 👋
-[<img src="images/datingprofile.jpg" width="400"/>](https://www.youtube.com/watch?v=Hv-ItCZ0qc4) | **Interactive Dating Profiles**. ❤️ Researchers from the MIT Media Lab and Harvard used the TalkingHead class and data-driven AI to create digital twins that potential dating partners could interact with. Their paper (Baradari et al., 2025) was presented at [CHI 2025](https://programs.sigchi.org/chi/2025/program/content/194739) 
+[<img src="images/datingprofile.jpg" width="400"/>](https://www.youtube.com/watch?v=Hv-ItCZ0qc4) | **Interactive Dating Profiles**. ❤️ Researchers from the MIT Media Lab and Harvard used the TalkingHead class and data-driven AI to create digital twins that potential dating partners could interact with. Their paper (Baradari et al., 2025) was presented at [CHI 2025](https://programs.sigchi.org/chi/2025/program/content/194739) in Japan. 
 
 
 ---
 
 ### Introduction
 
-Talking Head (3D) is a JavaScript class featuring a 3D avatar that can
+Talking Head (3D) is a browser JavaScript class featuring a 3D avatar that can
 speak and lip-sync in real-time. The class supports
-[Ready Player Me](https://readyplayer.me/) full-body 3D avatars (GLB) and
+[Ready Player Me](https://readyplayer.me/) / [PlayerZero](https://playerzero.me/)
+full-body 3D avatars (GLB) and
 [Mixamo](https://www.mixamo.com) animations (FBX).
 It also knows a set of emojis and can convert them into facial expressions.
 
-You can create your own 3D avatar for free using the Ready Player Me service.
-Alternatively, you can use a custom 3D avatar by making it compatible with
+You can create your own 3D avatar for free using the Ready Player Me or PlayerZero
+service. Alternatively, you can create a custom 3D avatar by making it compatible with
 RPM models. See Appendix A for more details.
 
 By default, the class uses
@@ -52,8 +53,8 @@ New lip-sync languages can be added by creating new lip-sync language modules.
 It is also possible to integrate the TalkingHead class with any external
 TTS service that can provide word-level timestamps, such as the
 [ElevenLabs WebSocket API](https://elevenlabs.io).
-By using a TTS engine that outputs viseme IDs or
-blend shape data, such as the
+Note that you don't need a lip-sync language module if your TTS engine that
+outputs viseme IDs or blend shape data directly. For example, using the
 [Microsoft Azure Speech SDK](https://github.com/microsoft/cognitive-services-speech-sdk-js),
 you can extend TalkingHead's lip-sync support to 100+ languages.
 
@@ -61,8 +62,11 @@ The class uses [ThreeJS](https://github.com/mrdoob/three.js/) / WebGL for 3D
 rendering.
 
 > [!TIP]
-> If you're looking for a free English TTS that can output
-timestamps and viseme IDs, check out [HeadTTS](https://github.com/met4citizen/HeadTTS).
+> If you're looking for a free English TTS that can output timestamps and viseme IDs,  
+check out [HeadTTS](https://github.com/met4citizen/HeadTTS).  
+It offers Kokoro neural voices, phoneme-level timestamps, and can run locally or even  
+entirely in a browser using WebGPU. And best of all, it's fully compatible  
+with the TalkingHead class.
 
 ---
 
@@ -71,7 +75,7 @@ timestamps and viseme IDs, check out [HeadTTS](https://github.com/met4citizen/He
 You can download the TalkingHead modules from
 [releases](https://github.com/met4citizen/TalkingHead/releases)
 (without dependencies). Alternatively, you can install them from
-[NPM](https://www.npmjs.com/package/@met4citizen/talkinghead)
+[NPM](https://www.npmjs.com/package/@met4citizen/talkinghead),
 or import all the needed modules from a CDN:
 
 ```javascript
@@ -106,12 +110,13 @@ const nodeAvatar = document.getElementById('avatar');
 const head = new TalkingHead( nodeAvatar, {
   ttsEndpoint: "/gtts/",
   jwtGet: jwtGet,
-  lipsyncModules: ["en", "fi"]
+  lipsyncModules: ["en", "fi"],
+  mixerGainSpeech: 3
 });
 ```
 
 <details>
-  <summary>CLICK HERE to see all the available options.</summary>
+  <summary>CLICK HERE to see all the available OPTIONS.</summary>
 
 Option | Description | Default
 --- | --- | ---
@@ -213,7 +218,7 @@ nodeSpeak.addEventListener('click', function () {
 ```
 
 <details>
-  <summary>CLICK HERE to see the key methods.</summary>
+  <summary>CLICK HERE to see the key METHODS.</summary>
 
 Method | Description
 --- | ---
@@ -689,7 +694,7 @@ Each item in `modelDynamicBones` array represents one dynamic bone, which
 can be configured separately.
 
 <details>
-  <summary>CLICK HERE to see all the available properties.</summary>
+  <summary>CLICK HERE to see all the available PROPERTIES.</summary>
 
 Property | Description | Example
 --- | --- | ---
