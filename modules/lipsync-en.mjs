@@ -242,6 +242,19 @@ class LipsyncEn {
     this.ones = ['','one','two','three','four','five','six','seven','eight','nine'];
     this.tens = ['','','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'];
     this.teens = ['ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'];
+    this.decades = {
+      20: "twenties", 30: "thirties", 40: "forties", 50: "fifties",
+      60: "sixties", 70: "seventies", 80: "eighties", 90: "nineties"
+    };
+    this.ordinals = {
+      1: "first", 2: "second", 3: "third", 4: "fourth", 5: "fifth",
+      6: "sixth", 7: "seventh", 8: "eighth", 9: "ninth", 10: "tenth",
+      11: "eleventh", 12: "twelfth", 13: "thirteenth", 14: "fourteenth",
+      15: "fifteenth", 16: "sixteenth", 17: "seventeeth", 18: "eighteenth",
+      19: "nineteenth", 20: "twentieth", 30: "thirtieth", 40: "fortieth",
+      50: "fiftieth", 60: "sixtieth",70: "seventieth", 80: "eightieth",
+      90: "ninetieth"
+    };
 
     // Symbols to English
     this.symbols = {
@@ -299,22 +312,110 @@ class LipsyncEn {
     } else if (num>=10 && num<20) {
       return this.teens[num-10];
     } else {
-      return this.tens[Math.floor(num/10)]+" "+this.ones[num%10];
+      return (this.tens[Math.floor(num/10)]+" "+this.ones[num%10]).trim();
     }
   }
  
-  convertNumberToWords(num){
-    if(num == "0"){
+  /**
+  * Convert number to words. Try to decide how to read it.
+  *
+  * @param {number|string} num Number
+  * @param {boolean} [isNotSpecial=false] If true, this is not a special number (e.g. year, zip code)
+  * @return {string} String
+  */
+  convertNumberToWords(num, isNotSpecial=false){
+    const n = parseFloat(num);
+    if (num == "0") {
       return "zero";
-    } else if(num.startsWith('0')){
-      return this.convert_digit_by_digit(num);
-    } else if ((num<1000&&num>99)||(num>10000&&num<1000000)) { //read area and zip codes digit by digit
-      return this.convert_digit_by_digit(num);
-    } else if ((num > 1000 && num < 2000)||(num>2009&&num<3000)) { //read years as two sets of two digits
-      return (num % 100 != 0 ? this.convert_sets_of_two(num) : this.convert_tens(num.substring(0, 2)) + " hundred");
+    } else if (num < 0 ) {
+      return " minus " + this.convertNumberToWords( Math.abs(num).toString(), isNotSpecial ).trim();
+    } else if ( n && !Number.isInteger(n) ) {
+      const parts = n.toString().split('.');
+      return this.convertNumberToWords(parts[0], isNotSpecial).trim() + " point " + this.convert_digit_by_digit(parts[1]).trim();
+    } else if(num.toString().startsWith('0')){
+      return this.convert_digit_by_digit(num).trim();
+    } else if (!isNotSpecial && ((num<1000 && num>99 && (num % 100) !== 0) || (num>10000&&num<1000000))) { //read area and zip codes digit by digit
+      return this.convert_digit_by_digit(num).trim();
+    } else if (!isNotSpecial && ((num > 1000 && num < 2000)||(num>2009&&num<3000))) { //read years as two sets of two digits
+      return (num % 100 != 0 ? this.convert_sets_of_two(num).trim() : this.convert_tens(num.toString().substring(0, 2)).trim() + " hundred");
     } else {
-      return this.convert_millions(num);
+      return this.convert_millions(num).trim();
     }
+  }
+
+  /**
+  * Expand decade to text.
+  *
+  * @param {string} decade Decade
+  * @return {string} Normalized text
+  */
+  convertDecade(decade) {
+    const num = parseInt(decade);
+    const isShort = !isNaN(num) && decade.length === 2;
+    const isLong = !isNaN(num) && decade.length > 2 && num > 0 && num <= 3000;
+    const thousands = (isLong && (num % 1000) === 0 ) ? Math.floor(num / 1000) : null;
+    const hundreds = (isLong && !thousands) ?  Math.floor(num / 100) : null;
+    const tens = (isShort || isLong) ? Math.floor((num % 100) / 10) * 10 : null;
+
+    let s = [];
+    if ( thousands ) {
+      s.push( this.convertNumberToWords(thousands).trim(), "thousands" );
+    } else {
+      if ( hundreds ) {
+        s.push( this.convertNumberToWords(hundreds).trim() );
+      }
+      if ( tens ) {
+        s.push( this.decades[tens] || (this.convertNumberToWords(tens).trim() + 's') );
+      } else if ( hundreds ) {
+        s.push( "hundreds" );
+      } else {
+        s.push( decade );
+      }
+    }
+
+    return s.join(" ");
+  }
+
+  /**
+  * Convert ordinal number to text.
+  *
+  * @param {number} num Ordinal number
+  * @return {string} Normalized text
+  */
+  convertOrdinal(num) {
+
+    // Return immediately, if we have the number in our map
+    if ( this.ordinals.hasOwnProperty(num) ) {
+      return this.ordinals[num];
+    }
+
+    const hundreds = Math.floor(num / 100);
+    const tens = Math.floor( (num % 100) / 10) * 10;
+    const ones = num % 10;
+
+    let s = [];
+    if ( hundreds ) {
+      s.push( this.convertNumberToWords(hundreds).trim() );
+      if ( tens || ones ) {
+        s.push( "hundred" );
+      } else {
+        s.push( "hundredth" );
+      }
+    }
+
+    if ( tens ) {
+      if ( ones ) {
+        s.push( this.convertNumberToWords(tens).trim() );
+      } else {
+        s.push( this.ordinals[tens] );
+      }
+    }
+
+    if ( ones ) {
+      s.push( this.ordinals[ones] );
+    }
+
+    return s.join(" ");
   }
 
 
@@ -327,16 +428,58 @@ class LipsyncEn {
   * @return {string} Pre-processsed text.
   */
   preProcessText(s) {
-    return s.replace('/[#_*\":;]/g','')
-      .replace( this.symbolsReg, (symbol) => {
-        return ' ' + this.symbols[symbol] + ' ';
-      })
-      .replace(/(\d)\.(\d)/g, '$1 point $2') // Number separator
-      .replace(/\d+/g, this.convertNumberToWords.bind(this)) // Numbers to words
-      .replace(/(\D)\1\1+/g, "$1$1") // max 2 repeating chars
+    let r = s.replace('/[#_*\":;]/g','');
+
+    // Symbols
+    r = r.replace( this.symbolsReg, (symbol) => {
+      return ' ' + this.symbols[symbol] + ' ';
+    });
+
+    // Numbers, if any
+    if ( /\d/.test(r) ) {
+      
+      // Decades: 70s, 1970s -> SEVENTIES, NINETEEN SEVENTIES 
+      r = r.replace(/\b(\d{2,4})[''']?\s?[sS](?=\s|[.,!?;:]|$)/g, (match, decade) => {
+        const result = this.convertDecade(decade);
+        return result === decade ? match : result;
+      });
+
+      // Ordinals: 1st, 22nd -> FIRST, TWENTY SECOND
+      r = r.replace(/\b(\d+)\s*(st|nd|rd|th)(?=\s|[.,!?;:]|$)/gi, (match, number) => {
+        
+        return this.convertOrdinal(Number(number));
+      });
+
+      // Handle mixed alphanumeric sequences
+      r = r.replace(/\b(\w*?)(\d+)([A-Za-z]+)\b/g, (match, prefix, numbers, letters) => {
+        const processedNumber = this.convertNumberToWords(numbers);
+        return `${prefix}${processedNumber} ${letters}`;
+      }).replace(/\b([A-Za-z]+)(\d+)(\w*?)\b/g, (match, letters, numbers, suffix) => {
+        const processedNumber = this.convertNumberToWords(numbers);
+        return `${letters} ${processedNumber}${suffix}`;
+      });
+
+      // Process the remaining numbers
+      r = r.replace(/-?(?:\d{1,3}(?:,\d{3})+|\d+)(\.\d+)?/g, (match, decimal) => {
+        let s = match;
+        let isNotSpecial = false;
+        if ( /,/.test(s) ) {
+          s = s.replace( /,/g, "" );
+          isNotSpecial = true;
+        }
+        if ( decimal ) {
+          isNotSpecial = true;
+        }
+        return this.convertNumberToWords(s, isNotSpecial);
+      });
+    }
+
+    r = r.replace(/(\D)\1\1+/g, "$1$1") // max 2 repeating chars
       .replaceAll('  ',' ') // Only one repeating space
       .normalize('NFD').replace(/[\u0300-\u036f]/g, '').normalize('NFC') // Remove non-English diacritics
       .trim();
+
+    return r;
   }
 
 
