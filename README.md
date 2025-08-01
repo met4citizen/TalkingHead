@@ -62,11 +62,7 @@ The class uses [ThreeJS](https://github.com/mrdoob/three.js/) / WebGL for 3D
 rendering.
 
 > [!TIP]
-> If you're looking for a free English TTS that can output timestamps and viseme IDs,  
-check out [HeadTTS](https://github.com/met4citizen/HeadTTS).  
-It offers Kokoro neural voices, phoneme-level timestamps, and can run locally or even  
-entirely in a browser using WebGPU. And best of all, it's fully compatible  
-with the TalkingHead class.
+> If you're looking for a free English TTS that can output timestamps and viseme IDs, check out [HeadTTS](https://github.com/met4citizen/HeadTTS). It offers Kokoro neural voices, phoneme-level timestamps, and can run locally or even entirely in a browser using WebGPU. And best of all, it's fully compatible with the TalkingHead class.
 
 ---
 
