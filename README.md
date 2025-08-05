@@ -53,8 +53,8 @@ New lip-sync languages can be added by creating new lip-sync language modules.
 It is also possible to integrate the TalkingHead class with any external
 TTS service that can provide word-level timestamps, such as the
 [ElevenLabs WebSocket API](https://elevenlabs.io).
-Note that you don't need a lip-sync language module if your TTS engine that
-outputs viseme IDs or blend shape data directly. For example, using the
+Note that a lip-sync language module is not required if your TTS engine
+can output viseme IDs or blend shape data directly. For example, by using the
 [Microsoft Azure Speech SDK](https://github.com/microsoft/cognitive-services-speech-sdk-js),
 you can extend TalkingHead's lip-sync support to 100+ languages.
 
@@ -394,12 +394,10 @@ Washington, D. C., 1976. https://apps.dtic.mil/sti/pdfs/ADA021929.pdf
 
 **FOR HOBBYISTS:**
 
-1. Create your own full-body avatar free at [Ready Player Me](https://readyplayer.me) / [Player Zero](https://playerzero.readyplayer.me/).
+1. Create your own full-body avatar free at [https://readyplayer.me/avatar/](https://readyplayer.me/avatar/) or [https://playerzero.readyplayer.me/](https://playerzero.readyplayer.me/).
 
-2. Copy your avatar’s unique ID (e.g., `64bfa15f0e72c63d7c3934a6`) and download the GLB file using one of the links below. Replace the ID with your own, and make sure to keep the URL parameters to include the necessary morph targets (blend shapes).<br><br>Ready Player Me:<br>`https://models.readyplayer.me/64bfa15f0e72c63d7c3934a6.glb?morphTargets=ARKit,Oculus+Visemes,mouthOpen,mouthSmile,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png`<br><br>Player Zero:<br>`https://avatars.readyplayer.me/67ebd62a688cd661ebe09988.glb?morphTargetsGroup=ARKit,Oculus+Visemes&morphTargets=mouthSmile,mouthOpen,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png`<br><br>Depending on your use case, you can customize the texture format and texture quality (e.g. `textureFormat=webp&textureQuality=high`), the triangle count (e.g. `lod=1`), use Draco mesh compression (`useDracoMeshCompression=true`), and so on. See the full list of option [here](https://docs.readyplayer.me/ready-player-me/api-reference/rest-api/avatars/get-3d-avatars).
+2. Copy your avatar’s unique ID (e.g., `64bfa15f0e72c63d7c3934a6`) and download the GLB file using one of the links below. Replace the ID with your own, and make sure to keep the URL parameters to include the necessary morph targets (blend shapes).<br><br>Ready Player Me:<br>`https://models.readyplayer.me/64bfa15f0e72c63d7c3934a6.glb?morphTargets=ARKit,Oculus+Visemes,mouthOpen,mouthSmile,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png`<br><br>PlayerZero:<br>`https://avatars.readyplayer.me/67ebd62a688cd661ebe09988.glb?morphTargetsGroup=ARKit,Oculus+Visemes&morphTargets=mouthSmile,mouthOpen,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png`<br><br>Depending on your use case, you can customize the texture format and texture quality (e.g. `textureFormat=webp&textureQuality=high`), the triangle count (e.g. `lod=1`), use Draco mesh compression (`useDracoMeshCompression=true`), and so on. See the full list of option [here](https://docs.readyplayer.me/ready-player-me/api-reference/rest-api/avatars/get-3d-avatars).
 
-> [!IMPORTANT]  
-> The older Ready Player Me service has closed sign-ups for new partners as the company shifts its focus to Player Zero. However, you can still access the legacy editor at [https://readyplayer.me/avatar/](https://readyplayer.me/avatar/).
 
 **FOR 3D MODELERS:**
 
@@ -720,31 +718,62 @@ up the Y-axis.
 
 ---
 
-### Appendix F: Using Blendshapes with Audio (Advanced)
+### Appendix F: Controlling Blendshapes Directly (Advanced)
 
-You can optionally provide an animation template object to drive custom blendshapes or morph targets in sync with audio playback. This is especially useful when you have a series of facial animation frames from external sources, such as Azure TTS 3D blenshapes or motion capture data, and want them to play alongside the spoken audio. Below is the general format of the animation template object:
+The TalkingHead class provides basic facial expressions and animations
+by controlling the 3D avatar's blendshapes (a.k.a. morph targets).
+It also possible to control these blendshapes directly from your app.
+Below are some of the available approaches, with simple code examples:
 
-```js
-{
-  name: "blendshapes",
-  dt: [ 33, 33, 33, ... ],  // durations in milliseconds for each frame
-  vs: {
-    "mouthRollLower": [ 0, 0.05, 0.1, ... ],
-    "jawOpen": [ 0, 0.2, 0.4, ... ],
-    // ... additional blendshape keys
-  }
-}
+- Use `setFixedValue` method to smoothly transition from the current
+blendshape value to some fixed value. The fixed value will override
+all other methods as well as internal/external animations.
+To return back to normal operation, set the fixed value to `null`:
 
+```javascript
+head.setFixedValue("jawOpen",1);
 ```
- - `name`: A simple string identifier, for example "blendshapes".
- - `dt`: An array of per-frame durations (in ms). Each entry determines how long to stay on (or blend to) that frame before moving to the next one.
- - `vs`: An object in which each key is the name of a blendshape, and each value is an array of values for each corresponding frame in dt.
 
-During audio playback, these frames will automatically be scheduled to match the timeline of your audio. This ensures your custom facial expressions (e.g., jawOpen, mouthRollLower, etc.) animate in perfect sync with the spoken content.
+- Use the `realtime` value of the `head.mtAvatar` property to set
+the blend shape value without any smooth transition. This is useful
+for cases like face landmark detection, where you need to stay
+in sync with real-time input. To return back to normal operation,
+set the realtime value to `null`:
 
-For a practical example of how to use this feature with Azure Text-to-Speech facial blendshapes, refer to examples/azure-blendshapes.html in the repository. This example demonstrates how to integrate blendshape animations derived from Azure’s output into your application.
+```javascript
+Object.assign( head.mtAvatar["jawOpen"],{ realtime: 1, needsUpdate: true });
+```
 
-**Note**: Be aware of a potential quality issue when using Azure blendshapes for lip-sync. The lip-sync may appear somewhat unnatural—for instance, the mouth might open too widely, and the lips may fail to touch on phonemes/visemes where they should. This might be because unlike Oculus visemes, which are specifically designed for accurate lip-syncing, Azure's output relies on ARKit blendshapes—a more generic standard for facial expressions rather than precise lip movements. Furthermore, Azure’s blendshapes are likely optimized for their own avatar system and not specifically for RPM avatars.
+- Add an animation template object `anim` to the audio data in `speakAudio`
+to drive blendshapes in sync with audio playback. This is especially useful
+when using facial animation data from external sources (e.g., Azure TTS 3D
+blendshapes or motion capture) and want to play it alongside spoken audio:
+
+```javascript
+head.speakAudio({
+  audio: audio,
+  anim: {
+    name: "blendshapes",
+    dt: [ 33, 33, 33, ... ],  // durations in milliseconds for each frame
+    vs: { // Blend shape keys and values for each frame
+      "jawOpen": [ 0, 0.2, 0.4, ... ],
+      "mouthRollLower": [ 0, 0.05, 0.1, ... ],
+      // ... additional blendshape keys
+    }
+  }
+});
+```
+
+See a full code example using Azure blendshape
+output [here](./examples/azure-blendshapes.html). - **Note**: Azure's output
+relies solely on ARKit blendshapes and is not optimized for RPM avatars.
+As a result, the quality of lip-sync may be less natural compared
+to using Oculus visemes and the TalkingHead's internal lip-sync language
+module. For example, the mouth may open too widely, or the lips may fail to touch
+for certain phonemes they should.
+
+See also the next Appendix G for how to stream audio with lip-sync.
+
 
 ---
 
