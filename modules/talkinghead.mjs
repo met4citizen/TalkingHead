@@ -1252,7 +1252,7 @@ class TalkingHead {
       // Copy previous values
       const y = this.mtAvatar[x];
       if ( y ) {
-        [ 'fixed','system','systemd','base','v','value','applied' ].forEach( z => {
+        [ 'fixed','system','systemd','realtime','base','v','value','applied' ].forEach( z => {
           mtTemp[x][z] = y[z];
         });
       }
