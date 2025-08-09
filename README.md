@@ -785,7 +785,7 @@ This low-level streaming interface is designed for real-time scenarios, such as 
 
 #### API Overview
 
-##### 1. `streamStart(opt={}, onAudioStart, onAudioEnd, onSubtitles)`
+##### 1. `streamStart(opt={}, onAudioStart, onAudioEnd, onSubtitles, onMetrics)`
 
 Enters streaming mode using an `AudioWorklet` for low-latency playback. Parameters:
 
@@ -795,9 +795,11 @@ Enters streaming mode using an `AudioWorklet` for low-latency playback. Paramete
   - `lipsyncLang` – Specifies lip-sync language if you want viseme generation using words. Defaults to avatar `lipsyncLang`, or to options `lipsyncLang` value. 
   - `lipsyncType` – Specifies lip-sync data type. Can take one of the values `visemes` (default), `blendshapes`, and `words`.
   - `mood` – Sets avatar mood upon starting the stream.  
+  - `metrics` – Used for in development performance monitoring: `{enabled: true, intervalHz: 2}`. Enables queue depth and underrun tracking in the audio worklet. Do not set in production.
 - `onAudioStart` *(function, optional)* – Callback invoked the moment audio playback starts.  
 - `onAudioEnd` *(function, optional)* – Callback invoked automatically once audio playback concludes.  
 - `onSubtitles` *(function, optional)* – Callback to handle showing subtitle text.
+- `onMetrics` *(function, optional)* – Callback receiving performance monitoring data: queue depth, underruns, playback state.
 
 Upon calling `streamStart`, all queued speech (`speakText`, `speakAudio`) is stopped, the engine enters streaming mode, and the avatar prepares for real-time lip-sync. You can then feed audio via `streamAudio()`.
 
@@ -816,9 +818,15 @@ Each call to `streamAudio()` schedules an immediate chunk for playback and any i
 
 Signals that no more chunks are expected for the current streaming session. Playback stops automatically once queued audio finishes. This is useful for gracefully concluding real-time TTS streams when your pipeline has no additional data to send.
 
-##### 4. `streamStop()`
+##### 4. `streamStop(disconnect)`
 
-Forces an immediate end to streaming mode, disconnecting the internal `AudioWorklet`. All queued lip-sync animations (visemes, blendshapes) are cleared, and the avatar reverts to its idle state. If needed, you can later re-start streaming via `streamStart()` again.
+Forces an immediate end to streaming mode. All queued lip-sync animations (visemes, blendshapes) are cleared, and the avatar reverts to its idle state. Parameters:
+
+- `disconnect` *(boolean, optional)* – If `true`, also disconnects and cleans up the internal `AudioWorklet`. Use for complete shutdown. Default: `false` (keeps worklet for reuse).
+
+**Usage:**
+- `streamStop()` or `streamStop(false)` – Stop streaming but keep worklet ready for next `streamStart()`
+- `streamStop(true)` – Stop streaming and fully disconnect worklet (for app shutdown or mode switching)
 
 #### Example Usage
 

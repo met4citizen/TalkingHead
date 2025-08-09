@@ -51,6 +51,22 @@
       cursor: pointer;
     }
 
+    #stop {
+      width: 80px;
+      height: 100%;
+      font-size: 16px;
+      background: #d32f2f;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      display: none;
+    }
+
+    #stop:hover {
+      background: #b71c1c;
+    }
+
     /* Settings toggle button */
     #settings-button {
       width: 80px;
@@ -143,6 +159,23 @@
       display: inline-block !important;
       width: auto !important;
       margin-right: 0.3rem;
+    }
+
+    /* Small performance HUD */
+    #perfHud {
+      position: absolute;
+      top: 60px;
+      left: 10px;
+      background: rgba(0,0,0,0.5);
+      color: #0f0;
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 12px;
+      padding: 6px 8px;
+      border-radius: 4px;
+      white-space: pre;
+      z-index: 999;
+      min-width: 180px;
+      display: block;
     }
   </style>
 
@@ -272,16 +305,26 @@
     let wordsbuffer = null;
     let azureBlendShapes = null;
     let lipsyncType = "visemes";
-    resetLipsyncBuffers();
+  resetLipsyncBuffers();
 
     document.addEventListener('DOMContentLoaded', async () => {
       console.log("Loading Talking Head...");
       const nodeAvatar = document.getElementById('avatar');
       const nodeSpeak = document.getElementById('speak');
+      const nodeStop = document.getElementById('stop');
       const nodeLoading = document.getElementById('loading');
       const azureRegion = document.getElementById('azure-region');
       const azureTTSKey = document.getElementById('azure-key');
       const settingsButton = document.getElementById('settings-button');
+      const perfHud = document.getElementById('perfHud');
+      const perf = { queuedMs: 0, maxQueuedMs: 0, underruns: 0, state: 'idle' };
+      function updateHUD() {
+        perfHud.textContent =
+          `Audio worklet\n`+
+          `state: ${perf.state}\n`+
+          `queued: ${perf.queuedMs|0} ms (max ${perf.maxQueuedMs|0} ms)\n`+
+          `underruns: ${perf.underruns}`;
+      }
 
       azureTTSKey.value = sessionStorage.getItem('azureTTSKey') || '';
       azureRegion.value = sessionStorage.getItem('azureRegion') || '';
@@ -331,6 +374,16 @@
         if (text) {
           const ssml = textToSSML(text);
           azureSpeak(ssml);
+        }
+      });
+
+      // Handle stop button click
+      nodeStop.addEventListener('click', () => {
+        if (head.isStreaming) {
+          head.streamStop();
+          nodeStop.style.display = 'none';
+          nodeSpeak.disabled = false;
+          console.log("Streaming stopped by user.");
         }
       });
 
@@ -464,12 +517,24 @@
 
         // Start stream speaking
         head.streamStart(
-          { sampleRate: 48000, mood: "happy", gain: 0.5, lipsyncType: lipsyncType },
+          { 
+            sampleRate: 48000, 
+            mood: "happy", 
+            gain: 0.5, 
+            lipsyncType: lipsyncType,
+            // Configure metrics: enabled, reporting rate
+            metrics: { enabled: true, intervalHz: 2 }
+          },
           () => {
             console.log("Audio playback started.");
             const subtitlesElement = document.getElementById("subtitles");
             subtitlesElement.textContent = "";
             subtitlesElement.style.display = "none";
+            perf.state = 'playing';
+            updateHUD();
+            // Show stop button, disable speak button
+            nodeStop.style.display = 'block';
+            nodeSpeak.disabled = true;
           },
           () => {
             console.log("Audio playback ended.");
@@ -479,12 +544,30 @@
               subtitlesElement.textContent = "";
               subtitlesElement.style.display = "none";
             }, displayDuration);
+            // Keep HUD visible, switch to idle state showing last metrics
+            perf.state = 'idle';
+            updateHUD();
+            // Hide stop button, enable speak button
+            nodeStop.style.display = 'none';
+            nodeSpeak.disabled = false;
           },
           (subtitleText) => {
             console.log("subtitleText: ", subtitleText);
             const subtitlesElement = document.getElementById("subtitles");
             subtitlesElement.textContent += subtitleText;
             subtitlesElement.style.display = subtitlesElement.textContent ? "block" : "none";
+          },
+          // onMetrics
+          (ev) => {
+            if (!ev) return;
+            if (ev.type === 'metrics' && ev.data) {
+              const m = ev.data;
+              perf.queuedMs = m.queuedMs;
+              perf.maxQueuedMs = m.maxQueuedMs;
+              perf.underruns = m.underrunBlocks;
+              perf.state = (m.state === 1) ? 'playing' : 'idle';
+              updateHUD();
+            }
           }
         );
 
@@ -549,11 +632,13 @@
   <!-- 3D Avatar -->
   <div id="avatar"></div>
   <div id="subtitles"></div>
+  <div id="perfHud"></div>
 
   <!-- Controls at the top -->
   <div id="controls">
     <input id="text" type="text" value="Hello, how are you?" />
     <button id="speak">Speak</button>
+    <button id="stop">Stop</button>
     <button id="settings-button">Settings</button>
   </div>
 

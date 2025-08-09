@@ -933,8 +933,18 @@ class TalkingHead {
       this.opt.mixerGainBackground
     );
     
-    // Reset stream worklet loaded flag to reload with the new context
+    // Delete the stream audio worklet if initialised
     this.workletLoaded = false;
+    if (this.streamWorkletNode) {
+      try {
+        this.streamWorkletNode.port.postMessage({type: 'stop'});
+        this.streamWorkletNode.disconnect();
+      } catch(e) { 
+        console.error('Error disconnecting streamWorkletNode:', e);
+        /* ignore */ 
+      }
+      this.streamWorkletNode = null;
+    }
   }
 
   /**
@@ -3363,7 +3373,7 @@ class TalkingHead {
   * @onAudioEnd optional callback when audio streaming is automatically ended.
   * @onSubtitles optional callback to play subtitles
   */
-  async streamStart(opt = {}, onAudioStart = null, onAudioEnd = null, onSubtitles = null) {
+  async streamStart(opt = {}, onAudioStart = null, onAudioEnd = null, onSubtitles = null, onMetrics = null) {
     this.stopSpeaking(); // Stop the speech queue mode
 
     this.isStreaming = true;
@@ -3395,41 +3405,78 @@ class TalkingHead {
       this.audioStreamGainNode.gain.value = opt.gain;
     }
 
-    if (!this.workletLoaded) {
-      try {
-        const loadPromise = this.audioCtx.audioWorklet.addModule(workletUrl.href);
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error("Worklet loading timed out")), 5000)
-        );
-        await Promise.race([loadPromise, timeoutPromise]);
-        this.workletLoaded = true;
-      } catch (error) {
-        console.error("Failed to load audio worklet:", error);
-        throw new Error("Failed to initialize streaming speech");
+    // Check if we need to create or recreate the worklet
+    const needsWorkletSetup = !this.streamWorkletNode || 
+                              !this.streamWorkletNode.port || 
+                              this.streamWorkletNode.numberOfOutputs === 0 ||
+                              this.streamWorkletNode.context !== this.audioCtx;
+
+    if (needsWorkletSetup) {
+      // Clean up existing worklet if it exists but is invalid
+      if (this.streamWorkletNode) {
+        try {
+          this.streamWorkletNode.disconnect();
+          this.streamWorkletNode = null;
+        } catch (e) {
+          // Ignore errors during cleanup
+        }
       }
+
+      if (!this.workletLoaded) {
+        try {
+          const loadPromise = this.audioCtx.audioWorklet.addModule(workletUrl.href);
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("Worklet loading timed out")), 5000)
+          );
+          await Promise.race([loadPromise, timeoutPromise]);
+          this.workletLoaded = true;
+        } catch (error) {
+          console.error("Failed to load audio worklet:", error);
+          throw new Error("Failed to initialize streaming speech");
+        }
+      }
+
+      this.streamWorkletNode = new AudioWorkletNode(this.audioCtx, 'playback-worklet', {
+        processorOptions: {
+          sampleRate: this.audioCtx.sampleRate,
+          metrics: opt.metrics || { enabled: false }
+        }
+      });
+
+      // Connect the node to the audio graph
+      this.streamWorkletNode.connect(this.audioStreamGainNode);
+      this.streamWorkletNode.connect(this.audioAnalyzerNode);
+
+      this.streamWorkletNode.port.onmessage = (event) => {
+
+        if(event.data.type === 'playback-started') {
+          this.streamAudioStartTime = this.animClock;
+          this._processStreamLipsyncQueue();
+          this.speakWithHands();
+          if (this.onAudioStart) this.onAudioStart();
+        }
+
+        if (event.data.type === 'playback-ended') {
+          this._endStreaming();
+          if (this.onAudioEnd) this.onAudioEnd();
+        }
+
+        // Forward diagnostic metrics if provided
+        if (this.onMetrics && event.data.type === 'metrics') {
+          try { this.onMetrics(event.data); } catch(e) { /* ignore */ }
+        }
+      };
     }
 
-    // Create and connect worklet node
-    this.streamWorkletNode = new AudioWorkletNode(this.audioCtx, 'playback-worklet');
-    
-    // Connect worklet through stream gain node for volume control
-    this.streamWorkletNode.connect(this.audioStreamGainNode);
-    this.streamWorkletNode.connect(this.audioAnalyzerNode);
-  
-    this.streamWorkletNode.port.onmessage = (event) => {
+    // Store callbacks for this streaming session
+    this.onAudioStart = onAudioStart;
+    this.onAudioEnd = onAudioEnd;
+    this.onMetrics = onMetrics;
 
-      if(event.data.type === 'playback-started') {
-        this.streamAudioStartTime = this.animClock;
-        this._processStreamLipsyncQueue();
-        this.speakWithHands();
-        if (onAudioStart) onAudioStart();
-      }
-
-      if (event.data.type === 'playback-ended') {
-        this.streamStop();
-        if (onAudioEnd) onAudioEnd();
-      }
-    };
+    // Update metrics config if provided (can be different per session)
+    if (opt.metrics) {
+      try { this.streamWorkletNode.port.postMessage({ type: 'config-metrics', data: opt.metrics }); } catch(e) {}
+    }
 
     this.resetLips();
     this.lookAtCamera(500);
@@ -3462,22 +3509,34 @@ class TalkingHead {
 
   /**
    * Stop streaming mode
+   * @param {boolean} disconnect - If true, also disconnect and cleanup the audio worklet
    */
-  streamStop() {
+  streamStop(disconnect = false) {
     if (this.streamWorkletNode) {
-      try {
-        this.streamWorkletNode.port.postMessage({type: 'stop'});
-        this.streamWorkletNode.disconnect();
-      } catch(e) { 
-        console.error('Error disconnecting streamWorkletNode:', e);
-        /* ignore */ 
+      // Explicit stop requested by app: tell worklet to stop.
+      try { this.streamWorkletNode.port.postMessage({type: 'stop'}); } catch(e) { /* ignore */ }
+      
+      if (disconnect) {
+        // Disconnect and cleanup the worklet
+        try {
+          this.streamWorkletNode.disconnect();
+          this.streamWorkletNode = null;
+        } catch(e) { /* ignore */ }
       }
-      this.streamWorkletNode = null;
     }
+    this._endStreaming();
+  }
+
+  /**
+   * Clean up streaming state.
+   */
+  _endStreaming() {
     this.isStreaming = false;
     this.isSpeaking = false;
     this.stateName = "idle";
     this.streamAudioStartTime = 0;
+    this.streamLipsyncQueue = [];
+    this.animQueue = this.animQueue.filter( x  => x.template.name !== 'viseme' && x.template.name !== 'subtitles' && x.template.name !== 'blendshapes' );
     if ( this.armature ) {
       this.resetLips();
       this.render();
@@ -3490,7 +3549,7 @@ class TalkingHead {
  * @private
  */
   _processStreamLipsyncQueue() {
-    // console.log(`[TalkingHead] Processing ${this.streamLipsyncQueue.length} queued lipsync items.`);
+    if (!this.isStreaming) return;
     while (this.streamLipsyncQueue.length > 0) {
       const lipsyncPayload = this.streamLipsyncQueue.shift();
       // Pass the now confirmed streamAudioStartTime
@@ -3505,6 +3564,9 @@ class TalkingHead {
    * * @private
    */
   _processLipsyncData(r, audioStart) {
+    // Early return if streaming has been stopped
+    if (!this.isStreaming) return;
+    
     // Process visemes
     if (r.visemes && this.streamLipsyncType == 'visemes') {
       for (let i = 0; i < r.visemes.length; i++) {
@@ -3588,11 +3650,16 @@ class TalkingHead {
   streamAudio(r) {
     if (!this.isStreaming || !this.streamWorkletNode) return;
 
+    const message = { type: 'audioData', data: null };
+
     if (r.audio instanceof ArrayBuffer) {
-        this.streamWorkletNode.port.postMessage(r.audio, [r.audio]);
+        message.data = r.audio;
+        this.streamWorkletNode.port.postMessage(message, [message.data]);
     } else if (r.audio instanceof Int16Array) {
       // Fallback: r.audio is an Int16Array
-      this.streamWorkletNode.port.postMessage(r.audio); // No transfer list, so it gets cloned
+      const bufferCopy = r.audio.buffer.slice(r.audio.byteOffset, r.audio.byteOffset + r.audio.byteLength);
+      message.data = bufferCopy;
+      this.streamWorkletNode.port.postMessage(message, [message.data]);
     } else {
       console.error("r.audio is not an ArrayBuffer or Int16Array. Cannot process audio of this type:", r.audio);
     }
