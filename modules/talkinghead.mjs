@@ -883,7 +883,8 @@ class TalkingHead {
     // Stream speech mode
     this.isStreaming = false;
     this.streamWorkletNode = null;
-    this.streamAudioStartTime = 0;
+    this.streamAudioStartTime = null;
+    this.streamWaitForAudioChunks = true;
     this.streamLipsyncLang = null;
     this.streamLipsyncType = "visemes";
     this.streamLipsyncQueue = [];
@@ -939,6 +940,7 @@ class TalkingHead {
       try {
         this.streamWorkletNode.port.postMessage({type: 'stop'});
         this.streamWorkletNode.disconnect();
+        this.isStreaming = false;
       } catch(e) { 
         console.error('Error disconnecting streamWorkletNode:', e);
         /* ignore */ 
@@ -3377,12 +3379,15 @@ class TalkingHead {
     this.stopSpeaking(); // Stop the speech queue mode
 
     this.isStreaming = true;
-    this.isSpeaking = true;
-    this.stateName = "speaking";
-    this.streamAudioStartTime = 0;
+    if (opt.waitForAudioChunks) this.streamWaitForAudioChunks = opt.waitForAudioChunks;
+    if (!this.streamWaitForAudioChunks) { this.streamAudioStartTime = this.animClock; }
     this.streamLipsyncQueue = [];
     this.streamLipsyncType = opt.lipsyncType || this.streamLipsyncType || 'visemes';
     this.streamLipsyncLang = opt.lipsyncLang || this.streamLipsyncLang || this.avatar.lipsyncLang || this.opt.lipsyncLang;
+    // Store callbacks for this streaming session
+    this.onAudioStart = onAudioStart;
+    this.onAudioEnd = onAudioEnd;
+    this.onMetrics = onMetrics;
 
     if (opt.sampleRate !== undefined) {
       const sr = opt.sampleRate;    
@@ -3450,15 +3455,21 @@ class TalkingHead {
       this.streamWorkletNode.port.onmessage = (event) => {
 
         if(event.data.type === 'playback-started') {
-          this.streamAudioStartTime = this.animClock;
+          this.isSpeaking = true;
+          this.stateName = "speaking";
+          if (this.streamWaitForAudioChunks) this.streamAudioStartTime = this.animClock;
           this._processStreamLipsyncQueue();
           this.speakWithHands();
-          if (this.onAudioStart) this.onAudioStart();
+          if (this.onAudioStart) {
+            try { this.onAudioStart?.(); } catch(e) { console.error(e); }
+          }
         }
 
         if (event.data.type === 'playback-ended') {
-          this._endStreaming();
-          if (this.onAudioEnd) this.onAudioEnd();
+          this._streamPause();
+          if (this.onAudioEnd) {
+            try { this.onAudioEnd?.(); } catch(e) { console.error(e); }
+          }
         }
 
         // Forward diagnostic metrics if provided
@@ -3467,11 +3478,6 @@ class TalkingHead {
         }
       };
     }
-
-    // Store callbacks for this streaming session
-    this.onAudioStart = onAudioStart;
-    this.onAudioEnd = onAudioEnd;
-    this.onMetrics = onMetrics;
 
     // Update metrics config if provided (can be different per session)
     if (opt.metrics) {
@@ -3490,7 +3496,7 @@ class TalkingHead {
       try {
         await Promise.race([resume, timeout]);
       } catch(e) {
-        console.log("Can't play audio. Web Audio API suspended. This is often due to calling some speak method before the first user action, which is typically prevented by the browser.");
+        console.warn("Can't play audio. Web Audio API suspended. This is often due to calling some speak method before the first user action, which is typically prevented by the browser.");
         return;
       }
     }
@@ -3506,40 +3512,51 @@ class TalkingHead {
     this.streamWorkletNode.port.postMessage({ type: 'no-more-data' });
   }
 
+  /**
+   * Interrupt ongoing stream audio and lipsync
+   */
+  streamInterrupt() {
+    if (this.streamWorkletNode) {
+      // tell worklet to stop.
+      try { this.streamWorkletNode.port.postMessage({type: 'stop'}); } catch(e) { /* ignore */ }
+    }
+    this._streamPause(true);
+  }
 
   /**
    * Stop streaming mode
    * @param {boolean} disconnect - If true, also disconnect and cleanup the audio worklet
    */
-  streamStop(disconnect = false) {
+  streamStop() {
+    this.streamInterrupt();
     if (this.streamWorkletNode) {
-      // Explicit stop requested by app: tell worklet to stop.
-      try { this.streamWorkletNode.port.postMessage({type: 'stop'}); } catch(e) { /* ignore */ }
-      
-      if (disconnect) {
-        // Disconnect and cleanup the worklet
-        try {
-          this.streamWorkletNode.disconnect();
-          this.streamWorkletNode = null;
-        } catch(e) { /* ignore */ }
-      }
+      try {
+        this.streamWorkletNode.disconnect();
+        this.streamWorkletNode = null;
+      } catch(e) { /* ignore */ }
     }
-    this._endStreaming();
+    this.isStreaming = false;
   }
+  
 
   /**
-   * Clean up streaming state.
+   * Internal function to pause the speaking state after a speech utterance. 
+   * This is called when the audio stream ends or is interrupted.
+   * @param {boolean} interrupt_lipsync - If true, interrupts the lipsync
+   * @private
    */
-  _endStreaming() {
-    this.isStreaming = false;
+  _streamPause(interrupt_lipsync = false) {
     this.isSpeaking = false;
     this.stateName = "idle";
-    this.streamAudioStartTime = 0;
+    if (this.streamWaitForAudioChunks) this.streamAudioStartTime = null;
     this.streamLipsyncQueue = [];
-    this.animQueue = this.animQueue.filter( x  => x.template.name !== 'viseme' && x.template.name !== 'subtitles' && x.template.name !== 'blendshapes' );
-    if ( this.armature ) {
-      this.resetLips();
-      this.render();
+    // force stop the speech animation.
+    if(interrupt_lipsync) {
+      this.animQueue = this.animQueue.filter( x  => x.template.name !== 'viseme' && x.template.name !== 'subtitles' && x.template.name !== 'blendshapes' );
+      if ( this.armature ) {
+        this.resetLips();
+        this.render();
+      }
     }
   }
 
@@ -3649,24 +3666,41 @@ class TalkingHead {
   */
   streamAudio(r) {
     if (!this.isStreaming || !this.streamWorkletNode) return;
+    this.isSpeaking = true;
+    this.stateName = "speaking";
 
     const message = { type: 'audioData', data: null };
 
+    // Feed ArrayBuffer for performance. Other fallback formats require copy/conversion.
     if (r.audio instanceof ArrayBuffer) {
-        message.data = r.audio;
-        this.streamWorkletNode.port.postMessage(message, [message.data]);
-    } else if (r.audio instanceof Int16Array) {
-      // Fallback: r.audio is an Int16Array
+      message.data = r.audio;
+      this.streamWorkletNode.port.postMessage(message, [message.data]);
+    } 
+    else if (r.audio instanceof Int16Array || r.audio instanceof Uint8Array) {
       const bufferCopy = r.audio.buffer.slice(r.audio.byteOffset, r.audio.byteOffset + r.audio.byteLength);
       message.data = bufferCopy;
       this.streamWorkletNode.port.postMessage(message, [message.data]);
-    } else {
-      console.error("r.audio is not an ArrayBuffer or Int16Array. Cannot process audio of this type:", r.audio);
+    } 
+    else if (r.audio instanceof Float32Array) {
+      // Convert Float32 -> Int16 PCM
+      const int16Buffer = new Int16Array(r.audio.length);
+      for (let i = 0; i < r.audio.length; i++) {
+          let s = Math.max(-1, Math.min(1, r.audio[i])); // clamp
+          int16Buffer[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+      }
+      message.data = int16Buffer.buffer;
+      this.streamWorkletNode.port.postMessage(message, [message.data]);
+    } 
+    else {
+        console.error("r.audio is not a supported type. Must be ArrayBuffer, Int16Array, Uint8Array, or Float32Array:", r.audio);
     }
 
     if(r.visemes || r.anims || r.words) {
-      if(!this.streamAudioStartTime) {
+      if(this.streamWaitForAudioChunks && !this.streamAudioStartTime) {
         // Lipsync data received before audio playback start. Queue the lipsync data.
+        if (this.streamLipsyncQueue.length >= 200) { // set maximum queue length
+            this.streamLipsyncQueue.shift();
+        }
         this.streamLipsyncQueue.push(r);
         return;
       }

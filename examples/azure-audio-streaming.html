@@ -166,7 +166,7 @@
       position: absolute;
       top: 60px;
       left: 10px;
-      background: rgba(0,0,0,0.5);
+      background: rgba(0, 0, 0, 0.5);
       color: #0f0;
       font-family: ui-monospace, Menlo, Consolas, monospace;
       font-size: 12px;
@@ -305,7 +305,8 @@
     let wordsbuffer = null;
     let azureBlendShapes = null;
     let lipsyncType = "visemes";
-  resetLipsyncBuffers();
+
+    resetLipsyncBuffers();
 
     document.addEventListener('DOMContentLoaded', async () => {
       console.log("Loading Talking Head...");
@@ -320,9 +321,9 @@
       const perf = { queuedMs: 0, maxQueuedMs: 0, underruns: 0, state: 'idle' };
       function updateHUD() {
         perfHud.textContent =
-          `Audio worklet\n`+
-          `state: ${perf.state}\n`+
-          `queued: ${perf.queuedMs|0} ms (max ${perf.maxQueuedMs|0} ms)\n`+
+          `Audio worklet\n` +
+          `state: ${perf.state}\n` +
+          `queued: ${perf.queuedMs | 0} ms (max ${perf.maxQueuedMs | 0} ms)\n` +
           `underruns: ${perf.underruns}`;
       }
 
@@ -367,6 +368,63 @@
         nodeLoading.textContent = "Failed to load avatar.";
       }
 
+      // Start stream speaking session
+      head.streamStart(
+        {
+          sampleRate: 48000,
+          mood: "happy",
+          gain: 0.5,
+          lipsyncType: lipsyncType,
+          waitForAudioChunks: true,
+          // Configure metrics: enabled, reporting rate
+          metrics: { enabled: true, intervalHz: 2 }
+        },
+        () => {
+          console.log("Audio playback started.");
+          const subtitlesElement = document.getElementById("subtitles");
+          subtitlesElement.textContent = "";
+          subtitlesElement.style.display = "none";
+          perf.state = 'playing';
+          updateHUD();
+          // Show stop button, disable speak button
+          nodeStop.style.display = 'block';
+          nodeSpeak.disabled = true;
+        },
+        () => {
+          console.log("Audio playback ended.");
+          const subtitlesElement = document.getElementById("subtitles");
+          const displayDuration = Math.max(2000, subtitlesElement.textContent.length * 50);
+          setTimeout(() => {
+            subtitlesElement.textContent = "";
+            subtitlesElement.style.display = "none";
+          }, displayDuration);
+          // Keep HUD visible, switch to idle state showing last metrics
+          perf.state = 'idle';
+          updateHUD();
+          // Hide stop button, enable speak button
+          nodeStop.style.display = 'none';
+          nodeSpeak.disabled = false;
+        },
+        (subtitleText) => {
+          console.log("subtitleText: ", subtitleText);
+          const subtitlesElement = document.getElementById("subtitles");
+          subtitlesElement.textContent += subtitleText;
+          subtitlesElement.style.display = subtitlesElement.textContent ? "block" : "none";
+        },
+        // onMetrics
+        (ev) => {
+          if (!ev) return;
+          if (ev.type === 'metrics' && ev.data) {
+            const m = ev.data;
+            perf.queuedMs = m.queuedMs;
+            perf.maxQueuedMs = m.maxQueuedMs;
+            perf.underruns = m.underrunBlocks;
+            perf.state = (m.state === 1) ? 'playing' : 'idle';
+            updateHUD();
+          }
+        }
+      );
+
       // Handle speech button click
       nodeSpeak.addEventListener('click', () => {
         const text = document.getElementById('text').value.trim();
@@ -380,7 +438,7 @@
       // Handle stop button click
       nodeStop.addEventListener('click', () => {
         if (head.isStreaming) {
-          head.streamStop();
+          head.streamInterrupt();
           nodeStop.style.display = 'none';
           nodeSpeak.disabled = false;
           console.log("Streaming stopped by user.");
@@ -514,62 +572,6 @@
             }
           };
         }
-
-        // Start stream speaking
-        head.streamStart(
-          { 
-            sampleRate: 48000, 
-            mood: "happy", 
-            gain: 0.5, 
-            lipsyncType: lipsyncType,
-            // Configure metrics: enabled, reporting rate
-            metrics: { enabled: true, intervalHz: 2 }
-          },
-          () => {
-            console.log("Audio playback started.");
-            const subtitlesElement = document.getElementById("subtitles");
-            subtitlesElement.textContent = "";
-            subtitlesElement.style.display = "none";
-            perf.state = 'playing';
-            updateHUD();
-            // Show stop button, disable speak button
-            nodeStop.style.display = 'block';
-            nodeSpeak.disabled = true;
-          },
-          () => {
-            console.log("Audio playback ended.");
-            const subtitlesElement = document.getElementById("subtitles");
-            const displayDuration = Math.max(2000, subtitlesElement.textContent.length * 50);
-            setTimeout(() => {
-              subtitlesElement.textContent = "";
-              subtitlesElement.style.display = "none";
-            }, displayDuration);
-            // Keep HUD visible, switch to idle state showing last metrics
-            perf.state = 'idle';
-            updateHUD();
-            // Hide stop button, enable speak button
-            nodeStop.style.display = 'none';
-            nodeSpeak.disabled = false;
-          },
-          (subtitleText) => {
-            console.log("subtitleText: ", subtitleText);
-            const subtitlesElement = document.getElementById("subtitles");
-            subtitlesElement.textContent += subtitleText;
-            subtitlesElement.style.display = subtitlesElement.textContent ? "block" : "none";
-          },
-          // onMetrics
-          (ev) => {
-            if (!ev) return;
-            if (ev.type === 'metrics' && ev.data) {
-              const m = ev.data;
-              perf.queuedMs = m.queuedMs;
-              perf.maxQueuedMs = m.maxQueuedMs;
-              perf.underruns = m.underrunBlocks;
-              perf.state = (m.state === 1) ? 'playing' : 'idle';
-              updateHUD();
-            }
-          }
-        );
 
         // Perform TTS
         microsoftSynthesizer.speakSsmlAsync(
