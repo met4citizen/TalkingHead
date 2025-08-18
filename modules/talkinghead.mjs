@@ -3670,30 +3670,33 @@ class TalkingHead {
     this.isSpeaking = true;
     this.stateName = "speaking";
 
-    const message = { type: 'audioData', data: null };
+    // Process audio data if provided
+    if (r.audio !== undefined) {
+      const message = { type: 'audioData', data: null };
 
-    // Feed ArrayBuffer for performance. Other fallback formats require copy/conversion.
-    if (r.audio instanceof ArrayBuffer) {
-      message.data = r.audio;
-      this.streamWorkletNode.port.postMessage(message, [message.data]);
-    } 
-    else if (r.audio instanceof Int16Array || r.audio instanceof Uint8Array) {
-      const bufferCopy = r.audio.buffer.slice(r.audio.byteOffset, r.audio.byteOffset + r.audio.byteLength);
-      message.data = bufferCopy;
-      this.streamWorkletNode.port.postMessage(message, [message.data]);
-    } 
-    else if (r.audio instanceof Float32Array) {
-      // Convert Float32 -> Int16 PCM
-      const int16Buffer = new Int16Array(r.audio.length);
-      for (let i = 0; i < r.audio.length; i++) {
-          let s = Math.max(-1, Math.min(1, r.audio[i])); // clamp
-          int16Buffer[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+      // Feed ArrayBuffer for performance. Other fallback formats require copy/conversion.
+      if (r.audio instanceof ArrayBuffer) {
+        message.data = r.audio;
+        this.streamWorkletNode.port.postMessage(message, [message.data]);
+      } 
+      else if (r.audio instanceof Int16Array || r.audio instanceof Uint8Array) {
+        const bufferCopy = r.audio.buffer.slice(r.audio.byteOffset, r.audio.byteOffset + r.audio.byteLength);
+        message.data = bufferCopy;
+        this.streamWorkletNode.port.postMessage(message, [message.data]);
+      } 
+      else if (r.audio instanceof Float32Array) {
+        // Convert Float32 -> Int16 PCM
+        const int16Buffer = new Int16Array(r.audio.length);
+        for (let i = 0; i < r.audio.length; i++) {
+            let s = Math.max(-1, Math.min(1, r.audio[i])); // clamp
+            int16Buffer[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+        }
+        message.data = int16Buffer.buffer;
+        this.streamWorkletNode.port.postMessage(message, [message.data]);
+      } 
+      else {
+          console.error("r.audio is not a supported type. Must be ArrayBuffer, Int16Array, Uint8Array, or Float32Array:", r.audio);
       }
-      message.data = int16Buffer.buffer;
-      this.streamWorkletNode.port.postMessage(message, [message.data]);
-    } 
-    else {
-        console.error("r.audio is not a supported type. Must be ArrayBuffer, Int16Array, Uint8Array, or Float32Array:", r.audio);
     }
 
     if(r.visemes || r.anims || r.words) {
