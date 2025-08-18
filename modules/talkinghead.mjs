@@ -3370,10 +3370,11 @@ class TalkingHead {
 
   /**
   * Start streaming mode.
-  * @param opt optional settings inlcude gain, sampleRate, lipsyncLang, and lipsyncType
-  * @onAudioStart optional callback when audio playback starts
-  * @onAudioEnd optional callback when audio streaming is automatically ended.
-  * @onSubtitles optional callback to play subtitles
+  * @param {Object} [opt={}] Optional settings include gain, sampleRate, lipsyncLang, lipsyncType, metrics, and waitForAudioChunks
+  * @param {function} [onAudioStart=null] Optional callback when audio playback starts
+  * @param {function} [onAudioEnd=null] Optional callback when audio streaming is automatically ended
+  * @param {function} [onSubtitles=null] Optional callback to play subtitles
+  * @param {function} [onMetrics=null] Optional callback to receive metrics data during streaming
   */
   async streamStart(opt = {}, onAudioStart = null, onAudioEnd = null, onSubtitles = null, onMetrics = null) {
     this.stopSpeaking(); // Stop the speech queue mode
