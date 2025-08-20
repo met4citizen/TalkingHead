@@ -883,7 +883,8 @@ class TalkingHead {
     // Stream speech mode
     this.isStreaming = false;
     this.streamWorkletNode = null;
-    this.streamAudioStartTime = 0;
+    this.streamAudioStartTime = null;
+    this.streamWaitForAudioChunks = true;
     this.streamLipsyncLang = null;
     this.streamLipsyncType = "visemes";
     this.streamLipsyncQueue = [];
@@ -933,8 +934,19 @@ class TalkingHead {
       this.opt.mixerGainBackground
     );
     
-    // Reset stream worklet loaded flag to reload with the new context
+    // Delete the stream audio worklet if initialised
     this.workletLoaded = false;
+    if (this.streamWorkletNode) {
+      try {
+        this.streamWorkletNode.port.postMessage({type: 'stop'});
+        this.streamWorkletNode.disconnect();
+        this.isStreaming = false;
+      } catch(e) { 
+        console.error('Error disconnecting streamWorkletNode:', e);
+        /* ignore */ 
+      }
+      this.streamWorkletNode = null;
+    }
   }
 
   /**
@@ -1252,7 +1264,7 @@ class TalkingHead {
       // Copy previous values
       const y = this.mtAvatar[x];
       if ( y ) {
-        [ 'fixed','system','systemd','base','v','value','applied' ].forEach( z => {
+        [ 'fixed','system','systemd','realtime','base','v','value','applied' ].forEach( z => {
           mtTemp[x][z] = y[z];
         });
       }
@@ -3358,21 +3370,25 @@ class TalkingHead {
 
   /**
   * Start streaming mode.
-  * @param opt optional settings inlcude gain, sampleRate, lipsyncLang, and lipsyncType
-  * @onAudioStart optional callback when audio playback starts
-  * @onAudioEnd optional callback when audio streaming is automatically ended.
-  * @onSubtitles optional callback to play subtitles
+  * @param {Object} [opt={}] Optional settings include gain, sampleRate, lipsyncLang, lipsyncType, metrics, and waitForAudioChunks
+  * @param {function} [onAudioStart=null] Optional callback when audio playback starts
+  * @param {function} [onAudioEnd=null] Optional callback when audio streaming is automatically ended
+  * @param {function} [onSubtitles=null] Optional callback to play subtitles
+  * @param {function} [onMetrics=null] Optional callback to receive metrics data during streaming
   */
-  async streamStart(opt = {}, onAudioStart = null, onAudioEnd = null, onSubtitles = null) {
+  async streamStart(opt = {}, onAudioStart = null, onAudioEnd = null, onSubtitles = null, onMetrics = null) {
     this.stopSpeaking(); // Stop the speech queue mode
 
     this.isStreaming = true;
-    this.isSpeaking = true;
-    this.stateName = "speaking";
-    this.streamAudioStartTime = 0;
+    if (opt.waitForAudioChunks) this.streamWaitForAudioChunks = opt.waitForAudioChunks;
+    if (!this.streamWaitForAudioChunks) { this.streamAudioStartTime = this.animClock; }
     this.streamLipsyncQueue = [];
     this.streamLipsyncType = opt.lipsyncType || this.streamLipsyncType || 'visemes';
     this.streamLipsyncLang = opt.lipsyncLang || this.streamLipsyncLang || this.avatar.lipsyncLang || this.opt.lipsyncLang;
+    // Store callbacks for this streaming session
+    this.onAudioStart = onAudioStart;
+    this.onAudioEnd = onAudioEnd;
+    this.onMetrics = onMetrics;
 
     if (opt.sampleRate !== undefined) {
       const sr = opt.sampleRate;    
@@ -3395,41 +3411,79 @@ class TalkingHead {
       this.audioStreamGainNode.gain.value = opt.gain;
     }
 
-    if (!this.workletLoaded) {
-      try {
-        const loadPromise = this.audioCtx.audioWorklet.addModule(workletUrl.href);
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error("Worklet loading timed out")), 5000)
-        );
-        await Promise.race([loadPromise, timeoutPromise]);
-        this.workletLoaded = true;
-      } catch (error) {
-        console.error("Failed to load audio worklet:", error);
-        throw new Error("Failed to initialize streaming speech");
+    // Check if we need to create or recreate the worklet
+    const needsWorkletSetup = !this.streamWorkletNode || 
+                              !this.streamWorkletNode.port || 
+                              this.streamWorkletNode.numberOfOutputs === 0 ||
+                              this.streamWorkletNode.context !== this.audioCtx;
+
+    if (needsWorkletSetup) {
+      // Clean up existing worklet if it exists but is invalid
+      if (this.streamWorkletNode) {
+        try {
+          this.streamWorkletNode.disconnect();
+          this.streamWorkletNode = null;
+        } catch (e) {
+          // Ignore errors during cleanup
+        }
       }
+
+      if (!this.workletLoaded) {
+        try {
+          const loadPromise = this.audioCtx.audioWorklet.addModule(workletUrl.href);
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("Worklet loading timed out")), 5000)
+          );
+          await Promise.race([loadPromise, timeoutPromise]);
+          this.workletLoaded = true;
+        } catch (error) {
+          console.error("Failed to load audio worklet:", error);
+          throw new Error("Failed to initialize streaming speech");
+        }
+      }
+
+      this.streamWorkletNode = new AudioWorkletNode(this.audioCtx, 'playback-worklet', {
+        processorOptions: {
+          sampleRate: this.audioCtx.sampleRate,
+          metrics: opt.metrics || { enabled: false }
+        }
+      });
+
+      // Connect the node to the audio graph
+      this.streamWorkletNode.connect(this.audioStreamGainNode);
+      this.streamWorkletNode.connect(this.audioAnalyzerNode);
+
+      this.streamWorkletNode.port.onmessage = (event) => {
+
+        if(event.data.type === 'playback-started') {
+          this.isSpeaking = true;
+          this.stateName = "speaking";
+          if (this.streamWaitForAudioChunks) this.streamAudioStartTime = this.animClock;
+          this._processStreamLipsyncQueue();
+          this.speakWithHands();
+          if (this.onAudioStart) {
+            try { this.onAudioStart?.(); } catch(e) { console.error(e); }
+          }
+        }
+
+        if (event.data.type === 'playback-ended') {
+          this._streamPause();
+          if (this.onAudioEnd) {
+            try { this.onAudioEnd?.(); } catch(e) { console.error(e); }
+          }
+        }
+
+        // Forward diagnostic metrics if provided
+        if (this.onMetrics && event.data.type === 'metrics') {
+          try { this.onMetrics(event.data); } catch(e) { /* ignore */ }
+        }
+      };
     }
 
-    // Create and connect worklet node
-    this.streamWorkletNode = new AudioWorkletNode(this.audioCtx, 'playback-worklet');
-    
-    // Connect worklet through stream gain node for volume control
-    this.streamWorkletNode.connect(this.audioStreamGainNode);
-    this.streamWorkletNode.connect(this.audioAnalyzerNode);
-  
-    this.streamWorkletNode.port.onmessage = (event) => {
-
-      if(event.data.type === 'playback-started') {
-        this.streamAudioStartTime = this.animClock;
-        this._processStreamLipsyncQueue();
-        this.speakWithHands();
-        if (onAudioStart) onAudioStart();
-      }
-
-      if (event.data.type === 'playback-ended') {
-        this.streamStop();
-        if (onAudioEnd) onAudioEnd();
-      }
-    };
+    // Update metrics config if provided (can be different per session)
+    if (opt.metrics) {
+      try { this.streamWorkletNode.port.postMessage({ type: 'config-metrics', data: opt.metrics }); } catch(e) {}
+    }
 
     this.resetLips();
     this.lookAtCamera(500);
@@ -3443,7 +3497,7 @@ class TalkingHead {
       try {
         await Promise.race([resume, timeout]);
       } catch(e) {
-        console.log("Can't play audio. Web Audio API suspended. This is often due to calling some speak method before the first user action, which is typically prevented by the browser.");
+        console.warn("Can't play audio. Web Audio API suspended. This is often due to calling some speak method before the first user action, which is typically prevented by the browser.");
         return;
       }
     }
@@ -3459,28 +3513,51 @@ class TalkingHead {
     this.streamWorkletNode.port.postMessage({ type: 'no-more-data' });
   }
 
+  /**
+   * Interrupt ongoing stream audio and lipsync
+   */
+  streamInterrupt() {
+    if (this.streamWorkletNode) {
+      // tell worklet to stop.
+      try { this.streamWorkletNode.port.postMessage({type: 'stop'}); } catch(e) { /* ignore */ }
+    }
+    this._streamPause(true);
+  }
 
   /**
    * Stop streaming mode
+   * @param {boolean} disconnect - If true, also disconnect and cleanup the audio worklet
    */
   streamStop() {
+    this.streamInterrupt();
     if (this.streamWorkletNode) {
       try {
-        this.streamWorkletNode.port.postMessage({type: 'stop'});
         this.streamWorkletNode.disconnect();
-      } catch(e) { 
-        console.error('Error disconnecting streamWorkletNode:', e);
-        /* ignore */ 
-      }
-      this.streamWorkletNode = null;
+        this.streamWorkletNode = null;
+      } catch(e) { /* ignore */ }
     }
     this.isStreaming = false;
+  }
+  
+
+  /**
+   * Internal function to pause the speaking state after a speech utterance. 
+   * This is called when the audio stream ends or is interrupted.
+   * @param {boolean} interrupt_lipsync - If true, interrupts the lipsync
+   * @private
+   */
+  _streamPause(interrupt_lipsync = false) {
     this.isSpeaking = false;
     this.stateName = "idle";
-    this.streamAudioStartTime = 0;
-    if ( this.armature ) {
-      this.resetLips();
-      this.render();
+    if (this.streamWaitForAudioChunks) this.streamAudioStartTime = null;
+    this.streamLipsyncQueue = [];
+    // force stop the speech animation.
+    if(interrupt_lipsync) {
+      this.animQueue = this.animQueue.filter( x  => x.template.name !== 'viseme' && x.template.name !== 'subtitles' && x.template.name !== 'blendshapes' );
+      if ( this.armature ) {
+        this.resetLips();
+        this.render();
+      }
     }
   }
 
@@ -3490,7 +3567,7 @@ class TalkingHead {
  * @private
  */
   _processStreamLipsyncQueue() {
-    // console.log(`[TalkingHead] Processing ${this.streamLipsyncQueue.length} queued lipsync items.`);
+    if (!this.isStreaming) return;
     while (this.streamLipsyncQueue.length > 0) {
       const lipsyncPayload = this.streamLipsyncQueue.shift();
       // Pass the now confirmed streamAudioStartTime
@@ -3505,6 +3582,9 @@ class TalkingHead {
    * * @private
    */
   _processLipsyncData(r, audioStart) {
+    // Early return if streaming has been stopped
+    if (!this.isStreaming) return;
+    
     // Process visemes
     if (r.visemes && this.streamLipsyncType == 'visemes') {
       for (let i = 0; i < r.visemes.length; i++) {
@@ -3587,19 +3667,44 @@ class TalkingHead {
   */
   streamAudio(r) {
     if (!this.isStreaming || !this.streamWorkletNode) return;
+    this.isSpeaking = true;
+    this.stateName = "speaking";
 
-    if (r.audio instanceof ArrayBuffer) {
-        this.streamWorkletNode.port.postMessage(r.audio, [r.audio]);
-    } else if (r.audio instanceof Int16Array) {
-      // Fallback: r.audio is an Int16Array
-      this.streamWorkletNode.port.postMessage(r.audio); // No transfer list, so it gets cloned
-    } else {
-      console.error("r.audio is not an ArrayBuffer or Int16Array. Cannot process audio of this type:", r.audio);
+    // Process audio data if provided
+    if (r.audio !== undefined) {
+      const message = { type: 'audioData', data: null };
+
+      // Feed ArrayBuffer for performance. Other fallback formats require copy/conversion.
+      if (r.audio instanceof ArrayBuffer) {
+        message.data = r.audio;
+        this.streamWorkletNode.port.postMessage(message, [message.data]);
+      } 
+      else if (r.audio instanceof Int16Array || r.audio instanceof Uint8Array) {
+        const bufferCopy = r.audio.buffer.slice(r.audio.byteOffset, r.audio.byteOffset + r.audio.byteLength);
+        message.data = bufferCopy;
+        this.streamWorkletNode.port.postMessage(message, [message.data]);
+      } 
+      else if (r.audio instanceof Float32Array) {
+        // Convert Float32 -> Int16 PCM
+        const int16Buffer = new Int16Array(r.audio.length);
+        for (let i = 0; i < r.audio.length; i++) {
+            let s = Math.max(-1, Math.min(1, r.audio[i])); // clamp
+            int16Buffer[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+        }
+        message.data = int16Buffer.buffer;
+        this.streamWorkletNode.port.postMessage(message, [message.data]);
+      } 
+      else {
+          console.error("r.audio is not a supported type. Must be ArrayBuffer, Int16Array, Uint8Array, or Float32Array:", r.audio);
+      }
     }
 
     if(r.visemes || r.anims || r.words) {
-      if(!this.streamAudioStartTime) {
+      if(this.streamWaitForAudioChunks && !this.streamAudioStartTime) {
         // Lipsync data received before audio playback start. Queue the lipsync data.
+        if (this.streamLipsyncQueue.length >= 200) { // set maximum queue length
+            this.streamLipsyncQueue.shift();
+        }
         this.streamLipsyncQueue.push(r);
         return;
       }

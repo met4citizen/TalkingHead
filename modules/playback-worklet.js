@@ -1,146 +1,232 @@
 class PlaybackWorklet extends AudioWorkletProcessor {
-  constructor() {
+  static FSM = {
+    IDLE: 0,
+    PLAYING: 1,
+  };
+
+  constructor(options) {
     super();
     this.port.onmessage = this.handleMessage.bind(this);
-    this.bufferQueue = [];        // Queue to hold incoming ArrayBuffers
-    this.currentChunk = null;     // Int16Array view of the ArrayBuffer currently being processed
-    this.currentChunkOffset = 0;  // Index offset within the currentChunk
 
-    this.playbackStartedSignalled = false; // Flag to indicate if playback has started
-    this.noMoreData = false;          // Flag indicating the main thread won't send more audio data
-    this.playedAnyData = false;       // Tracks if any audio data has actually been processed/played
+    this._sampleRate = options?.processorOptions?.sampleRate || sampleRate;
+    this._scale = 1 / 32768; // PCM16 -> float
 
-    // Silence Detection
-    this.silenceFramesCount = 0;      // Counts consecutive process() calls with no data available from queue
-    const silenceDurationSeconds = 1.0; // Duration to consider as silence
-    this.silenceThresholdBlocks = Math.ceil((sampleRate * silenceDurationSeconds) / 128);
+    // Silence detection threshold (1 second) as a fallback safety net
+    const silenceDurationSeconds = 1.0;
+    this._silenceThresholdBlocks = Math.ceil((this._sampleRate * silenceDurationSeconds) / 128);
+
+    // Metrics configuration via options
+    const metricsCfg = options?.processorOptions?.metrics || {};
+    this._metricsEnabled = metricsCfg.enabled !== false;
+    const intervalHz = (typeof metricsCfg.intervalHz === "number" && metricsCfg.intervalHz > 0)
+      ? metricsCfg.intervalHz : 2;
+    // Metrics state (low-overhead)
+    this._framesProcessed = 0;
+    this._underrunBlocks = 0;
+    this._maxQueueSamples = 0;
+    this._lastMetricsSentAtFrame = 0;
+    // Convert to frames between reports
+    this._metricsIntervalFrames = Math.max(128, Math.round(this._sampleRate / intervalHz));
+
+    this.reset();
+  }
+
+  /**
+   * Resets the worklet to its initial IDLE state.
+   */
+  reset() {
+    this._bufferQueue = [];
+    this._currentChunk = null;
+    this._currentChunkOffset = 0;
+    this._state = PlaybackWorklet.FSM.IDLE;
+
+    this._noMoreDataReceived = false;
+    this._silenceFramesCount = 0;
+    this._hasSentEnded = false;
+    // Reset max queue tracker only when going idle
+    this._maxQueueSamples = 0;
   }
 
   handleMessage(event) {
-    const data = event.data;
+    const { type, data } = event.data;
 
-      // The main thread signaled no more audio data will come.
-    if (data?.type === "no-more-data") {
-      this.noMoreData = true;
+    // INTERRUPT: The main thread wants to stop immediately.
+    if (type === "stop") {
+      if (!this._hasSentEnded) {
+        this.port.postMessage({ type: "playback-ended" });
+        this._hasSentEnded = true;
+      }
+      // Send final metrics showing cleared state
+      if (this._metricsEnabled) {
+        try {
+          this.port.postMessage({
+            type: "metrics",
+            data: {
+              state: PlaybackWorklet.FSM.IDLE,
+              queuedSamples: 0,
+              queuedMs: 0,
+              maxQueuedMs: Math.round((this._maxQueueSamples / this._sampleRate) * 1000),
+              underrunBlocks: this._underrunBlocks,
+              framesProcessed: this._framesProcessed
+            }
+          });
+        } catch (_) { }
+      }
+      this.reset(); // Immediately reset to IDLE state, clearing all buffers
       return;
     }
 
-    if (data?.type === 'stop') {
-      this.stopRequested = true;
-      this.bufferQueue.length = 0;
-      this.currentChunk      = null;
-      this.currentChunkOffset = 0;
-      this.port.postMessage({ type: 'playback-ended' });
+    // Main thread has signaled that no more audio chunks will be sent for this utterance.
+    if (type === "no-more-data") {
+      this._noMoreDataReceived = true;
       return;
     }
 
-    if (data instanceof ArrayBuffer) {
-       this.bufferQueue.push(data);
-       this.silenceFramesCount = 0; // Reset silence counter
-    } else if (data instanceof Int16Array) {
-        const bufferCopy = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
-        this.bufferQueue.push(bufferCopy);
-        this.silenceFramesCount = 0; // Reset silence counter
-     } else {
-         console.error("Unsupported data type received.");
-     }
+    // Update metrics configuration at runtime
+    if (type === "config-metrics" && data && typeof data === "object") {
+      if ("enabled" in data) this._metricsEnabled = !!data.enabled;
+      if (typeof data.intervalHz === "number" && data.intervalHz > 0) {
+        const intervalHz = data.intervalHz;
+        this._metricsIntervalFrames = Math.max(128, Math.round(this._sampleRate / intervalHz));
+      }
+      // Reset pacing so the next report aligns with new interval
+      this._lastMetricsSentAtFrame = this._framesProcessed;
+      return;
+    }
+
+    // New audio data has arrived.
+    if (type === "audioData" && data instanceof ArrayBuffer) {
+      // If we were idle, this new data kicks off the playback.
+      if (this._state === PlaybackWorklet.FSM.IDLE) {
+        this._state = PlaybackWorklet.FSM.PLAYING;
+        this.port.postMessage({ type: "playback-started" });
+      }
+
+      // We only queue data if we are in the PLAYING state. This prevents
+      // data from a previous, interrupted stream from lingering.
+      if (this._state === PlaybackWorklet.FSM.PLAYING) {
+        // Store as Int16Array view to avoid constructing it in process()
+        this._bufferQueue.push(new Int16Array(data));
+        this._silenceFramesCount = 0; // Reset silence counter on new data
+      }
+    }
   }
 
   process(inputs, outputs, parameters) {
-    // Assume mono output channel
     const outputChannel = outputs[0]?.[0];
-
-    // If no output channel exists (e.g., context closing), stop processing.
     if (!outputChannel) {
-        // console.warn("No output channel available. Stopping.");
-        return false;
+      return true; // Keep alive even if output is temporarily disconnected
     }
 
-    if (this.stopRequested) {
+    // If we are not playing, just output silence and wait.
+    if (this._state !== PlaybackWorklet.FSM.PLAYING) {
       outputChannel.fill(0);
-      this.stopRequested = false;
-      this.resetStateAfterEnd();
-     return false;
+      return true; // Always return true to keep the processor alive
     }
 
-    const blockSize = outputChannel.length; // Number of sample frames needed (typically 128)
-    let samplesCopiedThisCycle = 0;
+    // Core PLAYING Logic
+    const blockSize = outputChannel.length;
+    let samplesCopied = 0;
 
-    // Continue until the output buffer for this cycle is full
-    while (samplesCopiedThisCycle < blockSize) {
-        // Check if we need a new chunk from the queue
-        if (!this.currentChunk || this.currentChunkOffset >= this.currentChunk.length) {
-            if (this.bufferQueue.length > 0) {
-                // Take the next ArrayBuffer and create an Int16Array view
-                const nextBuffer = this.bufferQueue.shift();
-                this.currentChunk = new Int16Array(nextBuffer);
-                this.currentChunkOffset = 0;
+    while (samplesCopied < blockSize) {
+      if (!this._currentChunk || this._currentChunkOffset >= this._currentChunk.length) {
+        if (this._bufferQueue.length > 0) {
+          this._currentChunk = this._bufferQueue.shift();
+          this._currentChunkOffset = 0;
+        } else {
+          // Buffer is empty. Check for end conditions.
+          const isTimedOut = this._silenceFramesCount > this._silenceThresholdBlocks;
 
-                // Signal playback start only once when the first chunk is ready
-                if (!this.playbackStartedSignalled) {
-                    this.port.postMessage({ type: "playback-started" });
-                    this.playbackStartedSignalled = true;
-                }
-            } else {
-                // Buffer queue is empty, and the current chunk (if any) is exhausted.
-                // Fill the rest of the output block with silence for this cycle.
-                for (let i = samplesCopiedThisCycle; i < blockSize; i++) {
-                    outputChannel[i] = 0;
-                }
-                // Increment silence counter *only if* playback had started
-                if(this.playbackStartedSignalled) {
-                    this.silenceFramesCount++;
-                }
-                // Exit the loop for this process() call
-                break;
+          if (this._noMoreDataReceived || isTimedOut) {
+            // END OF PLAYBACK: Either explicitly signaled or timed out.
+            if (!this._hasSentEnded) {
+              this.port.postMessage({ type: "playback-ended" });
+              this._hasSentEnded = true;
             }
+            // Send final metrics showing cleared state
+            if (this._metricsEnabled) {
+              try {
+                this.port.postMessage({
+                  type: "metrics",
+                  data: {
+                    state: PlaybackWorklet.FSM.IDLE,
+                    queuedSamples: 0,
+                    queuedMs: 0,
+                    maxQueuedMs: Math.round((this._maxQueueSamples / this._sampleRate) * 1000),
+                    underrunBlocks: this._underrunBlocks,
+                    framesProcessed: this._framesProcessed
+                  }
+                });
+              } catch (_) { }
+            }
+            this.reset(); // Reset to IDLE state for reuse
+            break; // Exit while loop
+          } else {
+            // BUFFER UNDERRUN (LAG): Play silence and wait for more data.
+            this._silenceFramesCount++;
+            if (this._metricsEnabled) this._underrunBlocks++;
+            break; // Exit while loop
+          }
         }
+      }
 
-        // Determine how many samples to copy from the current chunk
+      // If we have a chunk (could be a new one from the logic above), process it.
+      if (this._currentChunk) {
         const samplesToCopy = Math.min(
-            blockSize - samplesCopiedThisCycle,         // Remaining space in output buffer
-            this.currentChunk.length - this.currentChunkOffset // Remaining samples in current chunk
+          blockSize - samplesCopied,
+          this._currentChunk.length - this._currentChunkOffset
         );
-
-        // Copy and convert samples
+        // Directly write to outputChannel to avoid extra copy
+        const src = this._currentChunk;
+        const baseSrc = this._currentChunkOffset;
+        const baseDst = samplesCopied;
+        const scale = this._scale;
         for (let i = 0; i < samplesToCopy; i++) {
-            outputChannel[samplesCopiedThisCycle + i] = this.currentChunk[this.currentChunkOffset + i] / 32768.0;
+          outputChannel[baseDst + i] = src[baseSrc + i] * scale;
         }
 
-        // Update offsets and counters
-        this.currentChunkOffset += samplesToCopy;
-        samplesCopiedThisCycle += samplesToCopy;
-        this.playedAnyData = true;       // Mark that we've processed actual audio data
-        this.silenceFramesCount = 0;     // Reset silence counter
+        this._currentChunkOffset += samplesToCopy;
+        samplesCopied += samplesToCopy;
+      }
     }
 
-    // --- End Condition Checks ---
-    const queueIsEmpty = this.bufferQueue.length === 0;
-    const currentChunkFinished = !this.currentChunk || this.currentChunkOffset >= this.currentChunk.length;
-
-    // Explicit End: 'no-more-data' received, queue empty, current chunk done, and data was played.
-    if (this.noMoreData && queueIsEmpty && currentChunkFinished && this.playedAnyData) {
-        this.port.postMessage({ type: "playback-ended" });
-        this.resetStateAfterEnd(); // Prepare for potential reuse
-        return false; // Stop processing
+    // Zero-fill the remainder, if any, once per block
+    if (samplesCopied < blockSize) {
+      outputChannel.fill(0, samplesCopied);
     }
 
-    // Implicit End (Silence): Silence threshold exceeded after playback started.
-    if (this.playbackStartedSignalled && this.silenceFramesCount > this.silenceThresholdBlocks) {
-        this.port.postMessage({ type: "playback-ended" });
-        console.warn("playback-ended signal detected after silence");
-        this.resetStateAfterEnd();
-        return false; // Stop processing
+    // Update metrics (optional)
+    if (this._metricsEnabled) {
+      this._framesProcessed += blockSize;
+
+      // Track queue depth in samples (approximate)
+      let queuedSamples = 0;
+      if (this._currentChunk) queuedSamples += Math.max(0, this._currentChunk.length - this._currentChunkOffset);
+      for (let i = 0; i < this._bufferQueue.length; i++) queuedSamples += this._bufferQueue[i].length;
+      if (queuedSamples > this._maxQueueSamples) this._maxQueueSamples = queuedSamples;
+
+      // Periodically send metrics to main thread
+      if (this._framesProcessed - this._lastMetricsSentAtFrame >= this._metricsIntervalFrames) {
+        this._lastMetricsSentAtFrame = this._framesProcessed;
+        try {
+          this.port.postMessage({
+            type: "metrics",
+            data: {
+              state: this._state,
+              queuedSamples,
+              queuedMs: Math.round((queuedSamples / this._sampleRate) * 1000),
+              maxQueuedMs: Math.round((this._maxQueueSamples / this._sampleRate) * 1000),
+              underrunBlocks: this._underrunBlocks,
+              framesProcessed: this._framesProcessed
+            }
+          });
+        } catch (_) { }
+        // Don't reset max tracker - keep session peak until idle
+      }
     }
+
+    // ALWAYS return true to keep the processor alive for reuse.
     return true;
-  }
-
-  // Resets flags after playback ends, allowing potential reuse without full recreation.
-  resetStateAfterEnd() {
-    this.noMoreData = false;
-    this.playbackStartedSignalled = false;
-    this.playedAnyData = false;
-    this.silenceFramesCount = 0;
   }
 }
 
