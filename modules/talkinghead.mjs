@@ -756,6 +756,8 @@ class TalkingHead {
       'nn', 'RR', 'CH', 'sil'
     ];
 
+    // Grapheme segmenter
+    this.segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
 
     // Audio context and playlist
     this.initAudioGraph();
@@ -2744,7 +2746,7 @@ class TalkingHead {
     let markId = 0; // SSML mark id
     let ttsSentence = []; // Text-to-speech sentence
     let lipsyncAnim = []; // Lip-sync animation sequence
-    const letters = [...s];
+    const letters = Array.from(this.segmenter.segment(s), x => x.segment);
     for( let i=0; i<letters.length; i++ ) {
       const isLast = i === (letters.length-1);
       const isSpeakable = letters[i].match(speakables);
