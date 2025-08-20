@@ -1212,6 +1212,10 @@ class TalkingHead {
     this.armature = gltf.scene.getObjectByName( this.opt.modelRoot );
     this.armature.scale.setScalar(1);
 
+    // Expose GLB animations and userData
+    this.animations = gltf.animations;
+    this.userData = gltf.userData;
+
     // Morph targets
     this.morphs = [];
     this.armature.traverse( x => {
