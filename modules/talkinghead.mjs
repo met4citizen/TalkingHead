@@ -4574,6 +4574,33 @@ class TalkingHead {
     }
   }
 
+  /**
+  * Dispose the instance.
+  */
+  dispose() {
+    
+    // Stop animation, clear speech queue, stop stream
+    this.stop();
+    this.stopSpeaking();
+    this.streamStop();
+
+    // Dispose Three.JS objects
+    if ( this.isAvatarOnly ) {
+      if ( this.armature ) {
+        if ( this.armature.parent ) {
+          this.armature.parent.remove(this.armature);
+        }
+        this.clearThree(this.armature);
+      }
+    } else {
+      this.clearThree(this.scene);
+      this.resizeobserver.disconnect();
+    }
+    this.clearThree( this.ikMesh );
+    this.dynamicbones.dispose();
+
+  }
+
 }
 
 export { TalkingHead };
