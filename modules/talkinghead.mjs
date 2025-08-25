@@ -121,7 +121,7 @@ class TalkingHead {
     this.nodeAvatar = node;
     this.opt = {
       jwtGet: null, // Function to get JSON Web Token
-      ttsEndpoint: null,
+      ttsEndpoint: "",
       ttsApikey: null,
       ttsTrimStart: 0,
       ttsTrimEnd: 400,
@@ -175,6 +175,9 @@ class TalkingHead {
       listeningActiveThresholdMs: 300,
       listeningActiveDurationMax: 240000,
       update: null,
+      avatarOnly: false,
+      avatarOnlyScene: null,
+      avatarOnlyCamera: null,
       statsNode: null,
       statsStyle: null
     };
@@ -811,52 +814,57 @@ class TalkingHead {
       } else {
         throw new Error("There was no support for either OGG or MP3 audio.");
       }
-    } else {
-      throw new Error("You must provide some Google-compliant Text-To-Speech Endpoint.");
     }
 
+    // Avatar only mode
+    this.isAvatarOnly = this.opt.avatarOnly;
 
     // Setup 3D Animation
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    this.renderer.setPixelRatio( this.opt.modelPixelRatio * window.devicePixelRatio );
-    this.renderer.setSize(this.nodeAvatar.clientWidth, this.nodeAvatar.clientHeight);
-    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.shadowMap.enabled = false;
-    this.nodeAvatar.appendChild( this.renderer.domElement );
-    this.camera = new THREE.PerspectiveCamera( 10, this.nodeAvatar.clientWidth / this.nodeAvatar.clientHeight, 0.1, 2000 );
-    this.scene = new THREE.Scene();
-    this.lightAmbient = new THREE.AmbientLight(
-      new THREE.Color( this.opt.lightAmbientColor ),
-      this.opt.lightAmbientIntensity
-    );
-    this.lightDirect = new THREE.DirectionalLight(
-      new THREE.Color( this.opt.lightDirectColor ),
-      this.opt.lightDirectIntensity
-    );
-    this.lightSpot = new THREE.SpotLight(
-      new THREE.Color( this.opt.lightSpotColor ),
-      this.opt.lightSpotIntensity,
-      0,
-      this.opt.lightSpotDispersion
-    );
-    this.setLighting( this.opt );
-    const pmremGenerator = new THREE.PMREMGenerator( this.renderer );
-    pmremGenerator.compileEquirectangularShader();
-    this.scene.environment = pmremGenerator.fromScene( new RoomEnvironment() ).texture;
-    this.resizeobserver = new ResizeObserver(this.onResize.bind(this));
-    this.resizeobserver.observe(this.nodeAvatar);
+    if ( this.isAvatarOnly ) {
+      this.scene = this.opt.avatarOnlyScene;
+      this.camera = this.opt.avatarOnlyCamera;
+    } else {
+      this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      this.renderer.setPixelRatio( this.opt.modelPixelRatio * window.devicePixelRatio );
+      this.renderer.setSize(this.nodeAvatar.clientWidth, this.nodeAvatar.clientHeight);
+      this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+      this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      this.renderer.shadowMap.enabled = false;
+      this.nodeAvatar.appendChild( this.renderer.domElement );
+      this.camera = new THREE.PerspectiveCamera( 10, this.nodeAvatar.clientWidth / this.nodeAvatar.clientHeight, 0.1, 2000 );
+      this.scene = new THREE.Scene();
+      this.lightAmbient = new THREE.AmbientLight(
+        new THREE.Color( this.opt.lightAmbientColor ),
+        this.opt.lightAmbientIntensity
+      );
+      this.lightDirect = new THREE.DirectionalLight(
+        new THREE.Color( this.opt.lightDirectColor ),
+        this.opt.lightDirectIntensity
+      );
+      this.lightSpot = new THREE.SpotLight(
+        new THREE.Color( this.opt.lightSpotColor ),
+        this.opt.lightSpotIntensity,
+        0,
+        this.opt.lightSpotDispersion
+      );
+      this.setLighting( this.opt );
+      const pmremGenerator = new THREE.PMREMGenerator( this.renderer );
+      pmremGenerator.compileEquirectangularShader();
+      this.scene.environment = pmremGenerator.fromScene( new RoomEnvironment() ).texture;
+      this.resizeobserver = new ResizeObserver(this.onResize.bind(this));
+      this.resizeobserver.observe(this.nodeAvatar);
 
-    this.controls = new OrbitControls( this.camera, this.renderer.domElement );
-    this.controls.enableZoom = this.opt.cameraZoomEnable;
-    this.controls.enableRotate = this.opt.cameraRotateEnable;
-    this.controls.enablePan = this.opt.cameraPanEnable;
-    this.controls.minDistance = 2;
-    this.controls.maxDistance = 2000;
-    this.controls.autoRotateSpeed = 0;
-    this.controls.autoRotate = false;
-    this.controls.update();
-    this.cameraClock = null;
+      this.controls = new OrbitControls( this.camera, this.renderer.domElement );
+      this.controls.enableZoom = this.opt.cameraZoomEnable;
+      this.controls.enableRotate = this.opt.cameraRotateEnable;
+      this.controls.enablePan = this.opt.cameraPanEnable;
+      this.controls.minDistance = 2;
+      this.controls.maxDistance = 2000;
+      this.controls.autoRotateSpeed = 0;
+      this.controls.autoRotate = false;
+      this.controls.update();
+      this.cameraClock = null;
+    }
 
     // IK Mesh
     this.ikMesh = new THREE.SkinnedMesh();
@@ -1206,8 +1214,14 @@ class TalkingHead {
 
     // Clear previous scene, if avatar was previously loaded
     this.mixer = null;
-    if ( this.armature ) {
-      this.clearThree( this.scene );
+    if ( this.isAvatarOnly ) {
+      if ( this.armature ) {
+        this.clearThree( this.armature );
+      }
+    } else {
+      if ( this.armature ) {
+        this.clearThree( this.scene );
+      }
     }
 
     // Avatar full-body
@@ -1317,14 +1331,20 @@ class TalkingHead {
       }
     });
 
-    // Add avatar to scene
-    this.scene.add(gltf.scene);
+    if ( this.isAvatarOnly ) {
+      if ( this.scene ) {
+        this.scene.add( this.armature );
+      }
+    } else {
+      // Add avatar to scene
+      this.scene.add(gltf.scene);
 
-    // Add lights
-    this.scene.add( this.lightAmbient );
-    this.scene.add( this.lightDirect );
-    this.scene.add( this.lightSpot );
-    this.lightSpot.target = this.armature.getObjectByName('Head');
+      // Add lights
+      this.scene.add( this.lightAmbient );
+      this.scene.add( this.lightDirect );
+      this.scene.add( this.lightSpot );
+      this.lightSpot.target = this.armature.getObjectByName('Head');
+    }
 
     // Setup Dynamic Bones
     if ( avatar.hasOwnProperty("modelDynamicBones") ) {
@@ -1391,6 +1411,9 @@ class TalkingHead {
     this.viewName = view || this.viewName;
     opt = opt || {};
 
+    // In avatarOnly mode we do not control the camera
+    if ( this.isAvatarOnly ) return;
+
     // Camera controls
     const cameraX = opt.hasOwnProperty("cameraX") ? opt.cameraX : this.opt.cameraX;
     const cameraY = opt.hasOwnProperty("cameraY") ? opt.cameraY : this.opt.cameraY;
@@ -1441,6 +1464,7 @@ class TalkingHead {
   * @param {Object} opt Options
   */
   setLighting(opt) {
+    if ( this.isAvatarOnly ) return;
     opt = opt || {};
 
     // Ambient light
@@ -1485,7 +1509,7 @@ class TalkingHead {
   * Render scene.
   */
   render() {
-    if ( this.isRunning ) {
+    if ( this.isRunning && !this.isAvatarOnly ) {
       this.renderer.render( this.scene, this.camera );
     }
   }
@@ -1494,11 +1518,13 @@ class TalkingHead {
   * Resize avatar.
   */
   onResize() {
-    this.camera.aspect = this.nodeAvatar.clientWidth / this.nodeAvatar.clientHeight;
-    this.camera.updateProjectionMatrix();
-    this.renderer.setSize( this.nodeAvatar.clientWidth, this.nodeAvatar.clientHeight );
-    this.controls.update();
-    this.render();
+    if ( !this.isAvatarOnly ) {
+      this.camera.aspect = this.nodeAvatar.clientWidth / this.nodeAvatar.clientHeight;
+      this.camera.updateProjectionMatrix();
+      this.renderer.setSize( this.nodeAvatar.clientWidth, this.nodeAvatar.clientHeight );
+      this.controls.update();
+      this.render();
+    }
   }
 
   /**
@@ -2293,20 +2319,24 @@ class TalkingHead {
 
   /**
   * Animate the avatar.
-  * @param {number} t High precision timestamp in ms.
+  * @param {number} t High precision timestamp in ms. In avatarOnly mode delta.
   */
   animate(t) {
 
     // Are we running?
     if ( !this.isRunning ) return;
-    requestAnimationFrame( this.animate.bind(this) );
 
-    // Delta time
-    let dt = t - this.animTimeLast;
-    if ( dt < this.animFrameDur ) return;
+    let dt;
+    if ( this.isAvatarOnly ) {
+      dt = t;
+    } else {
+      requestAnimationFrame( this.animate.bind(this) );
+      dt = t - this.animTimeLast;
+      if ( dt < this.animFrameDur ) return;
+      this.animTimeLast = t;
+    }
     dt = dt / this.animSlowdownRate;
     this.animClock += dt;
-    this.animTimeLast = t;
 
     let i,j,l,k,vol=0;
 
@@ -2571,7 +2601,7 @@ class TalkingHead {
     if ( dt > 2 * this.animFrameDur ) dt = 2 * this.animFrameDur;
 
     // Randomize facial expression by changing baseline
-    if ( this.viewName !== 'full' ) {
+    if ( this.viewName !== 'full' || this.isAvatarOnly) {
       i = this.mtRandomized[ Math.floor( Math.random() * this.mtRandomized.length ) ];
       j = this.mtAvatar[i];
       if ( !j.needsUpdate ) {
@@ -2617,7 +2647,9 @@ class TalkingHead {
     // Hip-feet balance
     box.setFromObject( this.armature );
     this.objectLeftToeBase.getWorldPosition(v);
+    v.sub(this.armature.position);
     this.objectRightToeBase.getWorldPosition(w);
+    w.sub(this.armature.position);
     this.objectHips.position.y -= box.min.y / 2;
     this.objectHips.position.x -= (v.x+w.x)/4;
     this.objectHips.position.z -= (v.z+w.z)/2;
@@ -2633,40 +2665,51 @@ class TalkingHead {
     // Update morph targets
     this.updateMorphTargets(dt);
 
-    // Camera
-    if ( this.cameraClock !== null && this.cameraClock < 1000 ) {
-      this.cameraClock += dt;
-      if ( this.cameraClock > 1000 ) this.cameraClock = 1000;
-      let s = new THREE.Spherical().setFromVector3(this.cameraStart);
-      let sEnd = new THREE.Spherical().setFromVector3(this.cameraEnd);
-      s.phi += this.easing(this.cameraClock / 1000) * (sEnd.phi - s.phi);
-      s.theta += this.easing(this.cameraClock / 1000) * (sEnd.theta - s.theta);
-      s.radius += this.easing(this.cameraClock / 1000) * (sEnd.radius - s.radius);
-      s.makeSafe();
-      this.camera.position.setFromSpherical( s );
-      if ( this.controlsStart.x !== this.controlsEnd.x ) {
-        this.controls.target.copy( this.controlsStart.lerp( this.controlsEnd, this.easing(this.cameraClock / 1000) ) );
-      } else {
-        s.setFromVector3(this.controlsStart);
-        sEnd.setFromVector3(this.controlsEnd);
+    // Finalize
+    if ( this.isAvatarOnly ) {
+
+      // Statistics end
+      if ( this.stats ) {
+        this.stats.end();
+      }
+
+    } else {
+
+      // Camera
+      if ( this.cameraClock !== null && this.cameraClock < 1000 ) {
+        this.cameraClock += dt;
+        if ( this.cameraClock > 1000 ) this.cameraClock = 1000;
+        let s = new THREE.Spherical().setFromVector3(this.cameraStart);
+        let sEnd = new THREE.Spherical().setFromVector3(this.cameraEnd);
         s.phi += this.easing(this.cameraClock / 1000) * (sEnd.phi - s.phi);
         s.theta += this.easing(this.cameraClock / 1000) * (sEnd.theta - s.theta);
         s.radius += this.easing(this.cameraClock / 1000) * (sEnd.radius - s.radius);
         s.makeSafe();
-        this.controls.target.setFromSpherical( s );
+        this.camera.position.setFromSpherical( s );
+        if ( this.controlsStart.x !== this.controlsEnd.x ) {
+          this.controls.target.copy( this.controlsStart.lerp( this.controlsEnd, this.easing(this.cameraClock / 1000) ) );
+        } else {
+          s.setFromVector3(this.controlsStart);
+          sEnd.setFromVector3(this.controlsEnd);
+          s.phi += this.easing(this.cameraClock / 1000) * (sEnd.phi - s.phi);
+          s.theta += this.easing(this.cameraClock / 1000) * (sEnd.theta - s.theta);
+          s.radius += this.easing(this.cameraClock / 1000) * (sEnd.radius - s.radius);
+          s.makeSafe();
+          this.controls.target.setFromSpherical( s );
+        }
+        this.controls.update();
       }
-      this.controls.update();
+
+      // Autorotate
+      if ( this.controls.autoRotate ) this.controls.update();
+
+      // Statistics end
+      if ( this.stats ) {
+        this.stats.end();
+      }
+
+      this.render();
     }
-
-    // Autorotate
-    if ( this.controls.autoRotate ) this.controls.update();
-
-    // Statistics end
-    if ( this.stats ) {
-      this.stats.end();
-    }
-
-    this.render();
 
   }
 
@@ -3794,6 +3837,7 @@ class TalkingHead {
   * @param {number} t Time in milliseconds
   */
   lookAt(x,y,t) {
+    if ( !this.camera ) return; // Can't be done w/o knowing the camera location
 
     // Eyes position
     const rect = this.nodeAvatar.getBoundingClientRect();
@@ -3812,7 +3856,8 @@ class TalkingHead {
     if ( y === null ) y = eyesy;
 
     // Use body/camera rotation to determine the required head rotation
-    q.copy( this.poseTarget.props['Hips.quaternion'] );
+    q.copy( this.armature.quaternion );
+    q.multiply( this.poseTarget.props['Hips.quaternion'] );
     q.multiply( this.poseTarget.props['Spine.quaternion'] );
     q.multiply( this.poseTarget.props['Spine1.quaternion'] );
     q.multiply( this.poseTarget.props['Spine2.quaternion'] );
@@ -3872,6 +3917,7 @@ class TalkingHead {
   * @return {Boolean} If true, (x,y) touch the avatar
   */
   touchAt(x,y) {
+    if ( !this.camera ) return; // Can't be done w/o knowing the camera location
 
     const rect = this.nodeAvatar.getBoundingClientRect();
     const pointer = new THREE.Vector2(
@@ -4035,7 +4081,9 @@ class TalkingHead {
       this.audioCtx.resume();
       this.animTimeLast = performance.now();
       this.isRunning = true;
-      requestAnimationFrame( this.animate.bind(this) );
+      if ( !this.isAvatarOnly ) {
+        requestAnimationFrame( this.animate.bind(this) );
+      }
     }
   }
 
@@ -4453,7 +4501,7 @@ class TalkingHead {
     root.position.setFromMatrixPosition( this.armature.getObjectByName(ik.root).matrixWorld );
     root.quaternion.setFromRotationMatrix( this.armature.getObjectByName(ik.root).matrixWorld );
     if ( target && relative ) {
-      target.add( root.position );
+      target.applyQuaternion(this.armature.quaternion).add( root.position );
     }
     const effector = this.ikMesh.getObjectByName(ik.effector);
     const links = ik.links;

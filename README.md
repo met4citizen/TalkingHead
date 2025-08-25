@@ -170,6 +170,9 @@ Option | Description | Default
 `listeningActive`<br>`ThresholdLevel` | Activity detection threshold in the range of [0,100]. If the volume stays above the set level for the set duration, a `"start"` event is triggered. | `90`
 `listeningActive`<br>`ThresholdMs` | Activity detection duration in milliseconds. If the volume stays above the set level for the set duration, a `"start"` event is triggered. | `400`
 `listeningActive`<br>`DurationMax` | Maximum activity in milliseconds before `"maxactive"` event is triggered. | `240000`
+`avatarOnly` | If `true`, creates an avatar armature object instead of a standalone instance with a 3D scene, lights, and renderer. Read Appendix H for more details about the `avatarOnly` mode. (EXPERIMENTAL) | `false`
+`avatarOnlyCamera` | In `avatarOnly` mode, sets the camera to which the avatar is linked. | `null`
+`avatarOnlyScene` | If set in `avatarOnly` mode, the armature object is automatically added to the specified scene. | `null`
 `update` | Custom callback function inside the `requestAnimationFrame` animation loop. Enables the app to do custom processing before rendering the 3D scene. If `null`, disabled. | `null`
 `statsNode` | Parent DOM element for the three.js stats display. If `null`, don't use. | `null`
 `statsStyle` | CSS style for the stats element. If `null`, use the three.js default style. | `null`
@@ -840,3 +843,66 @@ Forces an immediate end to the streaming session. All queued audio and lip-sync 
 #### Example Usage
 
 Refer to the example provided in the repository `azure-audio-streaming.html` on how to integrate this interface with Azure TTS streamed audio.
+
+---
+
+### Appendix H: Avatar-Only Mode (EXPERIMENTAL)
+
+> [!WARNING]
+> This is still an experimental feature, so expect rapid changes.
+
+By default, the TalkingHead class operates in standalone mode, creating its own 3D scene,
+renderer, lights, and other 3D components. If you already have your own 3D scene,
+you can create an avatar-only instance and call the `head.animate(dt)` update function
+from within your own renderer. For example:
+
+```javascript
+// Create avatarOnly instance and load
+const head = new TalkingHead( container, {
+  /* ... */
+  avatarOnly: true, // set avatarOnly mode
+  avatarOnlyCamera: camera // Your camera avatar talks to
+});
+await head.showAvatar({ /* ... */ });
+
+// Add to your own scene
+head.armature.position.set(1,0,0);
+head.armature.rotation.set(0,0.5,0);
+scene.add(head.armature);
+
+// You own animation loop
+const clock = new THREE.Clock();
+function animate() {
+  const delta = clock.getDelta();
+  head.animate(delta * 1000); // Update avatar
+  renderer.render( scene, camera );
+}
+renderer.setAnimationLoop(animate);
+```
+
+You can also add `avatarOnly` armatures to your standalone TalkingHead scene
+to have multiple avatars in one scene. For example:
+
+```javascript
+let headStandalone, headAvatarOnly;
+
+// Standalone instance
+headStandalone = new TalkingHead( container, {
+  /* ... */
+  update: (dt) => { headAvatarOnly?.animate(dt); }
+});
+await headStandalone.showAvatar({ /* ... */ });
+
+// avatarOnly instance
+headAvatarOnly = new TalkingHead( container, {
+  /* ... */
+  avatarOnly: true, // set avatarOnly mode
+  avatarOnlyCamera: headStandalone.camera // Standalone camera
+});
+await headAvatarOnly.showAvatar({ /* ... */ });
+
+// Add avatarOnly to standalone scene
+headAvatarOnly.armature.position.set(1,0,0);
+headStandalone.scene.add( headAvatarOnly.armature );
+```
+
