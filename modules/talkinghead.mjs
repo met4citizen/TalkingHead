@@ -3816,16 +3816,111 @@ class TalkingHead {
   */
   lookAtCamera(t) {
 
-    if ( this.avatar.hasOwnProperty('avatarIgnoreCamera') ) {
-      if ( this.avatar.avatarIgnoreCamera ) {
-        this.lookAhead(t);
-      } else {
-        this.lookAt( null, null, t );
+    // Calculate the target
+    let target;
+    if ( this.speakTo ) {
+      target = new THREE.Vector3();
+      if ( this.speakTo.objectLeftEye?.isObject3D ) {
+
+        // Target eyes
+        const o = this.speakTo.armature.objectHead;
+        this.speakTo.objectLeftEye.updateMatrixWorld(true);
+        this.speakTo.objectRightEye.updateMatrixWorld(true);
+        v.setFromMatrixPosition(this.speakTo.objectLeftEye.matrixWorld);
+        w.setFromMatrixPosition(this.speakTo.objectRightEye.matrixWorld);
+        target.addVectors(v,w).divideScalar( 2 );
+
+      } else if ( this.speakTo.isObject3D ) {
+        this.speakTo.getWorldPosition(target);
+      } else if ( this.speakTo.isVector3 ) {
+        target.set( this.speakTo );
+      } else if ( this.speakTo.x && this.speakTo.y && this.speakTo.z ) {
+        target.set( this.speakTo.x, this.speakTo.y, this.speakTo.z );
       }
-    } else if ( this.opt.avatarIgnoreCamera ) {
-      this.lookAhead(t);
-    } else {
-      this.lookAt( null, null, t );
+    }
+    
+    // If we don't have a target, look ahead or to the screen
+    if ( !target ) {
+      if ( this.avatar.hasOwnProperty('avatarIgnoreCamera') ) {
+        if ( this.avatar.avatarIgnoreCamera ) {
+          this.lookAhead(t);
+          return;
+        }
+      } else if ( this.opt.avatarIgnoreCamera ) {
+        this.lookAhead(t);
+        return;
+      }
+      this.lookAt(null,null,t);
+      return;
+    }
+
+    // TODO: Improve the logic, if possible
+
+    // Eyes position and head world rotation
+    this.objectLeftEye.updateMatrixWorld(true);
+    this.objectRightEye.updateMatrixWorld(true);
+    v.setFromMatrixPosition(this.objectLeftEye.matrixWorld);
+    w.setFromMatrixPosition(this.objectRightEye.matrixWorld);
+    v.add(w).divideScalar( 2 );
+    q.copy( this.armature.quaternion );
+    q.multiply( this.poseTarget.props['Hips.quaternion'] );
+    q.multiply( this.poseTarget.props['Spine.quaternion'] );
+    q.multiply( this.poseTarget.props['Spine1.quaternion'] );
+    q.multiply( this.poseTarget.props['Spine2.quaternion'] );
+    q.multiply( this.poseTarget.props['Neck.quaternion'] );
+    q.multiply( this.poseTarget.props['Head.quaternion'] );
+
+    // Direction from object to speakto target
+    const dir = new THREE.Vector3().subVectors(target, v).normalize();
+
+    // Remove roll: compute yaw + pitch only
+    const yaw   = Math.atan2(dir.x, dir.z); // rotation around Y
+    const pitch = Math.asin(-dir.y); // rotation around X
+    const roll  = 0; // force to 0
+
+    // Desired rotation with Z locked
+    e.set(pitch, yaw, roll, 'YXZ');
+    const desiredQ  = new THREE.Quaternion().setFromEuler(e);
+
+    // Rotation difference
+    const deltaQ = new THREE.Quaternion().copy(desiredQ).multiply(q.clone().invert());
+
+    // Convert to Euler (Z will be ~0 by construction)
+    e.setFromQuaternion(deltaQ, 'YXZ');
+    let rx = e.x / (40/24) + 0.2; // Refer to setValue(bodyRotateX)
+    let ry = e.y / (9/4); // Refer to setValue(bodyRotateY)
+    let rotx = Math.min(0.6,Math.max(-0.3,rx));
+    let roty = Math.min(0.8,Math.max(-0.8,ry));
+
+    // Randomize head/eyes ratio
+    let drotx = (Math.random() - 0.5) / 4;
+    let droty = (Math.random() - 0.5) / 4;
+
+    if ( t ) {
+
+      // Remove old, if any
+      let old = this.animQueue.findIndex( y => y.template.name === 'lookat' );
+      if ( old !== -1 ) {
+        this.animQueue.splice(old, 1);
+      }
+
+      // Add new anim
+      const templateLookAt = {
+        name: 'lookat',
+        dt: [750,t],
+        vs: {
+          bodyRotateX: [ rotx + drotx ],
+          bodyRotateY: [ roty + droty ],
+          eyesRotateX: [ - 3 * drotx + 0.1 ],
+          eyesRotateY: [ - 5 * droty ],
+          browInnerUp: [[0,0.7]],
+          mouthLeft: [[0,0.7]],
+          mouthRight: [[0,0.7]],
+          eyeContact: [0],
+          headMove: [0]
+        }
+      };
+      this.animQueue.push( this.animFactory( templateLookAt ) );
     }
 
   }

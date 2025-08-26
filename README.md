@@ -906,3 +906,14 @@ headAvatarOnly.armature.position.set(1,0,0);
 headStandalone.scene.add( headAvatarOnly.armature );
 ```
 
+If you want one TalkingHead avatar to speak to another, set its
+`speakTo` property. The value can be another TalkingHead
+instance, any 3D object, or a world position. For example, to make
+two avatars talk to each other:
+
+```javascript
+headAvatarOnly.speakTo = headStandalone;
+headStandalone.speakTo = headAvatarOnly;
+```
+
+If you want the avatar to address the user again, set `speakTo` value to `null`.
