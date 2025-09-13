@@ -17,7 +17,11 @@ export const site = {
     "lv-M": { id: "lv-LV-Standard-A" },
     "lt-M": { id: "lt-LT-Standard-A" },
     "en-F": { id: "en-GB-Standard-A" },
-    "en-M": { id: "en-GB-Standard-D" }
+    "en-M": { id: "en-GB-Standard-D" },
+    "fr-F": { id: "fr-FR-Standard-A" },
+    "fr-M": { id: "fr-FR-Standard-B" },
+    "de-F": { id: "de-DE-Standard-G" },
+    "de-M": { id: "de-DE-Standard-H" },
   },
 
   // ElevenLab voices
@@ -40,6 +44,10 @@ export const site = {
     "fi-Harri": { lang: "fi-FI", id: "fi-FI-HarriNeural" },
     "en-Jenny": { lang: "en-US", id: "en-US-JennyNeural" },
     "en-Tony": { lang: "en-US", id: "en-US-TonyNeural" },
+    "fr-Vivienne": { lang: "fr-FR", id: "fr-FR-VivienneMultilingualNeural" },
+    "fr-Lucien": { lang: "fr-FR", id: "fr-FR-LucienMultilingualNeural" },
+    "de-Seraphina": { lang: "de-DE", id: "de-DE-SeraphinaMultilingualNeural" },
+    "de-Florian": { lang: "de-DE", id: "de-DE-FlorianMultilingualNeural" },
   },
 
   // Preset views
@@ -90,7 +98,7 @@ export const site = {
 
   // Background ambient sounds/music
   music: {
-    'Murmur': { url: './audio/murmur.mp3', fi: 'Puheensorina'}
+    'Murmur': { url: './audio/murmur.mp3', fi: 'Puheensorina'}
   }
 
 };

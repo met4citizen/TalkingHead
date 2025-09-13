@@ -47,7 +47,7 @@ RPM models. See Appendix A for more details.
 
 By default, the class uses
 [Google Cloud TTS](https://cloud.google.com/text-to-speech) for text-to-speech
-and has a built-in lip-sync support for English, Finnish, and Lithuanian (beta).
+and has a built-in lip-sync support for English, German, French, Finnish, and Lithuanian.
 New lip-sync languages can be added by creating new lip-sync language modules.
 
 It is also possible to integrate the TalkingHead class with any external
