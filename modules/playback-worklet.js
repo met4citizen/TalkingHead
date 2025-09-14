@@ -96,6 +96,7 @@ class PlaybackWorklet extends AudioWorkletProcessor {
 
     // New audio data has arrived.
     if (type === "audioData" && data instanceof ArrayBuffer) {
+      this._noMoreDataReceived = false;
       // If we were idle, this new data kicks off the playback.
       if (this._state === PlaybackWorklet.FSM.IDLE) {
         this._state = PlaybackWorklet.FSM.PLAYING;
