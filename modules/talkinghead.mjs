@@ -3431,7 +3431,9 @@ class TalkingHead {
 
     this.isStreaming = true;
     this.streamInterruptAt = null;
-    if (opt.waitForAudioChunks) this.streamWaitForAudioChunks = opt.waitForAudioChunks;
+    if (opt.waitForAudioChunks !== undefined) {
+      this.streamWaitForAudioChunks = opt.waitForAudioChunks;
+    }
     if (!this.streamWaitForAudioChunks) { this.streamAudioStartTime = this.animClock; }
     this.streamLipsyncQueue = [];
     this.streamLipsyncType = opt.lipsyncType || this.streamLipsyncType || 'visemes';
