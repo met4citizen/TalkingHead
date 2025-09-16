@@ -898,7 +898,6 @@ class TalkingHead {
     this.streamLipsyncLang = null;
     this.streamLipsyncType = "visemes";
     this.streamLipsyncQueue = [];
-    this.streamInterruptAt = null;
   }
 
   /**
@@ -3430,7 +3429,6 @@ class TalkingHead {
     this.stopSpeaking(); // Stop the speech queue mode
 
     this.isStreaming = true;
-    this.streamInterruptAt = null;
     if (opt.waitForAudioChunks !== undefined) {
       this.streamWaitForAudioChunks = opt.waitForAudioChunks;
     }
@@ -3520,10 +3518,6 @@ class TalkingHead {
         }
 
         if (event.data.type === 'playback-ended') {
-          if (this.streamInterruptAt) {
-              this.streamInterruptAt = null;
-              return;
-          }
           this._streamPause();
           if (this.onAudioEnd) {
               try { this.onAudioEnd(); } catch(e) {}
@@ -3577,7 +3571,6 @@ class TalkingHead {
       if (!this.isStreaming) return;
       const wasSpeaking = this.isSpeaking;
 
-      this.streamInterruptAt = performance.now();
       if (this.streamWorkletNode) {
           try { this.streamWorkletNode.port.postMessage({type: 'stop'}); } catch(e) {}
       }

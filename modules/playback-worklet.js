@@ -53,7 +53,6 @@ class PlaybackWorklet extends AudioWorkletProcessor {
     // INTERRUPT: The main thread wants to stop immediately.
     if (type === "stop") {
       if (!this._hasSentEnded) {
-        this.port.postMessage({ type: "playback-ended" });
         this._hasSentEnded = true;
       }
       // Send final metrics showing cleared state
