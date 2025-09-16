@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TalkingHead Streaming API - Test Suite</title>
+    <style>
+        :root {
+            --color-bg: #f0f2f5;
+            --color-surface: #ffffff;
+            --color-border: #d9d9d9;
+            --color-text-primary: #262626;
+            --color-text-secondary: #595959;
+            --color-primary: #1890ff;
+            --color-success: #52c41a;
+            --color-warning: #faad14;
+            --color-danger: #f5222d;
+            --color-idle: #bfbfbf;
+            --border-radius: 6px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+            margin: 0;
+            padding: 24px;
+            background-color: var(--color-bg);
+            color: var(--color-text-primary);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 24px;
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        
+        .test-suite-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        h1 { margin: 0; font-size: 24px; color: var(--color-text-primary); }
+        h2 { margin-top: 0; margin-bottom: 16px; font-size: 18px; color: var(--color-text-primary); border-bottom: 1px solid var(--color-border); padding-bottom: 8px; }
+
+        .master-controls button { margin-left: 10px; }
+
+        button {
+            padding: 8px 16px;
+            border: 1px solid var(--color-border);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            background-color: #fff;
+        }
+        button:disabled { cursor: not-allowed; opacity: 0.6; }
+        button.btn-primary { background-color: var(--color-primary); color: white; border-color: var(--color-primary); }
+        button.btn-primary:hover:not(:disabled) { background-color: #40a9ff; border-color: #40a9ff; }
+        button.btn-success { background-color: var(--color-success); color: white; border-color: var(--color-success); }
+        button.btn-success:hover:not(:disabled) { background-color: #73d13d; border-color: #73d13d; }
+        button.btn-reset { background-color: var(--color-warning); color: white; border-color: var(--color-warning); }
+        button.btn-reset:hover:not(:disabled) { background-color: #ffc53d; border-color: #ffc53d; }
+
+        .test-summary-panel { display: flex; flex-direction: column; gap: 12px; }
+        .progress-bar-container { background-color: #e9ecef; border-radius: 4px; overflow: hidden; height: 12px; }
+        .progress-bar { background-color: var(--color-primary); height: 100%; width: 0%; transition: width 0.3s ease-out; }
+        .summary-stats { display: flex; justify-content: space-between; font-size: 14px; font-weight: 500; }
+        .stat-passed { color: var(--color-success); }
+        .stat-failed { color: var(--color-danger); }
+        .stat-total { color: var(--color-text-secondary); }
+
+        .test-suite { display: flex; flex-direction: column; gap: 8px; }
+        .test-suite-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+
+        .test-case {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            border: 1px solid var(--color-border);
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        .test-info { display: flex; align-items: center; gap: 12px; }
+        .test-status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+        .test-status-indicator[data-status="idle"] { background-color: var(--color-idle); }
+        .test-status-indicator[data-status="running"] { background-color: var(--color-warning); animation: pulse 1.5s infinite; }
+        .test-status-indicator[data-status="pass"] { background-color: var(--color-success); }
+        .test-status-indicator[data-status="fail"] { background-color: var(--color-danger); }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .test-name { font-weight: 500; }
+        .test-duration { font-size: 12px; color: var(--color-text-secondary); min-width: 50px; text-align: right; }
+        .test-message { font-size: 12px; color: var(--color-danger); margin-left: 24px; }
+        .test-actions button { font-size: 12px; padding: 4px 10px; }
+
+        .avatar-container { display: flex; justify-content: center; align-items: center; width: 100%; height: 400px; }
+        #avatar { width: 100%; height: 100%; border-radius: var(--border-radius); border: 1px solid var(--color-border); }
+
+        .status-bar {
+            padding: 12px;
+            border-radius: var(--border-radius);
+            font-weight: 500;
+            text-align: center;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .status-bar.idle { background-color: #e6f7ff; color: #1890ff; }
+        .status-bar.stopped { background-color: #fafafa; color: #8c8c8c; }
+        .status-bar.streaming { background-color: #f6ffed; color: #52c41a; }
+        .status-bar.playing { background-color: #fffbe6; color: #faad14; }
+        .status-bar.error { background-color: #fff1f0; color: #f5222d; }
+        
+        .log-area {
+            background-color: #262626;
+            color: #d9d9d9;
+            border: 1px solid var(--color-border);
+            padding: 10px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'SF Mono', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            border-radius: var(--border-radius);
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-content">
+            <div class="card">
+                <div class="test-suite-header">
+                    <h1>TalkingHead Streaming API Test Suite</h1>
+                    <div class="master-controls">
+                        <button id="btn-run-all" class="btn-success" disabled>Run All Tests</button>
+                        <button id="btn-reset-all" class="btn-reset" disabled>Reset</button>
+                    </div>
+                </div>
+                <div class="test-summary-panel">
+                     <div class="progress-bar-container">
+                        <div id="progress-bar" class="progress-bar"></div>
+                    </div>
+                    <div class="summary-stats">
+                        <span id="stat-passed" class="stat-passed">Passed: 0</span>
+                        <span id="stat-failed" class="stat-failed">Failed: 0</span>
+                        <span id="stat-total" class="stat-total">Total: 0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="test-suites-container"></div>
+        </div>
+
+        <div class="sidebar">
+            <div class="card">
+                <button id="btn-load-avatar" class="btn-primary">Load Avatar</button>
+                <div class="avatar-container" style="margin-top: 20px;">
+                    <div id="avatar"></div>
+                </div>
+            </div>
+             <div class="status-bar idle" id="status-bar">Status: Avatar required - Click "Load Avatar" to enable tests</div>
+            <div class="card">
+                <h2>Event Log</h2>
+                <div class="log-area" id="log-area"></div>
+                 <button onclick="clearLog()" style="margin-top: 10px; width: 100%;">Clear Log</button>
+            </div>
+            <div class="card">
+                 <h2>Performance Metrics</h2>
+                <div id="metrics-display" style="font-family: monospace; font-size: 12px; white-space: pre;">No metrics data yet...</div>
+            </div>
+        </div>
+    </div>
+    
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js/+esm",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+        "talkinghead": "../modules/talkinghead.mjs"
+      }
+    }
+    </script>
+    <script type="module">
+        import { TalkingHead } from 'talkinghead';
+
+        // --- Global State & Elements ---
+    let head = null;
+        const ALL_TESTS = {};
+
+        // --- Utility Functions ---
+        window.clearLog = () => document.getElementById('log-area').textContent = '';
+        const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logArea = document.getElementById('log-area');
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : type === 'warning' ? '⚠️' : 'ℹ️';
+            logArea.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            logArea.scrollTop = logArea.scrollHeight;
+            if (type === 'error') console.error(`[${timestamp}] ${message}`);
+            else console.log(`[${timestamp}] ${message}`);
+        }
+
+        function updateStatus(status, type = 'idle') {
+            const statusEl = document.getElementById('status-bar');
+            const streamingState = head?.isStreaming ? '(streaming active)' : '(no stream)';
+            const speakingState = head?.isSpeaking ? '(speaking)' : '';
+            statusEl.textContent = `Status: ${status} ${streamingState} ${speakingState}`;
+            statusEl.className = `status-bar ${type}`;
+        }
+
+        function updateMetrics(metricsObj) {
+            const metricsEl = document.getElementById('metrics-display');
+            if (!metricsObj?.data) return;
+            const data = metricsObj.data;
+            const stateText = data.state === 1 ? 'Playing' : 'Idle';
+            metricsEl.textContent = 
+`State         : ${stateText}
+Queued Audio  : ${data.queuedMs ?? 'N/A'} ms
+Max Queued    : ${data.maxQueuedMs ?? 'N/A'} ms
+Underruns     : ${data.underrunBlocks ?? 0}
+Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
+        }
+        
+        // --- Playback Await Helpers ---
+        // Semaphore-based resolver to await playback completion without fragile timeouts
+        let _pendingPlaybackStops = 0;
+        const _playbackResolvers = [];
+        function _onPlaybackStopped() {
+            const r = _playbackResolvers.shift();
+            if (typeof r === 'function') {
+                r();
+            } else {
+                _pendingPlaybackStops++;
+            }
+        }
+        function waitForPlaybackStop() {
+            if (_pendingPlaybackStops > 0) {
+                _pendingPlaybackStops--;
+                return Promise.resolve();
+            }
+            return new Promise(resolve => _playbackResolvers.push(resolve));
+        }
+        async function waitForPlaybackStopOrSilence(timeoutMs = 6000, pollMs = 50) {
+            // If already not speaking, resolve immediately
+            if (!head?.isSpeaking && head?.stateName !== 'speaking') return;
+            let stopObserved = false;
+            // Observe a stop event (if any), but don't resolve solely because of it
+            waitForPlaybackStop().then(() => { stopObserved = true; }).catch(() => {});
+            const start = performance.now();
+            while (performance.now() - start <= timeoutMs) {
+                if (!head?.isSpeaking && head?.stateName !== 'speaking') return;
+                // brief settle wait within the poll loop
+                await sleep(pollMs);
+            }
+            throw new Error('Timed out waiting for silence');
+        }
+        
+        // --- Test Data Generation ---
+        const createSineTonePCM16LE = (c, f=440, r=44100, a=8e3) => {
+            const b = new ArrayBuffer(c * 2), v = new DataView(b);
+            for (let i = 0; i < c; i++) v.setInt16(i * 2, Math.floor(Math.sin(2*Math.PI*f*i/r)*a), true);
+            return b;
+        };
+        
+        const createRandomNoisePCM16LE = (sampleCount, amplitude = 3000) => {
+            const buffer = new ArrayBuffer(sampleCount * 2);
+            const view = new DataView(buffer);
+            for (let i = 0; i < sampleCount; i++) {
+                const sample = Math.floor((Math.random() * 2 - 1) * amplitude);
+                view.setInt16(i * 2, sample, true);
+            }
+            return buffer;
+        };
+        
+        // Removed redundant global streaming state; use head.isStreaming as single source of truth
+
+    // Allowed visemes derived from the provided viseme map
+    const ALLOWED_VISEMES = ["sil","aa","O","E","RR","I","U","kk","nn","SS","CH","TH","FF","DD","PP"];
+    const getRandomVisemes = (c) => Array.from({length: c}, () => ALLOWED_VISEMES[Math.floor(Math.random()*ALLOWED_VISEMES.length)]);
+        const getRandomWords = (c) => Array.from({length: c}, () => ["hello","world","streaming","test"][Math.floor(Math.random()*4)]);
+        const createRandomBlendshapeAnim = () => ([{name:"blendshapes",delay:0,dt:[33,33,33,33],vs:{"jawOpen":[0,.3,.7,.2],"mouthFrownLeft":[0,.1,.2,0]}}]);
+
+        // --- Test Definitions ---
+        const TEST_SUITES = [
+            {
+                id: 'session-management',
+                name: 'Session Management',
+                tests: [
+                    { id: 'stream-start', name: 'streamStart()', fn: async () => {
+                        log('Starting streaming session...');
+                        updateStatus('Starting stream...', 'streaming');
+                        
+                        await head.streamStart(
+                            { 
+                                sampleRate: 44100,
+                                lipsyncType: 'visemes',
+                                gain: 0.5,
+                                metrics: { enabled: true, intervalHz: 2 }
+                            },
+                            () => {
+                                log('Audio playback started!', 'success');
+                                updateStatus('Audio playing', 'playing');
+                            },
+                            () => {
+                                log('Audio playback ended', 'success');
+                                updateStatus('Streaming (ready)', 'streaming');
+                                _onPlaybackStopped();
+                            },
+                            (text) => log(`Subtitle: ${text}`),
+                            (metrics) => updateMetrics(metrics)
+                        );
+                        log('Streaming session started!', 'success');
+                        updateStatus('Streaming (ready)', 'streaming');
+                    }},
+                    { id: 'stream-stop', name: 'streamStop()', fn: async () => {
+                        log('Stopping streaming session...');
+                        head.streamStop();
+                        await sleep(50); // Small delay to ensure internal state is fully updated
+                        log('Streaming session stopped!', 'success');
+                        updateStatus('Ready', 'idle');
+                    }}
+                ]
+            },
+            {
+                id: 'audio-streaming',
+                name: 'Audio Streaming Tests',
+                tests: [
+                    { id: 'stream-basic', name: 'Stream Basic Audio', fn: async () => {
+                        // Ensure streaming is active with basic configuration
+                        if (!head?.isStreaming) {
+                            log('🔄 Starting streaming for basic audio test...');
+                            await head.streamStart({ lipsyncType: 'visemes' }, null, _onPlaybackStopped);
+                        }
+                        log('Streaming basic audio...');
+                        head.streamAudio({ audio: createSineTonePCM16LE(44100) });
+                        head.streamNotifyEnd();
+                        log('Waiting for playback to complete...');
+                        await waitForPlaybackStop();
+                        log('Playback confirmed finished.', 'success');
+                    }},
+                    { id: 'stream-visemes', name: 'Stream with Visemes', fn: async () => {
+                        // Ensure streaming is active with visemes configuration
+                        if (!head?.isStreaming) {
+                            log('🔄 Starting streaming for visemes test...');
+                            await head.streamStart({ lipsyncType: 'visemes' }, null, _onPlaybackStopped);
+                        }
+                        log('Streaming with visemes...');
+                        const visemes = getRandomVisemes(3);
+                        head.streamAudio({ 
+                            audio: createSineTonePCM16LE(66150), 
+                            visemes: visemes, 
+                            vtimes: [0, 500, 1000], 
+                            vdurations: [500, 500, 500] 
+                        });
+                        log(`Streamed with visemes: ${visemes.join(', ')}`);
+                        head.streamNotifyEnd();
+                        await waitForPlaybackStop();
+                        log('Playback finished for visemes test.', 'success');
+                    }},
+                    { id: 'stream-words', name: 'Stream with Words', fn: async () => {
+                        log('Reconfiguring for words and streaming...');
+                        await head.streamStart({ lipsyncType: 'words' }, null, _onPlaybackStopped);
+                        const words = getRandomWords(3);
+                        head.streamAudio({ 
+                            audio: createSineTonePCM16LE(88200), 
+                            words: words, 
+                            wtimes: [0, 700, 1400], 
+                            wdurations: [700, 700, 700] 
+                        });
+                        log(`Streamed with words: ${words.join(', ')}`);
+                        head.streamNotifyEnd();
+                        await waitForPlaybackStop();
+                        log('Playback finished for words test.', 'success');
+                    }},
+                    { id: 'stream-blendshapes', name: 'Stream with Blendshapes', fn: async () => {
+                        log('Reconfiguring for blendshapes and streaming...');
+                        await head.streamStart({ 
+                            sampleRate: 44100,
+                            lipsyncType: 'blendshapes',
+                            gain: 0.3
+                        }, null, _onPlaybackStopped);
+                        
+                        head.streamAudio({
+                            audio: createSineTonePCM16LE(66150, 880), // 1.5 seconds higher tone
+                            anims: createRandomBlendshapeAnim()
+                        });
+                        log('Streamed with blendshape animation');
+                        head.streamNotifyEnd();
+                        await waitForPlaybackStop();
+                        log('Playback finished for blendshapes test.', 'success');
+                    }},
+                    { id: 'stream-chunks', name: 'Stream Multiple Chunks', fn: async () => {
+                        // Ensure streaming is active for chunks test
+                        if (!head?.isStreaming) {
+                            log('🔄 Starting streaming for chunks test...');
+                            await head.streamStart({ lipsyncType: 'visemes' }, null, _onPlaybackStopped);
+                        }
+                        log('Streaming multiple chunks...');
+                        
+                        // Stream 3 chunks with setTimeout for proper timing
+                        for (let i = 0; i < 3; i++) {
+                            setTimeout(() => {
+                                const frequency = 220 + (i * 110); // Different tone for each chunk
+                                const visemes = getRandomVisemes(2);
+                                head.streamAudio({
+                                    audio: createSineTonePCM16LE(22050, frequency), // 0.5 seconds each
+                                    visemes: visemes,
+                                    vtimes: [0, 250],
+                                    vdurations: [250, 250]
+                                });
+                                log(`Streamed chunk ${i + 1} with frequency ${frequency}Hz, visemes: ${visemes.join(', ')}`);
+                                
+                                if (i === 2) {
+                                    setTimeout(() => {
+                                        head.streamNotifyEnd();
+                                        log('All chunks sent, called streamNotifyEnd()', 'success');
+                                    }, 100);
+                                }
+                            }, i * 200);
+                        }
+                        
+                        // Wait for playback completion instead of fixed delay
+                        await waitForPlaybackStop();
+                        log('Playback finished for multi-chunk test.', 'success');
+                    }},
+                ]
+            },
+            {
+                id: 'control-flow',
+                name: 'Control & Flow Tests',
+                tests: [
+                     { id: 'stream-interrupt', name: 'streamInterrupt()', fn: async () => {
+                        // Ensure streaming is active for interrupt test
+                        if (!head?.isStreaming) {
+                            log('🔄 Starting streaming for interrupt test...');
+                            await head.streamStart({ lipsyncType: 'visemes' }, null, _onPlaybackStopped);
+                        }
+                        log('Starting audio then interrupting...');
+                        
+                        // Start a long audio stream with proper visemes
+                        head.streamAudio({
+                            audio: createSineTonePCM16LE(220500, 330), // 5 seconds
+                            visemes: ["aa", "E", "I", "O", "U"],
+                            vtimes: [0, 1000, 2000, 3000, 4000],
+                            vdurations: [1000, 1000, 1000, 1000, 1000]
+                        });
+                        log('Started 5-second audio stream...');
+                        
+                        // Interrupt after 1.5 seconds
+                        await sleep(1500);
+                        head.streamInterrupt();
+                        log('Called streamInterrupt()!', 'warning');
+                        await waitForPlaybackStopOrSilence();
+                        if (head.isSpeaking) {
+                            throw new Error('Avatar still speaking after interrupt');
+                        }
+                        // Verify session remains active for reuse
+                        log('Testing reuse after interrupt...');
+                        head.streamAudio({
+                            audio: createSineTonePCM16LE(22050, 880), // 0.5s high tone
+                            visemes: ["RR"],
+                            vtimes: [0],
+                            vdurations: [500]
+                        });
+                        head.streamNotifyEnd();
+                        log('✅ Streamed new audio post-interrupt successfully!', 'success');
+                        await waitForPlaybackStop();
+                     }},
+                     { id: 'session-reuse', name: 'Session Reuse After End', fn: async () => {
+                         // Ensure streaming is active and ensure onPlaybackStopped is bound
+                         if (!head?.isStreaming) {
+                             log('🔄 Starting streaming for session reuse test...');
+                         }
+                         await head.streamStart({ lipsyncType: 'visemes' }, null, _onPlaybackStopped);
+                         await sleep(50);
+                         log('Testing session reuse...');
+                         
+                         // First utterance
+                         log('Sending first utterance...');
+                         head.streamAudio({ 
+                             audio: createRandomNoisePCM16LE(22050), // 0.5 seconds
+                             visemes: ["aa"],
+                             vtimes: [0],
+                             vdurations: [500]
+                         });
+                         head.streamNotifyEnd();
+                          // End and wait for playback to stop or speaking state to clear
+                         await waitForPlaybackStopOrSilence(7000);
+                         await sleep(50); // tiny settle
+                         if(head.isSpeaking) {
+                             throw new Error("Avatar still speaking before reuse.");
+                         }
+                         
+                         // Second utterance to test reuse
+                         // Reassert configuration to ensure clean reuse state
+                         await head.streamStart({ lipsyncType: 'visemes' }, null, _onPlaybackStopped);
+                         await sleep(30);
+                         log('Sending second utterance for reuse test...');
+                         head.streamAudio({ 
+                             audio: createSineTonePCM16LE(22050, 660),
+                             visemes: ["E"],
+                             vtimes: [0],
+                             vdurations: [500]
+                         });
+                         head.streamNotifyEnd();
+                         await waitForPlaybackStopOrSilence(7000);
+                         await sleep(50);
+                         log('✅ Session reuse successful!', 'success');
+                     }, timeout: 8000},
+                     { id: 'chatbot-flow', name: 'Simulate Chatbot Flow', fn: async () => {
+                         log('🤖 Starting Chatbot Flow Simulation...', 'info');
+
+                         // 1. Start the streaming session
+                         log('Chatbot session starting...');
+                         if (head?.isStreaming) {
+                             head.streamStop(); // Ensure a clean start
+                             await sleep(100);
+                         }
+                         await head.streamStart({ sampleRate: 24000, gain: 0.6 }, null, _onPlaybackStopped);
+                         updateStatus('Chatbot session active', 'streaming');
+                         log('✅ Session started successfully.');
+                         
+
+                         // 2. Simulate two normal chatbot utterances
+                         for (let i = 0; i < 2; i++) {
+                             log(`▶️ Starting normal utterance #${i + 1}...`);
+                             // Stream audio in chunks
+                             head.streamAudio({ 
+                                 audio: createSineTonePCM16LE(12000, 300), 
+                                 visemes: ["I"], 
+                                 vtimes: [0], 
+                                 vdurations: [300] 
+                             }); // "He-"
+                             await sleep(300);
+                             head.streamAudio({ 
+                                 audio: createSineTonePCM16LE(12000, 330), 
+                                 visemes: ["O"], 
+                                 vtimes: [0], 
+                                 vdurations: [300] 
+                             }); // "-llo"
+                             await sleep(300);
+                             head.streamAudio({ 
+                                 audio: createSineTonePCM16LE(12000, 300), 
+                                 visemes: ["O"], 
+                                 vtimes: [0], 
+                                 vdurations: [300] 
+                             }); // " world"
+                             // Signal end of utterance
+                             head.streamNotifyEnd();
+                             await waitForPlaybackStop();
+                             log(`⏹️ Utterance #${i + 1} finished.`);
+                         }
+
+                         // 3. Simulate two interrupted chatbot utterances
+                         for (let i = 0; i < 2; i++) {
+                             log(`▶️ Starting interruptible utterance #${i + 1}...`);
+                             head.streamAudio({ audio: createSineTonePCM16LE(48000, 400) }); // A long 2-second audio
+                             // long utterance starts
+                             await sleep(800); // User interrupts after 800ms
+                             
+                             log('⚠️ User interrupts! Calling streamInterrupt().');
+                             head.streamInterrupt();
+                             await waitForPlaybackStopOrSilence();
+                             log(`⏹️ Interrupted utterance #${i + 1} stopped.`);
+                         }
+
+                         // 4. Reconfigure the session mid-flow
+                         log('🔧 Reconfiguring session (e.g., changing voice gain)...');
+                         await head.streamStart({ sampleRate: 24000, gain: 1.0 }, null, _onPlaybackStopped); // Increase gain
+                         log('✅ Session reconfigured with new gain.');
+                         
+
+                         // 5. Continue with one more normal utterance to test new config
+                         log('▶️ Starting final utterance post-reconfiguration...');
+                         head.streamAudio({ audio: createSineTonePCM16LE(24000, 500) }); // Higher pitch audio
+                         head.streamNotifyEnd();
+                         await waitForPlaybackStop();
+                         log('⏹️ Final utterance finished.');
+
+                         // 6. End the session
+                         log('Chatbot session ending...');
+                         head.streamStop();
+                         await sleep(100);
+                         log('✅ Session stopped successfully.');
+                         updateStatus('Chatbot simulation finished', 'idle');
+                         
+                         // Restart streaming for other tests
+                         await head.streamStart({ lipsyncType: 'visemes' }, null, _onPlaybackStopped);
+                         log('🤖 Chatbot Flow Simulation Complete.', 'info');
+                     }, timeout: 15000 },
+                     { id: 'stream-notify-end', name: 'streamNotifyEnd()', fn: async () => {
+                         // Ensure streaming is active for notify end test
+                         if (!head?.isStreaming) {
+                             log('🔄 Starting streaming for notify end test...');
+                             await head.streamStart({ lipsyncType: 'visemes' }, null, _onPlaybackStopped);
+                         }
+                         log('Streaming then calling streamNotifyEnd()...');
+                         
+                         head.streamAudio({
+                             audio: createRandomNoisePCM16LE(44100), // 1 second
+                             visemes: ["DD", "aa"],
+                             vtimes: [0, 500],
+                             vdurations: [500, 500]
+                         });
+                         log('Audio streamed, calling streamNotifyEnd()...');
+                         
+                         await sleep(50);
+                         head.streamNotifyEnd();
+                         log('Called streamNotifyEnd()', 'success');
+                         await waitForPlaybackStop();
+                     }},
+                     { id: 'notify-end-cancel', name: 'NotifyEnd Cancel Test', fn: async () => {
+                         // Ensure streaming is active for notify end cancel test
+                         if (!head?.isStreaming) {
+                             log('🔄 Starting streaming for notify end cancel test...');
+                             await head.streamStart({ lipsyncType: 'visemes' }, null, _onPlaybackStopped);
+                         }
+                         // Send initial short audio and call notifyEnd
+                         head.streamAudio({
+                             audio: createSineTonePCM16LE(11025, 440), // 0.25s
+                             visemes: ['aa','E'],
+                             vtimes: [0,120],
+                             vdurations: [100,100]
+                         });
+                         await sleep(40);
+                         head.streamNotifyEnd();
+                         await sleep(120); // Before the first finishes, push more
+                         head.streamAudio({
+                             audio: createSineTonePCM16LE(22050, 660), // 0.5s more
+                             visemes: ['I','O','U'],
+                             vtimes: [0,110,220],
+                             vdurations: [90,90,90]
+                         });
+                         await sleep(400);
+                         if (!head.isSpeaking && head.stateName !== 'speaking') {
+                             throw new Error('Late audio should have canceled the notifyEnd');
+                         }
+                     }},
+                     { id: 'interrupt-race', name: 'Interrupt Race Test', timeout: 5000, fn: async () => {
+                         log('🔄 Interrupt Race Test: ensuring visemes configuration...');
+                         
+                         // Always ensure we have the correct streaming configuration for this test
+                         try {
+                            head.streamStop();
+                             await head.streamStart({ 
+                                 sampleRate: 44100,
+                                 lipsyncType: 'visemes',
+                                 gain: 0.5
+                             });
+                             updateStatus('Streaming (ready for race test)', 'streaming');
+                             await sleep(200); // Allow streaming to fully initialize
+                         } catch (e) {
+                             throw new Error(`Failed to start streaming for race test: ${e.message}`);
+                         }
+                         
+                         log('🔄 Interrupt Race Test: streaming initial short packet...');
+                         head.streamAudio({
+                             audio: createSineTonePCM16LE(22050, 330),
+                             visemes: ['PP','aa','E'],
+                             vtimes: [0,120,240],
+                             vdurations: [100,100,100]
+                         });
+                         await sleep(30); // minimal delay before interrupt
+                         head.streamInterrupt();
+                         log('⏹️ Interrupt sent. Send audio after interrupt...');
+                        head.streamAudio({
+                            audio: createSineTonePCM16LE(220500, 330), // 5 seconds
+                            visemes: ["aa", "E", "I", "O", "U"],
+                            vtimes: [0, 1000, 2000, 3000, 4000],
+                            vdurations: [1000, 1000, 1000, 1000, 1000]
+                        });
+                         
+                         // Check lip-sync immediately after sending
+                         const initialLipsyncTime = head.streamAudioStartTime;
+                         const initialLipsyncQueue = head.streamLipsyncQueue ? head.streamLipsyncQueue.length : 0;
+                         const initialAnimQueue = head.animQueue ? head.animQueue.filter(x => x.template && x.template.name === 'viseme').length : 0;
+                         log(`Initial state: streamAudioStartTime=${initialLipsyncTime}, lipsyncQueue=${initialLipsyncQueue}, visemeAnims=${initialAnimQueue}`);
+                         
+                         // Wait briefly for playback-started event to fire and lipsync to begin processing
+                         await sleep(50);
+                         
+                         // Check intermediate state after playback-started should have fired
+                         const midLipsyncTime = head.streamAudioStartTime;
+                         const midLipsyncQueue = head.streamLipsyncQueue ? head.streamLipsyncQueue.length : 0;
+                         const midAnimQueue = head.animQueue ? head.animQueue.filter(x => x.template && x.template.name === 'viseme').length : 0;
+                         log(`Mid state (50ms): streamAudioStartTime=${midLipsyncTime}, lipsyncQueue=${midLipsyncQueue}, visemeAnims=${midAnimQueue}`);
+                         
+                         await sleep(200); // Allow additional time for lip-sync processing and animation setup
+                         
+                         // If still not working, try waiting a bit longer
+                         let speaking = head.isSpeaking || head.stateName === 'speaking';
+                         if (!speaking) {
+                             log('⏳ Race test needs more time, waiting additional 300ms...');
+                             await sleep(300);
+                             speaking = head.isSpeaking || head.stateName === 'speaking';
+                         }
+                         
+                         // Check both speaking state AND lip-sync functionality
+                         const currentLipsyncTime = head.streamAudioStartTime;
+                         const currentLipsyncQueue = head.streamLipsyncQueue ? head.streamLipsyncQueue.length : 0;
+                         const currentAnimQueue = head.animQueue ? head.animQueue.filter(x => x.template && x.template.name === 'viseme').length : 0;
+                         
+                         // Check if lip-sync has been processed (streamAudioStartTime should be set)
+                         // Allow for the fact that it might take a moment for playback-started event to fire
+                         const lipsyncProcessed = currentLipsyncTime !== null && currentLipsyncTime > 0;
+                         
+                         // Check if viseme animations are active in the queue
+                         const visemeAnimsActive = currentAnimQueue > 0;
+                         
+                         log(`Final state (250ms): speaking=${speaking}, streamAudioStartTime=${currentLipsyncTime}, lipsyncQueue=${currentLipsyncQueue}, visemeAnims=${currentAnimQueue}`);
+                         
+                         if (speaking && lipsyncProcessed && visemeAnimsActive) {
+                             log('✅ Race test PASSED: speaking, lip-sync processed, AND viseme animations active.', 'success');
+                         } else if (speaking && visemeAnimsActive && currentLipsyncTime > 0) {
+                             // Alternative success condition: if we're speaking, have viseme anims, and valid lipsync time
+                             log('✅ Race test PASSED: speaking with viseme animations and valid lipsync time.', 'success');
+                         } else if (speaking && lipsyncProcessed && !visemeAnimsActive) {
+                             log(`❌ Race test detail: speaking=${speaking}, lipsyncProcessed=${lipsyncProcessed}, visemeAnimsActive=${visemeAnimsActive}`, 'error');
+                             throw new Error('Race test FAILED: speaking and lip-sync processed, but NO viseme animations.');
+                         } else if (speaking && !lipsyncProcessed) {
+                             log(`❌ Race test detail: speaking=${speaking}, lipsyncProcessed=${lipsyncProcessed}, visemeAnimsActive=${visemeAnimsActive}`, 'error');
+                             throw new Error('Race test FAILED: speaking but lip-sync NOT processed after restart. Check if playback-started event fired.');
+                         } else if (!speaking) {
+                             log(`❌ Race test detail: speaking=${speaking}, lipsyncProcessed=${lipsyncProcessed}, visemeAnimsActive=${visemeAnimsActive}`, 'error');
+                             throw new Error(`Race test FAILED: not speaking after immediate restart.`);
+                         }
+                         head.streamStop();
+                         
+                     }},
+                     { id: 'test-reconfigure', name: 'Test Reconfiguration', fn: async () => {
+                         // First: visemes mode
+                         await head.streamStart({ lipsyncType: 'visemes', gain: 0.3 });
+                         await sleep(500);
+                         
+                         // Reconfigure: words mode
+                         await head.streamStart({ lipsyncType: 'words', gain: 0.7 });
+                         
+                         // Test the new configuration
+                         head.streamAudio({
+                             audio: createSineTonePCM16LE(44100, 880), // 1 second
+                             words: ["reconfigured", "successfully"],
+                             wtimes: [0, 500],
+                             wdurations: [500, 500]
+                         });
+                         head.streamNotifyEnd();
+                     }},
+                ]
+            },
+            {
+                id: 'advanced-options',
+                name: 'Advanced Options Tests',
+                tests: [
+                    { id: 'test-no-wait', name: 'Test waitForAudioChunks: false', fn: async () => {
+                        await head.streamStart({ 
+                            sampleRate: 44100, 
+                            lipsyncType: 'visemes',
+                            waitForAudioChunks: false // Process lip-sync immediately
+                        });
+                        head.streamAudio({
+                            audio: createSineTonePCM16LE(88200), // 2 seconds
+                            visemes: ["PP", "aa", "E", "FF"],
+                            vtimes: [0, 500, 1000, 1500],
+                            vdurations: [500, 500, 500, 500]
+                        });
+                        head.streamNotifyEnd();
+                    }},
+                    { id: 'test-metrics', name: 'Test Performance Metrics', fn: async () => {
+                        let metricsReceived = false;
+                        let metricsCallback = (metrics) => {
+                            metricsReceived = true;
+                            updateMetrics(metrics);
+                            log(`📊 Metrics received: ${JSON.stringify(metrics?.data || metrics || 'no data')}`, 'info');
+                        };
+                        
+                        // Ensure clean state
+                        head.streamStop();
+                        await sleep(500);                        
+                        
+                        // Use streamStart with metrics callback as 5th parameter
+                        log('🔧 Starting streaming with metrics callback...');
+                        await head.streamStart(
+                            { 
+                                sampleRate: 44100,
+                                lipsyncType: 'visemes',
+                                gain: 0.5,
+                                metrics: { enabled: true, intervalHz: 4 } // More frequent metrics
+                            },
+                            null, // onPlaybackStarted
+                            _onPlaybackStopped, // onPlaybackStopped  
+                            null, // onSubtitleReceived
+                            metricsCallback // onMetricsReceived - 5th parameter
+                        );
+                        log('📊 Started streaming with metrics callback properly configured');                          
+                        log('🔄 Starting metrics test with 2-second audio...');
+                        
+                        head.streamAudio({
+                            audio: createSineTonePCM16LE(88200), // 2 seconds to allow metrics
+                            visemes: ["PP", "aa", "E"],
+                            vtimes: [0, 700, 1400],
+                            vdurations: [700, 700, 700]
+                        });
+                        head.streamNotifyEnd();
+                        
+                        log('🔄 Waiting for metrics callbacks during 2-second audio...');
+                        
+                        // Wait longer to ensure metrics callback is triggered
+                        // Increase wait time and add periodic checks
+                        for (let i = 0; i < 10; i++) {
+                            await sleep(300);
+                            log(`⏱️ Metrics check ${i+1}/10: received=${metricsReceived}`);
+                            if (metricsReceived) break;
+                        }
+                        
+                        if (!metricsReceived) {
+                            log('❌ No metrics callback triggered. Checking head properties...', 'error');
+                            log(`Head metrics enabled: ${head.streamMetrics?.enabled}`, 'info');
+                            log(`Head metrics interval: ${head.streamMetrics?.intervalHz}`, 'info');
+                            throw new Error('No metrics received during test');
+                        }
+                        
+                        log('✅ Metrics test completed successfully', 'success');
+                    }, timeout: 12000},
+                    { id: 'test-different-rates', name: 'Test Different Sample Rates', fn: async () => {
+                        // Test multiple sample rates
+                         const rates = [22050, 44100, 48000];
+                        for (const rate of rates) {
+                            log(`🔧 Reconfiguring to sampleRate=${rate}...`);
+                            await head.streamStart({ sampleRate: rate, lipsyncType: 'visemes' }, null, _onPlaybackStopped);
+                            await sleep(50); // allow reconfig to settle
+                            log(`🎵 Streaming 1s tone at ${rate}Hz sample rate...`);
+                            head.streamAudio({
+                                audio: createSineTonePCM16LE(rate, 440 + Math.floor(rate/1000)), // ~1s tone, freq varies per rate
+                                visemes: ["aa", "E"],
+                                // Use millisecond-based timings for visemes, independent of sample rate
+                                vtimes: [0, 500],
+                                vdurations: [500, 500]
+                            });
+                            head.streamNotifyEnd();
+                            await waitForPlaybackStopOrSilence();
+                            log(`✅ Completed playback at ${rate}Hz.`);
+                        }
+                    }, timeout: 12000}
+                ]
+            },
+            {
+                id: 'error-handling',
+                name: 'Error Handling & Edge Cases',
+                tests: [
+                    { id: 'stream-without-start', name: 'streamAudio() without start', fn: async () => {
+                        if (head?.isStreaming) await testRunner.runSingleTest('stream-stop', false);
+                        const wasSpeaking = head.isSpeaking;
+                        head.streamAudio({ audio: createSineTonePCM16LE(11025) });
+                        await sleep(100);
+                        if (head.isSpeaking !== wasSpeaking) throw new Error("State changed without active stream.");
+                        // Must re-enable streaming for subsequent tests
+                        await testRunner.runSingleTest('stream-start', false);
+                    }},
+                    { id: 'mismatched-lipsync', name: 'Mismatched lipsync data', fn: async () => {
+                        await head.streamStart({ lipsyncType: 'visemes' });
+                        head.streamAudio({ audio: createSineTonePCM16LE(44100), words: ['should-be-ignored'] }); // Send words
+                        head.streamNotifyEnd();
+                        // Pass if it doesn't crash
+                    }},
+                    { id: 'empty-audio', name: 'Empty audio chunk', fn: () => {
+                        head.streamAudio({ audio: new ArrayBuffer(0) });
+                        // Pass if it doesn't crash
+                    }},
+                    { id: 'invalid-data', name: 'Invalid Data Types', fn: async () => {
+                        // Test various invalid data types
+                        try { head.streamAudio({ audio: null }); } catch(e) { /* Expected */ }
+                        try { head.streamAudio({ audio: "invalid" }); } catch(e) { /* Expected */ }
+                        try { head.streamAudio({ audio: 123 }); } catch(e) { /* Expected */ }
+                        
+                        // Test mismatched array lengths
+                        try { 
+                            head.streamAudio({
+                                audio: createSineTonePCM16LE(22050),
+                                visemes: ['aa', 'E'],
+                                vtimes: [0], // Mismatched length
+                                vdurations: [500, 500]
+                            });
+                        } catch(e) { /* Expected */ }
+                        
+                        // Pass if it doesn't crash the system
+                    }},
+                ]
+            },
+            {
+                id: 'stress-tests',
+                name: 'Stress Tests',
+                tests: [
+                    { id: 'rapid-start-stop', name: 'Rapid Start/Stop', fn: async () => {
+                        for (let i = 0; i < 5; i++) {
+                            await head.streamStart({ lipsyncType: 'visemes' });
+                            await sleep(100);
+                            
+                            head.streamStop();
+                            await sleep(150);
+                        }
+                        
+                        // Restart streaming session after the test
+                        await head.streamStart({ lipsyncType: 'visemes' });
+                    }, timeout: 8000},
+                    { id: 'interrupt-stress', name: 'Interrupt Stress Test', fn: async () => {
+                        for (let i = 0; i < 3; i++) {
+                            // Start long audio
+                            head.streamAudio({
+                                audio: createSineTonePCM16LE(220500, 330 + i * 110), // 5 seconds
+                                visemes: ["aa", "E", "I"],
+                                vtimes: [0, 1500, 3000],
+                                vdurations: [1500, 1500, 2000]
+                            });
+                            
+                            await sleep(800);
+                            head.streamInterrupt();
+                            await sleep(200);
+                        }
+                    }, timeout: 10000},
+                    { id: 'chunk-flood', name: 'Chunk Flooding Test', fn: async () => {
+                        // Ensure streaming is active and playback stop callback is bound
+                        if (!head?.isStreaming) {
+                            await head.streamStart({ lipsyncType: 'visemes' }, null, _onPlaybackStopped);
+                            await sleep(50);
+                        }
+                        // Send many small chunks quickly
+                        for (let i = 0; i < 10; i++) {
+                            head.streamAudio({
+                                audio: createSineTonePCM16LE(4410, 440 + i * 50), // 0.1 second chunks
+                                visemes: [getRandomVisemes(1)[0]],
+                                vtimes: [0],
+                                vdurations: [100]
+                            });
+                            await sleep(50); // Very short delay
+                        }
+                        head.streamNotifyEnd();
+                        await sleep(50); // allow last chunk enqueue
+                        await waitForPlaybackStopOrSilence();
+                    }, timeout: 8000}
+                ]
+            }
+        ];
+
+        // --- Test Runner Logic ---
+        const testRunner = {
+            tests: ALL_TESTS,
+            testResults: {}, // Track individual test results for proper counting
+            total: 0,
+            passed: 0,
+            failed: 0,
+            isRunning: false,
+
+            init() {
+                this.total = Object.keys(this.tests).length;
+                // Initialize all test results as 'idle'
+                Object.keys(this.tests).forEach(id => {
+                    this.testResults[id] = 'idle';
+                });
+                this.updateSummary();
+            },
+
+            updateSummary() {
+                document.getElementById('stat-passed').textContent = `Passed: ${this.passed}`;
+                document.getElementById('stat-failed').textContent = `Failed: ${this.failed}`;
+                document.getElementById('stat-total').textContent = `Total: ${this.total}`;
+                const progress = this.total > 0 ? ((this.passed + this.failed) / this.total) * 100 : 0;
+                document.getElementById('progress-bar').style.width = `${progress}%`;
+            },
+            
+            // Recalculate counters from test results (for validation)
+            recalculateCounters() {
+                this.passed = 0;
+                this.failed = 0;
+                Object.values(this.testResults).forEach(result => {
+                    if (result === 'pass') this.passed++;
+                    else if (result === 'fail') this.failed++;
+                });
+            },
+            
+            // Debug method to log current test states
+            debugCounters() {
+                console.log('Test Results State:', this.testResults);
+                console.log(`Counters - Passed: ${this.passed}, Failed: ${this.failed}, Total: ${this.total}`);
+                const actualPassed = Object.values(this.testResults).filter(r => r === 'pass').length;
+                const actualFailed = Object.values(this.testResults).filter(r => r === 'fail').length;
+                console.log(`Actual from results - Passed: ${actualPassed}, Failed: ${actualFailed}`);
+            },
+
+            updateTestStatus(testId, status, message = '', duration = null) {
+                const el = document.getElementById(`test-case-${testId}`);
+                if (!el) return;
+                el.querySelector('.test-status-indicator').dataset.status = status;
+                el.querySelector('.test-duration').textContent = duration !== null ? `${duration}ms` : '';
+                const msgEl = el.querySelector('.test-message');
+                msgEl.textContent = message;
+            },
+            
+            resetAll() {
+                this.passed = 0;
+                this.failed = 0;
+                // Reset all test results to 'idle'
+                Object.keys(this.tests).forEach(id => {
+                    this.testResults[id] = 'idle';
+                    this.updateTestStatus(id, 'idle');
+                });
+                this.updateSummary();
+                log('Test suite reset.');
+            },
+            
+            async runSuite(suiteId) {
+                if (this.isRunning) return;
+                
+                // Check if avatar is loaded
+                if (!head) {
+                    log('Cannot run tests: Avatar not loaded. Please click "Load Avatar" first.', 'error');
+                    updateStatus('Error: Avatar required for tests', 'error');
+                    return;
+                }
+                
+                const suite = TEST_SUITES.find(s => s.id === suiteId);
+                if (!suite) return;
+                const testIds = suite.tests.map(t => t.id);
+                await this.run(testIds);
+            },
+
+            async runAll() {
+                if (this.isRunning) return;
+                
+                // Check if avatar is loaded
+                if (!head) {
+                    log('Cannot run tests: Avatar not loaded. Please click "Load Avatar" first.', 'error');
+                    updateStatus('Error: Avatar required for tests', 'error');
+                    return;
+                }
+                
+                await this.run(Object.keys(this.tests));
+            },
+
+            async run(testIds) {
+                this.isRunning = true;
+                document.querySelectorAll('.master-controls button, .test-suite button, .test-actions button').forEach(b => b.disabled = true);
+
+                for (const id of testIds) {
+                    await this.runSingleTest(id);
+                }
+                
+                this.isRunning = false;
+                document.querySelectorAll('.master-controls button, .test-suite button, .test-actions button, #btn-load-avatar').forEach(b => b.disabled = false);
+                
+                // Validate counters by recalculating from test results
+                const originalPassed = this.passed;
+                const originalFailed = this.failed;
+                this.recalculateCounters();
+                
+                if (originalPassed !== this.passed || originalFailed !== this.failed) {
+                    log(`Counter adjustment: ${originalPassed}->${this.passed} passed, ${originalFailed}->${this.failed} failed`, 'warning');
+                    this.updateSummary();
+                }
+                
+                log(`Test run complete. Passed: ${this.passed}, Failed: ${this.failed}`);
+            },
+
+            async runSingleTest(testId, updateCounters = true) {
+                const test = this.tests[testId];
+                if (!test) return;
+
+                // Check if avatar is loaded for user-initiated single test runs
+                if (updateCounters && !head) {
+                    log('Cannot run test: Avatar not loaded. Please click "Load Avatar" first.', 'error');
+                    updateStatus('Error: Avatar required for tests', 'error');
+                    return;
+                }
+
+                this.updateTestStatus(testId, 'running');
+                // Don't change testResults to 'running' since it's temporary state
+                log(`Running test: ${test.name}`);
+                const startTime = performance.now();
+                let error = null;
+
+                try {
+                    // Timeout wrapper
+                    await new Promise(async (resolve, reject) => {
+                        const timer = setTimeout(() => reject(new Error('Test timed out')), test.timeout || 4000);
+                        try {
+                            await test.fn();
+                            clearTimeout(timer);
+                            resolve();
+                        } catch(e) {
+                            clearTimeout(timer);
+                            reject(e);
+                        }
+                    });
+                     await sleep(head?.isStreaming ? 1000 : 200); // Cooldown to observe results
+                } catch (e) {
+                    error = e;
+                }
+                
+                const duration = Math.round(performance.now() - startTime);
+
+                // Simplified and explicit counter logic
+                const previousResult = this.testResults[testId];
+
+                // Step 1: Decrement the old status counter if the test was already run
+                if (updateCounters) {
+                    if (previousResult === 'pass') {
+                        this.passed--;
+                    } else if (previousResult === 'fail') {
+                        this.failed--;
+                    }
+                }
+
+                if (error) {
+                    if (updateCounters) {
+                        // Step 2: Increment the new status counter and update map
+                        this.failed++;
+                        this.testResults[testId] = 'fail';
+                    }
+                    this.updateTestStatus(testId, 'fail', error.message, duration);
+                    log(`Test FAILED: ${test.name} - ${error.message}`, 'error');
+                } else {
+                    if (updateCounters) {
+                        // Step 2: Increment the new status counter and update map
+                        this.passed++;
+                        this.testResults[testId] = 'pass';
+                    }
+                    this.updateTestStatus(testId, 'pass', '', duration);
+                    log(`Test PASSED: ${test.name}`, 'success');
+                }
+                if(updateCounters) this.updateSummary();
+            }
+        };
+
+        // --- UI Initialization ---
+        function buildTestUI() {
+            const container = document.getElementById('test-suites-container');
+            container.innerHTML = '';
+
+            TEST_SUITES.forEach(suite => {
+                const suiteCard = document.createElement('div');
+                suiteCard.className = 'card test-suite';
+                
+                let testsHtml = '';
+                suite.tests.forEach(test => {
+                    ALL_TESTS[test.id] = test; // Populate the master list
+                    testsHtml += `
+                        <div class="test-case" id="test-case-${test.id}">
+                            <div class="test-info">
+                                <span class="test-status-indicator" data-status="idle"></span>
+                                <span class="test-name">${test.name}</span>
+                                <span class="test-message"></span>
+                            </div>
+                            <div class="test-actions">
+                                <span class="test-duration"></span>
+                                <button data-testid="${test.id}">Run</button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                suiteCard.innerHTML = `
+                    <div class="test-suite-title">
+                        <h2>${suite.name}</h2>
+                        <button data-suiteid="${suite.id}">Run Suite</button>
+                    </div>
+                    ${testsHtml}
+                `;
+                container.appendChild(suiteCard);
+            });
+            
+            // Add event listeners after UI is built
+            document.querySelectorAll('button[data-testid]').forEach(btn => {
+                btn.addEventListener('click', () => testRunner.runSingleTest(btn.dataset.testid));
+            });
+            document.querySelectorAll('button[data-suiteid]').forEach(btn => {
+                btn.addEventListener('click', () => testRunner.runSuite(btn.dataset.suiteid));
+            });
+        }
+
+        // --- Main Application Logic ---
+        document.addEventListener('DOMContentLoaded', () => {
+            buildTestUI();
+            testRunner.init();
+
+            document.getElementById('btn-load-avatar').addEventListener('click', async () => {
+                try {
+                    updateStatus('Loading avatar...', 'streaming');
+                    
+                    // Clean up existing avatar if it exists
+                    if (head) {
+                        log('Disposing existing avatar...');
+                        try {
+                            if (typeof head.dispose === 'function') {
+                                head.dispose();
+                            }
+                        } catch (e) {
+                            log(`Warning during avatar cleanup: ${e.message}`, 'warning');
+                        }
+                        head = null;
+                    }
+                    
+                    // Clear the avatar container
+                    const avatarContainer = document.getElementById('avatar');
+                    avatarContainer.innerHTML = '';
+                    
+                    log('Initializing TalkingHead...');
+                    head = new TalkingHead(avatarContainer, {
+                        ttsEndpoint: "none", cameraView: "upper", lipsyncLang: 'en'
+                    });
+
+                    await head.showAvatar(
+                        { url: 'https://models.readyplayer.me/64bfa15f0e72c63d7c3934a6.glb?morphTargets=ARKit,Oculus+Visemes,mouthOpen,mouthSmile,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png', body: 'F', lipsyncLang: 'en' },
+                        (ev) => {
+                            if (ev.lengthComputable) {
+                                const percent = Math.round((ev.loaded / ev.total) * 100);
+                                updateStatus(`Loading avatar... ${percent}%`, 'streaming');
+                            }
+                        }
+                    );
+
+                    log('Avatar loaded successfully!', 'success');
+                    updateStatus('Avatar ready. Run tests.', 'idle');
+                    
+                    // Enable test buttons after successful avatar load
+                    document.querySelectorAll('.master-controls button, .test-suite button, .test-actions button').forEach(b => b.disabled = false);
+                    
+                    // Change button text to "Reload Avatar" after first successful load
+                    document.getElementById('btn-load-avatar').textContent = 'Reload Avatar';
+                    document.getElementById('btn-load-avatar').disabled = false;
+                    
+                } catch (error) {
+                    log(`Error loading avatar: ${error.message}`, 'error');
+                    updateStatus('Error loading avatar', 'error');
+                    
+                    // Keep the Load/Reload Avatar button enabled so user can try again
+                    document.getElementById('btn-load-avatar').disabled = false;
+                }
+            });
+            
+            document.getElementById('btn-run-all').addEventListener('click', () => testRunner.runAll());
+            document.getElementById('btn-reset-all').addEventListener('click', () => testRunner.resetAll());
+            
+            log('Test suite initialized. Avatar must be loaded before running tests.');
+            updateStatus('Avatar required - Click "Load Avatar" to enable tests', 'idle');
+        });
+    </script>
+</body>
+</html>

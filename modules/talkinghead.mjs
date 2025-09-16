@@ -3429,7 +3429,9 @@ class TalkingHead {
     this.stopSpeaking(); // Stop the speech queue mode
 
     this.isStreaming = true;
-    if (opt.waitForAudioChunks) this.streamWaitForAudioChunks = opt.waitForAudioChunks;
+    if (opt.waitForAudioChunks !== undefined) {
+      this.streamWaitForAudioChunks = opt.waitForAudioChunks;
+    }
     if (!this.streamWaitForAudioChunks) { this.streamAudioStartTime = this.animClock; }
     this.streamLipsyncQueue = [];
     this.streamLipsyncType = opt.lipsyncType || this.streamLipsyncType || 'visemes';
@@ -3518,7 +3520,7 @@ class TalkingHead {
         if (event.data.type === 'playback-ended') {
           this._streamPause();
           if (this.onAudioEnd) {
-            try { this.onAudioEnd?.(); } catch(e) { console.error(e); }
+              try { this.onAudioEnd(); } catch(e) {}
           }
         }
 
@@ -3566,24 +3568,30 @@ class TalkingHead {
    * Interrupt ongoing stream audio and lipsync
    */
   streamInterrupt() {
-    if (this.streamWorkletNode) {
-      // tell worklet to stop.
-      try { this.streamWorkletNode.port.postMessage({type: 'stop'}); } catch(e) { /* ignore */ }
-    }
-    this._streamPause(true);
+      if (!this.isStreaming) return;
+      const wasSpeaking = this.isSpeaking;
+
+      if (this.streamWorkletNode) {
+          try { this.streamWorkletNode.port.postMessage({type: 'stop'}); } catch(e) {}
+      }
+      this._streamPause(true);
+
+      if (wasSpeaking && this.onAudioEnd) {
+          try { this.onAudioEnd(); } catch(e) {}
+      }
   }
 
   /**
    * Stop streaming mode
-   * @param {boolean} disconnect - If true, also disconnect and cleanup the audio worklet
    */
   streamStop() {
+    if (!this.isStreaming) return;
     this.streamInterrupt();
     if (this.streamWorkletNode) {
       try {
         this.streamWorkletNode.disconnect();
-        this.streamWorkletNode = null;
       } catch(e) { /* ignore */ }
+      this.streamWorkletNode = null;
     }
     this.isStreaming = false;
   }
