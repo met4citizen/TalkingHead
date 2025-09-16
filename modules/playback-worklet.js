@@ -52,9 +52,7 @@ class PlaybackWorklet extends AudioWorkletProcessor {
 
     // INTERRUPT: The main thread wants to stop immediately.
     if (type === "stop") {
-      if (!this._hasSentEnded) {
-        this._hasSentEnded = true;
-      }
+      this.reset();
       // Send final metrics showing cleared state
       if (this._metricsEnabled) {
         try {
@@ -71,7 +69,6 @@ class PlaybackWorklet extends AudioWorkletProcessor {
           });
         } catch (_) { }
       }
-      this.reset(); // Immediately reset to IDLE state, clearing all buffers
       return;
     }
 

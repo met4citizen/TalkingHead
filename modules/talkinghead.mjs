@@ -3583,7 +3583,6 @@ class TalkingHead {
 
   /**
    * Stop streaming mode
-   * @param {boolean} disconnect - If true, also disconnect and cleanup the audio worklet
    */
   streamStop() {
     if (!this.isStreaming) return;
