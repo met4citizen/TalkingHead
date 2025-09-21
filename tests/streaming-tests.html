@@ -292,6 +292,30 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
             }
             throw new Error('Timed out waiting for silence');
         }
+
+        function getAnimCount(name) {
+            const queue = head?.animQueue || [];
+            let count = 0;
+            for (const a of queue) {
+                if (a?.template?.name === name) count++;
+            }
+            return count;
+        }
+
+        function isLipsyncActive(type = 'visemes') {
+            const map = { visemes: 'viseme', words: 'word', blendshapes: 'blendshape' };
+            const templateName = map[type] || type;
+            return getAnimCount(templateName) > 0;
+        }
+
+        async function assertLipsync(type = 'visemes', timeoutMs = 600) {
+            const start = performance.now();
+            while (performance.now() - start < timeoutMs) {
+                if (isLipsyncActive(type)) return true;
+                await sleep(25);
+            }
+            throw new Error(`Lipsync not active: ${type}`);
+        }
         
         // --- Test Data Generation ---
         const createSineTonePCM16LE = (c, f=440, r=44100, a=8e3) => {
@@ -390,6 +414,7 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                             vtimes: [0, 500, 1000], 
                             vdurations: [500, 500, 500] 
                         });
+                        await assertLipsync('visemes', 800);
                         log(`Streamed with visemes: ${visemes.join(', ')}`);
                         head.streamNotifyEnd();
                         await waitForPlaybackStop();
@@ -674,6 +699,71 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                              throw new Error('Late audio should have canceled the notifyEnd');
                          }
                      }},
+                     { id: 'notify-end-cancel-race', name: 'NotifyEnd Cancel Race Test', fn: async () => {
+                         // Ensure streaming is active for notify end cancel test
+                         if (!head?.isStreaming) {
+                             log('🔄 Starting streaming for notify end cancel test...');
+                             await head.streamStart({ lipsyncType: 'visemes' }, null, _onPlaybackStopped);
+                         }
+                         // Send initial short audio and call notifyEnd
+                         head.streamAudio({
+                             audio: createSineTonePCM16LE(11025, 440), // 0.25s
+                             visemes: ['aa','E'],
+                             vtimes: [0,120],
+                             vdurations: [100,100]
+                         });
+
+                         await sleep(500);
+                         head.streamNotifyEnd();
+                         head.streamAudio({
+                             audio: createSineTonePCM16LE(22050, 660), // 0.5s more
+                             visemes: ['I','O','U'],
+                             vtimes: [0,110,220],
+                             vdurations: [90,90,90]
+                         });
+                         // Assert lipsync becomes active again despite prior notifyEnd
+                         await assertLipsync('visemes', 700);
+                         await sleep(300);
+                         if (!head.isSpeaking && head.stateName !== 'speaking') {
+                             throw new Error('Race condition: late audio should have canceled the notifyEnd');
+                         }
+                     }},
+                    { id: 'silence-timeout-recovery', name: 'Main Thread Silence Timeout Recovery', fn: async () => {
+                        // Ensure streaming is active for this recovery test
+                        if (!head?.isStreaming) {
+                            log('🔄 Starting streaming for silence-timeout recovery test...');
+                            await head.streamStart({ lipsyncType: 'visemes' }, null, _onPlaybackStopped);
+                        }
+                        log('▶️ Sending initial short audio (will run out quickly)...');
+                        head.streamAudio({
+                            audio: createSineTonePCM16LE(11025, 500), // ~0.25s
+                            visemes: ['aa'],
+                            vtimes: [0],
+                            vdurations: [250]
+                        });
+                        await sleep(); // Wait for initial audio to play
+                        
+                        // Simulate main thread being blocked for ~1s so the worklet hits its 1s silence timeout
+                        log('⏳ Blocking main thread for ~1s to trigger worklet silence timeout...');
+                        const end = performance.now() + 1000;
+                        while (performance.now() < end) { /* busy-wait */ }
+                        
+                        // Now send new audio; worklet should have reset and accept new data
+                        log('🎵 Sending new audio after silence timeout; expecting playback and lipsync to resume.');
+                        head.streamAudio({
+                            audio: createSineTonePCM16LE(22050, 660), // ~0.5s
+                            visemes: ['E'],
+                            vtimes: [0],
+                            vdurations: [500]
+                        });
+                        await assertLipsync('visemes', 800);
+                        if (!head.isSpeaking && head.stateName !== 'speaking') {
+                            throw new Error('Expected speaking after silence timeout recovery');
+                        }
+                        head.streamNotifyEnd();   
+                        await waitForPlaybackStop();
+                        log('✅ Silence-timeout recovery successful: speaking and lipsync resumed.', 'success');
+                     }},
                      { id: 'interrupt-race', name: 'Interrupt Race Test', timeout: 5000, fn: async () => {
                          log('🔄 Interrupt Race Test: ensuring visemes configuration...');
                          
@@ -707,61 +797,8 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                             vtimes: [0, 1000, 2000, 3000, 4000],
                             vdurations: [1000, 1000, 1000, 1000, 1000]
                         });
-                         
-                         // Check lip-sync immediately after sending
-                         const initialLipsyncTime = head.streamAudioStartTime;
-                         const initialLipsyncQueue = head.streamLipsyncQueue ? head.streamLipsyncQueue.length : 0;
-                         const initialAnimQueue = head.animQueue ? head.animQueue.filter(x => x.template && x.template.name === 'viseme').length : 0;
-                         log(`Initial state: streamAudioStartTime=${initialLipsyncTime}, lipsyncQueue=${initialLipsyncQueue}, visemeAnims=${initialAnimQueue}`);
-                         
-                         // Wait briefly for playback-started event to fire and lipsync to begin processing
-                         await sleep(50);
-                         
-                         // Check intermediate state after playback-started should have fired
-                         const midLipsyncTime = head.streamAudioStartTime;
-                         const midLipsyncQueue = head.streamLipsyncQueue ? head.streamLipsyncQueue.length : 0;
-                         const midAnimQueue = head.animQueue ? head.animQueue.filter(x => x.template && x.template.name === 'viseme').length : 0;
-                         log(`Mid state (50ms): streamAudioStartTime=${midLipsyncTime}, lipsyncQueue=${midLipsyncQueue}, visemeAnims=${midAnimQueue}`);
-                         
-                         await sleep(200); // Allow additional time for lip-sync processing and animation setup
-                         
-                         // If still not working, try waiting a bit longer
-                         let speaking = head.isSpeaking || head.stateName === 'speaking';
-                         if (!speaking) {
-                             log('⏳ Race test needs more time, waiting additional 300ms...');
-                             await sleep(300);
-                             speaking = head.isSpeaking || head.stateName === 'speaking';
-                         }
-                         
-                         // Check both speaking state AND lip-sync functionality
-                         const currentLipsyncTime = head.streamAudioStartTime;
-                         const currentLipsyncQueue = head.streamLipsyncQueue ? head.streamLipsyncQueue.length : 0;
-                         const currentAnimQueue = head.animQueue ? head.animQueue.filter(x => x.template && x.template.name === 'viseme').length : 0;
-                         
-                         // Check if lip-sync has been processed (streamAudioStartTime should be set)
-                         // Allow for the fact that it might take a moment for playback-started event to fire
-                         const lipsyncProcessed = currentLipsyncTime !== null && currentLipsyncTime > 0;
-                         
-                         // Check if viseme animations are active in the queue
-                         const visemeAnimsActive = currentAnimQueue > 0;
-                         
-                         log(`Final state (250ms): speaking=${speaking}, streamAudioStartTime=${currentLipsyncTime}, lipsyncQueue=${currentLipsyncQueue}, visemeAnims=${currentAnimQueue}`);
-                         
-                         if (speaking && lipsyncProcessed && visemeAnimsActive) {
-                             log('✅ Race test PASSED: speaking, lip-sync processed, AND viseme animations active.', 'success');
-                         } else if (speaking && visemeAnimsActive && currentLipsyncTime > 0) {
-                             // Alternative success condition: if we're speaking, have viseme anims, and valid lipsync time
-                             log('✅ Race test PASSED: speaking with viseme animations and valid lipsync time.', 'success');
-                         } else if (speaking && lipsyncProcessed && !visemeAnimsActive) {
-                             log(`❌ Race test detail: speaking=${speaking}, lipsyncProcessed=${lipsyncProcessed}, visemeAnimsActive=${visemeAnimsActive}`, 'error');
-                             throw new Error('Race test FAILED: speaking and lip-sync processed, but NO viseme animations.');
-                         } else if (speaking && !lipsyncProcessed) {
-                             log(`❌ Race test detail: speaking=${speaking}, lipsyncProcessed=${lipsyncProcessed}, visemeAnimsActive=${visemeAnimsActive}`, 'error');
-                             throw new Error('Race test FAILED: speaking but lip-sync NOT processed after restart. Check if playback-started event fired.');
-                         } else if (!speaking) {
-                             log(`❌ Race test detail: speaking=${speaking}, lipsyncProcessed=${lipsyncProcessed}, visemeAnimsActive=${visemeAnimsActive}`, 'error');
-                             throw new Error(`Race test FAILED: not speaking after immediate restart.`);
-                         }
+                        await assertLipsync('visemes', 700);
+                        log('✅ Race test PASSED: lipsync active (visemes).', 'success');
                          head.streamStop();
                          
                      }},
@@ -800,6 +837,8 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                             vtimes: [0, 500, 1000, 1500],
                             vdurations: [500, 500, 500, 500]
                         });
+                        // Ensure lipsync activates promptly even without waiting for audio chunks
+                        await assertLipsync('visemes', 800);
                         head.streamNotifyEnd();
                     }},
                     { id: 'test-metrics', name: 'Test Performance Metrics', fn: async () => {

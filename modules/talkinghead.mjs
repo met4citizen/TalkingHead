@@ -3606,10 +3606,11 @@ class TalkingHead {
   _streamPause(interrupt_lipsync = false) {
     this.isSpeaking = false;
     this.stateName = "idle";
-    if (this.streamWaitForAudioChunks) this.streamAudioStartTime = null;
-    this.streamLipsyncQueue = [];
+
     // force stop the speech animation.
     if(interrupt_lipsync) {
+      if (this.streamWaitForAudioChunks) this.streamAudioStartTime = null;
+      this.streamLipsyncQueue = [];
       this.animQueue = this.animQueue.filter( x  => x.template.name !== 'viseme' && x.template.name !== 'subtitles' && x.template.name !== 'blendshapes' );
       if ( this.armature ) {
         this.resetLips();
@@ -3724,6 +3725,10 @@ class TalkingHead {
   */
   streamAudio(r) {
     if (!this.isStreaming || !this.streamWorkletNode) return;
+    if (!this.isSpeaking) {
+      this.streamLipsyncQueue = [];
+      this.streamAudioStartTime = null;
+    }
     this.isSpeaking = true;
     this.stateName = "speaking";
 
@@ -3764,6 +3769,8 @@ class TalkingHead {
         }
         this.streamLipsyncQueue.push(r);
         return;
+      } else if(!this.streamWaitForAudioChunks && !this.streamAudioStartTime) {
+        this.streamAudioStartTime = this.animClock;
       }
       this._processLipsyncData(r, this.streamAudioStartTime);
     }
