@@ -1847,7 +1847,7 @@ async function openaiSendMessage(node,msgs) {
           if ( tts ) {
             let idx = 0;
             ['.','!','?','\n'].forEach( x => {
-              let tmp = tts.lastIndexOf(x,idx);
+              let tmp = tts.lastIndexOf(x);
               if ( tmp > idx ) idx = tmp + 1;
             });
             if ( idx > 10 ) {
@@ -2021,7 +2021,7 @@ async function grokSendMessage(node,msgs) {
         if ( tts ) {
           let idx = 0;
           ['.','!','?','\n'].forEach( x => {
-            let tmp = tts.lastIndexOf(x,idx);
+            let tmp = tts.lastIndexOf(x);
             if ( tmp > idx ) idx = tmp + 1;
           });
           if ( idx > 10 ) {
@@ -2181,7 +2181,7 @@ async function llamaSendMessage(node,msgs) {
         if ( tts ) {
           let idx = 0;
           ['.','!','?','\n'].forEach( x => {
-            let tmp = tts.lastIndexOf(x,idx);
+            let tmp = tts.lastIndexOf(x);
             if ( tmp > idx ) idx = tmp + 1;
           });
           if ( idx > 10 ) {
@@ -2475,7 +2475,7 @@ async function geminiSendMessage(node,msgs) {
           } else {
             let ndx = 0;
             ['.','!','?','\n'].forEach( x => {
-              let tmp = tts.lastIndexOf(x,ndx);
+              let tmp = tts.lastIndexOf(x);
               if ( tmp > ndx ) ndx = tmp + 1;
             });
             if ( ndx > 10 ) {
