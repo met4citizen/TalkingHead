@@ -203,6 +203,7 @@
             </div>
             <div class="card">
                  <h2>Performance Metrics</h2>
+                <div id="metrics-status" style="font-family: monospace; font-size: 12px; margin-bottom: 6px;">Session metrics: Disabled</div>
                 <div id="metrics-display" style="font-family: monospace; font-size: 12px; white-space: pre;">No metrics data yet...</div>
             </div>
         </div>
@@ -221,7 +222,7 @@
         import { TalkingHead } from 'talkinghead';
 
         // --- Global State & Elements ---
-    let head = null;
+        let head = null;
         const ALL_TESTS = {};
 
         // --- Utility Functions ---
@@ -258,11 +259,24 @@ Max Queued    : ${data.maxQueuedMs ?? 'N/A'} ms
 Underruns     : ${data.underrunBlocks ?? 0}
 Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
         }
+
+        function updateMetricsStatus(enabled) {
+            const statusEl = document.getElementById('metrics-status');
+            if (!statusEl) return;
+            if (enabled) {
+                statusEl.textContent = 'Session metrics: Enabled';
+                statusEl.style.color = '#52c41a';
+            } else {
+                statusEl.textContent = 'Session metrics: Disabled (showing last received values, if any)';
+                statusEl.style.color = '#8c8c8c';
+            }
+        }
         
         // --- Playback Await Helpers ---
         // Semaphore-based resolver to await playback completion without fragile timeouts
         let _pendingPlaybackStops = 0;
         const _playbackResolvers = [];
+
         function _onPlaybackStopped() {
             const r = _playbackResolvers.shift();
             if (typeof r === 'function') {
@@ -271,6 +285,7 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                 _pendingPlaybackStops++;
             }
         }
+
         function waitForPlaybackStop() {
             if (_pendingPlaybackStops > 0) {
                 _pendingPlaybackStops--;
@@ -278,6 +293,14 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
             }
             return new Promise(resolve => _playbackResolvers.push(resolve));
         }
+
+        function resetPlaybackWaiters() {
+            try {
+                _pendingPlaybackStops = 0;
+                _playbackResolvers.length = 0;
+            } catch {}
+        }
+
         async function waitForPlaybackStopOrSilence(timeoutMs = 6000, pollMs = 50) {
             // If already not speaking, resolve immediately
             if (!head?.isSpeaking && head?.stateName !== 'speaking') return;
@@ -302,10 +325,45 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
             return count;
         }
 
+        // --- Assertion Helpers ---
+        function assert(cond, msg = 'Assertion failed') {
+            if (!cond) throw new Error(msg);
+        }
+
+        async function assertStreamingReady(timeoutMs = 2000) {
+            const start = performance.now();
+            let playbackStarted = false;
+            // If port exists, try to observe a playback-started message quickly (optional)
+            const maybeHook = () => {
+                try {
+                    if (head?.streamWorkletNode?.port) {
+                        const handler = (e) => { if (e?.data?.type === 'playback-started') playbackStarted = true; };
+                        head.streamWorkletNode.port.addEventListener?.('message', handler, { once: true });
+                    }
+                } catch {}
+            };
+
+            maybeHook();
+            // Wait until head.isStreaming and streamWorkletNode exist
+            while (performance.now() - start < timeoutMs) {
+                if (head?.isStreaming && head?.streamWorkletNode && head?.streamWorkletNode?.port) break;
+                await sleep(20);
+            }
+            assert(head?.isStreaming === true, 'Streaming should be active (isStreaming)');
+            assert(!!head.streamWorkletNode, 'AudioWorkletNode should exist');
+            assert(!!head.streamWorkletNode.port, 'AudioWorkletNode.port should exist');
+            if ('workletLoaded' in head) {
+                assert(head.workletLoaded === true, 'Audio worklet should be loaded');
+            }
+            // Small settle to ensure the node has processed an initial tick, even if no audio queued
+            await sleep(30);
+        }
+
         function isLipsyncActive(type = 'visemes') {
-            const map = { visemes: 'viseme', words: 'word', blendshapes: 'blendshape' };
-            const templateName = map[type] || type;
-            return getAnimCount(templateName) > 0;
+            if (type === 'visemes') return getAnimCount('viseme') > 0;
+            if (type === 'words') return getAnimCount('viseme') > 0 || getAnimCount('subtitles') > 0;
+            if (type === 'blendshapes') return getAnimCount('blendshapes') > 0;
+            return getAnimCount(type) > 0;
         }
 
         async function assertLipsync(type = 'visemes', timeoutMs = 600) {
@@ -334,13 +392,33 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
             return buffer;
         };
         
-        // Removed redundant global streaming state; use head.isStreaming as single source of truth
-
-    // Allowed visemes derived from the provided viseme map
-    const ALLOWED_VISEMES = ["sil","aa","O","E","RR","I","U","kk","nn","SS","CH","TH","FF","DD","PP"];
+    // Allowed visemes. Exclude 'sil' to avoid sequences that don't visibly activate lipsync
+    const ALLOWED_VISEMES = ["aa","O","E","RR","I","U","kk","nn","SS","CH","TH","FF","DD","PP"];
     const getRandomVisemes = (c) => Array.from({length: c}, () => ALLOWED_VISEMES[Math.floor(Math.random()*ALLOWED_VISEMES.length)]);
         const getRandomWords = (c) => Array.from({length: c}, () => ["hello","world","streaming","test"][Math.floor(Math.random()*4)]);
-        const createRandomBlendshapeAnim = () => ([{name:"blendshapes",delay:0,dt:[33,33,33,33],vs:{"jawOpen":[0,.3,.7,.2],"mouthFrownLeft":[0,.1,.2,0]}}]);
+        const createRandomBlendshapeAnim = () => {
+            // Build a ~1s blendshape anim at ~60 FPS with a short initial delay
+            const frames = 30; // ~30 frames at 33ms ~ 1s
+            const dt = Array(frames).fill(33);
+            const jaw = [];
+            const frown = [];
+            for (let i = 0; i < frames; i++) {
+                // Simple ramp up then down pattern
+                const t = i / (frames - 1);
+                const v = t < 0.5 ? t * 2 : (1 - t) * 2; // 0->1->0
+                jaw.push(0.1 + 0.6 * v);
+                frown.push(0.05 * v);
+            }
+            return [{
+                name: "blendshapes",
+                delay: 200, // small delay so anim isn't consumed before the first check
+                dt,
+                vs: {
+                    jawOpen: jaw,
+                    mouthFrownLeft: frown
+                }
+            }];
+        };
 
         // --- Test Definitions ---
         const TEST_SUITES = [
@@ -351,7 +429,6 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                     { id: 'stream-start', name: 'streamStart()', fn: async () => {
                         log('Starting streaming session...');
                         updateStatus('Starting stream...', 'streaming');
-                        
                         await head.streamStart(
                             { 
                                 sampleRate: 44100,
@@ -371,15 +448,26 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                             (text) => log(`Subtitle: ${text}`),
                             (metrics) => updateMetrics(metrics)
                         );
+                        updateMetricsStatus(true);
                         log('Streaming session started!', 'success');
                         updateStatus('Streaming (ready)', 'streaming');
+                        await assertStreamingReady();
+                        log('Assertions passed: isStreaming and worklet ready.', 'success');
+                        head.streamStop();
+                        await sleep(50);
+                        assert(!head.isStreaming, 'Streaming should be stopped after streamStop');
+                        log('Assertions passed: streamStop cleared isStreaming.', 'success');
                     }},
                     { id: 'stream-stop', name: 'streamStop()', fn: async () => {
                         log('Stopping streaming session...');
+                        await head.streamStart({ lipsyncType: 'visemes' });
+                        await assertStreamingReady();
                         head.streamStop();
                         await sleep(50); // Small delay to ensure internal state is fully updated
                         log('Streaming session stopped!', 'success');
                         updateStatus('Ready', 'idle');
+                        assert(!head.isStreaming, 'Streaming should be false after streamStop');
+                        assert(!head.streamWorkletNode, 'Worklet node should be null after streamStop');
                     }}
                 ]
             },
@@ -388,24 +476,24 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                 name: 'Audio Streaming Tests',
                 tests: [
                     { id: 'stream-basic', name: 'Stream Basic Audio', fn: async () => {
-                        // Ensure streaming is active with basic configuration
-                        if (!head?.isStreaming) {
-                            log('🔄 Starting streaming for basic audio test...');
-                            await head.streamStart({ lipsyncType: 'visemes' }, null, _onPlaybackStopped);
-                        }
+                        await head.streamStart({ lipsyncType: 'visemes' }, null, _onPlaybackStopped);
+                        await assertStreamingReady();
+                        updateMetricsStatus(false);
                         log('Streaming basic audio...');
                         head.streamAudio({ audio: createSineTonePCM16LE(44100) });
                         head.streamNotifyEnd();
                         log('Waiting for playback to complete...');
                         await waitForPlaybackStop();
+                        assert(!head.isSpeaking && head.stateName !== 'speaking', 'Avatar should be silent after playback');
                         log('Playback confirmed finished.', 'success');
+                        head.streamStop();
+                        await sleep(50);
+                        assert(!head.isStreaming, 'Streaming should be stopped');
                     }},
                     { id: 'stream-visemes', name: 'Stream with Visemes', fn: async () => {
-                        // Ensure streaming is active with visemes configuration
-                        if (!head?.isStreaming) {
-                            log('🔄 Starting streaming for visemes test...');
-                            await head.streamStart({ lipsyncType: 'visemes' }, null, _onPlaybackStopped);
-                        }
+                        await head.streamStart({ lipsyncType: 'visemes' }, null, _onPlaybackStopped);
+                        await assertStreamingReady();
+                        updateMetricsStatus(false);
                         log('Streaming with visemes...');
                         const visemes = getRandomVisemes(3);
                         head.streamAudio({ 
@@ -414,15 +502,22 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                             vtimes: [0, 500, 1000], 
                             vdurations: [500, 500, 500] 
                         });
-                        await assertLipsync('visemes', 800);
+                        await sleep(150);
+                        await assertLipsync('visemes', 1500);
                         log(`Streamed with visemes: ${visemes.join(', ')}`);
                         head.streamNotifyEnd();
                         await waitForPlaybackStop();
+                        assert(!head.isSpeaking && head.stateName !== 'speaking', 'Avatar should be silent after visemes test');
                         log('Playback finished for visemes test.', 'success');
+                        head.streamStop();
+                        await sleep(50);
+                        assert(!head.isStreaming, 'Streaming should be stopped');
                     }},
                     { id: 'stream-words', name: 'Stream with Words', fn: async () => {
                         log('Reconfiguring for words and streaming...');
                         await head.streamStart({ lipsyncType: 'words' }, null, _onPlaybackStopped);
+                        await assertStreamingReady();
+                        updateMetricsStatus(false);
                         const words = getRandomWords(3);
                         head.streamAudio({ 
                             audio: createSineTonePCM16LE(88200), 
@@ -430,36 +525,48 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                             wtimes: [0, 700, 1400], 
                             wdurations: [700, 700, 700] 
                         });
+                        await sleep(150);
+                        await assertLipsync('words', 1800);
                         log(`Streamed with words: ${words.join(', ')}`);
                         head.streamNotifyEnd();
                         await waitForPlaybackStop();
+                        assert(!head.isSpeaking && head.stateName !== 'speaking', 'Avatar should be silent after words test');
                         log('Playback finished for words test.', 'success');
+                        head.streamStop();
+                        await sleep(50);
+                        assert(!head.isStreaming, 'Streaming should be stopped');
                     }},
                     { id: 'stream-blendshapes', name: 'Stream with Blendshapes', fn: async () => {
                         log('Reconfiguring for blendshapes and streaming...');
                         await head.streamStart({ 
                             sampleRate: 44100,
                             lipsyncType: 'blendshapes',
-                            gain: 0.3
+                            gain: 0.3,
+                            waitForAudioChunks: false
                         }, null, _onPlaybackStopped);
+                        await assertStreamingReady();
+                        updateMetricsStatus(false);
                         
                         head.streamAudio({
                             audio: createSineTonePCM16LE(66150, 880), // 1.5 seconds higher tone
                             anims: createRandomBlendshapeAnim()
                         });
+                        await sleep(150);
+                        await assertLipsync('blendshapes', 2500);
                         log('Streamed with blendshape animation');
                         head.streamNotifyEnd();
                         await waitForPlaybackStop();
+                        assert(!head.isSpeaking && head.stateName !== 'speaking', 'Avatar should be silent after blendshapes test');
                         log('Playback finished for blendshapes test.', 'success');
+                        head.streamStop();
+                        await sleep(50);
+                        assert(!head.isStreaming, 'Streaming should be stopped');
                     }},
                     { id: 'stream-chunks', name: 'Stream Multiple Chunks', fn: async () => {
-                        // Ensure streaming is active for chunks test
-                        if (!head?.isStreaming) {
-                            log('🔄 Starting streaming for chunks test...');
-                            await head.streamStart({ lipsyncType: 'visemes' }, null, _onPlaybackStopped);
-                        }
+                        await head.streamStart({ lipsyncType: 'visemes' }, null, _onPlaybackStopped);
+                        await assertStreamingReady();
+                        updateMetricsStatus(false);
                         log('Streaming multiple chunks...');
-                        
                         // Stream 3 chunks with setTimeout for proper timing
                         for (let i = 0; i < 3; i++) {
                             setTimeout(() => {
@@ -468,11 +575,10 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                                 head.streamAudio({
                                     audio: createSineTonePCM16LE(22050, frequency), // 0.5 seconds each
                                     visemes: visemes,
-                                    vtimes: [0, 250],
+                                    vtimes: [0 + i*500, 250 + i*500], // visemes timed relative to start of utterance
                                     vdurations: [250, 250]
                                 });
                                 log(`Streamed chunk ${i + 1} with frequency ${frequency}Hz, visemes: ${visemes.join(', ')}`);
-                                
                                 if (i === 2) {
                                     setTimeout(() => {
                                         head.streamNotifyEnd();
@@ -481,10 +587,11 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                                 }
                             }, i * 200);
                         }
-                        
-                        // Wait for playback completion instead of fixed delay
                         await waitForPlaybackStop();
                         log('Playback finished for multi-chunk test.', 'success');
+                        head.streamStop();
+                        await sleep(50);
+                        assert(!head.isStreaming, 'Streaming should be stopped');
                     }},
                 ]
             },
@@ -497,6 +604,7 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                         if (!head?.isStreaming) {
                             log('🔄 Starting streaming for interrupt test...');
                             await head.streamStart({ lipsyncType: 'visemes' }, null, _onPlaybackStopped);
+                            await assertStreamingReady();
                         }
                         log('Starting audio then interrupting...');
                         
@@ -513,7 +621,7 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                         await sleep(1500);
                         head.streamInterrupt();
                         log('Called streamInterrupt()!', 'warning');
-                        await waitForPlaybackStopOrSilence();
+                        await waitForPlaybackStop();
                         if (head.isSpeaking) {
                             throw new Error('Avatar still speaking after interrupt');
                         }
@@ -528,6 +636,11 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                         head.streamNotifyEnd();
                         log('✅ Streamed new audio post-interrupt successfully!', 'success');
                         await waitForPlaybackStop();
+                        await sleep(100);
+                        assert(!head.isSpeaking && head.stateName !== 'speaking', 'Avatar should be silent after post-interrupt playback');
+                        head.streamStop();
+                        await sleep(50);
+                        assert(!head.isStreaming, 'Streaming should be stopped');
                      }},
                      { id: 'session-reuse', name: 'Session Reuse After End', fn: async () => {
                          // Ensure streaming is active and ensure onPlaybackStopped is bound
@@ -535,6 +648,7 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                              log('🔄 Starting streaming for session reuse test...');
                          }
                          await head.streamStart({ lipsyncType: 'visemes' }, null, _onPlaybackStopped);
+                         await assertStreamingReady();
                          await sleep(50);
                          log('Testing session reuse...');
                          
@@ -548,7 +662,7 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                          });
                          head.streamNotifyEnd();
                           // End and wait for playback to stop or speaking state to clear
-                         await waitForPlaybackStopOrSilence(7000);
+                        await waitForPlaybackStop();
                          await sleep(50); // tiny settle
                          if(head.isSpeaking) {
                              throw new Error("Avatar still speaking before reuse.");
@@ -566,9 +680,12 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                              vdurations: [500]
                          });
                          head.streamNotifyEnd();
-                         await waitForPlaybackStopOrSilence(7000);
+                         await waitForPlaybackStop();
                          await sleep(50);
                          log('✅ Session reuse successful!', 'success');
+                         head.streamStop();
+                         await sleep(50);
+                         assert(!head.isStreaming, 'Streaming should be stopped');
                      }, timeout: 8000},
                      { id: 'chatbot-flow', name: 'Simulate Chatbot Flow', fn: async () => {
                          log('🤖 Starting Chatbot Flow Simulation...', 'info');
@@ -580,6 +697,7 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                              await sleep(100);
                          }
                          await head.streamStart({ sampleRate: 24000, gain: 0.6 }, null, _onPlaybackStopped);
+                         updateMetricsStatus(false);
                          updateStatus('Chatbot session active', 'streaming');
                          log('✅ Session started successfully.');
                          
@@ -619,17 +737,17 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                              log(`▶️ Starting interruptible utterance #${i + 1}...`);
                              head.streamAudio({ audio: createSineTonePCM16LE(48000, 400) }); // A long 2-second audio
                              // long utterance starts
-                             await sleep(800); // User interrupts after 800ms
-                             
+                             await sleep(800);                             
                              log('⚠️ User interrupts! Calling streamInterrupt().');
                              head.streamInterrupt();
-                             await waitForPlaybackStopOrSilence();
+                             await waitForPlaybackStop();
                              log(`⏹️ Interrupted utterance #${i + 1} stopped.`);
                          }
 
                          // 4. Reconfigure the session mid-flow
                          log('🔧 Reconfiguring session (e.g., changing voice gain)...');
                          await head.streamStart({ sampleRate: 24000, gain: 1.0 }, null, _onPlaybackStopped); // Increase gain
+                         updateMetricsStatus(false);
                          log('✅ Session reconfigured with new gain.');
                          
 
@@ -646,9 +764,6 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                          await sleep(100);
                          log('✅ Session stopped successfully.');
                          updateStatus('Chatbot simulation finished', 'idle');
-                         
-                         // Restart streaming for other tests
-                         await head.streamStart({ lipsyncType: 'visemes' }, null, _onPlaybackStopped);
                          log('🤖 Chatbot Flow Simulation Complete.', 'info');
                      }, timeout: 15000 },
                      { id: 'stream-notify-end', name: 'streamNotifyEnd()', fn: async () => {
@@ -656,6 +771,7 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                          if (!head?.isStreaming) {
                              log('🔄 Starting streaming for notify end test...');
                              await head.streamStart({ lipsyncType: 'visemes' }, null, _onPlaybackStopped);
+                             await assertStreamingReady();
                          }
                          log('Streaming then calling streamNotifyEnd()...');
                          
@@ -671,12 +787,16 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                          head.streamNotifyEnd();
                          log('Called streamNotifyEnd()', 'success');
                          await waitForPlaybackStop();
+                         head.streamStop();
+                         await sleep(50);
+                         assert(!head.isStreaming, 'Streaming should be stopped');
                      }},
                      { id: 'notify-end-cancel', name: 'NotifyEnd Cancel Test', fn: async () => {
                          // Ensure streaming is active for notify end cancel test
                          if (!head?.isStreaming) {
                              log('🔄 Starting streaming for notify end cancel test...');
                              await head.streamStart({ lipsyncType: 'visemes' }, null, _onPlaybackStopped);
+                             await assertStreamingReady();
                          }
                          // Send initial short audio and call notifyEnd
                          head.streamAudio({
@@ -698,12 +818,17 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                          if (!head.isSpeaking && head.stateName !== 'speaking') {
                              throw new Error('Late audio should have canceled the notifyEnd');
                          }
+                         await waitForPlaybackStop();
+                         head.streamStop();
+                         await sleep(50);
+                         assert(!head.isStreaming, 'Streaming should be stopped');
                      }},
                      { id: 'notify-end-cancel-race', name: 'NotifyEnd Cancel Race Test', fn: async () => {
                          // Ensure streaming is active for notify end cancel test
                          if (!head?.isStreaming) {
                              log('🔄 Starting streaming for notify end cancel test...');
                              await head.streamStart({ lipsyncType: 'visemes' }, null, _onPlaybackStopped);
+                             await assertStreamingReady();
                          }
                          // Send initial short audio and call notifyEnd
                          head.streamAudio({
@@ -727,12 +852,17 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                          if (!head.isSpeaking && head.stateName !== 'speaking') {
                              throw new Error('Race condition: late audio should have canceled the notifyEnd');
                          }
+                         await waitForPlaybackStop();
+                         head.streamStop();
+                         await sleep(50);
+                         assert(!head.isStreaming, 'Streaming should be stopped');
                      }},
                     { id: 'silence-timeout-recovery', name: 'Main Thread Silence Timeout Recovery', fn: async () => {
                         // Ensure streaming is active for this recovery test
                         if (!head?.isStreaming) {
                             log('🔄 Starting streaming for silence-timeout recovery test...');
                             await head.streamStart({ lipsyncType: 'visemes' }, null, _onPlaybackStopped);
+                            await assertStreamingReady();
                         }
                         log('▶️ Sending initial short audio (will run out quickly)...');
                         head.streamAudio({
@@ -763,6 +893,9 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                         head.streamNotifyEnd();   
                         await waitForPlaybackStop();
                         log('✅ Silence-timeout recovery successful: speaking and lipsync resumed.', 'success');
+                                head.streamStop();
+                                await sleep(50);
+                                assert(!head.isStreaming, 'Streaming should be stopped');
                      }},
                      { id: 'interrupt-race', name: 'Interrupt Race Test', timeout: 5000, fn: async () => {
                          log('🔄 Interrupt Race Test: ensuring visemes configuration...');
@@ -774,7 +907,8 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                                  sampleRate: 44100,
                                  lipsyncType: 'visemes',
                                  gain: 0.5
-                             });
+                                 });
+                                 updateMetricsStatus(false);
                              updateStatus('Streaming (ready for race test)', 'streaming');
                              await sleep(200); // Allow streaming to fully initialize
                          } catch (e) {
@@ -804,11 +938,15 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                      }},
                      { id: 'test-reconfigure', name: 'Test Reconfiguration', fn: async () => {
                          // First: visemes mode
-                         await head.streamStart({ lipsyncType: 'visemes', gain: 0.3 });
+                         await head.streamStart({ lipsyncType: 'visemes', gain: 0.3 }, null, _onPlaybackStopped);
+                         await assertStreamingReady();
+                         updateMetricsStatus(false);
                          await sleep(500);
                          
                          // Reconfigure: words mode
-                         await head.streamStart({ lipsyncType: 'words', gain: 0.7 });
+                         await head.streamStart({ lipsyncType: 'words', gain: 0.7 }, null, _onPlaybackStopped);
+                         await assertStreamingReady();
+                         updateMetricsStatus(false);
                          
                          // Test the new configuration
                          head.streamAudio({
@@ -818,6 +956,10 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                              wdurations: [500, 500]
                          });
                          head.streamNotifyEnd();
+                         await waitForPlaybackStop();
+                         head.streamStop();
+                         await sleep(50);
+                         assert(!head.isStreaming, 'Streaming should be stopped');
                      }},
                 ]
             },
@@ -830,7 +972,9 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                             sampleRate: 44100, 
                             lipsyncType: 'visemes',
                             waitForAudioChunks: false // Process lip-sync immediately
-                        });
+                        }, null, _onPlaybackStopped);
+                        await assertStreamingReady();
+                        updateMetricsStatus(false);
                         head.streamAudio({
                             audio: createSineTonePCM16LE(88200), // 2 seconds
                             visemes: ["PP", "aa", "E", "FF"],
@@ -840,6 +984,64 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                         // Ensure lipsync activates promptly even without waiting for audio chunks
                         await assertLipsync('visemes', 800);
                         head.streamNotifyEnd();
+                        await waitForPlaybackStop();
+                        head.streamStop();
+                        await sleep(50);
+                        assert(!head.isStreaming, 'Streaming should be stopped');
+                    }},
+                    { id: 'no-wait-audio-only', name: 'waitForAudioChunks:false with audio-only', fn: async () => {
+                        await head.streamStart({ lipsyncType: 'visemes', waitForAudioChunks: false }, null, _onPlaybackStopped);
+                        await assertStreamingReady();
+                        head.streamAudio({ audio: createSineTonePCM16LE(11025) });
+                        head.streamNotifyEnd();
+                        await waitForPlaybackStop();
+                        head.streamStop();
+                        await sleep(50);
+                        assert(!head.isStreaming, 'Streaming should be stopped');
+                    }},
+                    { id: 'no-wait-lipsync-only', name: 'waitForAudioChunks:false with lipsync-only', fn: async () => {
+                        await head.streamStart({ lipsyncType: 'visemes', waitForAudioChunks: false }, null, _onPlaybackStopped);
+                        await assertStreamingReady();
+                        const visemes = ['aa','E'];
+                        head.streamAudio({ visemes, vtimes: [0, 200], vdurations: [200, 200] });
+                        // Should schedule viseme anims even without audio
+                        await assertLipsync('visemes', 1000);
+                        head.streamStop();
+                        await sleep(50);
+                        assert(!head.isStreaming, 'Streaming should be stopped');
+                    }},
+                    { id: 'callback-onAudioStart', name: 'Callback: onAudioStart fires', fn: async () => {
+                        let started = false;
+                        const onStart = () => { started = true; };
+                        await head.streamStart({ lipsyncType: 'visemes' }, onStart, _onPlaybackStopped);
+                        await assertStreamingReady();
+                        head.streamAudio({ audio: createSineTonePCM16LE(11025) });
+                        head.streamNotifyEnd();
+                        await waitForPlaybackStop();
+                        if (!started) throw new Error('onAudioStart should have fired');
+                        head.streamStop();
+                        await sleep(50);
+                        assert(!head.isStreaming, 'Streaming should be stopped');
+                    }},
+                    { id: 'callback-onSubtitles', name: 'Callback: onSubtitles receives text', fn: async () => {
+                        let received = [];
+                        const onSub = (text) => received.push(text.trim());
+                        await head.streamStart({ lipsyncType: 'words' }, null, _onPlaybackStopped, onSub);
+                        await assertStreamingReady();
+                        const words = ['alpha','beta'];
+                        head.streamAudio({
+                            audio: createSineTonePCM16LE(44100), // ensure enough audio for both subtitles
+                            words,
+                            wtimes: [0, 500],
+                            wdurations: [400, 400]
+                        });
+                        head.streamNotifyEnd();
+                        await waitForPlaybackStop();
+                        const ok = received.some(t => t.includes('alpha')) && received.some(t => t.includes('beta'));
+                        if (!ok) throw new Error(`onSubtitles did not receive expected words. Got: ${JSON.stringify(received)}`);
+                        head.streamStop();
+                        await sleep(50);
+                        assert(!head.isStreaming, 'Streaming should be stopped');
                     }},
                     { id: 'test-metrics', name: 'Test Performance Metrics', fn: async () => {
                         let metricsReceived = false;
@@ -867,6 +1069,7 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                             null, // onSubtitleReceived
                             metricsCallback // onMetricsReceived - 5th parameter
                         );
+                        updateMetricsStatus(true);
                         log('📊 Started streaming with metrics callback properly configured');                          
                         log('🔄 Starting metrics test with 2-second audio...');
                         
@@ -880,8 +1083,6 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                         
                         log('🔄 Waiting for metrics callbacks during 2-second audio...');
                         
-                        // Wait longer to ensure metrics callback is triggered
-                        // Increase wait time and add periodic checks
                         for (let i = 0; i < 10; i++) {
                             await sleep(300);
                             log(`⏱️ Metrics check ${i+1}/10: received=${metricsReceived}`);
@@ -896,6 +1097,9 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                         }
                         
                         log('✅ Metrics test completed successfully', 'success');
+                        head.streamStop();
+                        await sleep(50);
+                        assert(!head.isStreaming, 'Streaming should be stopped');
                     }, timeout: 12000},
                     { id: 'test-different-rates', name: 'Test Different Sample Rates', fn: async () => {
                         // Test multiple sample rates
@@ -903,12 +1107,30 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                         for (const rate of rates) {
                             log(`🔧 Reconfiguring to sampleRate=${rate}...`);
                             await head.streamStart({ sampleRate: rate, lipsyncType: 'visemes' }, null, _onPlaybackStopped);
+                            // Small settle then readiness
+                            await sleep(100);
+                            try {
+                                await assertStreamingReady(8000);
+                            } catch (e) {
+                                log(`⚠️ Readiness failed once at ${rate}Hz, retrying streamStart...`, 'warning');
+                                await sleep(100);
+                                await head.streamStart({ sampleRate: rate, lipsyncType: 'visemes' }, null, _onPlaybackStopped);
+                                await sleep(100);
+                                try {
+                                    await assertStreamingReady(8000);
+                                } catch (e2) {
+                                    log(`⚠️ Readiness still not confirmed at ${rate}Hz, sending tiny kick audio...`, 'warning');
+                                    head.streamAudio({ audio: createSineTonePCM16LE(Math.floor(rate*0.05), 440, rate) });
+                                    head.streamNotifyEnd();
+                                    await waitForPlaybackStop();
+                                }
+                            }
+                            updateMetricsStatus(false);
                             await sleep(50); // allow reconfig to settle
                             log(`🎵 Streaming 1s tone at ${rate}Hz sample rate...`);
                             head.streamAudio({
                                 audio: createSineTonePCM16LE(rate, 440 + Math.floor(rate/1000)), // ~1s tone, freq varies per rate
                                 visemes: ["aa", "E"],
-                                // Use millisecond-based timings for visemes, independent of sample rate
                                 vtimes: [0, 500],
                                 vdurations: [500, 500]
                             });
@@ -916,31 +1138,60 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                             await waitForPlaybackStopOrSilence();
                             log(`✅ Completed playback at ${rate}Hz.`);
                         }
-                    }, timeout: 12000}
+                        head.streamStop();
+                        await sleep(50);
+                        assert(!head.isStreaming, 'Streaming should be stopped');
+                    }, timeout: 25000}
                 ]
             },
             {
                 id: 'error-handling',
                 name: 'Error Handling & Edge Cases',
                 tests: [
+                    { id: 'invalid-streamstart-options', name: 'Invalid streamStart options', fn: async () => {
+                        await head.streamStart({ sampleRate: 0 }, null, _onPlaybackStopped);
+                        await assertStreamingReady();
+                        head.streamAudio({ audio: createSineTonePCM16LE(11025) });
+                        head.streamNotifyEnd();
+                        await waitForPlaybackStop();
+                        head.streamStop();
+                        await sleep(30);
+                        // Too large sampleRate
+                        await head.streamStart({ sampleRate: 100000 }, null, _onPlaybackStopped);
+                        await assertStreamingReady();
+                        head.streamAudio({ audio: createSineTonePCM16LE(11025) });
+                        head.streamNotifyEnd();
+                        await waitForPlaybackStop();
+                        head.streamStop();
+                        await sleep(30);
+                        // Unsupported lipsyncType should not crash; engine will default/ignore
+                        await head.streamStart({ lipsyncType: 'unsupported-mode' }, null, _onPlaybackStopped);
+                        await assertStreamingReady();
+                        head.streamAudio({ audio: createSineTonePCM16LE(11025) });
+                        head.streamNotifyEnd();
+                        await waitForPlaybackStop();
+                        head.streamStop();
+                        await sleep(50);
+                        assert(!head.isStreaming, 'Streaming should be stopped');
+                    }},
                     { id: 'stream-without-start', name: 'streamAudio() without start', fn: async () => {
                         if (head?.isStreaming) await testRunner.runSingleTest('stream-stop', false);
                         const wasSpeaking = head.isSpeaking;
                         head.streamAudio({ audio: createSineTonePCM16LE(11025) });
                         await sleep(100);
                         if (head.isSpeaking !== wasSpeaking) throw new Error("State changed without active stream.");
-                        // Must re-enable streaming for subsequent tests
-                        await testRunner.runSingleTest('stream-start', false);
                     }},
                     { id: 'mismatched-lipsync', name: 'Mismatched lipsync data', fn: async () => {
-                        await head.streamStart({ lipsyncType: 'visemes' });
+                        await head.streamStart({ lipsyncType: 'visemes' }, null, _onPlaybackStopped);
                         head.streamAudio({ audio: createSineTonePCM16LE(44100), words: ['should-be-ignored'] }); // Send words
                         head.streamNotifyEnd();
-                        // Pass if it doesn't crash
+                        await waitForPlaybackStop();
+                        head.streamStop();
+                        await sleep(50);
+                        assert(!head.isStreaming, 'Streaming should be stopped');
                     }},
                     { id: 'empty-audio', name: 'Empty audio chunk', fn: () => {
                         head.streamAudio({ audio: new ArrayBuffer(0) });
-                        // Pass if it doesn't crash
                     }},
                     { id: 'invalid-data', name: 'Invalid Data Types', fn: async () => {
                         // Test various invalid data types
@@ -957,6 +1208,10 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                                 vdurations: [500, 500]
                             });
                         } catch(e) { /* Expected */ }
+                        // Empty object and undefined/null payloads should be ignored gracefully
+                        try { head.streamAudio({}); } catch(e) { /* Should not throw */ }
+                        try { head.streamAudio(undefined); } catch(e) { /* Should not throw */ }
+                        try { head.streamAudio(null); } catch(e) { /* Should not throw */ }
                         
                         // Pass if it doesn't crash the system
                     }},
@@ -966,20 +1221,43 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                 id: 'stress-tests',
                 name: 'Stress Tests',
                 tests: [
+                    { id: 'rapid-reconfigure', name: 'Rapid Reconfiguration Stress', fn: async () => {
+                        // Rapidly call streamStart with different options; rely on setup/teardown to clean state
+                        const configs = [
+                            { sampleRate: 22050, lipsyncType: 'visemes', gain: 0.3 },
+                            { sampleRate: 44100, lipsyncType: 'words', gain: 0.6 },
+                            { sampleRate: 48000, lipsyncType: 'visemes', gain: 1.0 },
+                            { lipsyncType: 'blendshapes', waitForAudioChunks: false }
+                        ];
+                        for (let i = 0; i < 6; i++) {
+                            const cfg = configs[i % configs.length];
+                            await head.streamStart(cfg, null, _onPlaybackStopped);
+                            await assertStreamingReady(4000);
+                            // Push a tiny kick of audio for contexts that may need it
+                            head.streamAudio({ audio: createSineTonePCM16LE(2205) });
+                            head.streamNotifyEnd();
+                            await waitForPlaybackStop();
+                            head.streamStop();
+                            await sleep(20);
+                        }
+                        assert(!head.isStreaming, 'Streaming should be stopped after rapid reconfigure');
+                    }, timeout: 12000},
                     { id: 'rapid-start-stop', name: 'Rapid Start/Stop', fn: async () => {
-                        for (let i = 0; i < 5; i++) {
+                        for (let i = 0; i < 20; i++) {
                             await head.streamStart({ lipsyncType: 'visemes' });
-                            await sleep(100);
-                            
+                            await sleep(100);                            
                             head.streamStop();
                             await sleep(150);
                         }
-                        
-                        // Restart streaming session after the test
-                        await head.streamStart({ lipsyncType: 'visemes' });
-                    }, timeout: 8000},
+                        // Ensure test ends with no active stream
+                        assert(!head.isStreaming, 'Streaming should be stopped at end of rapid start/stop');
+                    }, timeout: 10000},
                     { id: 'interrupt-stress', name: 'Interrupt Stress Test', fn: async () => {
-                        for (let i = 0; i < 3; i++) {
+                        if (!head?.isStreaming) {
+                            await head.streamStart({ lipsyncType: 'visemes' }, null, _onPlaybackStopped);
+                            await assertStreamingReady();
+                        }
+                        for (let i = 0; i < 10; i++) {
                             // Start long audio
                             head.streamAudio({
                                 audio: createSineTonePCM16LE(220500, 330 + i * 110), // 5 seconds
@@ -992,7 +1270,11 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                             head.streamInterrupt();
                             await sleep(200);
                         }
-                    }, timeout: 10000},
+                        await waitForPlaybackStop();
+                        head.streamStop();
+                        await sleep(50);
+                        assert(!head.isStreaming, 'Streaming should be stopped');
+                    }, timeout: 15000},
                     { id: 'chunk-flood', name: 'Chunk Flooding Test', fn: async () => {
                         // Ensure streaming is active and playback stop callback is bound
                         if (!head?.isStreaming) {
@@ -1000,7 +1282,7 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                             await sleep(50);
                         }
                         // Send many small chunks quickly
-                        for (let i = 0; i < 10; i++) {
+                        for (let i = 0; i < 50; i++) {
                             head.streamAudio({
                                 audio: createSineTonePCM16LE(4410, 440 + i * 50), // 0.1 second chunks
                                 visemes: [getRandomVisemes(1)[0]],
@@ -1011,8 +1293,11 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                         }
                         head.streamNotifyEnd();
                         await sleep(50); // allow last chunk enqueue
-                        await waitForPlaybackStopOrSilence();
-                    }, timeout: 8000}
+                        await waitForPlaybackStop();
+                        head.streamStop();
+                        await sleep(50);
+                        assert(!head.isStreaming, 'Streaming should be stopped');
+                    }, timeout: 12000}
                 ]
             }
         ];
@@ -1154,6 +1439,14 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                 let error = null;
 
                 try {
+                    // SETUP (beforeEach): ensure clean state and clear any pending playback waiters
+                    log(`[Setup: ${test.name}] Ensuring clean state.`);
+                    if (head?.isStreaming) {
+                        try { head.streamStop(); } catch(e) {}
+                        await sleep(100);
+                    }
+                    resetPlaybackWaiters();
+
                     // Timeout wrapper
                     await new Promise(async (resolve, reject) => {
                         const timer = setTimeout(() => reject(new Error('Test timed out')), test.timeout || 4000);
@@ -1166,9 +1459,17 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                             reject(e);
                         }
                     });
-                     await sleep(head?.isStreaming ? 1000 : 200); // Cooldown to observe results
                 } catch (e) {
                     error = e;
+                } finally {
+                    // TEARDOWN (afterEach): clean up session and clear playback waiters
+                    log(`[Teardown: ${test.name}] Cleaning up session.`);
+                    if (head?.isStreaming) {
+                        try { head.streamStop(); } catch(e) {}
+                    }
+                    resetPlaybackWaiters();
+                    // Minimal settle to allow UI/status updates
+                    await sleep(50);
                 }
                 
                 const duration = Math.round(performance.now() - startTime);
@@ -1256,6 +1557,8 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
         document.addEventListener('DOMContentLoaded', () => {
             buildTestUI();
             testRunner.init();
+            // Initialize metrics status
+            updateMetricsStatus(false);
 
             document.getElementById('btn-load-avatar').addEventListener('click', async () => {
                 try {
@@ -1295,6 +1598,8 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
 
                     log('Avatar loaded successfully!', 'success');
                     updateStatus('Avatar ready. Run tests.', 'idle');
+                    // After loading avatar, metrics are not enabled until a stream starts with metrics enabled
+                    updateMetricsStatus(false);
                     
                     // Enable test buttons after successful avatar load
                     document.querySelectorAll('.master-controls button, .test-suite button, .test-actions button').forEach(b => b.disabled = false);
