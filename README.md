@@ -830,7 +830,7 @@ Each call to `streamAudio()` schedules an immediate chunk for playback and any i
 
 ##### 3. `streamNotifyEnd()`
 
-Signals that no more chunks are expected for the current streaming utterance. Playback stops automatically once queued audio finishes. This is useful for gracefully concluding real-time TTS streams when your pipeline has no additional data to send. The streaming session remains active and can be reused by calling `streamAudio()` again.
+Signals that no more chunks are expected for the current streaming utterance. Playback stops automatically once queued audio finishes. This is useful for gracefully concluding real-time TTS streams when your pipeline has no additional data to send. The streaming session remains active and can be reused by calling `streamAudio()` again. After the call, wait untill the playback has ended to have effect. If `streamAudio()` is called after `streamNotifyEnd()` and before the playback has ended, the notification end is canceled.
 
 ##### 4. `streamInterrupt()`
 

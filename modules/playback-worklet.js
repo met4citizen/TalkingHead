@@ -52,10 +52,7 @@ class PlaybackWorklet extends AudioWorkletProcessor {
 
     // INTERRUPT: The main thread wants to stop immediately.
     if (type === "stop") {
-      if (!this._hasSentEnded) {
-        this.port.postMessage({ type: "playback-ended" });
-        this._hasSentEnded = true;
-      }
+      this.reset();
       // Send final metrics showing cleared state
       if (this._metricsEnabled) {
         try {
@@ -72,7 +69,6 @@ class PlaybackWorklet extends AudioWorkletProcessor {
           });
         } catch (_) { }
       }
-      this.reset(); // Immediately reset to IDLE state, clearing all buffers
       return;
     }
 
@@ -96,6 +92,7 @@ class PlaybackWorklet extends AudioWorkletProcessor {
 
     // New audio data has arrived.
     if (type === "audioData" && data instanceof ArrayBuffer) {
+      this._noMoreDataReceived = false;
       // If we were idle, this new data kicks off the playback.
       if (this._state === PlaybackWorklet.FSM.IDLE) {
         this._state = PlaybackWorklet.FSM.PLAYING;
