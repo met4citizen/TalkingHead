@@ -3130,9 +3130,15 @@ class TalkingHead {
       o.onSubtitles = onsubtitles;
     }
 
+    if ( opt.isRaw ) {
+      o.isRaw = true;
+    }
+
     if ( Object.keys(o).length ) {
       this.speechQueue.push(o);
-      this.speechQueue.push( { break: 300 } );
+      if ( !o.isRaw ) {
+        this.speechQueue.push( { break: 300 } );
+      }
       this.startSpeaking();
     }
 
@@ -3185,7 +3191,9 @@ class TalkingHead {
       let delay = 0;
       if ( item.anim ) {
         // Find the lowest negative time point, if any
-        delay = Math.abs(Math.min(0, ...item.anim.map( x => Math.min(...x.ts) ) ) );
+        if ( !item.isRaw ) {
+          delay = Math.abs(Math.min(0, ...item.anim.map( x => Math.min(...x.ts) ) ) );
+        }
         item.anim.forEach( x => {
           for(let i=0; i<x.ts.length; i++) {
             x.ts[i] = this.animClock + x.ts[i] + delay;
@@ -3229,13 +3237,15 @@ class TalkingHead {
       } else if ( line.audio ) {
 
         // Look at the camera
-        this.lookAtCamera(500);
-        this.speakWithHands();
+        if ( !line.isRaw ) {
+          this.lookAtCamera(500);
+          this.speakWithHands();
+          this.resetLips();
+        }
 
         // Make a playlist
-        this.audioPlaylist.push({ anim: line.anim, audio: line.audio });
+        this.audioPlaylist.push({ anim: line.anim, audio: line.audio, isRaw: line.isRaw });
         this.onSubtitles = line.onSubtitles || null;
-        this.resetLips();
         if ( line.mood ) this.setMood( line.mood );
         this.playAudio();
 
