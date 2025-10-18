@@ -2604,7 +2604,7 @@ class TalkingHead {
     if ( this.viewName !== 'full' || this.isAvatarOnly) {
       i = this.mtRandomized[ Math.floor( Math.random() * this.mtRandomized.length ) ];
       j = this.mtAvatar[i];
-      if ( !j.needsUpdate ) {
+      if ( j && !j.needsUpdate ) {
         Object.assign(j,{ base: (this.mood.baseline[i] || 0) + ( 1 + vol/255 ) * Math.random() / 5, needsUpdate: true });
       }
     }
