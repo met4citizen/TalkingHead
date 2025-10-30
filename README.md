@@ -17,17 +17,27 @@ Video | Description
 
 ### Use Case Examples
 
-*Some videos, apps, and projects using the TalkingHead class:*
+*Some featured videos, apps, and projects using the TalkingHead class:*
 
 Video/App | Use Case
 --- | ---
-<span style="display: block; min-width:400px">[<img src="images/olivia.jpg" width="400"/>](https://youtu.be/9GeXwjuslnQ)</span> | **Video conferencing**. A video conferencing solution with real-time transcription, contextual AI responses, and voice lip-sync. The app and demo, featuring Olivia, by [namnm](https://github.com/namnm) 👍
-[<img src="images/edgespeaker.png" width="400"/>](https://www.edgespeaker.com/) | **Fully in-browser AI you can talk to**. Uses TalkingHead, [HeadTTS (with Kokoro)](https://github.com/met4citizen/HeadTTS), [whisper-web](https://github.com/xenova/whisper-web), and [WebLLM (with Llama 3.2)](https://github.com/mlc-ai/web-llm). No APIs, no accounts. For more details, see [#115](https://github.com/met4citizen/TalkingHead/issues/115). — For best performance and WebGPU support, use a desktop version of Chrome or Edge: 👉 [EdgeSpeaker.com](https://www.edgespeaker.com/)
+<span style="display: block; min-width:400px">[<img src="images/dialoglab.jpg" width="400"/>](https://www.youtube.com/watch?v=U2Ag_Ktobzw)</span> | **Human-AI group conversations**. Researchers from UVA, Google, Northeastern, Google DeepMind, and Google Research build [DialogLab](https://github.com/ecruhue/DialogLab), a toolkit to author, simulate and test human-AI group conversations. 🤖🤖🤖
+[<img src="images/olivia.jpg" width="400"/>](https://youtu.be/9GeXwjuslnQ) | **Video conferencing**. A video conferencing solution with real-time transcription, contextual AI responses, and voice lip-sync. The app and demo, featuring Olivia, by [namnm](https://github.com/namnm) 👍
+[<img src="images/edgespeaker.png" width="400"/>](https://www.edgespeaker.com/) | **Fully in-browser AI you can talk to**. Uses TalkingHead, [HeadTTS (with Kokoro)](https://github.com/met4citizen/HeadTTS), [whisper-web](https://github.com/xenova/whisper-web), and [WebLLM (with Llama 3.2)](https://github.com/mlc-ai/web-llm). No APIs, no accounts. For best performance and WebGPU support, use a desktop version of Chrome or Edge: 👉 [EdgeSpeaker.com](https://www.edgespeaker.com/)
 [<img src="images/geminicompetition.jpg" width="400"/>](https://www.youtube.com/watch?v=Dl2o9kRvbLQ) | **Recycling Advisor 3D**. Snap a photo and get local recycling advice from a talking avatar. My entry for the [Gemini API Developer Competition](https://ai.google.dev/competition/projects/recycling-advisor-3d).
 [<img src="images/evertrail.jpg" width="400"/>](https://www.youtube.com/watch?v=OG1vwOit_Yk) | **Live Twitch adventure**. [Evertrail](https://evertrail.app) is an infinite, real-time generated world where all of your choices shape the outcome. Video clip and the app by [JPhilipp](https://github.com/JPhilipp) 👏👏<br>**NEWS**: Featured at the AI Film Awards during the 2025 Cannes Film Festival!
 [<img src="images/cliquevm.jpg" width="400"/>](https://www.youtube.com/watch?v=vNJ9Ifv-as8) | **Quantum physics using a blackboard**. David introduces us to the CHSH game and explores the mystery of quantum entanglement. For more information about the research project, see [CliqueVM](https://github.com/met4citizen/CliqueVM).
 [<img src="images/interactiveportfolio.jpg" width="400"/>](https://akshatrastogi.in/) | **Interactive Portfolio**. Click the image to open the app, where you can interview the virtual persona of its developer, [AkshatRastogi-1nC0re](https://github.com/AkshatRastogi-1nC0re) 👋
-[<img src="images/datingprofile.jpg" width="400"/>](https://www.youtube.com/watch?v=Hv-ItCZ0qc4) | **Interactive Dating Profiles**. ❤️ Researchers from the MIT Media Lab and Harvard used the TalkingHead class and data-driven AI to create digital twins that potential dating partners could interact with. Their paper (Baradari et al., 2025) was presented at [CHI 2025](https://programs.sigchi.org/chi/2025/program/content/194739) in Japan. 
+[<img src="images/datingprofile.jpg" width="400"/>](https://www.youtube.com/watch?v=Hv-ItCZ0qc4) | **Interactive Dating Profiles**. ❤️ Researchers from the MIT Media Lab and Harvard used the TalkingHead class and data-driven AI to create digital twins that potential dating partners could interact with. Their paper (Baradari et al., 2025) was presented at [CHI 2025](https://programs.sigchi.org/chi/2025/program/content/194739) in Japan.
+
+*More projects, sites and research using TalkingHead:*
+
+Link | Description
+--- | ---
+[TalkMateAI](https://github.com/kiranbaby14/TalkMateAI) | Real-time Voice-Controlled 3D Avatar with Multimodal AI.
+[Riverts](https://github.com/sensein/riverst) | A platform for building, running, and analyzing interactive user-avatar conversations.
+[Interactive Avatar](https://interactiveavatar.co.uk) | Interactive avatars as a service - an easy way to add an AI-driven avatar on your website.
+[Alter egos alter engagement](https://www.frontiersin.org/journals/digital-health/articles/10.3389/fdgth.2025.1655860/full) | Researchers at the University of Florida used TalkingHead to explore how embodied AI chatbots can support mental well-being.
 
 
 ---
