@@ -21,7 +21,7 @@ Video | Description
 
 Video/App | Use Case
 --- | ---
-<span style="display: block; min-width:400px">[<img src="images/dialoglab.jpg" width="400"/>](https://www.youtube.com/watch?v=U2Ag_Ktobzw)</span> | **Human-AI group conversations**. Researchers from UVA, Google, Northeastern, Google DeepMind, and Google Research build [DialogLab](https://github.com/ecruhue/DialogLab), a toolkit to author, simulate and test human-AI group conversations. 🤖🤖🤖
+<span style="display: block; min-width:400px">[<img src="images/dialoglab.jpg" width="400"/>](https://www.youtube.com/watch?v=U2Ag_Ktobzw)</span> | **Human-AI group conversations**. Researchers from UVA, Google, Northeastern, Google DeepMind, and Google Research developed [DialogLab](https://github.com/ecruhue/DialogLab), a toolkit to author, simulate and test human-AI group conversations. 🤖🤖🤖
 [<img src="images/olivia.jpg" width="400"/>](https://youtu.be/9GeXwjuslnQ) | **Video conferencing**. A video conferencing solution with real-time transcription, contextual AI responses, and voice lip-sync. The app and demo, featuring Olivia, by [namnm](https://github.com/namnm) 👍
 [<img src="images/edgespeaker.png" width="400"/>](https://www.edgespeaker.com/) | **Fully in-browser AI you can talk to**. Uses TalkingHead, [HeadTTS (with Kokoro)](https://github.com/met4citizen/HeadTTS), [whisper-web](https://github.com/xenova/whisper-web), and [WebLLM (with Llama 3.2)](https://github.com/mlc-ai/web-llm). No APIs, no accounts. For best performance and WebGPU support, use a desktop version of Chrome or Edge: 👉 [EdgeSpeaker.com](https://www.edgespeaker.com/)
 [<img src="images/geminicompetition.jpg" width="400"/>](https://www.youtube.com/watch?v=Dl2o9kRvbLQ) | **Recycling Advisor 3D**. Snap a photo and get local recycling advice from a talking avatar. My entry for the [Gemini API Developer Competition](https://ai.google.dev/competition/projects/recycling-advisor-3d).
@@ -34,6 +34,7 @@ Video/App | Use Case
 
 Link | Description
 --- | ---
+[Cancer Clinical Trial Participation](https://dl.acm.org/doi/full/10.1145/3717511.3747063) | Researchers at the University of Florida explored how multiple virtual agents can help overcome barriers to joining cancer clinical trials.
 [TalkMateAI](https://github.com/kiranbaby14/TalkMateAI) | Real-time Voice-Controlled 3D Avatar with Multimodal AI.
 [Riverts](https://github.com/sensein/riverst) | A platform for building, running, and analyzing interactive user-avatar conversations.
 [Interactive Avatar](https://interactiveavatar.co.uk) | Interactive avatars as a service - an easy way to add an AI-driven avatar on your website.
