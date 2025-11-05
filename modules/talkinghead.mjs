@@ -3202,8 +3202,8 @@ class TalkingHead {
         });
       }
 
-      // Play, dealy in seconds so pre-animations can be played
-      this.audioSpeechSource.start(delay/1000);
+      // Play, delay in seconds so pre-animations can be played
+      this.audioSpeechSource.start( this.audioCtx.currentTime + delay/1000);
 
     } else {
       this.isAudioPlaying = false;
