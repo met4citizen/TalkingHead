@@ -1834,6 +1834,7 @@ async function openaiSendMessage(node,msgs) {
                 await head.speakText( tts, {
                   lipsyncLang: cfg('voice-lipsync-lang'),
                   ttsVoice: cfg('voice-google-id'),
+                  ttsLang: cfg('voice-google-id').substring(0,5),
                   ttsRate: cfg('voice-google-rate'),
                   ttsPitch: cfg('voice-google-pitch')
                 }, addText.bind(null,node), exclude.excludes );
@@ -1863,6 +1864,7 @@ async function openaiSendMessage(node,msgs) {
                   await head.speakText( s, {
                     lipsyncLang: cfg('voice-lipsync-lang'),
                     ttsVoice: cfg('voice-google-id'),
+                    ttsLang: cfg('voice-google-id').substring(0,5),
                     ttsRate: cfg('voice-google-rate'),
                     ttsPitch: cfg('voice-google-pitch')
                   }, addText.bind(null,node), exclude.excludes );
@@ -2008,6 +2010,7 @@ async function grokSendMessage(node,msgs) {
               await head.speakText( tts, {
                 lipsyncLang: cfg('voice-lipsync-lang'),
                 ttsVoice: cfg('voice-google-id'),
+                ttsLang: cfg('voice-google-id').substring(0,5),
                 ttsRate: cfg('voice-google-rate'),
                 ttsPitch: cfg('voice-google-pitch')
               }, addText.bind(null,node), exclude.excludes );
@@ -2037,6 +2040,7 @@ async function grokSendMessage(node,msgs) {
                 await head.speakText( s, {
                   lipsyncLang: cfg('voice-lipsync-lang'),
                   ttsVoice: cfg('voice-google-id'),
+                  ttsLang: cfg('voice-google-id').substring(0,5),
                   ttsRate: cfg('voice-google-rate'),
                   ttsPitch: cfg('voice-google-pitch')
                 }, addText.bind(null,node), exclude.excludes );
@@ -2168,6 +2172,7 @@ async function llamaSendMessage(node,msgs) {
               await head.speakText( tts, {
                 lipsyncLang: cfg('voice-lipsync-lang'),
                 ttsVoice: cfg('voice-google-id'),
+                ttsLang: cfg('voice-google-id').substring(0,5),
                 ttsRate: cfg('voice-google-rate'),
                 ttsPitch: cfg('voice-google-pitch')
               }, addText.bind(null,node), exclude.excludes );
@@ -2197,6 +2202,7 @@ async function llamaSendMessage(node,msgs) {
                 await head.speakText( s, {
                   lipsyncLang: cfg('voice-lipsync-lang'),
                   ttsVoice: cfg('voice-google-id'),
+                  ttsLang: cfg('voice-google-id').substring(0,5),
                   ttsRate: cfg('voice-google-rate'),
                   ttsPitch: cfg('voice-google-pitch')
                 }, addText.bind(null,node), exclude.excludes );
@@ -2466,6 +2472,7 @@ async function geminiSendMessage(node,msgs) {
                 await head.speakText( tts, {
                   lipsyncLang: cfg('voice-lipsync-lang'),
                   ttsVoice: cfg('voice-google-id'),
+                  ttsLang: cfg('voice-google-id').substring(0,5),
                   ttsRate: cfg('voice-google-rate'),
                   ttsPitch: cfg('voice-google-pitch')
                 }, addText.bind(null,node) );
@@ -2487,6 +2494,7 @@ async function geminiSendMessage(node,msgs) {
                 await head.speakText( tts.substring(0, ndx), {
                   lipsyncLang: cfg('voice-lipsync-lang'),
                   ttsVoice: cfg('voice-google-id'),
+                  ttsLang: cfg('voice-google-id').substring(0,5),
                   ttsRate: cfg('voice-google-rate'),
                   ttsPitch: cfg('voice-google-pitch')
                 }, addText.bind(null,node) );
@@ -2632,6 +2640,7 @@ function addMessage(user = false) {
             head.speakText( text, {
               lipsyncLang: cfg('voice-lipsync-lang'),
               ttsVoice: cfg('voice-google-id'),
+              ttsLang: cfg('voice-google-id').substring(0,5),
               ttsRate: cfg('voice-google-rate'),
               ttsPitch: cfg('voice-google-pitch')
             } );
@@ -2700,6 +2709,7 @@ async function speak(s) {
     await head.speakText( s, {
       lipsyncLang: cfg('voice-lipsync-lang'),
       ttsVoice: cfg('voice-google-id'),
+      ttsLang: cfg('voice-google-id').substring(0,5),
       ttsRate: cfg('voice-google-rate'),
       ttsPitch: cfg('voice-google-pitch')
     }, addText.bind(null,node) );
@@ -3559,6 +3569,7 @@ async function scriptRun() {
         await head.speakText( x, {
           lipsyncLang: cfg('voice-lipsync-lang'),
           ttsVoice: cfg('voice-google-id'),
+          ttsLang: cfg('voice-google-id').substring(0,5),
           ttsRate: cfg('voice-google-rate'),
           ttsPitch: cfg('voice-google-pitch')
         }, addText.bind(null,node) );
@@ -3854,6 +3865,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
         head.speakText( text, {
           lipsyncLang: cfg('voice-lipsync-lang'),
           ttsVoice: cfg('voice-google-id'),
+          ttsLang: cfg('voice-google-id').substring(0,5),
           ttsRate: cfg('voice-google-rate'),
           ttsPitch: cfg('voice-google-pitch')
         }, null, exclude.excludes );
