@@ -744,6 +744,10 @@ class TalkingHead {
     this.animClips = [];
     this.animPoses = [];
 
+    // Animate
+    this.animate = this.animate.bind(this);
+    this._raf = null;
+
     // Clock
     this.animFrameDur = 1000/ this.opt.modelFPS;
     this.animClock = 0;
@@ -1087,20 +1091,24 @@ class TalkingHead {
   * Clear 3D object.
   * @param {Object} obj Object
   */
-  clearThree(obj){
-    while( obj.children.length ){
+  clearThree(obj) {
+    while (obj.children.length) {
       this.clearThree(obj.children[0]);
       obj.remove(obj.children[0]);
     }
-    if ( obj.geometry ) obj.geometry.dispose();
 
-    if ( obj.material ) {
-      Object.keys(obj.material).forEach( x => {
-        if ( obj.material[x] && obj.material[x] !== null && typeof obj.material[x].dispose === 'function' ) {
-          obj.material[x].dispose();
-        }
-      });
-      obj.material.dispose();
+    if (obj.geometry) obj.geometry.dispose();
+
+    if (obj.material) {
+      if (Array.isArray(obj.material)) {
+        obj.material.forEach(m => {
+          if (m.map) m.map.dispose();
+          m.dispose();
+        });
+      } else {
+        if (obj.material.map) obj.material.map.dispose();
+        obj.material.dispose();
+      }
     }
   }
 
@@ -1212,8 +1220,14 @@ class TalkingHead {
     // Dispose Dynamic Bones
     this.dynamicbones.dispose();
 
-    // Clear previous scene, if avatar was previously loaded
-    this.mixer = null;
+    // Clear previous mixer/scene, if avatar was previously loaded
+    if (this.mixer) {
+      this.mixer.removeEventListener('finished', this._mixerHandler);
+      this.mixer.stopAllAction();
+      this.mixer.uncacheRoot(this.armature);
+      this.mixer = null;
+      this._mixerHandler = null;
+    }
     if ( this.isAvatarOnly ) {
       if ( this.armature ) {
         this.clearThree( this.armature );
@@ -2330,7 +2344,7 @@ class TalkingHead {
     if ( this.isAvatarOnly ) {
       dt = t;
     } else {
-      requestAnimationFrame( this.animate.bind(this) );
+      this._raf = requestAnimationFrame( this.animate );
       dt = t - this.animTimeLast;
       if ( dt < this.animFrameDur ) return;
       this.animTimeLast = t;
@@ -3177,15 +3191,28 @@ class TalkingHead {
         audio = item.audio;
       }
 
-      // Create audio source
-      this.audioSpeechSource = this.audioCtx.createBufferSource();
-      this.audioSpeechSource.buffer = audio;
-      this.audioSpeechSource.playbackRate.value = 1 / this.animSlowdownRate;
-      this.audioSpeechSource.connect(this.audioAnalyzerNode);
-      this.audioSpeechSource.addEventListener('ended', () => {
+      // Make sure previous audio source is cleared
+      if (this.audioSpeechSource) {
+        try { this.audioSpeechSource.stop?.() } catch(error) {};
         this.audioSpeechSource.disconnect();
+        this.audioSpeechSource.onended = null;
+        this.audioSpeechSource = null;
+      }
+
+      // Create audio source
+      const source = this.audioCtx.createBufferSource();
+      this.audioSpeechSource = source;
+      source.buffer = audio;
+      source.playbackRate.value = 1 / this.animSlowdownRate;
+      source.connect(this.audioAnalyzerNode);
+      source.onended = () => {
+        source.disconnect();
+        source.onended = null;
+        if ( this.audioSpeechSource === source ) {
+          this.audioSpeechSource = null;
+        }
         this.playAudio(true);
-      }, { once: true });
+      };
 
       // Rescale lipsync and push to queue
       let delay = 0;
@@ -3203,7 +3230,7 @@ class TalkingHead {
       }
 
       // Play, delay in seconds so pre-animations can be played
-      this.audioSpeechSource.start( this.audioCtx.currentTime + delay/1000);
+      source.start( this.audioCtx.currentTime + delay/1000);
 
     } else {
       this.isAudioPlaying = false;
@@ -3398,7 +3425,7 @@ class TalkingHead {
   * Pause speaking.
   */
   pauseSpeaking() {
-    try { this.audioSpeechSource.stop(); } catch(error) {}
+    try { this.audioSpeechSource?.stop(); } catch(error) {}
     this.audioPlaylist.length = 0;
     this.stateName = 'idle';
     this.isSpeaking = false;
@@ -3414,7 +3441,7 @@ class TalkingHead {
   * Stop speaking and clear the speech queue.
   */
   stopSpeaking() {
-    try { this.audioSpeechSource.stop(); } catch(error) {}
+    try { this.audioSpeechSource?.stop(); } catch(error) {}
     this.audioPlaylist.length = 0;
     this.speechQueue.length = 0;
     this.animQueue = this.animQueue.filter( x  => x.template.name !== 'viseme' && x.template.name !== 'subtitles' && x.template.name !== 'blendshapes' );
@@ -4172,8 +4199,12 @@ class TalkingHead {
   */
   setSlowdownRate(k) {
     this.animSlowdownRate = k;
-    this.audioSpeechSource.playbackRate.value = 1 / this.animSlowdownRate;
-    this.audioBackgroundSource.playbackRate.value = 1 / this.animSlowdownRate;
+    if ( this.audioSpeechSource ) {
+      this.audioSpeechSource.playbackRate.value = 1 / this.animSlowdownRate;
+    }
+    if ( this.audioBackgroundSource ) {
+      this.audioBackgroundSource.playbackRate.value = 1 / this.animSlowdownRate;
+    }
   }
 
   /**
@@ -4202,7 +4233,7 @@ class TalkingHead {
       this.animTimeLast = performance.now();
       this.isRunning = true;
       if ( !this.isAvatarOnly ) {
-        requestAnimationFrame( this.animate.bind(this) );
+        this._raf = requestAnimationFrame( this.animate );
       }
     }
   }
@@ -4279,8 +4310,19 @@ class TalkingHead {
       });
 
       // Create a new mixer
+      if (this.mixer) {
+        this.mixer.removeEventListener('finished', this._mixerHandler);
+        this.mixer.stopAllAction();
+        this.mixer.uncacheRoot(this.armature);
+        this.mixer = null;
+        this._mixerHandler = null;
+      }
       this.mixer = new THREE.AnimationMixer(this.armature);
-      this.mixer.addEventListener( 'finished', this.stopAnimation.bind(this), { once: true });
+      this._mixerHandler = () => {
+        this.stopAnimation();
+        this.mixer?.removeEventListener('finished', this._mixerHandler);
+      };
+      this.mixer.addEventListener('finished', this._mixerHandler);
 
       // Play action
       const repeat = Math.ceil(dur / item.clip.duration);
@@ -4348,7 +4390,13 @@ class TalkingHead {
   stopAnimation() {
 
     // Stop mixer
-    this.mixer = null;
+    if (this.mixer) {
+      this.mixer.removeEventListener('finished', this._mixerHandler);
+      this.mixer.stopAllAction();
+      this.mixer.uncacheRoot(this.armature);
+      this.mixer = null;
+      this._mixerHandler = null;
+    }
 
     // Restart gesture
     if ( this.gesture ) {
@@ -4399,7 +4447,13 @@ class TalkingHead {
 
       this.poseName = url;
 
-      this.mixer = null;
+      if (this.mixer) {
+        this.mixer.removeEventListener('finished', this._mixerHandler);
+        this.mixer.stopAllAction();
+        this.mixer.uncacheRoot(this.armature);
+        this.mixer = null;
+        this._mixerHandler = null;
+      }
       let anim = this.animQueue.find( x => x.template.name === 'pose' );
       if ( anim ) {
         anim.ts[0] = this.animClock + (dur * 1000) + 2000;
@@ -4703,6 +4757,32 @@ class TalkingHead {
     this.stop();
     this.stopSpeaking();
     this.streamStop();
+    this.stopAnimation();
+
+    // Cancel animation frame to prevent potential memory leak
+    if (this._raf !== null) {
+      cancelAnimationFrame(this._raf);
+      this._raf = null;
+    }
+
+    // Stop & disconnect buffer sources
+    ['audioSpeechSource', 'audioBackgroundSource'].forEach(key => {
+      const node = this[key];
+      if (node) {
+        try { node.stop?.() } catch(error) {};
+        node.disconnect();
+        node.onended = null; // remove closure references
+      }
+    });
+
+    // Disconnect gain nodes & analyser
+    ['audioBackgroundGainNode', 'audioSpeechGainNode',
+      'audioStreamGainNode', 'audioAnalyzerNode'].forEach(key => {
+      const node = this[key];
+      if (node) {
+        node.disconnect();
+      }
+    });
 
     // Dispose Three.JS objects
     if ( this.isAvatarOnly ) {
@@ -4715,9 +4795,28 @@ class TalkingHead {
     } else {
       this.clearThree(this.scene);
       this.resizeobserver.disconnect();
+      this.resizeobserver = null;
+
+      if ( this.renderer ) {
+        this.renderer.dispose();
+        const gl = this.renderer.getContext();
+        gl.getExtension('WEBGL_lose_context')?.loseContext();
+        this.renderer.domElement?.remove();
+        this.renderer.domElement = null;
+        this.renderer = null;
+      }
+
+      if ( this.controls ) {
+        this.controls.dispose();
+        this.controls = null;
+      }
     }
+
     this.clearThree( this.ikMesh );
     this.dynamicbones.dispose();
+
+    // DOM
+    this.nodeAvatar = null;
 
   }
 
