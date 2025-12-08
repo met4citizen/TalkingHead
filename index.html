@@ -418,7 +418,7 @@ const googleTTSProxy = "/gtts/";
 const elevenTTSProxy = [
   "wss://" + window.location.host + "/elevenlabs/",
   "/v1/text-to-speech/",
-  "/stream-input?model_id=eleven_turbo_v2_5&output_format=pcm_22050"
+  "/stream-input?model_id=eleven_turbo_v2_5&output_format=pcm_22050&auto_mode=true&apply_text_normalization=off"
 ];
 const microsoftTTSProxy = [
   "wss://" + window.location.host + "/mstts/",
@@ -437,7 +437,7 @@ const geminiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/
 const googleTTSEndpoint = "https://eu-texttospeech.googleapis.com/v1beta1/text:synthesize";
 const elevenTTSEndpoint = [
   "wss://api.elevenlabs.io/v1/text-to-speech/",
-  "/stream-input?model_id=eleven_turbo_v2_5&output_format=pcm_22050"
+  "/stream-input?model_id=eleven_turbo_v2_5&output_format=pcm_22050&auto_mode=true&apply_text_normalization=off"
 ];
 const microsoftTTSEndpoint = "wss://northeurope.tts.speech.microsoft.com/cognitiveservices/websocket/v1";
 const grokChatCompletionsEndpoint = "https://api.x.ai/v1/chat/completions";
@@ -4790,7 +4790,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
                 <div class="command selected" data-item="ai-model" data-type="option" data-ai-model="gpt-4.1-mini">GPT-4.1-mini</div>
                 <div class="command" data-item="ai-model" data-type="option" data-ai-model="gpt-4.1">GPT-4.1</div>
                 <div class="command" data-item="ai-model" data-type="option" data-ai-model="grok-3">Grok-3</div>
-                <div class="command" data-item="ai-model" data-type="option" data-ai-model="gemini-1.5-pro">Gemini-1.5-pro</div>
+                <div class="command" data-item="ai-model" data-type="option" data-ai-model="gemini-2.5-flash">Gemini-2.5-flash</div>
                 <div class="command" data-item="ai-model" data-type="option" data-ai-model="llama">Llama</div>
               </div>
             </div>
