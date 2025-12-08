@@ -1,6 +1,6 @@
 {
   "name": "@met4citizen/talkinghead",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Talking Head (3D): A JavaScript class for real-time lip-sync using Ready Player Me full-body 3D avatars.",
   "type": "module",
   "main": "modules/talkinghead.mjs",
