@@ -49,8 +49,9 @@ Talking Head (3D) is a browser JavaScript class featuring a 3D avatar that can
 speak and lip-sync in real-time. The class supports
 [Ready Player Me](https://readyplayer.me/) / [PlayerZero](https://playerzero.me/)
 full-body 3D avatars (GLB) and
-[Mixamo](https://www.mixamo.com) animations (FBX).
-It also knows a set of emojis and can convert them into facial expressions.
+[Mixamo](https://www.mixamo.com) / [RPM](https://github.com/readyplayerme/animation-library)
+animations (FBX). It also knows a set of emojis and can convert them
+into facial expressions.
 
 You can create your own 3D avatar for free using the Ready Player Me or PlayerZero
 service. Alternatively, you can create a custom 3D avatar by making it compatible with
@@ -91,7 +92,7 @@ or import all the needed modules from a CDN:
   {
     "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js/+esm",
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/",
-    "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.6/modules/talkinghead.mjs"
+    "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.7/modules/talkinghead.mjs"
   }
 }
 </script>
