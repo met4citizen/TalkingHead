@@ -1,5 +1,8 @@
 # Talking Head (3D)
 
+> [!IMPORTANT]
+> [Netflix acquires gaming avatar maker Ready Player Me](https://techcrunch.com/2025/12/19/netflix-acquires-gaming-avatar-maker-ready-player-me/). Following the acquisition, Ready Player Me will be winding down its services on **January 31, 2026**. This includes both of its online avatar creation tools, Ready Player Me and PlayerZero.
+
 ### Demo Videos
 
 *All the demo videos are real-time screen captures from a Chrome browser running
