@@ -155,6 +155,7 @@ Option | Description | Default
 `lipsyncModules`| Lip-sync modules to load dynamically at start-up. Limiting the number of language modules improves the loading time and memory usage. | `["en", "fi", "lt"]`
 `lipsyncLang`| Lip-sync language. | `"fi"`
 `pcmSampleRate` | PCM (signed 16bit little endian) sample rate used in `speakAudio` in Hz. | `22050`
+`audioCtx` | The audio context to be used. By default, a new one is created. | `null`
 `modelRoot` | The root name of the armature. | `Armature`
 `modelPixelRatio` | Sets the device's pixel ratio. | `1`
 `modelFPS` | Frames per second. Note that actual frame rate will be a bit lower than the set value. | `30`

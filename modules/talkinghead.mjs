@@ -135,6 +135,7 @@ class TalkingHead {
       lipsyncLang: 'fi',
       lipsyncModules: ['fi','en','lt'],
       pcmSampleRate: 22050,
+      audioCtx: null,
       modelRoot: "Armature",
       modelPixelRatio: 1,
       modelFPS: 30,
@@ -909,6 +910,16 @@ class TalkingHead {
   * @param {number} sampleRate
   */
   initAudioGraph(sampleRate = null) {
+    // Audio context
+    if ( this.opt.audioCtx && this.audioCtx.state !== 'closed' ) {
+
+      // Use the given audio context
+      if (this.audioCtx !== this.opt.audioCtx) {
+        this.audioCtx = this.opt.audioCtx;
+      }
+
+    } else {
+
     // Close existing context if it exists
     if (this.audioCtx && this.audioCtx.state !== 'closed') {
       this.audioCtx.close();
@@ -919,6 +930,8 @@ class TalkingHead {
       this.audioCtx = new AudioContext({ sampleRate });
     } else {
       this.audioCtx = new AudioContext();
+      }
+      
     }
     
     // Create audio nodes
