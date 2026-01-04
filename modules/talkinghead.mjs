@@ -3498,6 +3498,7 @@ class TalkingHead {
         sr >= 8000 &&
         sr <= 96000
       ) {
+        this.streamInputSampleRate = sr;
         if (sr !== this.audioCtx.sampleRate) {
           this.initAudioGraph(sr);
         }
@@ -3545,7 +3546,7 @@ class TalkingHead {
 
       this.streamWorkletNode = new AudioWorkletNode(this.audioCtx, 'playback-worklet', {
         processorOptions: {
-          sampleRate: this.audioCtx.sampleRate,
+          sampleRate: this.streamInputSampleRate || this.audioCtx.sampleRate,
           metrics: opt.metrics || { enabled: false }
         }
       });
@@ -4807,8 +4808,10 @@ class TalkingHead {
       }
     } else {
       this.clearThree(this.scene);
-      this.resizeobserver.disconnect();
-      this.resizeobserver = null;
+      if (this.resizeobserver) {
+        this.resizeobserver.disconnect();
+        this.resizeobserver = null;
+      }
 
       if ( this.renderer ) {
         this.renderer.dispose();
