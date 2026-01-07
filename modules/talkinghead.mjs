@@ -4429,7 +4429,10 @@ class TalkingHead {
     if ( anim ) {
       anim.ts[0] = this.animClock;
     }
+
+    if ( this.avatar ) {
     this.setPoseFromTemplate( null );
+    }
 
   }
 
@@ -4767,10 +4770,10 @@ class TalkingHead {
   dispose() {
     
     // Stop animation, clear speech queue, stop stream
-    this.stop();
-    this.stopSpeaking();
-    this.streamStop();
-    this.stopAnimation();
+    try { this.stop(); } catch(error) {};
+    try { this.stopSpeaking(); } catch(error) {};
+    try { this.streamStop(); } catch(error) {};
+    try { this.stopAnimation(); } catch(error) {};
 
     // Cancel animation frame to prevent potential memory leak
     if (this._raf !== null) {
