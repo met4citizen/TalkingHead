@@ -80,6 +80,12 @@ class TalkingHead {
   */
 
   /**
+  * Pre-process glTF asset
+  * @callback preprocessfn
+  * @param {Object} gltf glTF asset
+  */
+
+  /**
   * Callback when new subtitles have been written to the DOM node.
   * @callback subtitlesfn
   * @param {Object} node DOM node
@@ -1198,8 +1204,9 @@ class TalkingHead {
   * Loader for 3D avatar model.
   * @param {string} avatar Avatar object with 'url' property to GLTF/GLB file.
   * @param {progressfn} [onprogress=null] Callback for progress
+  * @param {preprocessfn} [onpreprocess=null] Callback for pre-processing the gltf asset
   */
-  async showAvatar(avatar, onprogress=null ) {
+  async showAvatar(avatar, onprogress=null, onpreprocess=null ) {
 
     // Checkt the avatar parameter
     if ( !avatar || !avatar.hasOwnProperty('url') ) {
@@ -1217,6 +1224,18 @@ class TalkingHead {
     }
 
     let gltf = await loader.loadAsync( avatar.url, onprogress );
+
+    // Pre-process glTF callback
+    if ( onpreprocess && typeof onpreprocess === "function" ) {
+      onpreprocess(gltf);
+    }
+
+    // Remove mixamorix prefix
+    gltf.scene.traverse( x => {
+      if (x.isBone) {
+        x.name = x.name.replaceAll('mixamorig','');
+      }
+    });
 
     // Check the gltf
     const required = [ this.opt.modelRoot ];
