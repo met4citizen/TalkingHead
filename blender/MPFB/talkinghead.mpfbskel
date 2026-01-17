@@ -1,0 +1,2486 @@
+{
+    "bones": {
+      "Head": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "default_position": [
+                    0.00146,
+                    -0.02113,
+                    1.46404
+                ],
+                "strategy": "MEAN",
+                "vertex_indices": [
+                    823,
+                    7530
+                ]
+            },
+            "inherit_scale": "FULL",
+            "parent": "Neck",
+            "rigify": {},
+            "roll": 0.0,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "default_position": [
+                    0.0,
+                    -0.01885,
+                    1.66115
+                ],
+                "offset": [
+                    0.0,
+                    -0.02,
+                    0.0
+                ],
+                "strategy": "VERTEX",
+                "vertex_index": 18875
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "HeadTop_End": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "default_position": [
+                    0.0,
+                    -0.01885,
+                    1.66115
+                ],
+                "offset": [
+                    0.0,
+                    -0.02,
+                    0.0
+                ],
+                "strategy": "VERTEX",
+                "vertex_index": 18875
+            },
+            "inherit_scale": "FULL",
+            "parent": "Head",
+            "rigify": {},
+            "roll": 0.0,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "default_position": [
+                    0.0,
+                    -0.01885,
+                    1.71115
+                ],
+                "offset": [
+                    0.0,
+                    -0.03,
+                    0.05
+                ],
+                "strategy": "VERTEX",
+                "vertex_index": 18875
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "Hips": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "default_position": [
+                    0.00128,
+                    -0.01689,
+                    0.91371
+                ],
+                "strategy": "MEAN",
+                "vertex_indices": [
+                    4059,
+                    10997
+                ]
+            },
+            "inherit_scale": "FULL",
+            "parent": "",
+            "rigify": {},
+            "roll": -0.00047,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "default_position": [
+                    0.0,
+                    -0.02212,
+                    1.01759
+                ],
+                "strategy": "MEAN",
+                "vertex_indices": [
+                    16022,
+                    17349
+                ]
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "Jaw": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-mouth",
+                "default_position": [
+                    0.0,
+                    -0.05651,
+                    1.52085
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "Head",
+            "rigify": {},
+            "roll": 0.0,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "default_position": [
+                    0.0,
+                    -0.10709,
+                    1.44319
+                ],
+                "strategy": "VERTEX",
+                "vertex_index": 991
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "LeftArm": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-l-shoulder",
+                "default_position": [
+                    0.17002,
+                    -0.01926,
+                    1.3201
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "LeftShoulder",
+            "rigify": {},
+            "roll": -2.207993,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-l-elbow",
+                "default_position": [
+                    0.33117,
+                    -0.02006,
+                    1.13956
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "LeftBreast": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "default_position": [
+                    0.0,
+                    0.01858,
+                    1.23884
+                ],
+                "strategy": "MEAN",
+                "vertex_indices": [
+                    1600,
+                    8451,
+                    8451
+                ]
+            },
+            "inherit_scale": "FULL",
+            "parent": "Spine1",
+            "rigify": {},
+            "roll": 0.51892,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "default_position": [
+                    0.10297,
+                    -0.15249,
+                    1.21105
+                ],
+                "strategy": "VERTEX",
+                "vertex_index": 8451
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "LeftButtock": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-l-upper-leg",
+                "default_position": [
+                    0.10147,
+                    -0.005,
+                    0.86564
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "LeftUpLeg",
+            "rigify": {},
+            "roll": 0.51892,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "default_position": [
+                    0.05695,
+                    0.09333,
+                    0.8358
+                ],
+                "strategy": "VERTEX",
+                "vertex_index": 10862
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "LeftEye": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-l-eye",
+                "default_position": [
+                    0.02891,
+                    -0.11814,
+                    1.55318
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "Head",
+            "rigify": {},
+            "roll": 2.06177,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-l-eye-target",
+                "default_position": [
+                    0.03068,
+                    -0.15611,
+                    1.55027
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "LeftFoot": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-l-ankle",
+                "default_position": [
+                    0.18097,
+                    -0.02244,
+                    0.06917
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "LeftLeg",
+            "rigify": {},
+            "roll": 3.140867,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-l-foot-1",
+                "default_position": [
+                    0.18639,
+                    -0.13929,
+                    0.00894
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "LeftForeArm": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-l-elbow",
+                "default_position": [
+                    0.33117,
+                    -0.02006,
+                    1.13956
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "LeftArm",
+            "rigify": {},
+            "roll": -2.207993,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-l-hand",
+                "default_position": [
+                    0.4531,
+                    -0.18323,
+                    1.01553
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "LeftHand": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-l-hand",
+                "default_position": [
+                    0.4531,
+                    -0.18323,
+                    1.01553
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "LeftForeArm",
+            "rigify": {},
+            "roll": -2.382483,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-l-hand-3",
+                "default_position": [
+                    0.46368,
+                    -0.20925,
+                    0.99979
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "LeftHandIndex1": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-l-finger-2-1",
+                "default_position": [
+                    0.48077,
+                    -0.27754,
+                    0.97493
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "LeftHand",
+            "rigify": {},
+            "roll": -2.144513,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-l-finger-2-2",
+                "default_position": [
+                    0.48412,
+                    -0.29825,
+                    0.95987
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "LeftHandIndex2": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-l-finger-2-2",
+                "default_position": [
+                    0.48412,
+                    -0.29825,
+                    0.95987
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "LeftHandIndex1",
+            "rigify": {},
+            "roll": -1.440514,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-l-finger-2-3",
+                "default_position": [
+                    0.48357,
+                    -0.3146,
+                    0.94359
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "LeftHandIndex3": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-l-finger-2-3",
+                "default_position": [
+                    0.48357,
+                    -0.3146,
+                    0.94359
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "LeftHandIndex2",
+            "rigify": {},
+            "roll": -1.102991,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-l-finger-2-4",
+                "default_position": [
+                    0.47993,
+                    -0.33217,
+                    0.92348
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "LeftHandIndex4": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-l-finger-2-4",
+                "default_position": [
+                    0.47993,
+                    -0.33217,
+                    0.92348
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "LeftHandIndex3",
+            "rigify": {},
+            "roll": 0.0,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-l-finger-2-4",
+                "default_position": [
+                    0.47993,
+                    -0.35217,
+                    0.92348
+                ],
+                "offset": [
+                    0.0,
+                    -0.01,
+                    -0.02
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "LeftHandMiddle1": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-l-finger-3-1",
+                "default_position": [
+                    0.49699,
+                    -0.25973,
+                    0.964
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "LeftHand",
+            "rigify": {},
+            "roll": -2.070836,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-l-finger-3-2",
+                "default_position": [
+                    0.50422,
+                    -0.28019,
+                    0.93809
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "LeftHandMiddle2": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-l-finger-3-2",
+                "default_position": [
+                    0.50422,
+                    -0.28019,
+                    0.93809
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "LeftHandMiddle1",
+            "rigify": {},
+            "roll": -1.574482,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-l-finger-3-3",
+                "default_position": [
+                    0.50689,
+                    -0.29729,
+                    0.91661
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "LeftHandMiddle3": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-l-finger-3-3",
+                "default_position": [
+                    0.50689,
+                    -0.29729,
+                    0.91661
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "LeftHandMiddle2",
+            "rigify": {},
+            "roll": -1.112081,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-l-finger-3-4",
+                "default_position": [
+                    0.50673,
+                    -0.31214,
+                    0.89411
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "LeftHandMiddle4": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-l-finger-3-4",
+                "default_position": [
+                    0.50673,
+                    -0.33214,
+                    0.89411
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "LeftHandMiddle3",
+            "rigify": {},
+            "roll": -1.112081,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-l-finger-3-4",
+                "default_position": [
+                    0.50673,
+                    -0.31214,
+                    0.89411
+                ],
+                "offset": [
+                    0.0,
+                    -0.01,
+                    -0.02
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "LeftHandPinky1": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-l-finger-5-1",
+                "default_position": [
+                    0.50606,
+                    -0.22329,
+                    0.94774
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "LeftHand",
+            "rigify": {},
+            "roll": -1.760054,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-l-finger-5-2",
+                "default_position": [
+                    0.51196,
+                    -0.23075,
+                    0.92868
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "LeftHandPinky2": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-l-finger-5-2",
+                "default_position": [
+                    0.51196,
+                    -0.23075,
+                    0.92868
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "LeftHandPinky1",
+            "rigify": {},
+            "roll": -1.508561,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-l-finger-5-3",
+                "default_position": [
+                    0.51369,
+                    -0.23644,
+                    0.91426
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "LeftHandPinky3": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-l-finger-5-3",
+                "default_position": [
+                    0.51369,
+                    -0.23644,
+                    0.91426
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "LeftHandPinky2",
+            "rigify": {},
+            "roll": -1.333663,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-l-finger-5-4",
+                "default_position": [
+                    0.51634,
+                    -0.24335,
+                    0.89585
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "LeftHandPinky4": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-l-finger-5-4",
+                "default_position": [
+                    0.51634,
+                    -0.24335,
+                    0.89585
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "LeftHandPinky3",
+            "rigify": {},
+            "roll": 0.0,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-l-finger-5-4",
+                "default_position": [
+                    0.51634,
+                    -0.26335,
+                    0.89585
+                ],
+                "offset": [
+                    0.0,
+                    -0.01,
+                    -0.02
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "LeftHandRing1": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-l-finger-4-1",
+                "default_position": [
+                    0.50453,
+                    -0.24264,
+                    0.95637
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "LeftHand",
+            "rigify": {},
+            "roll": -1.919343,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-l-finger-4-2",
+                "default_position": [
+                    0.51384,
+                    -0.25671,
+                    0.93193
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "LeftHandRing2": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-l-finger-4-2",
+                "default_position": [
+                    0.51384,
+                    -0.25671,
+                    0.93193
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "LeftHandRing1",
+            "rigify": {},
+            "roll": -1.414398,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-l-finger-4-3",
+                "default_position": [
+                    0.51809,
+                    -0.26924,
+                    0.91097
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "LeftHandRing3": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-l-finger-4-3",
+                "default_position": [
+                    0.51809,
+                    -0.26924,
+                    0.91097
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "LeftHandRing2",
+            "rigify": {},
+            "roll": -1.356222,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-l-finger-4-4",
+                "default_position": [
+                    0.52056,
+                    -0.28046,
+                    0.88689
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "LeftHandRing4": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-l-finger-4-4",
+                "default_position": [
+                    0.52056,
+                    -0.30046,
+                    0.88689
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "LeftHandRing3",
+            "rigify": {},
+            "roll": 0.0,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-l-finger-4-4",
+                "default_position": [
+                    0.52056,
+                    -0.30046,
+                    0.88689
+                ],
+                "offset": [
+                    0.0,
+                    -0.01,
+                    -0.02
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "LeftHandThumb1": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-l-finger-1-1",
+                "default_position": [
+                    0.45406,
+                    -0.22703,
+                    1.00793
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "LeftHand",
+            "rigify": {},
+            "roll": 0.0,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-l-finger-1-2",
+                "default_position": [
+                    0.43327,
+                    -0.24804,
+                    0.99928
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "LeftHandThumb2": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-l-finger-1-2",
+                "default_position": [
+                    0.43327,
+                    -0.24804,
+                    0.99928
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "LeftHandThumb1",
+            "rigify": {},
+            "roll": 0.0,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-l-finger-1-3",
+                "default_position": [
+                    0.4209,
+                    -0.27907,
+                    0.98533
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "LeftHandThumb3": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-l-finger-1-3",
+                "default_position": [
+                    0.4209,
+                    -0.27907,
+                    0.98533
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "LeftHandThumb2",
+            "rigify": {},
+            "roll": 0.0,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-l-finger-1-4",
+                "default_position": [
+                    0.41539,
+                    -0.30035,
+                    0.96799
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "LeftHandThumb4": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-l-finger-1-4",
+                "default_position": [
+                    0.41539,
+                    -0.30035,
+                    0.96799
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "LeftHandThumb3",
+            "rigify": {},
+            "roll": 0.0,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-l-finger-1-4",
+                "default_position": [
+                    0.41539,
+                    -0.32035,
+                    0.96799
+                ],
+                "offset": [
+                    -0.005,
+                    -0.015,
+                    -0.01
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "LeftLeg": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-l-knee",
+                "default_position": [
+                    0.14264,
+                    -0.03733,
+                    0.47442
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "LeftUpLeg",
+            "rigify": {},
+            "roll": 3.080146,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-l-ankle",
+                "default_position": [
+                    0.18097,
+                    -0.02244,
+                    0.06917
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "LeftOrbicularisBottom": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-l-eye",
+                "default_position": [
+                    0.02891,
+                    -0.11814,
+                    1.55318
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "Head",
+            "rigify": {},
+            "roll": 2.88579,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-l-lowerlid",
+                "default_position": [
+                    0.03071,
+                    -0.15356,
+                    1.53899
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "LeftOrbicularisTop": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-l-eye",
+                "default_position": [
+                    0.02891,
+                    -0.11814,
+                    1.55318
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "Head",
+            "rigify": {},
+            "roll": -2.74932,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-l-upperlid",
+                "default_position": [
+                    0.03061,
+                    -0.15408,
+                    1.56206
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "LeftShoulder": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-l-clavicle",
+                "default_position": [
+                    0.02277,
+                    -0.0221,
+                    1.34249
+                ],
+                "offset": [
+                  0.0,
+                  0.0,
+                  -0.02
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "Spine2",
+            "rigify": {},
+            "roll": -3.059305,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-l-shoulder",
+                "default_position": [
+                    0.17002,
+                    -0.01926,
+                    1.3201
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "LeftToeBase": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-l-foot-1",
+                "default_position": [
+                    0.18639,
+                    -0.13929,
+                    0.00894
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "LeftFoot",
+            "rigify": {},
+            "roll": 1.30,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-l-toe-2-4",
+                "default_position": [
+                    0.18202,
+                    -0.20531,
+                    0.01208
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "LeftToe_End": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-l-toe-2-4",
+                "default_position": [
+                    0.18202,
+                    -0.20531,
+                    0.01208
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "LeftToeBase",
+            "rigify": {},
+            "roll": 0.0,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-l-toe-2-4",
+                "default_position": [
+                    0.18202,
+                    -0.23531,
+                    0.01208
+                ],
+                "offset": [
+                    0.0,
+                    -0.03,
+                    0.0
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "LeftUpLeg": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-l-upper-leg",
+                "default_position": [
+                    0.10147,
+                    -0.005,
+                    0.86564
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "Hips",
+            "rigify": {},
+            "roll": 3.077946,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-l-knee",
+                "default_position": [
+                    0.14264,
+                    -0.03733,
+                    0.47442
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "Neck": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-neck",
+                "default_position": [
+                    0.0,
+                    -0.00513,
+                    1.41363
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "Spine2",
+            "rigify": {},
+            "roll": 0.0,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "default_position": [
+                    0.0,
+                    -0.00039,
+                    1.46934
+                ],
+                "strategy": "MEAN",
+                "vertex_indices": [
+                    836,
+                    7547
+                ]
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "RightArm": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-r-shoulder",
+                "default_position": [
+                    -0.17002,
+                    -0.01926,
+                    1.3201
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "RightShoulder",
+            "rigify": {},
+            "roll": 2.207993,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-r-elbow",
+                "default_position": [
+                    -0.33117,
+                    -0.02006,
+                    1.13956
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "RightBreast": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "default_position": [
+                    0.0,
+                    0.01858,
+                    1.23884
+                ],
+                "strategy": "MEAN",
+                "vertex_indices": [
+                    1600,
+                    1779,
+                    1779
+                ]
+            },
+            "inherit_scale": "FULL",
+            "parent": "Spine1",
+            "rigify": {},
+            "roll": -0.51892,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "default_position": [
+                    -0.10297,
+                    -0.15249,
+                    1.21105
+                ],
+                "strategy": "VERTEX",
+                "vertex_index": 1779
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "RightButtock": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-r-upper-leg",
+                "default_position": [
+                    -0.10147,
+                    -0.005,
+                    0.86564
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "RightUpLeg",
+            "rigify": {},
+            "roll": -0.51892,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "default_position": [
+                    -0.05695,
+                    0.09333,
+                    0.8358
+                ],
+                "strategy": "VERTEX",
+                "vertex_index": 4227
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "RightEye": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-r-eye",
+                "default_position": [
+                    -0.02891,
+                    -0.11814,
+                    1.55318
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "Head",
+            "rigify": {},
+            "roll": -2.06177,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-r-eye-target",
+                "default_position": [
+                    -0.03068,
+                    -0.15611,
+                    1.55027
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "RightFoot": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-r-ankle",
+                "default_position": [
+                    -0.18097,
+                    -0.02244,
+                    0.06917
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "RightLeg",
+            "rigify": {},
+            "roll": -3.140935,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-r-foot-1",
+                "default_position": [
+                    -0.18639,
+                    -0.13929,
+                    0.00894
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "RightForeArm": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-r-elbow",
+                "default_position": [
+                    -0.33117,
+                    -0.02006,
+                    1.13956
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "RightArm",
+            "rigify": {},
+            "roll": 2.207993,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-r-hand",
+                "default_position": [
+                    -0.4531,
+                    -0.18323,
+                    1.01553
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "RightHand": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-r-hand",
+                "default_position": [
+                    -0.4531,
+                    -0.18323,
+                    1.01553
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "RightForeArm",
+            "rigify": {},
+            "roll": 2.382486,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-r-hand-3",
+                "default_position": [
+                    -0.46368,
+                    -0.20925,
+                    0.99979
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "RightHandIndex1": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-r-finger-2-1",
+                "default_position": [
+                    -0.48077,
+                    -0.27754,
+                    0.97493
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "RightHand",
+            "rigify": {},
+            "roll": 2.144512,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-r-finger-2-2",
+                "default_position": [
+                    -0.48412,
+                    -0.29825,
+                    0.95987
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "RightHandIndex2": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-r-finger-2-2",
+                "default_position": [
+                    -0.48412,
+                    -0.29825,
+                    0.95987
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "RightHandIndex1",
+            "rigify": {},
+            "roll": 1.440514,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-r-finger-2-3",
+                "default_position": [
+                    -0.48357,
+                    -0.3146,
+                    0.94359
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "RightHandIndex3": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-r-finger-2-3",
+                "default_position": [
+                    -0.48357,
+                    -0.3146,
+                    0.94359
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "RightHandIndex2",
+            "rigify": {},
+            "roll": 1.102989,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-r-finger-2-4",
+                "default_position": [
+                    -0.47993,
+                    -0.33217,
+                    0.92348
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "RightHandIndex4": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-r-finger-2-4",
+                "default_position": [
+                    -0.47993,
+                    -0.33217,
+                    0.92348
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "RightHandIndex3",
+            "rigify": {},
+            "roll": 0.0,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-r-finger-2-4",
+                "default_position": [
+                    -0.47993,
+                    -0.35217,
+                    0.92348
+                ],
+                "offset": [
+                    0.0,
+                    -0.01,
+                    -0.02
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "RightHandMiddle1": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-r-finger-3-1",
+                "default_position": [
+                    -0.49699,
+                    -0.25973,
+                    0.964
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "RightHand",
+            "rigify": {},
+            "roll": 2.070837,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-r-finger-3-2",
+                "default_position": [
+                    -0.50422,
+                    -0.28019,
+                    0.93809
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "RightHandMiddle2": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-r-finger-3-2",
+                "default_position": [
+                    -0.50422,
+                    -0.28019,
+                    0.93809
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "RightHandMiddle1",
+            "rigify": {},
+            "roll": 1.574484,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-r-finger-3-3",
+                "default_position": [
+                    -0.50689,
+                    -0.29729,
+                    0.91661
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "RightHandMiddle3": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-r-finger-3-3",
+                "default_position": [
+                    -0.50689,
+                    -0.29729,
+                    0.91661
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "RightHandMiddle2",
+            "rigify": {},
+            "roll": 1.112081,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-r-finger-3-4",
+                "default_position": [
+                    -0.50673,
+                    -0.31214,
+                    0.89411
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "RightHandMiddle4": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-r-finger-3-4",
+                "default_position": [
+                    -0.50673,
+                    -0.31214,
+                    0.89411
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "RightHandMiddle3",
+            "rigify": {},
+            "roll": 0.0,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-r-finger-3-4",
+                "default_position": [
+                    -0.50673,
+                    -0.33214,
+                    0.89411
+                ],
+                "offset": [
+                    0.0,
+                    -0.01,
+                    -0.02
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "RightHandPinky1": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-r-finger-5-1",
+                "default_position": [
+                    -0.50606,
+                    -0.22329,
+                    0.94774
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "RightHand",
+            "rigify": {},
+            "roll": 1.760058,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-r-finger-5-2",
+                "default_position": [
+                    -0.51196,
+                    -0.23075,
+                    0.92868
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "RightHandPinky2": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-r-finger-5-2",
+                "default_position": [
+                    -0.51196,
+                    -0.23075,
+                    0.92868
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "RightHandPinky1",
+            "rigify": {},
+            "roll": 1.508562,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-r-finger-5-3",
+                "default_position": [
+                    -0.51369,
+                    -0.23644,
+                    0.91426
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "RightHandPinky3": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-r-finger-5-3",
+                "default_position": [
+                    -0.51369,
+                    -0.23644,
+                    0.91426
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "RightHandPinky2",
+            "rigify": {},
+            "roll": 1.333663,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-r-finger-5-4",
+                "default_position": [
+                    -0.51634,
+                    -0.24335,
+                    0.89585
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "RightHandPinky4": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-r-finger-5-4",
+                "default_position": [
+                    -0.51634,
+                    -0.24335,
+                    0.89585
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "RightHandPinky3",
+            "rigify": {},
+            "roll": 0.0,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-r-finger-5-4",
+                "default_position": [
+                    -0.51634,
+                    -0.26335,
+                    0.89585
+                ],
+                "offset": [
+                    0.0,
+                    -0.01,
+                    -0.02
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "RightHandRing1": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-r-finger-4-1",
+                "default_position": [
+                    -0.50453,
+                    -0.24264,
+                    0.95637
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "RightHand",
+            "rigify": {},
+            "roll": 1.919345,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-r-finger-4-2",
+                "default_position": [
+                    -0.51384,
+                    -0.25671,
+                    0.93193
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "RightHandRing2": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-r-finger-4-2",
+                "default_position": [
+                    -0.51384,
+                    -0.25671,
+                    0.93193
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "RightHandRing1",
+            "rigify": {},
+            "roll": 1.414402,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-r-finger-4-3",
+                "default_position": [
+                    -0.51809,
+                    -0.26924,
+                    0.91097
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "RightHandRing3": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-r-finger-4-3",
+                "default_position": [
+                    -0.51809,
+                    -0.26924,
+                    0.91097
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "RightHandRing2",
+            "rigify": {},
+            "roll": 1.356225,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-r-finger-4-4",
+                "default_position": [
+                    -0.52056,
+                    -0.28046,
+                    0.88689
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "RightHandRing4": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-r-finger-4-4",
+                "default_position": [
+                    -0.52056,
+                    -0.28046,
+                    0.88689
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "RightHandRing3",
+            "rigify": {},
+            "roll": 0.0,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-r-finger-4-4",
+                "default_position": [
+                    -0.52056,
+                    -0.30046,
+                    0.88689
+                ],
+                "offset": [
+                    0.0,
+                    -0.01,
+                    -0.02
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "RightHandThumb1": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-r-finger-1-1",
+                "default_position": [
+                    -0.45406,
+                    -0.22703,
+                    1.00793
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "RightHand",
+            "rigify": {},
+            "roll": 0.0,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-r-finger-1-2",
+                "default_position": [
+                    -0.43327,
+                    -0.24804,
+                    0.99928
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "RightHandThumb2": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-r-finger-1-2",
+                "default_position": [
+                    -0.43327,
+                    -0.24804,
+                    0.99928
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "RightHandThumb1",
+            "rigify": {},
+            "roll": 0.0,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-r-finger-1-3",
+                "default_position": [
+                    -0.4209,
+                    -0.27907,
+                    0.98533
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "RightHandThumb3": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-r-finger-1-3",
+                "default_position": [
+                    -0.4209,
+                    -0.27907,
+                    0.98533
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "RightHandThumb2",
+            "rigify": {},
+            "roll": 0.0,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-r-finger-1-4",
+                "default_position": [
+                    -0.41539,
+                    -0.30035,
+                    0.96799
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "RightHandThumb4": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-r-finger-1-4",
+                "default_position": [
+                    -0.41539,
+                    -0.30035,
+                    0.96799
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "RightHandThumb3",
+            "rigify": {},
+            "roll": 0.0,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-r-finger-1-4",
+                "default_position": [
+                    -0.41539,
+                    -0.32035,
+                    0.96799
+                ],
+                "offset": [
+                    0.005,
+                    -0.015,
+                    -0.01
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "RightLeg": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-r-knee",
+                "default_position": [
+                    -0.14264,
+                    -0.03733,
+                    0.47442
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "RightUpLeg",
+            "rigify": {},
+            "roll": -3.080155,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-r-ankle",
+                "default_position": [
+                    -0.18097,
+                    -0.02244,
+                    0.06917
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "RightOrbicularisBottom": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-r-eye",
+                "default_position": [
+                    -0.02891,
+                    -0.11814,
+                    1.55318
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "Head",
+            "rigify": {},
+            "roll": -2.88579,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-r-lowerlid",
+                "default_position": [
+                    -0.03071,
+                    -0.15356,
+                    1.53899
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "RightOrbicularisTop": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-r-eye",
+                "default_position": [
+                    -0.02891,
+                    -0.11814,
+                    1.55318
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "Head",
+            "rigify": {},
+            "roll": 2.74932,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-r-upperlid",
+                "default_position": [
+                    -0.03061,
+                    -0.15408,
+                    1.56206
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "RightShoulder": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-r-clavicle",
+                "default_position": [
+                    -0.02277,
+                    -0.0221,
+                    1.34249
+                ],
+                "offset": [
+                  0.0,
+                  0.0,
+                  -0.02
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "Spine2",
+            "rigify": {},
+            "roll": 3.059306,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-r-shoulder",
+                "default_position": [
+                    -0.17002,
+                    -0.01926,
+                    1.3201
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "RightToeBase": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-r-foot-1",
+                "default_position": [
+                    -0.18639,
+                    -0.13929,
+                    0.00894
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "RightFoot",
+            "rigify": {},
+            "roll": -1.30,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-r-toe-2-4",
+                "default_position": [
+                    -0.18202,
+                    -0.20531,
+                    0.01208
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "RightToe_End": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-r-toe-2-4",
+                "default_position": [
+                    -0.18202,
+                    -0.20531,
+                    0.01208
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "RightToeBase",
+            "rigify": {},
+            "roll": 0.0,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-r-toe-2-4",
+                "default_position": [
+                    -0.18202,
+                    -0.237531,
+                    0.01208
+                ],
+                "offset": [
+                    0.0,
+                    -0.03,
+                    0.0
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "RightUpLeg": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "cube_name": "joint-r-upper-leg",
+                "default_position": [
+                    -0.10147,
+                    -0.005,
+                    0.86564
+                ],
+                "strategy": "CUBE"
+            },
+            "inherit_scale": "FULL",
+            "parent": "Hips",
+            "rigify": {},
+            "roll": -3.077955,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-r-knee",
+                "default_position": [
+                    -0.14264,
+                    -0.03733,
+                    0.47442
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "Spine": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "default_position": [
+                    0.0,
+                    -0.02212,
+                    1.01759
+                ],
+                "strategy": "MEAN",
+                "vertex_indices": [
+                    16022,
+                    17349
+                ]
+            },
+            "inherit_scale": "FULL",
+            "parent": "Hips",
+            "rigify": {},
+            "roll": -0.00372,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "default_position": [
+                    0.0,
+                    -0.00894,
+                    1.11877
+                ],
+                "strategy": "MEAN",
+                "vertex_indices": [
+                    3991,
+                    10651
+                ]
+            },
+            "use_connect": false,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "Spine1": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "default_position": [
+                    0.0,
+                    -0.00894,
+                    1.11877
+                ],
+                "strategy": "MEAN",
+                "vertex_indices": [
+                    3991,
+                    10651
+                ]
+            },
+            "inherit_scale": "FULL",
+            "parent": "Spine",
+            "rigify": {},
+            "roll": 0.0,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "default_position": [
+                    0.0,
+                    0.01858,
+                    1.23884
+                ],
+                "strategy": "MEAN",
+                "vertex_indices": [
+                    1634,
+                    8306
+                ]
+            },
+            "use_connect": true,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        },
+        "Spine2": {
+            "collections": [
+                "Bones"
+            ],
+            "head": {
+                "default_position": [
+                    0.0,
+                    0.01858,
+                    1.23884
+                ],
+                "strategy": "MEAN",
+                "vertex_indices": [
+                    1634,
+                    8306
+                ]
+            },
+            "inherit_scale": "FULL",
+            "parent": "Spine1",
+            "rigify": {},
+            "roll": 0.0,
+            "rotation_mode": "XYZ",
+            "tail": {
+                "cube_name": "joint-neck",
+                "default_position": [
+                    0.0,
+                    -0.00513,
+                    1.41363
+                ],
+                "strategy": "CUBE"
+            },
+            "use_connect": true,
+            "use_inherit_rotation": true,
+            "use_local_location": true
+        }
+    },
+    "collections": [
+        "Bones"
+    ],
+    "is_subrig": false,
+    "scale_factor": 0.10,
+    "version": 1
+}

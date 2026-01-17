@@ -1,36 +1,43 @@
 # MPFB
 
 > [!IMPORTANT]
-> This document is currently a work in progress. The referenced rig,
-weights, poses, and Blender scripts have not yet been published.
-At this stage, the document should be seen as a high-level description/plan
-of a workflow that is still subject to refinement and optimization.
+> This document is currently a work in progress. The referenced poses
+have not yet been published. At this stage, the document should be
+seen as a high-level description/plan of a workflow that is still
+subject to refinement and optimization.
 
 ### Installation
 
-Blender is free and open-source 3D software, and MPFB is a free and
-open-source Blender extension, so you don't have to purchase anything:
+[Blender](https://www.blender.org/) is free and open-source 3D software, and
+[MPFB](https://static.makehumancommunity.org/mpfb.html) is a free and
+open-source Blender extension:
 
 - Download and install the latest version of [Blender](https://www.blender.org/)
 - Start Blender
-- Select `Edit` | `Preferences` | `Get extensions`, and allow online access (if you have not already done so)
+- Select `Edit` | `Preferences` | `Get extensions`, and allow online access
+(if you have not already done so)
 - Search for the "MPFB" extension and click `Install`.
 
 If you now return to Blender's "Layout" view and enable `View` | `Sidebar`,
 you should see a new tab labeled "MPFB v2.0" (or similar).
 
-Next, install MPFB asset packs for skins, clothes, and other 3D assets:
+Install MPFB asset packs for skins, clothes, and other 3D assets:
 
 - In Blender, open the "MPFB" tab | `System and resources` | `Web resources` | `Asset packs`
 - Download the "MakeHuman system assets" and all other zipped asset packs
 that you want. No need to download them all as you can always add more later.
 - Install each pack to MPFB: `Apply assets` | `Library Settings` | `Load pack from zip file`
 
-Install TalkingHead assets:
+Install the TalkingHead add-on and assets:
 
-- Download the TalkingHead rig [talkinghead.mpfbskel]() <sup>\[1]</sup>,
-weights [talkinghead.mpw](), and morph targets [talkinghead-targets.zip]().
-- Hack to enable refitting with custom rig: In MPFB tab, click
+- Download the TalkingHead add-on [talkinghead-addon.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/MPFB/talkinghead-addon.py),
+rig [talkinghead.mpfbskel](https://github.com/met4citizen/TalkingHead/blob/main/blender/MPFB/talkinghead.mpfbskel) <sup>\[1]</sup>,
+weights [talkinghead.mpw](https://github.com/met4citizen/TalkingHead/blob/main/blender/MPFB/talkinghead.mpw), and
+morph targets [talkinghead-targets.zip](https://github.com/met4citizen/TalkingHead/blob/main/blender/MPFB/talkinghead-targets.zip)
+to a local directory.
+- Install the TalkingHead add-on via `Edit` | `Preferences` | `Add-ons` | `Install from Disk...`.
+Open preferences and set the "Data Directory" to the directory where you saved the downloaded files.
+- Workaround to enable refitting with a custom rig: In the MPFB tab, click
 `System and resources` | `System data` to open the system data folder.
 Navigate to "./rigs/standard" and copy "talkinghead.mpfbskel" to "rig.unknown.json"
 and "talkinghead.mhw" to "weights.unknown.json". <sup>\[2]</sup>
@@ -63,25 +70,25 @@ and modify the base model, click `Model` | `Refit assets to basemesh`.
 
 The TalkingHead rig is designed to be Mixamo-compatible.
 If you scale your avatar so that the "Hips" bone is at
-a height of 1.55 meters, you can simply use the Mixamo
+a height of 1.0 meters, you can simply use the Mixamo
 "Y-Bot" to download poses and animations. For most use
 cases, this approach is good enough.
 
 An alternative approach is to create your own, avatar-specific
 animations, poses and gestures:
 
-- Append all TalkingHead templates [talkinghead-templates.zip]()
+- Append all TalkingHead templates [talkinghead-templates.zip (TODO)]()
 to the current file: `File` | `Append...` | Select asset
 file | `Append`. <sup>\[3]</sup>
 - Select the avatar and switch to `Layout` | `Pose Mode`.
 - Display the set of poses by enabling `View` | `Asset Shelf`.
 - For each pose in the list: Select all
 bones | `Apply Pose Asset` | Rotate bones | `Adjust Pose Asset`.
-- Generate `poseTemplates` and `gestureTemplates` data structures
-for the TalkingHead by running [generate-templates.py]() in `Scripting`.
-Copy the results from console to be used in your app.
-- Create an avatar-specific "doll", upload to Mixamo, and download
-corresponding animations.
+- For each pose, select the required bones and copy quaternions
+to clipboard: `TalkingHead` | `Operations` | `Copy pose` | Paste
+to your code as a part of `head.poseTemplates` or `head.gestureTemplates`.
+- OPTIONAL: Create an avatar-specific "doll", export to FBX, upload to Mixamo,
+and download animations.
 
 
 ### Export as GLB file
@@ -96,11 +103,10 @@ Prepare for export to TalkingHead/GLB/Three.js/WebGL:
 value for the TalkingHead class option `modelRoot`.
 - Select the base mesh and navigate to `Operations`| `Basemesh`.
 Run both `Bake shapekeys` and `Delete helpers`.
-- Select all mesh objects. Open the `Scripting` tab, configure/run
-[build-mpfb-targets.py]() to add ARKit and Oculus visemes. <sup>\[4]</sup>
-- Select the base mesh and run [apply-modifiers.py]() in `Scripting`. <sup>\[5]</sup>
+- `TalkingHead` | `Operations` | Select all mesh objects | `Build ARKit and Oculus`. <sup>\[4]</sup>
+- `TalkingHead` | `Operations` | Select the base mesh | `Apply modifiers`. <sup>\[5]</sup>
 - Optional: Change to "Object Mode", select all, and scale
-your character so that the "Hips" bone is at 1.55 meters in
+your character so that the "Hips" bone is at 1.0 meters in
 height. Select all | `Object` | `Apply` | `All Transforms`.
 
 Update materials for glTF/GLB:
@@ -124,13 +130,18 @@ Export to GLB (settings relative to defaults):
 
 ### Troubleshooting
 
-Here are few common problems and fixes:
+Here are few common problems and known issues:
 
-- Avatar is looking down, not straight: Adjust the tilt of
-the "Head" bone of your exported model.
+- ARKit and Oculus blend shapes are low quality:
+ARKit and Oculus blend shapes have been auto-generated
+using Faceit. Hopefully, some 3D designer (maybe you?)
+will have time to fix the most apparent problems.
+- Avatar is looking down instead of straight ahead:
+Adjust the tilt of the "Head" bone in your exported model.
 - Eyelashes extend too far when blinking: Either modify
-the shape key or replace it with a combined mix that has
-an optimal extent.
+the shape key directly or replace it with a combined mix
+that provides an optimal extent.
+- Toes are twisted: Adjust the toe base bone rolls.
 
 This document does not (and cannot) cover all details or possible
 situations. If you encounter difficulties, please consult the
@@ -140,12 +151,11 @@ situations. If you encounter difficulties, please consult the
 
 ### Footnotes
 
-\[1] Custom rig was necessary because the standard rigs (Mixamo with and
+\[1] Custom rig was necessary because the standard MPFB rigs (Mixamo with and
 without Unity extensions) had bone rolls that were not aligned with
-Mixamo’s de facto standard. Minor adjustments were also made
+Mixamo's de facto standard. Minor adjustments were also made
 to the naming (removed mixamorig prefix), spine, neck alignment,
-head tilt, toes, and other places. The hands still require some
-adjustments.
+head tilt, toes, and other places.
 
 \[2] This is a hack. See [MPFB2 issue](https://github.com/makehumancommunity/mpfb2/issues/305).
 
@@ -157,7 +167,6 @@ by MPFB. See [MPFB2 issue](https://github.com/makehumancommunity/mpfb2/issues/30
 \[5] Blender modifiers are Blender-specific and are not part of the glTF/GLB
 specification, so they must be applied. However, Blender does not allow
 applying most topology-changing modifiers when shape keys exist.
-Note: Applying "delete" modifiers breaks the design.
 
 \[6] Mask mode is essentially the same as Eevee's "Alpha Clip" blend mode,
 but in Blender 5.0 it must now be done with shader nodes.
