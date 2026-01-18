@@ -917,7 +917,7 @@ class TalkingHead {
   */
   initAudioGraph(sampleRate = null) {
     // Audio context
-    if ( this.opt.audioCtx && this.audioCtx.state !== 'closed' ) {
+    if ( this.opt.audioCtx && this.opt.audioCtx.state !== 'closed' ) {
 
       // Use the given audio context
       if (this.audioCtx !== this.opt.audioCtx) {
