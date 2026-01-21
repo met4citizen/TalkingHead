@@ -3,13 +3,15 @@
 > [!IMPORTANT]
 > [Netflix acquires gaming avatar maker Ready Player Me](https://techcrunch.com/2025/12/19/netflix-acquires-gaming-avatar-maker-ready-player-me/). Following the acquisition, Ready Player Me will be winding down its services on **January 31, 2026**. This includes both of its online avatar creation tools, Ready Player Me and PlayerZero.
 
+---
+
 ### Demo Videos
 
 *All the demo videos are real-time screen captures from a Chrome browser running
 the TalkingHead test web app without any post-processing.*
 
 Video | Description
---- | ---
+---|---
 <span style="display: block; min-width:400px">[<img src="images/dynamicbones.jpg" width="400"/>](https://youtu.be/YUbDIWkskuw)<br>[<img src="images/dynamicbones2.jpg" width="400"/>](https://youtu.be/4Y9NFnENH5s)</span> | Having a good hair day! – A two-part introduction to the TalkingHead's dynamic bones feature 🦴🦴 and built-in physics engine. Using custom models with rigged hair and two different hairstyles. See Appendix E for more details.
 [<img src="images/screenshot4.jpg" width="400"/>](https://youtu.be/OA6LBZjkzJI) | I chat with Jenny and Harri. The close-up view allows you to evaluate the accuracy of lip-sync in both English and Finnish. Using GPT-3.5 and Microsoft text-to-speech.
 [<img src="images/screenshot5.jpg" width="400"/>](https://youtu.be/fJrYGaGCAGo) | A short demo of how AI can control the avatar's movements. Using OpenAI's function calling and Google TTS with the TalkingHead's built-in viseme generation.
@@ -23,9 +25,9 @@ Video | Description
 *Some featured videos, apps, and projects using the TalkingHead class:*
 
 Video/App | Use Case
---- | ---
+---|---
 <span style="display: block; min-width:400px">[<img src="images/dialoglab.jpg" width="400"/>](https://www.youtube.com/watch?v=U2Ag_Ktobzw)</span> | **Human-AI group conversations**. Researchers from UVA, Google, Northeastern, Google DeepMind, and Google Research developed [DialogLab](https://github.com/ecruhue/DialogLab), a toolkit to author, simulate and test human-AI group conversations. 🤖🤖🤖
-[<img src="images/openai.jpg" width="400"/>](https://met4citizen.github.io/HeadAudio/openai.html) | **Low-latency AI speech over WebRTC**. Speech-to-speech in realtime over WebRTC using OpenAI Realtime API. Note: Realtime speech-to-speech usage is much more expensive than standard AI text tokens, so please check OpenAI pricing for `gpt-realtime-mini` before use. - Learn more about the audio-driven lip-sync module at [HeadAudio](https://github.com/met4citizen/HeadAudio).
+[<img src="images/openai.jpg" width="400"/>](https://met4citizen.github.io/HeadAudio/openai.html) | **Low-latency AI speech over WebRTC**. Speech-to-speech in realtime over WebRTC using OpenAI Realtime API. Learn more about the audio-driven lip-sync module at [HeadAudio](https://github.com/met4citizen/HeadAudio).<br>**Note**: Realtime speech-to-speech usage is much more expensive than standard AI text tokens, so please check OpenAI pricing for `gpt-realtime-mini` before use.
 [<img src="images/olivia.jpg" width="400"/>](https://youtu.be/9GeXwjuslnQ) | **Video conferencing**. A video conferencing solution with real-time transcription, contextual AI responses, and voice lip-sync. The app and demo, featuring Olivia, by [namnm](https://github.com/namnm) 👍
 [<img src="images/edgespeaker.png" width="400"/>](https://www.edgespeaker.com/) | **Fully in-browser AI you can talk to**. Uses TalkingHead, [HeadTTS (with Kokoro)](https://github.com/met4citizen/HeadTTS), [whisper-web](https://github.com/xenova/whisper-web), and [WebLLM (with Llama 3.2)](https://github.com/mlc-ai/web-llm). No APIs, no accounts. For best performance and WebGPU support, use a desktop version of Chrome or Edge: 👉 [EdgeSpeaker.com](https://www.edgespeaker.com/)
 [<img src="images/geminicompetition.jpg" width="400"/>](https://www.youtube.com/watch?v=Dl2o9kRvbLQ) | **Recycling Advisor 3D**. Snap a photo and get local recycling advice from a talking avatar. My entry for the [Gemini API Developer Competition 2024](https://ai.google.dev/competition/projects/recycling-advisor-3d).
@@ -37,7 +39,7 @@ Video/App | Use Case
 *More projects, sites and research using TalkingHead:*
 
 Link | Description
---- | ---
+---|---
 [Cancer Clinical Trial Participation](https://dl.acm.org/doi/full/10.1145/3717511.3747063) | Researchers at the University of Florida explored how multiple virtual agents can help overcome barriers to joining cancer clinical trials.
 [TalkMateAI](https://github.com/kiranbaby14/TalkMateAI) | Real-time Voice-Controlled 3D Avatar with Multimodal AI.
 [Riverts](https://github.com/sensein/riverst) | A platform for building, running, and analyzing interactive user-avatar conversations.
@@ -50,16 +52,12 @@ Link | Description
 ### Introduction
 
 Talking Head (3D) is a browser JavaScript class featuring a 3D avatar that can
-speak and lip-sync in real-time. The class supports
-[Ready Player Me](https://readyplayer.me/) / [PlayerZero](https://playerzero.me/)
-full-body 3D avatars (GLB) and
-[Mixamo](https://www.mixamo.com) / [RPM](https://github.com/readyplayerme/animation-library)
-animations (FBX). It also knows a set of emojis and can convert them
+speak and lip-sync in real-time. It also knows a set of emojis and can convert them
 into facial expressions.
 
-You can create your own 3D avatar for free using the Ready Player Me or PlayerZero
-service. Alternatively, you can create a custom 3D avatar by making it compatible with
-RPM models. See Appendix A for more details.
+The class supports full-body avatars (GLB) and [Mixamo](https://www.mixamo.com)
+animations (FBX). The avatar must have a Mixamo-compatible rig and ARKit and
+Oculus viseme blend shapes. See Appendix A for details on creating your own avatar.
 
 By default, the class uses
 [Google Cloud TTS](https://cloud.google.com/text-to-speech) for text-to-speech
@@ -139,7 +137,7 @@ const head = new TalkingHead( nodeAvatar, {
   <summary>CLICK HERE to see all the available OPTIONS.</summary>
 
 Option | Description | Default
---- | --- | ---
+---|---|---
 `jwsGet` | Function to get the JSON Web Token (JWT). See Appendix B for more information. | `null`
 `ttsEndpoint` | Text-to-speech backend/endpoint/proxy implementing the Google Text-to-Speech API. | `null`
 `ttsApikey` | If you don't want to use a proxy or JWT, you can use Google TTS endpoint directly and provide your API key here. **NOTE: I recommend that you don't use this in production and never put your API key in any client-side code.** | `null`
@@ -245,8 +243,8 @@ nodeSpeak.addEventListener('click', function () {
   <summary>CLICK HERE to see the key METHODS.</summary>
 
 Method | Description
---- | ---
-`showAvatar(avatar, [onprogress=null])` | Load and show the specified avatar. The `avatar` object must include the `url` for GLB file. Optional properties are `body` for either male `M` or female `F` body form, `lipsyncLang`, `lipsyncHeadMovement`, `baseline` object for blend shape baseline, `modelDynamicBones` for dynamic bones (see Appendix E), `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood`, `avatarMute`, `avatarIdleEyeContact`, `avatarSpeakingEyeContact`, `avatarListeningEyeContact`, and `avatarIgnoreCamera`.
+---|---
+`showAvatar(avatar, [onprogress=null])` | Load and show the specified avatar. The `avatar` object must include the `url` for GLB file. Optional properties are `body` for either male `M` or female `F` body form, `lipsyncLang`, `lipsyncHeadMovement`, `baseline` object for blend shape baseline, `retarget` for skeleton adjustments, `modelDynamicBones` for dynamic bones (see Appendix E), `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood`, `avatarMute`, `avatarIdleEyeContact`, `avatarSpeakingEyeContact`, `avatarListeningEyeContact`, and `avatarIgnoreCamera`.
 `setView(view, [opt])` | Set view. Supported views are `"full"`, `"mid"`, `"upper"`  and `"head"`. The `opt` object can be used to set `cameraDistance`, `cameraX`, `cameraY`, `cameraRotateX`, `cameraRotateY`.
 `setLighting(opt)` | Change lighting settings. The `opt` object can be used to set `lightAmbientColor`, `lightAmbientIntensity`, `lightDirectColor`, `lightDirectIntensity`, `lightDirectPhi`, `lightDirectTheta`, `lightSpotColor`, `lightSpotIntensity`, `lightSpotPhi`, `lightSpotTheta`, `lightSpotDispersion`.
 `speakText(text, [opt={}], [onsubtitles=null], [excludes=[]])` | Add the `text` string to the speech queue. The text can contain face emojis. Options `opt` can be used to set text-specific `lipsyncLang`, `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood`, `avatarMute`. Optional callback function `onsubtitles` is called whenever a new subtitle is to be written with the parameter of the added string. The optional `excludes` is an array of [start,end] indices to be excluded from audio but to be included in the subtitles.
@@ -346,7 +344,10 @@ Licenses, attributions and notes related to the `index.html` web app assets:
 - The app uses [Marked](https://github.com/markedjs/marked) Markdown parser and [DOMPurify](https://github.com/cure53/DOMPurify) XSS sanitizer.
 - Fira Sans Condensed and Fira Sans Extra Condensed fonts are licensed under the SIL Open Font License, version 1.1, available with a FAQ at [http://scripts.sil.org/OFL](http://scripts.sil.org/OFL). Digitized data copyright (c) 2012-2015, The Mozilla Foundation and Telefonica S.A.
 - SVG icons from [css.gg](https://github.com/astrit/css.gg), MIT License (versions prior to license update).
-- Example avatar "brunette.glb" was created at [Ready Player Me](https://readyplayer.me/). The avatar is free to all developers for non-commercial use under the [CC BY-NC 4.0 DEED](https://creativecommons.org/licenses/by-nc/4.0/). If you want to integrate Ready Player Me avatars into a commercial app or game, you must sign up as a Ready Player Me developer.
+- Example avatar "brunette.glb" was created at [Ready Player Me](https://readyplayer.me/). The avatar is free to all developers for non-commercial use under the [CC BY-NC 4.0 DEED](https://creativecommons.org/licenses/by-nc/4.0/).
+- Example avatar "mpfb.glb" was created using [Blender](https://www.blender.org/) and [MPFB](https://static.makehumancommunity.org/mpfb.html) Blender extension. The avatar is licensed under [CC0](https://creativecommons.org/public-domain/cc0/).
+- Example avatar "avatar.glb" was created at [Avaturn](https://avaturn.me) for non-commercial use.
+- Example avatar "avatarsdk.glb" was created at [AvatarSDK](https://avatarsdk.com) for non-commercial use.
 - Example animation `walking.fbx` and the pose `dance.fbx` are from Mixamo, a subsidiary of Adobe Inc. [Mixamo](https://www.mixamo.com) service is free and its animations/poses (>2000) can be used royalty free for personal, commercial, and non-profit projects. Raw animation files can't be distributed outside the project team and can't be used to train ML models.
 - Background view examples are from [Virtual Backgrounds](https://virtualbackgrounds.site)
 - Impulse response (IR) files for reverb effects:
@@ -393,10 +394,9 @@ instead of Google TTS and the built-in lip-sync (`speakText`).
 
 **Can I use a custom 3D model?**
 
-The class supports full-body Ready Player Me avatars. You can also make your
-own custom model, but it needs to have a RPM compatible rig/bone structure
-and all their blend shapes. Please refer to Appendix A and readyplayer.me
-documentation for more details.
+Yes. You can make your own custom model, but it needs to have a Mixamo
+compatible rig/bone structure and all the needed blend shapes.
+Please refer to Appendix A for more details.
 
 **Any future plans for the project?**
 
@@ -430,34 +430,72 @@ Washington, D. C., 1976. https://apps.dtic.mil/sti/pdfs/ADA021929.pdf
 
 **FOR 3D MODELERS:**
 
-You can create and use your own 3D full-body model, but it has to be
-Ready Player Me compatible. Their rig has a Mixamo-compatible bone
-structure described here:
+You can create and use your own 3D full-body model, but it must
+include at least a Mixamo-compatible rig and ARKit and Oculus viseme
+blend shapes.
 
-https://docs.readyplayer.me/ready-player-me/api-reference/avatars/full-body-avatars
+Mixamo-compatible rig:
 
-For lip-sync and facial expressions, you also need to have ARKit and Oculus
-compatible blend shapes, and a few additional ones, all listed in the
-following two pages:
+<img src="images/rig.jpg"/>
 
-https://docs.readyplayer.me/ready-player-me/api-reference/avatars/morph-targets/apple-arkit
-https://docs.readyplayer.me/ready-player-me/api-reference/avatars/morph-targets/oculus-ovr-libsync
+If a bone name has the typical "mixamorig" prefix, the class will
+automatically remove it. Use the `./avatars/brunette.glb` model as
+your reference model when specifying bone axes and bone rolls.
+The skeleton may include additional bones, such as hair bones, which
+can be used in the be used in the TalkingHead class as dynamic bones.
 
-> [!TIP]  
-> The additional blend shapes mentioned in the specs (`"mouthOpen"`, `"mouthSmile"`, `"eyesClosed"`, `"eyesLookUp"`, `"eyesLookDown"`) are not strictly required, as the TalkingHead class will automatically generate them from ARKit blend shapes if they are missing.
+[ARKit](https://developer.apple.com/documentation/arkit/arfaceanchor/blendshapelocation) (52):
 
-The TalkingHead class supports both separated mesh and texture atlasing.
+<ul>eyeBlinkLeft, eyeBlinkRight, eyeLookDownLeft, eyeLookDownRight,
+eyeLookInLeft, eyeLookInRight, eyeLookOutLeft, eyeLookOutRight,
+eyeLookUpLeft, eyeLookUpRight, eyeSquintLeft, eyeSquintRight,
+eyeWideLeft, eyeWideRight, jawForward, jawLeft, jawRight, jawOpen,
+mouthClose, mouthFunnel, mouthPucker, mouthLeft, mouthRight,
+mouthSmileLeft, mouthSmileRight, mouthFrownLeft, mouthFrownRight,
+mouthDimpleLeft, mouthDimpleRight, mouthStretchLeft, mouthStretchRight,
+mouthRollLower, mouthRollUpper, mouthShrugLower, mouthShrugUpper,
+mouthPressLeft, mouthPressRight, mouthLowerDownLeft, mouthLowerDownRight,
+mouthUpperUpLeft, mouthUpperUpRight, browDownLeft, browDownRight,
+browInnerUp, browOuterUpLeft, browOuterUpRight,
+cheekPuff, cheekSquintLeft, cheekSquintRight,
+noseSneerLeft, noseSneerRight, tongueOut</ul>
 
-Here are some Blender Python scripts that could be useful in converting
-custom models:
+[Oculus visemes](https://developers.meta.com/horizon/documentation/unity/audio-ovrlipsync-viseme-reference/) shape keys (15):
 
-Script | Description
---- | ---
-[rename-mixamo-bones.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/rename-mixamo-bones.py) | If your model doesn't have a compatible rig, you can auto-rig your model easily at [Mixamo](https://www.mixamo.com) and use this Blender script to rename the Mixamo bones.
-[rename-rocketbox-shapekeys.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/rename-rocketbox-shapekeys.py) | Rename [Microsoft Rocketbox](https://github.com/microsoft/Microsoft-Rocketbox) model shape keys.
-[rename-avatarsdk-shapekeys.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/rename-avatarsdk-shapekeys.py) | Rename [Avatar SDK MetaPerson](https://github.com/avatarsdk) model shape keys.
-[build-extras-from-arkit.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/build-extras-from-arkit.py) | Build RPM extras (mouthOpen, mouthSmile, eyesClosed, eyesLookUp, eyesLookDown) from ARKit blendshapes. Note: The TalkingHead will generate these automatically if they're missing. However, building them yourself allows you to fine-tune them to your taste.
-[build-visemes-from-arkit.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/build-visemes-from-arkit.py) | Build Oculus visemes from ARKit blendshapes. As models are all different, you should fine-tune the script for best result. EXPERIMENTAL
+<ul>viseme_sil, viseme_PP, viseme_FF, viseme_TH, viseme_DD,
+viseme_kk, viseme_CH, viseme_SS, viseme_nn, viseme_RR,
+viseme_aa, viseme_E, viseme_I, viseme_O, viseme_U</ul>
+
+Additional shape keys (not strictly required, as they will
+be automatically generated from ARKit blend shapes if missing):
+
+<ul>mouthOpen, mouthSmile, eyesClosed, eyesLookUp, eyesLookDown</ul>
+
+If you need to create ARKit and Oculus blend shapes from scratch,
+I recommend using the Faceit Blender add-on. It is a paid add-on,
+but it can save you a significant amount of time. See the detailed
+instructions for using
+[Faceit with TalkingHead](https://github.com/met4citizen/TalkingHead/blob/main/blender/Faceit/FACEIT.md).
+
+Some third-party services/apps that can be used to create avatars for
+use with the TalkingHead class:
+
+Service | Description
+---|---
+<span style="display: block; min-width:400px">[<img src="images/mpfb.jpg" width="400"/>](https://github.com/met4citizen/TalkingHead/blob/main/blender/MPFB/MPFB.md)</span> | [MPFB](https://static.makehumancommunity.org/mpfb.html) a free and open source human character extension for Blender. It uses 3D assets from the MakeHuman ecosystem (licensed CC0/CC-BY) and provides parametric control over character's age, gender, body shape, etc. Read detailed instructions for how to install and use [MPFB with TalkingHead](https://github.com/met4citizen/TalkingHead/blob/main/blender/MPFB/MPFB.md).
+[<img src="images/avaturn.jpg" width="400"/>](https://avaturn.me) | [Avaturn](https://avaturn.me) is a web-based avatar creator focused on generating realistic 3D avatars from photos. It is free for non-commercial use. For commercial use, you must notify the company, and some additional terms apply. Avaturn Type-2 (T2) avatars are fully TalkingHead-compatible. For a small shoulder/neck bone adjustment, see the [example config](https://github.com/met4citizen/TalkingHead/blob/main/siteconfig.js).
+[<img src="images/avatarsdk.jpg" width="400"/>](https://avatarsdk.com) | [Avatar SDK / MetaPerson Creator](https://avatarsdk.com) is a commercial service for generating personalized 3D avatars from photos. Blender scripts: [build-avatarsdk-eyes.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/build-avatarsdk-eyes.py) [rename-avatarsdk-shapekeys.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/rename-avatarsdk-shapekeys.py) + [example config](https://github.com/met4citizen/TalkingHead/blob/main/siteconfig.js)
+[<img src="images/rocketbox.jpg" width="400"/>](https://github.com/microsoft/Microsoft-Rocketbox) | [Microsoft RocketBox](https://github.com/microsoft/Microsoft-Rocketbox) provides a library of ready-made 3D human characters. The models are MIT Licensed and include ARKit+Oculus, but they need to be re-rigged, for example, in Mixamo. Blender script (with instructions): [rename-rocketbox-shapekeys.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/rename-rocketbox-shapekeys.py)
+
+
+> [!IMPORTANT]
+> Whenever you use avatars or any 3D assets, always check the
+terms of use carefully. For example, many commercial 3D products
+generate avatars that cannot be used in public web apps, where
+the asset is delivered to the client and effectively becomes
+downloadable. Likewise, many ready-made avatars sold in 3D
+marketplaces are distributed under similarly restrictive licenses.
+It all depends on your use case, of course.
 
 ---
 
@@ -672,9 +710,7 @@ of motions using a spring-damper model and the
 [velocity Verlet integration](https://en.wikipedia.org/wiki/Verlet_integration)
 method.
 
-Standard Ready Player Me 3D avatars don't yet include features like hair bones.
-Until they do, you'll need to add the dynamic bones and weights to the model
-yourself. Here's an example of rigged hair in Blender.
+Here's an example of rigged hair in Blender:
 
 <img src="images/ponytail.jpg"/>
 
@@ -871,10 +907,7 @@ Refer to the example provided in the repository `azure-audio-streaming.html` on 
 
 ---
 
-### Appendix H: Avatar-Only Mode (EXPERIMENTAL)
-
-> [!WARNING]
-> This is still an experimental feature, so expect rapid changes.
+### Appendix H: Avatar-Only Mode (ADVANCED)
 
 By default, the TalkingHead class operates in standalone mode, creating its own 3D scene,
 renderer, lights, and other 3D components. If you already have your own 3D scene,

@@ -1,5 +1,27 @@
 import bpy
 
+# NOTES FOR CONVERTING ROCKETBOX MODELS
+#
+# 1. Download the model
+#    - Get the Microsoft Rocketbox "facial" version along with the
+#      Texture folder and its contents.
+#
+# 2. Remove the existing rig using Blender
+#    - Import the model into Blender, apply all transforms to all objects,
+#      apply the pose as the rest pose, remove the rig, and export to FBX.
+#
+# 3. Auto-rig in Mixamo
+#    - Upload the rig-free FBX to Mixamo, auto-rig it, and download as
+#      an FBX with a T-pose.
+#
+# 4. Add/rename/fix in Blender
+#    - Import the rigged FBX into Blender, apply all transforms to all objects,
+#      rename bones and shape keys, add LeftEye/RightEye bones, and
+#      set the following for all meshes: material > surface > metallic = 0.
+#
+# 5. Fine-tune the model, then export it to GLB.
+#
+
 # Shape key map for Microsoft Rocketbox
 shapekeyMap = [
 [ "AA_VI_00_Sil", "viseme_sil" ], [ "AA_VI_01_PP", "viseme_PP" ], [ "AA_VI_02_FF", "viseme_FF" ],
