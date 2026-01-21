@@ -57,7 +57,37 @@ export const site = {
           "limits":[null,null,[null,0.01],null]
         }
       ]
+    },
+
+    'Avaturn': {
+      url: './avatars/avaturn.glb',
+      body: 'F',
+      avatarMood: 'happy',
+      retarget: {
+        Hips: { y: 0.03 }, Spine: { y: 0.02 }, Spine1: { y: 0.02, z: 0.01 },
+        Spine2: { y: 0.02, z: 0.01 }, Neck: { z: 0.02, y: 0.01 }, Head: { z: 0.02 },
+        LeftShoulder: { rx: -0.5 }, RightShoulder: { rx: -0.5 },
+        scaleToHipsLevel: 1.0
+      },
+      baseline: {
+        headRotateX: -0.04
+      }
+    },
+
+    'AvatarSDK': {
+      url: './avatars/avatarsdk.glb',
+      body: 'M',
+      avatarMood: 'neutral',
+      retarget: {
+        Neck: { z: -0.01, rx: -0.15 }, Neck1: { z: -0.01, rx: -0.15 }, Neck2: { z: -0.01, rx: -0.15 },
+        LeftShoulder: { rz: -0.3 }, RightShoulder: { rz: 0.3 },
+        scaleToEyesLevel: 1.0, origin: { y: -0.1 }
+      },
+      baseline: {
+        headRotateX: -0.05
+      }
     }
+
   },
 
   // Google voices

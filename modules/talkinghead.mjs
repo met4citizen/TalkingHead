@@ -30,6 +30,7 @@ import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import Stats from 'three/addons/libs/stats.module.js';
 
+import { retarget } from './retargeter.mjs';
 import{ DynamicBones } from './dynamicbones.mjs';
 const workletUrl = new URL('./playback-worklet.js', import.meta.url);
 
@@ -1201,6 +1202,19 @@ class TalkingHead {
   }
 
   /**
+  * Retarget current armature.
+  * 
+  * @param {Object} transforms
+  *   @param {Object} [transforms.boneName] Position and rotation deltas for a specific bone ({x, y, z, rx, ry, rz}).
+  *   @param {boolean} [transforms.ScaleHips] Whether to scale the rig's hips to a target height.
+  */
+  retarget( transforms ) {
+    if ( this.armature ) {
+      retarget( this.armature, transforms );
+    }
+  }
+
+  /**
   * Loader for 3D avatar model.
   * @param {string} avatar Avatar object with 'url' property to GLTF/GLB file.
   * @param {progressfn} [onprogress=null] Callback for progress
@@ -1273,6 +1287,11 @@ class TalkingHead {
     // Avatar full-body
     this.armature = gltf.scene.getObjectByName( this.opt.modelRoot );
     this.armature.scale.setScalar(1);
+
+    // Retarget armature
+    if ( avatar.hasOwnProperty("retarget") ) {
+      this.retarget( avatar.retarget );
+    }
 
     // Expose GLB animations and userData
     this.animations = gltf.animations;
@@ -1417,6 +1436,12 @@ class TalkingHead {
     const plEye = new THREE.Vector3();
     this.objectLeftEye.getWorldPosition(plEye);
     this.avatarHeight = plEye.y + 0.2;
+
+    // Skeleton helper, FOR TESTING ONLY
+    if ( this.avatar.skeletonHelper ) {
+      const skeletonHelper = new THREE.SkeletonHelper(this.armature);
+      this.scene.add(skeletonHelper);
+    }
 
     // Set pose, view and start animation
     if ( !this.viewName ) this.setView( this.opt.cameraView );
@@ -1743,7 +1768,7 @@ class TalkingHead {
       switch(mt) {
 
       case 'headRotateX':
-        this.poseDelta.props['Head.quaternion'].x = o.applied + this.mtAvatar['bodyRotateX'].applied;
+        this.poseDelta.props['Head.quaternion'].x = o.applied + this.mtAvatar['bodyRotateX'].applied + (this.avatar?.baseline?.headRotateX || 0);
         break;
 
       case 'headRotateY':
@@ -1755,7 +1780,7 @@ class TalkingHead {
         break;
 
       case 'bodyRotateX':
-        this.poseDelta.props['Head.quaternion'].x = o.applied + this.mtAvatar['headRotateX'].applied;
+        this.poseDelta.props['Head.quaternion'].x = o.applied + this.mtAvatar['headRotateX'].applied+ (this.avatar?.baseline?.headRotateX || 0);
         this.poseDelta.props['Spine1.quaternion'].x = o.applied/2;
         this.poseDelta.props['Spine.quaternion'].x = o.applied/8;
         this.poseDelta.props['Hips.quaternion'].x = o.applied/24;
