@@ -12,11 +12,11 @@ the TalkingHead test web app without any post-processing.*
 
 Video | Description
 ---|---
-<span style="display: block; min-width:400px">[<img src="images/dynamicbones.jpg" width="400"/>](https://youtu.be/YUbDIWkskuw)<br>[<img src="images/dynamicbones2.jpg" width="400"/>](https://youtu.be/4Y9NFnENH5s)</span> | Having a good hair day! – A two-part introduction to the TalkingHead's dynamic bones feature 🦴🦴 and built-in physics engine. Using custom models with rigged hair and two different hairstyles. See Appendix E for more details.
-[<img src="images/screenshot4.jpg" width="400"/>](https://youtu.be/OA6LBZjkzJI) | I chat with Jenny and Harri. The close-up view allows you to evaluate the accuracy of lip-sync in both English and Finnish. Using GPT-3.5 and Microsoft text-to-speech.
-[<img src="images/screenshot5.jpg" width="400"/>](https://youtu.be/fJrYGaGCAGo) | A short demo of how AI can control the avatar's movements. Using OpenAI's function calling and Google TTS with the TalkingHead's built-in viseme generation.
-[<img src="images/screenshot6.jpg" width="400"/>](https://youtu.be/6XRxALY1Iwg) | Michael lip-syncs to two MP3 audio tracks using OpenAI's Whisper and TalkingHead's `speakAudio` method. He kicks things off with some casual talk, but then goes all out by trying to tackle an old Meat Loaf classic. 🤘 Keep rockin', Michael! 🎤😂
-[<img src="images/screenshot3.jpg" width="400"/>](https://youtu.be/SfnqRnWKT40) | Julia and I showcase some of the features of the TalkingHead class and the test app including the settings, some poses and animations.
+[<img src="images/dynamicbones.jpg" width="200"/>](https://youtu.be/YUbDIWkskuw)<br>[<img src="images/dynamicbones2.jpg" width="200"/>](https://youtu.be/4Y9NFnENH5s) | Having a good hair day! – A two-part introduction to the TalkingHead's dynamic bones feature 🦴🦴 and built-in physics engine. Using custom models with rigged hair and two different hairstyles. See Appendix E for more details.
+[<img src="images/screenshot4.jpg" width="200"/>](https://youtu.be/OA6LBZjkzJI) | I chat with Jenny and Harri. The close-up view allows you to evaluate the accuracy of lip-sync in both English and Finnish. Using GPT-3.5 and Microsoft text-to-speech.
+[<img src="images/screenshot5.jpg" width="200"/>](https://youtu.be/fJrYGaGCAGo) | A short demo of how AI can control the avatar's movements. Using OpenAI's function calling and Google TTS with the TalkingHead's built-in viseme generation.
+[<img src="images/screenshot6.jpg" width="200"/>](https://youtu.be/6XRxALY1Iwg) | Michael lip-syncs to two MP3 audio tracks using OpenAI's Whisper and TalkingHead's `speakAudio` method. He kicks things off with some casual talk, but then goes all out by trying to tackle an old Meat Loaf classic. 🤘 Keep rockin', Michael! 🎤😂
+[<img src="images/screenshot3.jpg" width="200"/>](https://youtu.be/SfnqRnWKT40) $$\color{transparent}{\rule{200px}{0px}}$$ | Julia and I showcase some of the features of the TalkingHead class and the test app including the settings, some poses and animations.
 
 ---
 
@@ -26,15 +26,14 @@ Video | Description
 
 Video/App | Use Case
 ---|---
-<span style="display: block; min-width:400px">[<img src="images/dialoglab.jpg" width="400"/>](https://www.youtube.com/watch?v=U2Ag_Ktobzw)</span> | **Human-AI group conversations**. Researchers from UVA, Google, Northeastern, Google DeepMind, and Google Research developed [DialogLab](https://github.com/ecruhue/DialogLab), a toolkit to author, simulate and test human-AI group conversations. 🤖🤖🤖
-[<img src="images/openai.jpg" width="400"/>](https://met4citizen.github.io/HeadAudio/openai.html) | **Low-latency AI speech over WebRTC**. Speech-to-speech in realtime over WebRTC using OpenAI Realtime API. Learn more about the audio-driven lip-sync module at [HeadAudio](https://github.com/met4citizen/HeadAudio).<br>**Note**: Realtime speech-to-speech usage is much more expensive than standard AI text tokens, so please check OpenAI pricing for `gpt-realtime-mini` before use.
-[<img src="images/olivia.jpg" width="400"/>](https://youtu.be/9GeXwjuslnQ) | **Video conferencing**. A video conferencing solution with real-time transcription, contextual AI responses, and voice lip-sync. The app and demo, featuring Olivia, by [namnm](https://github.com/namnm) 👍
-[<img src="images/edgespeaker.png" width="400"/>](https://www.edgespeaker.com/) | **Fully in-browser AI you can talk to**. Uses TalkingHead, [HeadTTS (with Kokoro)](https://github.com/met4citizen/HeadTTS), [whisper-web](https://github.com/xenova/whisper-web), and [WebLLM (with Llama 3.2)](https://github.com/mlc-ai/web-llm). No APIs, no accounts. For best performance and WebGPU support, use a desktop version of Chrome or Edge: 👉 [EdgeSpeaker.com](https://www.edgespeaker.com/)
-[<img src="images/geminicompetition.jpg" width="400"/>](https://www.youtube.com/watch?v=Dl2o9kRvbLQ) | **Recycling Advisor 3D**. Snap a photo and get local recycling advice from a talking avatar. My entry for the [Gemini API Developer Competition 2024](https://ai.google.dev/competition/projects/recycling-advisor-3d).
-[<img src="images/evertrail.jpg" width="400"/>](https://www.youtube.com/watch?v=OG1vwOit_Yk) | **Live Twitch adventure**. [Evertrail](https://evertrail.app) is an infinite, real-time generated world where all of your choices shape the outcome. Video clip and the app by [JPhilipp](https://github.com/JPhilipp) 👏👏<br>**NEWS**: Featured at the AI Film Awards during the 2025 Cannes Film Festival!
-[<img src="images/cliquevm.jpg" width="400"/>](https://www.youtube.com/watch?v=vNJ9Ifv-as8) | **Quantum physics using a blackboard**. David introduces us to the CHSH game and explores the mystery of quantum entanglement. For more information about the research project, see [CliqueVM](https://github.com/met4citizen/CliqueVM).
-[<img src="images/interactiveportfolio.jpg" width="400"/>](https://akshatrastogi.in/) | **Interactive Portfolio**. Click the image to open the app, where you can interview the virtual persona of its developer, [AkshatRastogi-1nC0re](https://github.com/AkshatRastogi-1nC0re) 👋
-[<img src="images/datingprofile.jpg" width="400"/>](https://www.youtube.com/watch?v=Hv-ItCZ0qc4) | **Interactive Dating Profiles**. ❤️ Researchers from the MIT Media Lab and Harvard used the TalkingHead class and data-driven AI to create digital twins that potential dating partners could interact with. Their paper (Baradari et al., 2025) was presented at [CHI 2025](https://programs.sigchi.org/chi/2025/program/content/194739) in Japan.
+[<img src="images/dialoglab.jpg" width="200"/>](https://www.youtube.com/watch?v=U2Ag_Ktobzw) | **Human-AI group conversations**. Researchers from UVA, Google, Northeastern, Google DeepMind, and Google Research developed [DialogLab](https://github.com/ecruhue/DialogLab), a toolkit to author, simulate and test human-AI group conversations. 🤖🤖🤖
+[<img src="images/openai.jpg" width="200"/>](https://met4citizen.github.io/HeadAudio/openai.html) | **Low-latency AI speech over WebRTC**. Speech-to-speech in realtime over WebRTC using OpenAI Realtime API. Learn more about the audio-driven lip-sync module at [HeadAudio](https://github.com/met4citizen/HeadAudio).<br>**Note**: Realtime speech-to-speech usage is much more expensive than standard AI text tokens, so please check OpenAI pricing for `gpt-realtime-mini` before use.
+[<img src="images/olivia.jpg" width="200"/>](https://youtu.be/9GeXwjuslnQ) | **Video conferencing**. A video conferencing solution with real-time transcription, contextual AI responses, and voice lip-sync. The app and demo, featuring Olivia, by [namnm](https://github.com/namnm) 👍
+[<img src="images/edgespeaker.png" width="200"/>](https://www.edgespeaker.com/) | **Fully in-browser AI you can talk to**. Uses TalkingHead, [HeadTTS (with Kokoro)](https://github.com/met4citizen/HeadTTS), [whisper-web](https://github.com/xenova/whisper-web), and [WebLLM (with Llama 3.2)](https://github.com/mlc-ai/web-llm). No APIs, no accounts. For best performance and WebGPU support, use a desktop version of Chrome or Edge: 👉 [EdgeSpeaker.com](https://www.edgespeaker.com/)
+[<img src="images/geminicompetition.jpg" width="200"/>](https://www.youtube.com/watch?v=Dl2o9kRvbLQ) | **Recycling Advisor 3D**. Snap a photo and get local recycling advice from a talking avatar. My entry for the [Gemini API Developer Competition 2024](https://ai.google.dev/competition/projects/recycling-advisor-3d).
+[<img src="images/evertrail.jpg" width="200"/>](https://www.youtube.com/watch?v=OG1vwOit_Yk) | **Live Twitch adventure**. [Evertrail](https://evertrail.app) is an infinite, real-time generated world where all of your choices shape the outcome. Video clip and the app by [JPhilipp](https://github.com/JPhilipp) 👏👏<br>**NEWS**: Featured at the AI Film Awards during the 2025 Cannes Film Festival!
+[<img src="images/cliquevm.jpg" width="200"/>](https://www.youtube.com/watch?v=vNJ9Ifv-as8) | **Quantum physics using a blackboard**. David introduces us to the CHSH game and explores the mystery of quantum entanglement. For more information about the research project, see [CliqueVM](https://github.com/met4citizen/CliqueVM).
+[<img src="images/datingprofile.jpg" width="200"/>](https://www.youtube.com/watch?v=Hv-ItCZ0qc4) $$\color{transparent}{\rule{200px}{0px}}$$ | **Interactive Dating Profiles**. ❤️ Researchers from the MIT Media Lab and Harvard used the TalkingHead class and data-driven AI to create digital twins that potential dating partners could interact with. Their paper (Baradari et al., 2025) was presented at [CHI 2025](https://programs.sigchi.org/chi/2025/program/content/194739) in Japan.
 
 *More projects, sites and research using TalkingHead:*
 
@@ -55,7 +54,7 @@ Talking Head (3D) is a browser JavaScript class featuring a 3D avatar that can
 speak and lip-sync in real-time. It also knows a set of emojis and can convert them
 into facial expressions.
 
-The class supports full-body avatars (GLB) and [Mixamo](https://www.mixamo.com)
+The class supports full-body 3D avatars (GLB) and [Mixamo](https://www.mixamo.com)
 animations (FBX). The avatar must have a Mixamo-compatible rig and ARKit and
 Oculus viseme blend shapes. See Appendix A for details on creating your own avatar.
 
@@ -83,8 +82,8 @@ Modules compatible with the Talking Head (3D) project:
 
 Module | Description
 --- | ---
-<span style="display: block; min-width:400px">[<img src="images/headtts.jpg" width="400"/>](https://github.com/met4citizen/HeadTTS)</span> | **HeadTTS** - Open-source English TTS with Kokoro neural voices, viseme IDs, and accurate phoneme-level timestamps. It can run locally or even entirely in a browser using WebGPU. Link: [HeadTTS](https://github.com/met4citizen/HeadTTS)
-[<img src="images/headaudio.jpg" width="400"/>](https://github.com/met4citizen/HeadAudio) | **HeadAudio** - Audio worklet node/processor for audio-driven, real-time viseme detection and lip-sync. No text transcription or timestamps needed. Fast and fully in-browser. Link: [HeadAudio](https://github.com/met4citizen/HeadAudio)
+[<img src="images/headtts.jpg" width="200"/>](https://github.com/met4citizen/HeadTTS) | [HeadTTS](https://github.com/met4citizen/HeadTTS) is a free and open-source English TTS with Kokoro neural voices, viseme IDs, and accurate phoneme-level timestamps. It can run entirely in a browser using WebGPU.
+[<img src="images/headaudio.jpg" width="200"/>](https://github.com/met4citizen/HeadAudio) $$\color{transparent}{\rule{200px}{0px}}$$ | [HeadAudio](https://github.com/met4citizen/HeadAudio) in an audio worklet node/processor for audio-driven, real-time viseme detection and lip-sync. No text transcription or timestamps needed. Fast and fully in-browser.
 
 ---
 
@@ -324,7 +323,7 @@ const googleTTSProxy = "/gtts/";
 const elevenTTSProxy = [
   "wss://" + window.location.host + "/elevenlabs/",
   "/v1/text-to-speech/",
-  "/stream-input?model_id=eleven_multilingual_v2&output_format=pcm_22050"
+  "/stream-input?model_id=eleven_turbo_v2_5&output_format=pcm_22050&auto_mode=true&apply_text_normalization=off"
 ];
 const microsoftTTSProxy = [
   "wss://" + window.location.host + "/mstts/",
@@ -442,11 +441,11 @@ If a bone name has the typical "mixamorig" prefix, the class will
 automatically remove it. Use the `./avatars/brunette.glb` model as
 your reference model when specifying bone axes and bone rolls.
 The skeleton may include additional bones, such as hair bones, which
-can be used in the be used in the TalkingHead class as dynamic bones.
+can be used as dynamic bones.
 
-[ARKit](https://developer.apple.com/documentation/arkit/arfaceanchor/blendshapelocation) (52):
+[ARKit](https://developer.apple.com/documentation/arkit/arfaceanchor/blendshapelocation) blend shapes (52):
 
-<ul>eyeBlinkLeft, eyeBlinkRight, eyeLookDownLeft, eyeLookDownRight,
+*<ul>eyeBlinkLeft, eyeBlinkRight, eyeLookDownLeft, eyeLookDownRight,
 eyeLookInLeft, eyeLookInRight, eyeLookOutLeft, eyeLookOutRight,
 eyeLookUpLeft, eyeLookUpRight, eyeSquintLeft, eyeSquintRight,
 eyeWideLeft, eyeWideRight, jawForward, jawLeft, jawRight, jawOpen,
@@ -458,18 +457,18 @@ mouthPressLeft, mouthPressRight, mouthLowerDownLeft, mouthLowerDownRight,
 mouthUpperUpLeft, mouthUpperUpRight, browDownLeft, browDownRight,
 browInnerUp, browOuterUpLeft, browOuterUpRight,
 cheekPuff, cheekSquintLeft, cheekSquintRight,
-noseSneerLeft, noseSneerRight, tongueOut</ul>
+noseSneerLeft, noseSneerRight, tongueOut</ul>*
 
 [Oculus visemes](https://developers.meta.com/horizon/documentation/unity/audio-ovrlipsync-viseme-reference/) shape keys (15):
 
-<ul>viseme_sil, viseme_PP, viseme_FF, viseme_TH, viseme_DD,
+*<ul>viseme_sil, viseme_PP, viseme_FF, viseme_TH, viseme_DD,
 viseme_kk, viseme_CH, viseme_SS, viseme_nn, viseme_RR,
-viseme_aa, viseme_E, viseme_I, viseme_O, viseme_U</ul>
+viseme_aa, viseme_E, viseme_I, viseme_O, viseme_U</ul>*
 
 Additional shape keys (not strictly required, as they will
 be automatically generated from ARKit blend shapes if missing):
 
-<ul>mouthOpen, mouthSmile, eyesClosed, eyesLookUp, eyesLookDown</ul>
+*<ul>mouthOpen, mouthSmile, eyesClosed, eyesLookUp, eyesLookDown</ul>*
 
 If you need to create ARKit and Oculus blend shapes from scratch,
 I recommend using the Faceit Blender add-on. It is a paid add-on,
@@ -482,20 +481,20 @@ use with the TalkingHead class:
 
 Service | Description
 ---|---
-<span style="display: block; min-width:400px">[<img src="images/mpfb.jpg" width="400"/>](https://github.com/met4citizen/TalkingHead/blob/main/blender/MPFB/MPFB.md)</span> | [MPFB](https://static.makehumancommunity.org/mpfb.html) a free and open source human character extension for Blender. It uses 3D assets from the MakeHuman ecosystem (licensed CC0/CC-BY) and provides parametric control over character's age, gender, body shape, etc. Read detailed instructions for how to install and use [MPFB with TalkingHead](https://github.com/met4citizen/TalkingHead/blob/main/blender/MPFB/MPFB.md).
-[<img src="images/avaturn.jpg" width="400"/>](https://avaturn.me) | [Avaturn](https://avaturn.me) is a web-based avatar creator focused on generating realistic 3D avatars from photos. It is free for non-commercial use. For commercial use, you must notify the company, and some additional terms apply. Avaturn Type-2 (T2) avatars are fully TalkingHead-compatible. For a small shoulder/neck bone adjustment, see the [example config](https://github.com/met4citizen/TalkingHead/blob/main/siteconfig.js).
-[<img src="images/avatarsdk.jpg" width="400"/>](https://avatarsdk.com) | [Avatar SDK / MetaPerson Creator](https://avatarsdk.com) is a commercial service for generating personalized 3D avatars from photos. Blender scripts: [build-avatarsdk-eyes.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/build-avatarsdk-eyes.py) [rename-avatarsdk-shapekeys.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/rename-avatarsdk-shapekeys.py) + [example config](https://github.com/met4citizen/TalkingHead/blob/main/siteconfig.js)
-[<img src="images/rocketbox.jpg" width="400"/>](https://github.com/microsoft/Microsoft-Rocketbox) | [Microsoft RocketBox](https://github.com/microsoft/Microsoft-Rocketbox) provides a library of ready-made 3D human characters. The models are MIT Licensed and include ARKit+Oculus, but they need to be re-rigged, for example, in Mixamo. Blender script (with instructions): [rename-rocketbox-shapekeys.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/rename-rocketbox-shapekeys.py)
+[<img src="images/mpfb.jpg" width="200"/>](https://github.com/met4citizen/TalkingHead/blob/main/blender/MPFB/MPFB.md) | [MPFB](https://static.makehumancommunity.org/mpfb.html) a free and open source human character extension for Blender. It uses 3D assets from the MakeHuman ecosystem (licensed CC0/CC-BY) and provides parametric control over character's age, gender, body shape, etc. Read instructions for how to install and use [MPFB with TalkingHead](https://github.com/met4citizen/TalkingHead/blob/main/blender/MPFB/MPFB.md).
+[<img src="images/avaturn.jpg" width="200"/>](https://avaturn.me) | [Avaturn](https://avaturn.me) is a web-based avatar creator focused on generating realistic 3D avatars from photos. It is free for non-commercial use. For commercial use, you must notify the company, and some additional terms apply. Avaturn Type-2 (T2) avatars are fully TalkingHead-compatible. For a small shoulder/neck bone adjustment, see the [example config](https://github.com/met4citizen/TalkingHead/blob/main/siteconfig.js).
+[<img src="images/avatarsdk.jpg" width="200"/>](https://avatarsdk.com) | [Avatar SDK / MetaPerson Creator](https://avatarsdk.com) is a commercial service for generating personalized 3D avatars from photos. Blender scripts: [build-avatarsdk-eyes.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/build-avatarsdk-eyes.py) [rename-avatarsdk-shapekeys.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/rename-avatarsdk-shapekeys.py) + [example config](https://github.com/met4citizen/TalkingHead/blob/main/siteconfig.js)
+[<img src="images/rocketbox.jpg" width="200"/>](https://github.com/microsoft/Microsoft-Rocketbox) $$\color{transparent}{\rule{200px}{0px}}$$ | [Microsoft RocketBox](https://github.com/microsoft/Microsoft-Rocketbox) provides a library of ready-made 3D human characters. The models are MIT Licensed and include ARKit+Oculus, but they need to be re-rigged, for example, in Mixamo. Blender script (with instructions): [rename-rocketbox-shapekeys.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/rename-rocketbox-shapekeys.py)
 
 
 > [!IMPORTANT]
 > Whenever you use avatars or any 3D assets, always check the
-terms of use carefully. For example, many commercial 3D products
-generate avatars that cannot be used in public web apps, where
-the asset is delivered to the client and effectively becomes
-downloadable. Likewise, many ready-made avatars sold in 3D
-marketplaces are distributed under similarly restrictive licenses.
-It all depends on your use case, of course.
+terms of use carefully. Many commercial 3D products generate
+avatars that cannot be used in public web apps, where the asset
+is delivered to the client and effectively becomes downloadable.
+Likewise, many ready-made avatars sold in 3D marketplaces are
+distributed under similarly restrictive licenses. - It all depends
+on your use case, of course.
 
 ---
 
