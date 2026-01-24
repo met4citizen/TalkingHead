@@ -304,7 +304,7 @@ def bake_target(mpfb, name, dict, mesh, limit_size = 1e-3):
 
 # Build targets
 def build_targets(mpfb, meshes, zip_path):
-    with zipfile.ZipFile(zip_path, "r") as zf:
+    with ZipFile(zip_path, "r") as zf:
         for name in zf.namelist():
             if name.startswith("__MACOSX/"):
                 continue
