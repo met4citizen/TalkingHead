@@ -56,7 +56,12 @@ export const site = {
           "damping":4,
           "limits":[null,null,[null,0.01],null]
         }
-      ]
+      ],
+      baseline: {
+        headRotateX: -0.01,
+        eyeBlinkLeft: 0.05,
+        eyeBlinkRight: 0.05
+      }
     },
 
     'Avaturn': {
@@ -70,7 +75,9 @@ export const site = {
         scaleToHipsLevel: 1.0
       },
       baseline: {
-        headRotateX: -0.04
+        headRotateX: -0.05,
+        eyeBlinkLeft: 0.15,
+        eyeBlinkRight: 0.15
       }
     },
 
@@ -84,7 +91,9 @@ export const site = {
         scaleToEyesLevel: 1.0, origin: { y: -0.1 }
       },
       baseline: {
-        headRotateX: -0.05
+        headRotateX: -0.04,
+        eyeBlinkLeft: 0.05,
+        eyeBlinkRight: 0.05
       }
     }
 

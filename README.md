@@ -133,7 +133,7 @@ const head = new TalkingHead( nodeAvatar, {
 ```
 
 <details>
-  <summary>CLICK HERE to see all the available OPTIONS.</summary>
+  <summary>Click here to see all the CLASS-LEVEL OPTIONS.</summary>
 
 Option | Description | Default
 ---|---|---
@@ -208,17 +208,48 @@ Refer to Appendix A for how to make your avatar:
 // Load and show the avatar
 try {
   await head.showAvatar( {
-    url: './avatars/brunette.glb',
+    url: './avatars/avaturn.glb',
     body: 'F',
     avatarMood: 'neutral',
     ttsLang: "en-GB",
     ttsVoice: "en-GB-Standard-A",
-    lipsyncLang: 'en'
+    lipsyncLang: 'en',
+    baseline: {
+      // Adjust Avaturn head angle and eye lids
+      headRotateX: -0.05,
+      eyeBlinkLeft: 0.15,
+      eyeBlinkRight: 0.15
+    }
   });
 } catch (error) {
   console.log(error);
 }
 ```
+
+<details>
+  <summary>Click here to see AVATAR-LEVEL OPTIONS for showAvatar.</summary>
+
+Option | Description | Example
+---|---|---
+`url` | URL of the GLB file. **MANDATORY** | `"./avatars/brunette.glb"`
+`avatarMood` | The initial mood of the avatar. | `"neutral"`
+`body` | Either `"M"` (male) or `"F"` (male) body form. | `"F"`
+`baseline` | Object containing blend shape baseline values. Note: In some cases, this is the value to which the blend shape automatically returns when no other value is applied. In other cases, it is an offset or factor that corrects the dynamically calculated value. | `{ headRotateX: -0.04 }`
+`retarget` | Object for skeleton adjustments. Properties are bone names with corrections for position (in meters) and/or rotation (Euler)  `{ x, y, z, rx, ry, rz }`. Special keywords are `scaleToHipsLevel` and `scaleToEyesLevel` for scaling factors and `origin` for adjusting the root position `{ x, y, z }` | See `./siteconfig.js`
+`modelDynamicBones` | Array defining dynamic bones. | See Appendix E
+`lipsyncLang` | Lip-sync language. | `"en"`
+`ttsLang` | Google text-to-speech language. | `"fi-FI"`
+`ttsVoice` | Google text-to-speech voice. | `"fi-FI-Standard-A"`
+`ttsRate` | Google text-to-speech rate in the range [0.25, 4.0]. | `1.0`
+`ttsPitch` | Google text-to-speech pitch in the range [-20.0, 20.0]. | `0`
+`ttsVolume` | Google text-to-speech volume gain (in dB) in the range [-96.0, 16.0]. | `0`
+`avatarIdleEyeContact` | Eye contact factor while idle [0,1]. | `0.2`
+`avatarSpeakingEyeContact` | Eye contact factor while speaking [0,1]. | `0.5`
+`avatarListeningEyeContact` | Eye contact factor while listening [0,1]. | `0.5`
+`avatarSpeakingHeadMove` | Head movement factor while speaking [0,1]. | `0.5`
+`avatarIgnoreCamera` | If `true`, looks straight ahead when speaking instead of speaking to the camera. | `false`
+
+</details>
 
 An example of how to make the avatar speak the text on input `text` when
 the button `speak` is clicked:
@@ -239,11 +270,11 @@ nodeSpeak.addEventListener('click', function () {
 ```
 
 <details>
-  <summary>CLICK HERE to see the key METHODS.</summary>
+  <summary>Click here to see the key CLASS METHODS.</summary>
 
 Method | Description
 ---|---
-`showAvatar(avatar, [onprogress=null])` | Load and show the specified avatar. The `avatar` object must include the `url` for GLB file. Optional properties are `body` for either male `M` or female `F` body form, `lipsyncLang`, `lipsyncHeadMovement`, `baseline` object for blend shape baseline, `retarget` for skeleton adjustments, `modelDynamicBones` for dynamic bones (see Appendix E), `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood`, `avatarMute`, `avatarIdleEyeContact`, `avatarSpeakingEyeContact`, `avatarListeningEyeContact`, and `avatarIgnoreCamera`.
+`showAvatar(avatar, [onprogress=null])` | Load and show the specified avatar. The `avatar` object must include the `url` for GLB file. Optional properties include `body` for either male `M` or female `F` body form, `lipsyncLang`, `baseline` object for blend shape baseline, `retarget` for skeleton adjustments, `modelDynamicBones` for dynamic bones (see Appendix E) and more. See the full list earlier in this README.
 `setView(view, [opt])` | Set view. Supported views are `"full"`, `"mid"`, `"upper"`  and `"head"`. The `opt` object can be used to set `cameraDistance`, `cameraX`, `cameraY`, `cameraRotateX`, `cameraRotateY`.
 `setLighting(opt)` | Change lighting settings. The `opt` object can be used to set `lightAmbientColor`, `lightAmbientIntensity`, `lightDirectColor`, `lightDirectIntensity`, `lightDirectPhi`, `lightDirectTheta`, `lightSpotColor`, `lightSpotIntensity`, `lightSpotPhi`, `lightSpotTheta`, `lightSpotDispersion`.
 `speakText(text, [opt={}], [onsubtitles=null], [excludes=[]])` | Add the `text` string to the speech queue. The text can contain face emojis. Options `opt` can be used to set text-specific `lipsyncLang`, `ttsLang`, `ttsVoice`, `ttsRate`, `ttsPitch`, `ttsVolume`, `avatarMood`, `avatarMute`. Optional callback function `onsubtitles` is called whenever a new subtitle is to be written with the parameter of the added string. The optional `excludes` is an array of [start,end] indices to be excluded from audio but to be included in the subtitles.
@@ -614,7 +645,8 @@ data structures: `head.poseTemplates`, `head.animMoods`,
 objects, you can give your avatar its own personal body language.
 
 In `head.poseTemplates` the hip position is defined as an {x, y, z} coordinate
-in meters, and bone rotations as Euler XYZ rotations in radians.
+in meters, and all bone rotations are defined either as Euler XYZ rotations
+(e.g., "Hips.rotation") or as quaternions (e.g., "Hips.quaternion"), in radians.
 In each pose, the avatar should have its weight on the left leg, if any, as
 the class automatically mirrors it for the right side. Setting the boolean
 properties `standing`, `sitting`, `bend`, `kneeling`, and `lying` helps the class
@@ -752,7 +784,7 @@ Each item in `modelDynamicBones` array represents one dynamic bone, which
 can be configured separately.
 
 <details>
-  <summary>CLICK HERE to see all the available PROPERTIES.</summary>
+  <summary>Click here to see all the PROPERTIES.</summary>
 
 Property | Description | Example
 --- | --- | ---

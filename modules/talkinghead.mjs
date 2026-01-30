@@ -720,8 +720,8 @@ class TalkingHead {
     this.mtMaxDefault = 1;
     this.mtMaxExceptions = {};
     this.mtLimits = {
-      eyeBlinkLeft: (v) => ( Math.max(v, ( this.mtAvatar['eyesLookDown'].value + this.mtAvatar['browDownLeft'].value ) / 2) ),
-      eyeBlinkRight: (v) => ( Math.max(v, ( this.mtAvatar['eyesLookDown'].value + this.mtAvatar['browDownRight'].value ) / 2 ) )
+      eyeBlinkLeft: (v) => ( Math.max(v, (this.avatar?.baseline?.hasOwnProperty("eyeBlinkLeft") ? this.avatar.baseline.eyeBlinkLeft : 1) * ( this.mtAvatar['eyesLookDown'].value + this.mtAvatar['browDownLeft'].value ) / 2) ),
+      eyeBlinkRight: (v) => ( Math.max(v, (this.avatar?.baseline?.hasOwnProperty("eyeBlinkRight") ? this.avatar.baseline.eyeBlinkRight : 1) * ( this.mtAvatar['eyesLookDown'].value + this.mtAvatar['browDownRight'].value ) / 2 ) )
     };
     this.mtOnchange = {
       eyesLookDown: () => {
@@ -927,16 +927,16 @@ class TalkingHead {
 
     } else {
 
-    // Close existing context if it exists
-    if (this.audioCtx && this.audioCtx.state !== 'closed') {
-      this.audioCtx.close();
-    }
+      // Close existing context if it exists
+      if (this.audioCtx && this.audioCtx.state !== 'closed') {
+        this.audioCtx.close();
+      }
 
-    // Create a new context
-    if (sampleRate) {
-      this.audioCtx = new AudioContext({ sampleRate });
-    } else {
-      this.audioCtx = new AudioContext();
+      // Create a new context
+      if (sampleRate) {
+        this.audioCtx = new AudioContext({ sampleRate });
+      } else {
+        this.audioCtx = new AudioContext();
       }
       
     }
@@ -1340,7 +1340,7 @@ class TalkingHead {
         maxv: (this.mtMaxVExceptions.hasOwnProperty(x) ? this.mtMaxVExceptions[x] : this.mtMaxVDefault) / 1000,
         limit: this.mtLimits.hasOwnProperty(x) ? this.mtLimits[x] : null,
         onchange: this.mtOnchange.hasOwnProperty(x) ? this.mtOnchange[x] : null,
-        baseline: this.avatar.baseline?.hasOwnProperty(x) ? this.avatar.baseline[x] : (this.mtBaselineExceptions.hasOwnProperty(x) ? this.mtBaselineExceptions[x] : this.mtBaselineDefault ),
+        baseline: (this.avatar.baseline?.hasOwnProperty(x) && !x.startsWith("head") && !x.startsWith("body") && !x.startsWith("eyeBlink")) ? this.avatar.baseline[x] : (this.mtBaselineExceptions.hasOwnProperty(x) ? this.mtBaselineExceptions[x] : this.mtBaselineDefault ),
         ms: [], is: []
       };
       mtTemp[x].value = mtTemp[x].baseline;
@@ -1780,7 +1780,7 @@ class TalkingHead {
         break;
 
       case 'bodyRotateX':
-        this.poseDelta.props['Head.quaternion'].x = o.applied + this.mtAvatar['headRotateX'].applied+ (this.avatar?.baseline?.headRotateX || 0);
+        this.poseDelta.props['Head.quaternion'].x = o.applied + this.mtAvatar['headRotateX'].applied + (this.avatar?.baseline?.headRotateX || 0);
         this.poseDelta.props['Spine1.quaternion'].x = o.applied/2;
         this.poseDelta.props['Spine.quaternion'].x = o.applied/8;
         this.poseDelta.props['Hips.quaternion'].x = o.applied/24;
@@ -4475,7 +4475,7 @@ class TalkingHead {
     }
 
     if ( this.avatar ) {
-    this.setPoseFromTemplate( null );
+      this.setPoseFromTemplate( null );
     }
 
   }
@@ -4854,8 +4854,10 @@ class TalkingHead {
       }
     } else {
       this.clearThree(this.scene);
-      this.resizeobserver.disconnect();
-      this.resizeobserver = null;
+      if ( this.resizeobserver ) {
+        this.resizeobserver.disconnect();
+        this.resizeobserver = null;
+      }
 
       if ( this.renderer ) {
         this.renderer.dispose();
