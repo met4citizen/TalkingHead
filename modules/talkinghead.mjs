@@ -720,8 +720,8 @@ class TalkingHead {
     this.mtMaxDefault = 1;
     this.mtMaxExceptions = {};
     this.mtLimits = {
-      eyeBlinkLeft: (v) => ( Math.max(v, (this.avatar?.baseline?.hasOwnProperty("eyeBlinkLeft") ? this.avatar.baseline.eyeBlinkLeft : 1) * ( this.mtAvatar['eyesLookDown'].value + this.mtAvatar['browDownLeft'].value ) / 2) ),
-      eyeBlinkRight: (v) => ( Math.max(v, (this.avatar?.baseline?.hasOwnProperty("eyeBlinkRight") ? this.avatar.baseline.eyeBlinkRight : 1) * ( this.mtAvatar['eyesLookDown'].value + this.mtAvatar['browDownRight'].value ) / 2 ) )
+      eyeBlinkLeft: (v) => ( Math.max(v, (this.avatar?.baseline?.hasOwnProperty("eyeBlinkLeft") ? this.avatar.baseline.eyeBlinkLeft : 1) * ( this.mtAvatar['eyesLookDown'].value + this.mtAvatar['browDownLeft'].value ) / 2) - this.mtAvatar['eyesClosed'].applied ),
+      eyeBlinkRight: (v) => ( Math.max(v, (this.avatar?.baseline?.hasOwnProperty("eyeBlinkRight") ? this.avatar.baseline.eyeBlinkRight : 1) * ( this.mtAvatar['eyesLookDown'].value + this.mtAvatar['browDownRight'].value ) / 2 ) - this.mtAvatar['eyesClosed'].applied )
     };
     this.mtOnchange = {
       eyesLookDown: () => {
