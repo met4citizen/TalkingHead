@@ -26,6 +26,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import Stats from 'three/addons/libs/stats.module.js';
@@ -1237,6 +1238,9 @@ class TalkingHead {
       loader.setDRACOLoader( dracoLoader );
     }
 
+    // Register Meshopt decoder
+    loader.setMeshoptDecoder(MeshoptDecoder);
+
     let gltf = await loader.loadAsync( avatar.url, onprogress );
 
     // Pre-process glTF callback
@@ -1252,7 +1256,7 @@ class TalkingHead {
     });
 
     // Check the gltf
-    const required = [ this.opt.modelRoot ];
+    const required = [];
     this.posePropNames.forEach( x => required.push( x.split('.')[0] ) );
     required.forEach( x => {
       if ( !gltf.scene.getObjectByName(x) ) {
@@ -1284,8 +1288,12 @@ class TalkingHead {
       }
     }
 
-    // Avatar full-body
+    // Avatar, full-body armature
     this.armature = gltf.scene.getObjectByName( this.opt.modelRoot );
+    if ( !this.armature ) {
+      console.warn("Root object '" + this.opt.modelRoot + "' not found, using the default scene as fall-back.");
+      this.armature = gltf.scene;
+    }
     this.armature.scale.setScalar(1);
 
     // Retarget armature

@@ -153,7 +153,7 @@ Option | Description | Default
 `lipsyncLang`| Lip-sync language. | `"fi"`
 `pcmSampleRate` | PCM (signed 16bit little endian) sample rate used in `speakAudio` in Hz. | `22050`
 `audioCtx` | The audio context to be used. By default, a new one is created. | `null`
-`modelRoot` | The root name of the armature. | `Armature`
+`modelRoot` | The root name of the armature. If not found, the default scene is used as fall-back. | `Armature`
 `modelPixelRatio` | Sets the device's pixel ratio. | `1`
 `modelFPS` | Frames per second. Note that actual frame rate will be a bit lower than the set value. | `30`
 `modelMovementFactor` | A factor in the range [0,1] limiting the avatar's upper body movement when standing. | `1`
@@ -451,17 +451,8 @@ Washington, D. C., 1976. https://apps.dtic.mil/sti/pdfs/ADA021929.pdf
 
 ### Appendix A: Create Your Own 3D Avatar
 
-**FOR HOBBYISTS:**
-
-1. Create your own full-body avatar free at [https://readyplayer.me/avatar/](https://readyplayer.me/avatar/) or [https://playerzero.readyplayer.me/](https://playerzero.readyplayer.me/).
-
-2. Copy your avatar’s unique ID (e.g., `64bfa15f0e72c63d7c3934a6`) and download the GLB file using one of the links below. Replace the ID with your own, and make sure to keep the URL parameters to include the necessary morph targets (blend shapes).<br><br>Ready Player Me:<br>`https://models.readyplayer.me/64bfa15f0e72c63d7c3934a6.glb?morphTargets=ARKit,Oculus+Visemes,mouthOpen,mouthSmile,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png`<br><br>PlayerZero:<br>`https://avatars.readyplayer.me/67ebd62a688cd661ebe09988.glb?morphTargetsGroup=ARKit,Oculus+Visemes&morphTargets=mouthSmile,mouthOpen,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png`<br><br>Depending on your use case, you can customize the texture format and texture quality (e.g. `textureFormat=webp&textureQuality=high`), the triangle count (e.g. `lod=1`), use Draco mesh compression (`useDracoMeshCompression=true`), and so on. See the full list of option [here](https://docs.readyplayer.me/ready-player-me/api-reference/rest-api/avatars/get-3d-avatars).
-
-
-**FOR 3D MODELERS:**
-
-You can create and use your own 3D full-body model, but it must
-include at least a Mixamo-compatible rig and ARKit and Oculus viseme
+You can create and use your own 3D full-body character, but the model
+must have a Mixamo-compatible rig and include ARKit and Oculus viseme
 blend shapes.
 
 Mixamo-compatible rig:
@@ -470,8 +461,8 @@ Mixamo-compatible rig:
 
 If a bone name has the typical "mixamorig" prefix, the class will
 automatically remove it. Use the `./avatars/brunette.glb` model as
-your reference model when specifying bone axes and bone rolls.
-The skeleton may include additional bones, such as hair bones, which
+your reference model when specifying bone axes/rolls. The skeleton
+may include additional bones, such as hair bones, which
 can be used as dynamic bones.
 
 [ARKit](https://developer.apple.com/documentation/arkit/arfaceanchor/blendshapelocation) blend shapes (52):
@@ -512,10 +503,10 @@ use with the TalkingHead class:
 
 Service | Description
 ---|---
-[<img src="images/mpfb.jpg" width="200"/>](https://github.com/met4citizen/TalkingHead/blob/main/blender/MPFB/MPFB.md) | [MPFB](https://static.makehumancommunity.org/mpfb.html) a free and open source human character extension for Blender. It uses 3D assets from the MakeHuman ecosystem (licensed CC0/CC-BY) and provides parametric control over character's age, gender, body shape, etc. Read instructions for how to install and use [MPFB with TalkingHead](https://github.com/met4citizen/TalkingHead/blob/main/blender/MPFB/MPFB.md).
-[<img src="images/avaturn.jpg" width="200"/>](https://avaturn.me) | [Avaturn](https://avaturn.me) is a web-based avatar creator focused on generating realistic 3D avatars from photos. It is free for non-commercial use. For commercial use, you must notify the company, and some additional terms apply. Avaturn Type-2 (T2) avatars are fully TalkingHead-compatible. For a small shoulder/neck bone adjustment, see the [example config](https://github.com/met4citizen/TalkingHead/blob/main/siteconfig.js).
-[<img src="images/avatarsdk.jpg" width="200"/>](https://avatarsdk.com) | [Avatar SDK / MetaPerson Creator](https://avatarsdk.com) is a commercial service for generating personalized 3D avatars from photos. Blender scripts: [build-avatarsdk-eyes.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/build-avatarsdk-eyes.py) [rename-avatarsdk-shapekeys.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/rename-avatarsdk-shapekeys.py) + [example config](https://github.com/met4citizen/TalkingHead/blob/main/siteconfig.js)
-[<img src="images/rocketbox.jpg" width="200"/>](https://github.com/microsoft/Microsoft-Rocketbox) $$\color{transparent}{\rule{200px}{0px}}$$ | [Microsoft RocketBox](https://github.com/microsoft/Microsoft-Rocketbox) provides a library of ready-made 3D human characters. The models are MIT Licensed and include ARKit+Oculus, but they need to be re-rigged, for example, in Mixamo. Blender script (with instructions): [rename-rocketbox-shapekeys.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/rename-rocketbox-shapekeys.py)
+<img src="images/mpfb.jpg" width="200"/> | [MPFB](https://static.makehumancommunity.org/mpfb.html) a free and open source human character extension for Blender. It uses 3D assets from the MakeHuman ecosystem (licensed CC0/CC-BY) and provides parametric control over character's age, gender, body shape, etc. Read instructions for how to install and use [MPFB with TalkingHead](https://github.com/met4citizen/TalkingHead/blob/main/blender/MPFB/MPFB.md).
+<img src="images/avaturn.jpg" width="200"/> | [Avaturn](https://avaturn.me) is a web-based avatar creator focused on generating realistic 3D avatars from photos. It is free for non-commercial use. For commercial use, you must notify the company, and some additional terms apply. Avaturn Type-2 (T2) avatars are fully TalkingHead-compatible. For a small shoulder/neck bone adjustment, see the [example config](https://github.com/met4citizen/TalkingHead/blob/main/siteconfig.js).
+<img src="images/avatarsdk.jpg" width="200"/> | [Avatar SDK / MetaPerson Creator](https://avatarsdk.com) is a commercial service for generating personalized 3D avatars from photos. Blender scripts: [build-avatarsdk-eyes.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/build-avatarsdk-eyes.py) [rename-avatarsdk-shapekeys.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/rename-avatarsdk-shapekeys.py) + [example config](https://github.com/met4citizen/TalkingHead/blob/main/siteconfig.js)
+<img src="images/rocketbox.jpg" width="200"/> $$\color{transparent}{\rule{200px}{0px}}$$ | [Microsoft RocketBox](https://github.com/microsoft/Microsoft-Rocketbox) provides a library of ready-made 3D human characters. The models are MIT Licensed and include ARKit+Oculus, but they need to be re-rigged, for example, in Mixamo. Blender script (with instructions): [rename-rocketbox-shapekeys.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/rename-rocketbox-shapekeys.py)
 
 
 > [!IMPORTANT]
@@ -524,8 +515,19 @@ terms of use carefully. Many commercial 3D products generate
 avatars that cannot be used in public web apps, where the asset
 is delivered to the client and effectively becomes downloadable.
 Likewise, many ready-made avatars sold in 3D marketplaces are
-distributed under similarly restrictive licenses. - It all depends
-on your use case, of course.
+distributed under similarly restrictive licenses.
+
+TalkingHead class supports Meshopt compression by default and
+Draco compression when the class-level option `dracoEnabled` is
+set to `true`. You can use tools such as
+[glTF-Transform](https://github.com/donmccurdy/glTF-Transform)
+to apply compression:
+
+```bash
+gltf-transform optimize avatar.glb avatar-compressed.glb \
+  --compress meshopt \
+  --texture-compress webp
+```
 
 ---
 
