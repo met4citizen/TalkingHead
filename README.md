@@ -153,12 +153,12 @@ Option | Description | Default
 `lipsyncLang`| Lip-sync language. | `"fi"`
 `pcmSampleRate` | PCM (signed 16bit little endian) sample rate used in `speakAudio` in Hz. | `22050`
 `audioCtx` | The audio context to be used. By default, a new one is created. | `null`
-`modelRoot` | The root name of the armature. If not found, the default scene is used as fall-back. | `Armature`
+`modelRoot` | The root name of the armature. If not found, the default scene is used as the root (flatten structure). | `"Armature"`
 `modelPixelRatio` | Sets the device's pixel ratio. | `1`
 `modelFPS` | Frames per second. Note that actual frame rate will be a bit lower than the set value. | `30`
 `modelMovementFactor` | A factor in the range [0,1] limiting the avatar's upper body movement when standing. | `1`
-`dracoEnabled` | If `true`, use Draco geometry compression. [&#8805;`v1.5`] | `false`
-`dracoDecoderPath` | Draco decoder library path. [&#8805;`v1.5`] | `"https://www.gstatic.com/`<br>`draco/v1/decoders/"`
+`dracoEnabled` | If `true`, use Draco geometry compression. | `false`
+`dracoDecoderPath` | Draco decoder library path. | `"https://www.gstatic.com/`<br>`draco/v1/decoders/"`
 `cameraView` | Initial view. Supported views are `"full"`, `"mid"`, `"upper"`  and `"head"`. | `"full"`
 `cameraDistance` | Camera distance offset for initial view in meters. | `0`
 `cameraX` | Camera position offset in X direction in meters. | `0`
@@ -459,11 +459,18 @@ Mixamo-compatible rig:
 
 <img src="images/rig.jpg"/>
 
-If a bone name has the typical "mixamorig" prefix, the class will
-automatically remove it. Use the `./avatars/brunette.glb` model as
-your reference model when specifying bone axes/rolls. The skeleton
-may include additional bones, such as hair bones, which
-can be used as dynamic bones.
+Name the root object "Armature", which is the default value for
+the `modelRoot` class-level option. If a root with that name is not found,
+the class assumes a flattened scene graph and uses the default
+scene as the fallback root.
+
+Use `./avatars/brunette.glb` (A-pose) or `./avatars/brunette-t.glb` (T-pose)
+as reference models when specifying bone axes and rolls. The common
+"mixamorig" prefix in bone names is allowed, but it is automatically
+removed by the class. 
+
+The skeleton may include additional bones, such as hair bones,
+which can be used as dynamic bones.
 
 [ARKit](https://developer.apple.com/documentation/arkit/arfaceanchor/blendshapelocation) blend shapes (52):
 
@@ -517,7 +524,7 @@ is delivered to the client and effectively becomes downloadable.
 Likewise, many ready-made avatars sold in 3D marketplaces are
 distributed under similarly restrictive licenses.
 
-TalkingHead class supports Meshopt compression by default and
+TalkingHead class supports Meshopt compression by default, and
 Draco compression when the class-level option `dracoEnabled` is
 set to `true`. You can use tools such as
 [glTF-Transform](https://github.com/donmccurdy/glTF-Transform)

@@ -1,10 +1,10 @@
-# MPFB
+# MPFB with TalkingHead
 
 > [!IMPORTANT]
 > This document is currently a work in progress. The referenced poses
 have not yet been published. At this stage, the document should be
 seen as a high-level description/plan of a workflow that is still
-subject to refinement and optimization.
+subject to refinement.
 
 ### Installation
 
@@ -132,10 +132,6 @@ Export to GLB (settings relative to defaults):
 
 Here are few common problems and known issues:
 
-- ARKit and Oculus blend shapes are low quality:
-ARKit and Oculus blend shapes have been auto-generated
-using Faceit. Hopefully, some 3D designer (maybe you?)
-will have time to fix the most apparent problems.
 - Avatar is looking down instead of straight ahead:
 Adjust the tilt of the "Head" bone in your exported model.
 - Eyelashes extend too far when blinking: Either modify
