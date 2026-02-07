@@ -69,10 +69,9 @@ and modify the base model, click `Model` | `Refit assets to basemesh`.
 ### Poses and Animations
 
 The TalkingHead rig is designed to be Mixamo-compatible.
-If you scale your avatar so that the "Hips" bone is at
-a height of 1.0 meters, you can simply use the Mixamo
-"Y-Bot" to download poses and animations. For most use
-cases, this approach is good enough.
+You can simply use the Mixamo "Y-Bot" to download poses
+and animations. For most use cases, this approach is good
+enough.
 
 An alternative approach is to create your own, avatar-specific
 animations, poses and gestures:
@@ -100,14 +99,14 @@ your "design" and "export" projects in separate Blender files.
 Prepare for export to TalkingHead/GLB/Three.js/WebGL:
 
 - Check that the root object is named "Armature". This is the default
-value for the TalkingHead class option `modelRoot`.
+value for the TalkingHead class-level option `modelRoot`.
 - Select the base mesh and navigate to `Operations`| `Basemesh`.
 Run both `Bake shapekeys` and `Delete helpers`.
-- `TalkingHead` | `Operations` | Select all mesh objects | `Build ARKit and Oculus`. <sup>\[4]</sup>
-- `TalkingHead` | `Operations` | Select the base mesh | `Apply modifiers`. <sup>\[5]</sup>
-- Optional: Change to "Object Mode", select all, and scale
-your character so that the "Hips" bone is at 1.0 meters in
-height. Select all | `Object` | `Apply` | `All Transforms`.
+- Optional: Select the armature | `TalkingHead` | `Operations` | `Scale character`.
+- Select the armature | `TalkingHead` | `Operations` | `Fix bone axes`. <sup>\[4]</sup>
+- Select all mesh objects | `TalkingHead` | `Operations` | `Build ARKit and Oculus`. <sup>\[5]</sup>
+- Select the base mesh | `TalkingHead` | `Operations` | `Apply modifiers`. <sup>\[6]</sup>
+- Select all | `Object` | `Apply` | `All Transforms`.
 
 Update materials for glTF/GLB:
 
@@ -116,7 +115,7 @@ remove alpha map textures from `Material` | `Surface` | `Alpha`
 - MASK / Alpha Clip: For meshes that need cutout transparency
 go to `Shading` and add a new Math node before the Principled
 BSDF Alpha input: `Add` | `Utilities` | `Math` | `Math` | "Greater Than".
-Adjust the threshold value until the edges look correct. <sup>\[6]</sup>
+Adjust the threshold value until the edges look correct. <sup>\[7]</sup>
 - BLEND: For meshes that must have partially transparent surfaces,
 leave the material setup as it is.
 
@@ -126,6 +125,17 @@ Export to GLB (settings relative to defaults):
 - Select format "glTF Binary (.glb)"
 - Uncheck "Animation"
 - `Export`
+
+### Compression (Optional)
+
+Use [glTF-Transform](https://github.com/donmccurdy/glTF-Transform)
+to apply compression:
+
+```bash
+gltf-transform optimize avatar.glb avatar-compressed.glb \
+  --compress meshopt \
+  --texture-compress webp
+```
 
 
 ### Troubleshooting
@@ -137,13 +147,13 @@ Adjust the tilt of the "Head" bone in your exported model.
 - Eyelashes extend too far when blinking: Either modify
 the shape key directly or replace it with a combined mix
 that provides an optimal extent.
-- Toes are twisted: Adjust the toe base bone rolls.
 
 This document does not (and cannot) cover all details or possible
 situations. If you encounter difficulties, please consult the
 [Blender manual](https://docs.blender.org/manual/en/latest/) and/or
 [MPFB documentation](https://static.makehumancommunity.org/mpfb.html).
 
+---
 
 ### Footnotes
 
@@ -157,13 +167,17 @@ head tilt, toes, and other places.
 
 \[3] TODO: Find way to import all .asset.blend files at the same time.
 
-\[4] In future releases, this step will hopefully be supported directly
+\[4] When designing your model, the bone axes/rolls can change. If these
+changes are NOT fixed before export, Blender bakes them into GLB matrices
+and the final model will have twisted body parts such as twisted toes.
+
+\[5] In future releases, this step will hopefully be supported directly
 by MPFB. See [MPFB2 issue](https://github.com/makehumancommunity/mpfb2/issues/302).
 
-\[5] Blender modifiers are Blender-specific and are not part of the glTF/GLB
+\[6] Blender modifiers are Blender-specific and are not part of the glTF/GLB
 specification, so they must be applied. However, Blender does not allow
 applying most topology-changing modifiers when shape keys exist.
 
-\[6] Mask mode is essentially the same as Eevee's "Alpha Clip" blend mode,
+\[7] Mask mode is essentially the same as Eevee's "Alpha Clip" blend mode,
 but in Blender 5.0 it must now be done with shader nodes.
 
