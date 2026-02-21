@@ -69,7 +69,7 @@ and modify the base model, click `Model` | `Refit assets to basemesh`.
 ### Poses and Animations
 
 The TalkingHead rig is designed to be Mixamo-compatible.
-You can simply use the Mixamo "Y-Bot" to download poses
+You can simply use the Mixamo "X-Bot" to download poses
 and animations. For most use cases, this approach is good
 enough.
 
@@ -103,7 +103,7 @@ value for the TalkingHead class-level option `modelRoot`.
 - Select the base mesh and navigate to `Operations`| `Basemesh`.
 Run both `Bake shapekeys` and `Delete helpers`.
 - Optional: Select the armature | `TalkingHead` | `Operations` | `Scale character`.
-- Select the armature | `TalkingHead` | `Operations` | `Fix bone axes`. <sup>\[4]</sup>
+- Select the armature | `TalkingHead` | `Operations` | `Fix bone axes (A-pose)`. <sup>\[4]</sup>
 - Select all mesh objects | `TalkingHead` | `Operations` | `Build ARKit and Oculus`. <sup>\[5]</sup>
 - Select the base mesh | `TalkingHead` | `Operations` | `Apply modifiers`. <sup>\[6]</sup>
 - Select all | `Object` | `Apply` | `All Transforms`.

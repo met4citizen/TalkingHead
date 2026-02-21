@@ -20,6 +20,8 @@
             "parent": "Neck",
             "rigify": {},
             "roll": 0.0,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.0, -0.990155, -0.139976],
             "rotation_mode": "XYZ",
             "tail": {
                 "default_position": [
@@ -61,6 +63,8 @@
             "parent": "Head",
             "rigify": {},
             "roll": 0.0,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.0, -0.999963, 0.008631],
             "rotation_mode": "XYZ",
             "tail": {
                 "default_position": [
@@ -100,6 +104,8 @@
             "parent": "",
             "rigify": {},
             "roll": -0.00047,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [-5.2e-05, -0.998203, 0.059929],
             "rotation_mode": "XYZ",
             "tail": {
                 "default_position": [
@@ -165,6 +171,8 @@
             "parent": "LeftShoulder",
             "rigify": {},
             "roll": -2.207993,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [-0.815869, -0.021867, -0.577823],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-l-elbow",
@@ -262,6 +270,8 @@
             "parent": "Head",
             "rigify": {},
             "roll": 2.06177,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.0, -1.0, -1e-06],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-l-eye-target",
@@ -293,6 +303,8 @@
             "parent": "LeftLeg",
             "rigify": {},
             "roll": 3.140867,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.001783, -0.615151, 0.788407],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-l-foot-1",
@@ -324,6 +336,8 @@
             "parent": "LeftArm",
             "rigify": {},
             "roll": -2.207993,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [-0.834663, -0.033902, -0.549716],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-l-hand",
@@ -355,6 +369,8 @@
             "parent": "LeftForeArm",
             "rigify": {},
             "roll": -2.382483,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [-0.871253, -0.240784, -0.427717],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-l-hand-3",
@@ -386,6 +402,8 @@
             "parent": "LeftHand",
             "rigify": {},
             "roll": -2.144513,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [-0.952265, -0.172639, -0.251768],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-l-finger-2-2",
@@ -417,6 +435,8 @@
             "parent": "LeftHandIndex1",
             "rigify": {},
             "roll": -1.440514,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [-0.997518, 0.069974, 0.00784],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-l-finger-2-3",
@@ -448,6 +468,8 @@
             "parent": "LeftHandIndex2",
             "rigify": {},
             "roll": -1.102991,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [-0.952339, 0.112914, 0.283375],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-l-finger-2-4",
@@ -479,6 +501,8 @@
             "parent": "LeftHandIndex3",
             "rigify": {},
             "roll": 0.0,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [-0.981243, 0.138231, 0.134369],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-l-finger-2-4",
@@ -515,6 +539,8 @@
             "parent": "LeftHand",
             "rigify": {},
             "roll": -2.070836,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [-0.95345, -0.167392, -0.250825],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-l-finger-3-2",
@@ -546,6 +572,8 @@
             "parent": "LeftHandMiddle1",
             "rigify": {},
             "roll": -1.574482,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [-0.999991, -0.003639, 0.002207],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-l-finger-3-3",
@@ -577,6 +605,8 @@
             "parent": "LeftHandMiddle2",
             "rigify": {},
             "roll": -1.112081,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [-0.957252, 0.115679, 0.265117],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-l-finger-3-4",
@@ -608,6 +638,8 @@
             "parent": "LeftHandMiddle3",
             "rigify": {},
             "roll": -1.112081,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [-0.990951, 0.050408, 0.124401],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-l-finger-3-4",
@@ -644,6 +676,8 @@
             "parent": "LeftHand",
             "rigify": {},
             "roll": -1.760054,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [-0.991241, -0.110026, -0.073046],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-l-finger-5-2",
@@ -675,6 +709,8 @@
             "parent": "LeftHandPinky1",
             "rigify": {},
             "roll": -1.508561,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [-0.995879, -0.021261, 0.088166],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-l-finger-5-3",
@@ -706,6 +742,8 @@
             "parent": "LeftHandPinky2",
             "rigify": {},
             "roll": -1.333663,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [-0.95455, -0.050898, 0.293674],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-l-finger-5-4",
@@ -737,6 +775,8 @@
             "parent": "LeftHandPinky3",
             "rigify": {},
             "roll": 0.0,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [-0.977236, -0.023028, 0.210903],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-l-finger-5-4",
@@ -773,6 +813,8 @@
             "parent": "LeftHand",
             "rigify": {},
             "roll": -1.919343,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [-0.973135, -0.11216, -0.201068],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-l-finger-4-2",
@@ -804,6 +846,8 @@
             "parent": "LeftHandRing1",
             "rigify": {},
             "roll": -1.414398,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [-0.992599, 0.026764, 0.118453],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-l-finger-4-3",
@@ -835,6 +879,8 @@
             "parent": "LeftHandRing2",
             "rigify": {},
             "roll": -1.356222,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [-0.982528, 0.021169, 0.184907],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-l-finger-4-4",
@@ -866,6 +912,8 @@
             "parent": "LeftHandRing3",
             "rigify": {},
             "roll": 0.0,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [-0.988071, 0.017294, 0.153022],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-l-finger-4-4",
@@ -902,6 +950,8 @@
             "parent": "LeftHand",
             "rigify": {},
             "roll": 0.0,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [-0.979576, 0.01469, -0.200537],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-l-finger-1-2",
@@ -933,6 +983,8 @@
             "parent": "LeftHandThumb1",
             "rigify": {},
             "roll": 0.0,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [-0.990165, 0.050792, -0.130362],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-l-finger-1-3",
@@ -964,6 +1016,8 @@
             "parent": "LeftHandThumb2",
             "rigify": {},
             "roll": 0.0,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [-0.990548, 0.133887, -0.029803],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-l-finger-1-4",
@@ -995,6 +1049,8 @@
             "parent": "LeftHandThumb3",
             "rigify": {},
             "roll": 0.0,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [-0.982724, 0.143109, -0.117362],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-l-finger-1-4",
@@ -1031,6 +1087,8 @@
             "parent": "LeftUpLeg",
             "rigify": {},
             "roll": 3.080146,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.004224, -0.991791, -0.127801],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-l-ankle",
@@ -1129,6 +1187,8 @@
             "parent": "Spine2",
             "rigify": {},
             "roll": -3.059305,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [-0.151138, -0.082852, -0.985034],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-l-shoulder",
@@ -1160,6 +1220,8 @@
             "parent": "LeftFoot",
             "rigify": {},
             "roll": 1.30,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.003772, 0.011869, 0.999922],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-l-toe-2-4",
@@ -1191,6 +1253,8 @@
             "parent": "LeftToeBase",
             "rigify": {},
             "roll": 0.0,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [-0.999999, 0.000551, -0.001637],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-l-toe-2-4",
@@ -1227,6 +1291,8 @@
             "parent": "Hips",
             "rigify": {},
             "roll": 3.077946,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [-7.5e-05, -0.998602, -0.052867],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-l-knee",
@@ -1258,6 +1324,8 @@
             "parent": "Spine2",
             "rigify": {},
             "roll": 0.0,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.0, -0.969599, -0.244701],
             "rotation_mode": "XYZ",
             "tail": {
                 "default_position": [
@@ -1292,6 +1360,8 @@
             "parent": "RightShoulder",
             "rigify": {},
             "roll": 2.207993,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.815869, -0.021866, -0.577823],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-r-elbow",
@@ -1389,6 +1459,8 @@
             "parent": "Head",
             "rigify": {},
             "roll": -2.06177,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.0, -1.0, -1e-06],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-r-eye-target",
@@ -1420,6 +1492,8 @@
             "parent": "RightLeg",
             "rigify": {},
             "roll": -3.140935,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [-0.001774, -0.615152, 0.788406],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-r-foot-1",
@@ -1451,6 +1525,8 @@
             "parent": "RightArm",
             "rigify": {},
             "roll": 2.207993,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.834662, -0.033902, -0.549718],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-r-hand",
@@ -1482,6 +1558,8 @@
             "parent": "RightForeArm",
             "rigify": {},
             "roll": 2.382486,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.871253, -0.240786, -0.427716],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-r-hand-3",
@@ -1513,6 +1591,8 @@
             "parent": "RightHand",
             "rigify": {},
             "roll": 2.144512,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.952265, -0.172638, -0.25177],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-r-finger-2-2",
@@ -1544,6 +1624,8 @@
             "parent": "RightHandIndex1",
             "rigify": {},
             "roll": 1.440514,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.997517, 0.069984, 0.007823],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-r-finger-2-3",
@@ -1575,6 +1657,8 @@
             "parent": "RightHandIndex2",
             "rigify": {},
             "roll": 1.102989,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.952336, 0.112908, 0.283387],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-r-finger-2-4",
@@ -1606,6 +1690,8 @@
             "parent": "RightHandIndex3",
             "rigify": {},
             "roll": 0.0,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.981243, 0.138224, 0.134377],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-r-finger-2-4",
@@ -1642,6 +1728,8 @@
             "parent": "RightHand",
             "rigify": {},
             "roll": 2.070837,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.95345, -0.167392, -0.250825],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-r-finger-3-2",
@@ -1673,6 +1761,8 @@
             "parent": "RightHandMiddle1",
             "rigify": {},
             "roll": 1.574484,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.999991, -0.003634, 0.002195],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-r-finger-3-3",
@@ -1704,6 +1794,8 @@
             "parent": "RightHandMiddle2",
             "rigify": {},
             "roll": 1.112081,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.957253, 0.115682, 0.265111],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-r-finger-3-4",
@@ -1735,6 +1827,8 @@
             "parent": "RightHandMiddle3",
             "rigify": {},
             "roll": 0.0,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.990952, 0.050412, 0.124391],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-r-finger-3-4",
@@ -1771,6 +1865,8 @@
             "parent": "RightHand",
             "rigify": {},
             "roll": 1.760058,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.991241, -0.110026, -0.07305],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-r-finger-5-2",
@@ -1802,6 +1898,8 @@
             "parent": "RightHandPinky1",
             "rigify": {},
             "roll": 1.508562,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.99588, -0.021254, 0.088156],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-r-finger-5-3",
@@ -1833,6 +1931,8 @@
             "parent": "RightHandPinky2",
             "rigify": {},
             "roll": 1.333663,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.954545, -0.050908, 0.293686],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-r-finger-5-4",
@@ -1864,6 +1964,8 @@
             "parent": "RightHandPinky3",
             "rigify": {},
             "roll": 0.0,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.977238, -0.023023, 0.210895],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-r-finger-5-4",
@@ -1900,6 +2002,8 @@
             "parent": "RightHand",
             "rigify": {},
             "roll": 1.919345,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.973135, -0.112159, -0.20107],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-r-finger-4-2",
@@ -1931,6 +2035,8 @@
             "parent": "RightHandRing1",
             "rigify": {},
             "roll": 1.414402,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.992599, 0.026759, 0.118457],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-r-finger-4-3",
@@ -1962,6 +2068,8 @@
             "parent": "RightHandRing2",
             "rigify": {},
             "roll": 1.356225,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.982531, 0.02118, 0.184889],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-r-finger-4-4",
@@ -1993,6 +2101,8 @@
             "parent": "RightHandRing3",
             "rigify": {},
             "roll": 0.0,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.98807, 0.017285, 0.153033],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-r-finger-4-4",
@@ -2029,6 +2139,8 @@
             "parent": "RightHand",
             "rigify": {},
             "roll": 0.0,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.979575, 0.01469, -0.200541],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-r-finger-1-2",
@@ -2060,6 +2172,8 @@
             "parent": "RightHandThumb1",
             "rigify": {},
             "roll": 0.0,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.990162, 0.050799, -0.130378],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-r-finger-1-3",
@@ -2091,6 +2205,8 @@
             "parent": "RightHandThumb2",
             "rigify": {},
             "roll": 0.0,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.990548, 0.133889, -0.029803],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-r-finger-1-4",
@@ -2122,6 +2238,8 @@
             "parent": "RightHandThumb3",
             "rigify": {},
             "roll": 0.0,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.982726, 0.143103, -0.11735],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-r-finger-1-4",
@@ -2158,6 +2276,8 @@
             "parent": "RightUpLeg",
             "rigify": {},
             "roll": -3.080155,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [-0.004216, -0.99179, -0.127804],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-r-ankle",
@@ -2256,6 +2376,8 @@
             "parent": "Spine2",
             "rigify": {},
             "roll": 3.059306,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.151135, -0.082851, -0.985035],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-r-shoulder",
@@ -2287,6 +2409,8 @@
             "parent": "RightFoot",
             "rigify": {},
             "roll": -1.30,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.0, 0.0, 1.0],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-r-toe-2-4",
@@ -2318,6 +2442,8 @@
             "parent": "RightToeBase",
             "rigify": {},
             "roll": 0.0,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.999998, 0.000574, -0.001683],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-r-toe-2-4",
@@ -2354,6 +2480,8 @@
             "parent": "Hips",
             "rigify": {},
             "roll": -3.077955,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [8.2e-05, -0.998602, -0.052868],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-r-knee",
@@ -2388,6 +2516,8 @@
             "parent": "Hips",
             "rigify": {},
             "roll": -0.00372,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.0, -0.996171, 0.087425],
             "rotation_mode": "XYZ",
             "tail": {
                 "default_position": [
@@ -2425,6 +2555,8 @@
             "parent": "Spine",
             "rigify": {},
             "roll": 0.0,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.0, -0.987185, 0.159581],
             "rotation_mode": "XYZ",
             "tail": {
                 "default_position": [
@@ -2462,6 +2594,8 @@
             "parent": "Spine1",
             "rigify": {},
             "roll": 0.0,
+            "roll_strategy": "ALIGN_Z_REFERENCE_Z",
+            "roll_reference_z": [0.0, -0.999456, 0.032991],
             "rotation_mode": "XYZ",
             "tail": {
                 "cube_name": "joint-neck",
@@ -2482,5 +2616,5 @@
     ],
     "is_subrig": false,
     "scale_factor": 0.10,
-    "version": 1
+    "version": 110
 }
