@@ -83,7 +83,8 @@ Modules compatible with the Talking Head (3D) project:
 Module | Description
 --- | ---
 [<img src="images/headtts.jpg" width="200"/>](https://github.com/met4citizen/HeadTTS) | [HeadTTS](https://github.com/met4citizen/HeadTTS) is a free and open-source English TTS with Kokoro neural voices, viseme IDs, and accurate phoneme-level timestamps. It can run entirely in a browser using WebGPU.
-[<img src="images/headaudio.jpg" width="200"/>](https://github.com/met4citizen/HeadAudio) $$\color{transparent}{\rule{200px}{0px}}$$ | [HeadAudio](https://github.com/met4citizen/HeadAudio) in an audio worklet node/processor for audio-driven, real-time viseme detection and lip-sync. No text transcription or timestamps needed. Fast and fully in-browser.
+[<img src="images/headaudio.jpg" width="200"/>](https://github.com/met4citizen/HeadAudio) | [HeadAudio](https://github.com/met4citizen/HeadAudio) in an audio worklet node/processor for audio-driven, real-time viseme detection and lip-sync. No text transcription or timestamps needed. Fast and fully in-browser.
+[<img src="images/motionengine.jpg" width="200"/>](https://github.com/lhupyn/motion-engine) $$\color{transparent}{\rule{200px}{0px}}$$ | [MotionEngine](https://github.com/lhupyn/motion-engine) extends the TalkingHead's built-in animation system with a new set of advanced gestures/expressions, a semantic control layer tailored for LLM-driven execution, and LLM-based tooling for authoring and composing new motions.
 
 ---
 
