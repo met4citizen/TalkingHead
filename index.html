@@ -441,6 +441,7 @@ const elevenTTSEndpoint = [
 ];
 const microsoftTTSEndpoint = "wss://northeurope.tts.speech.microsoft.com/cognitiveservices/websocket/v1";
 const grokChatCompletionsEndpoint = "https://api.x.ai/v1/chat/completions";
+const minimaxTTSEndpoint = "https://api.minimax.io/v1/t2a_v2";
 
 
 // I18n internationalization
@@ -868,6 +869,92 @@ async function microsoftProcessQueue() {
       );
 
     }
+  }
+}
+
+// Speak using MiniMax TTS
+async function minimaxSpeak(s, node=null) {
+
+  if ( !s || !s.trim().length ) return;
+
+  const apikey = d3.select("#apikey-minimax").property("value");
+  if ( !apikey ) {
+    console.error("MiniMax API key not set.");
+    return;
+  }
+
+  const voiceId = cfg('voice-minimax-id') || "English_Graceful_Lady";
+  const model = "speech-2.8-hd";
+
+  try {
+    const res = await fetch( minimaxTTSEndpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + apikey
+      },
+      body: JSON.stringify({
+        model: model,
+        text: s.trim(),
+        voice_setting: {
+          voice_id: voiceId
+        },
+        audio_setting: {
+          format: "mp3"
+        }
+      })
+    });
+
+    const data = await res.json();
+
+    if ( data && data.data && data.data.audio ) {
+
+      // Decode hex-encoded audio to ArrayBuffer
+      const hex = data.data.audio;
+      const bytes = new Uint8Array(hex.length / 2);
+      for (let i = 0; i < hex.length; i += 2) {
+        bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+      }
+      const audioBuffer = bytes.buffer;
+
+      // Split text into words and estimate word timing
+      const text = s.trim();
+      const wordList = text.split(/\s+/).filter(w => w.length > 0);
+
+      // Decode the audio to get the actual duration
+      const audioCtx = head.audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const decoded = await audioCtx.decodeAudioData( audioBuffer.slice(0) );
+      const durationMs = decoded.duration * 1000;
+
+      // Estimate word timings proportionally based on character count
+      const totalChars = wordList.reduce((sum, w) => sum + w.length, 0);
+      const words = [];
+      const wtimes = [];
+      const wdurations = [];
+      let currentTime = 0;
+      for (let i = 0; i < wordList.length; i++) {
+        const ratio = wordList[i].length / totalChars;
+        const dur = ratio * durationMs;
+        words.push(wordList[i]);
+        wtimes.push(currentTime);
+        wdurations.push(dur);
+        currentTime += dur;
+      }
+
+      // Use speakAudio to feed to the avatar with lip-sync
+      head.speakAudio({
+        audio: audioBuffer,
+        words: words,
+        wtimes: wtimes,
+        wdurations: wdurations
+      }, { lipsyncLang: cfg('voice-lipsync-lang') }, node ? addText.bind(null,node) : null );
+
+    } else {
+      const errMsg = (data && data.base_resp) ? data.base_resp.status_msg : "Unknown error";
+      console.error("MiniMax TTS error:", errMsg);
+    }
+  } catch (error) {
+    console.error("MiniMax TTS error:", error);
   }
 }
 
@@ -1829,6 +1916,8 @@ async function openaiSendMessage(node,msgs) {
                 await elevenSpeak( tts.trimStart() + " ", node );
               } else if ( cfg('voice-type') === 'microsoft' ) {
                 await microsoftSpeak( tts.trimStart() + " ", node );
+              } else if ( cfg('voice-type') === 'minimax' ) {
+                await minimaxSpeak( tts.trimStart(), node );
               } else {
                 exclude = excludesProcess(tts,exclude);
                 await head.speakText( tts, {
@@ -1859,6 +1948,8 @@ async function openaiSendMessage(node,msgs) {
                   await elevenSpeak( s + " ", node );
                 } else if ( cfg('voice-type') === 'microsoft' ) {
                   await microsoftSpeak( s + " ", node );
+                } else if ( cfg('voice-type') === 'minimax' ) {
+                  await minimaxSpeak( s, node );
                 } else {
                   exclude = excludesProcess(s,exclude);
                   await head.speakText( s, {
@@ -2005,6 +2096,8 @@ async function grokSendMessage(node,msgs) {
               await elevenSpeak( tts.trimStart() + " ", node );
             } else if ( cfg('voice-type') === 'microsoft' ) {
               await microsoftSpeak( tts.trimStart() + " ", node );
+            } else if ( cfg('voice-type') === 'minimax' ) {
+              await minimaxSpeak( tts.trimStart(), node );
             } else {
               exclude = excludesProcess(tts,exclude);
               await head.speakText( tts, {
@@ -2035,6 +2128,8 @@ async function grokSendMessage(node,msgs) {
                 await elevenSpeak( s + " ", node );
               } else if ( cfg('voice-type') === 'microsoft' ) {
                 await microsoftSpeak( s + " ", node );
+              } else if ( cfg('voice-type') === 'minimax' ) {
+                await minimaxSpeak( s, node );
               } else {
                 exclude = excludesProcess(s,exclude);
                 await head.speakText( s, {
@@ -2167,6 +2262,8 @@ async function llamaSendMessage(node,msgs) {
               await elevenSpeak( tts.trimStart() + " ", node );
             } else if ( cfg('voice-type') === 'microsoft' ) {
               await microsoftSpeak( tts.trimStart() + " ", node );
+            } else if ( cfg('voice-type') === 'minimax' ) {
+              await minimaxSpeak( tts.trimStart(), node );
             } else {
               exclude = excludesProcess(tts,exclude);
               await head.speakText( tts, {
@@ -2197,6 +2294,8 @@ async function llamaSendMessage(node,msgs) {
                 await elevenSpeak( s + " ", node );
               } else if ( cfg('voice-type') === 'microsoft' ) {
                 await microsoftSpeak( s + " ", node );
+              } else if ( cfg('voice-type') === 'minimax' ) {
+                await minimaxSpeak( s, node );
               } else {
                 exclude = excludesProcess(s,exclude);
                 await head.speakText( s, {
@@ -2468,6 +2567,8 @@ async function geminiSendMessage(node,msgs) {
                 await elevenSpeak( tts + " ", node );
               } else if ( cfg('voice-type') === 'microsoft' ) {
                 await microsoftSpeak( tts + " ", node );
+              } else if ( cfg('voice-type') === 'minimax' ) {
+                await minimaxSpeak( tts, node );
               } else {
                 await head.speakText( tts, {
                   lipsyncLang: cfg('voice-lipsync-lang'),
@@ -2490,6 +2591,8 @@ async function geminiSendMessage(node,msgs) {
                 await elevenSpeak( tts.substring(0, ndx) + " ", node );
               } else if ( cfg('voice-type') === 'microsoft' ) {
                 await microsoftSpeak( tts.substring(0, ndx) + " ", node );
+              } else if ( cfg('voice-type') === 'minimax' ) {
+                await minimaxSpeak( tts.substring(0, ndx), node );
               } else {
                 await head.speakText( tts.substring(0, ndx), {
                   lipsyncLang: cfg('voice-lipsync-lang'),
@@ -2636,6 +2739,8 @@ function addMessage(user = false) {
           } else if ( cfg('voice-type') === 'microsoft' ) {
             microsoftSpeak( text );
             microsoftSpeak( null );
+          } else if ( cfg('voice-type') === 'minimax' ) {
+            minimaxSpeak( text );
           } else {
             head.speakText( text, {
               lipsyncLang: cfg('voice-lipsync-lang'),
@@ -2705,6 +2810,8 @@ async function speak(s) {
   } else if ( cfg('voice-type') === 'microsoft' ) {
     await microsoftSpeak( s, node );
     await microsoftSpeak(null);
+  } else if ( cfg('voice-type') === 'minimax' ) {
+    await minimaxSpeak( s, node );
   } else {
     await head.speakText( s, {
       lipsyncLang: cfg('voice-lipsync-lang'),
@@ -3565,6 +3672,8 @@ async function scriptRun() {
         await new Promise(resolve => {
           microsoftSpeak( x, node, resolve );
         });
+      } else if ( cfg('voice-type') === 'minimax' ) {
+        await minimaxSpeak( x, node );
       } else {
         await head.speakText( x, {
           lipsyncLang: cfg('voice-lipsync-lang'),
@@ -3667,6 +3776,19 @@ document.addEventListener('DOMContentLoaded', async function(e) {
       .attr("data-voice-microsoft-id",o.id)
       .attr("data-voice-microsoft-viseme", o.viseme )
       .attr("data-i18n-site","microsoftVoices-"+k);
+  }
+
+  // Add MiniMax voices
+  const eMinimaxVoices = d3.select("#minimaxvoices");
+  for ( const [i,k] of Object.entries(Object.keys(site.minimaxVoices)) ) {
+    let o = site.minimaxVoices[k];
+    eMinimaxVoices.append("div")
+      .classed("command", true)
+      .classed("selected", parseInt(i) === 0 )
+      .attr("data-item","voice-minimax-id")
+      .attr("data-type","option")
+      .attr("data-voice-minimax-id",o.id)
+      .text(k);
   }
 
   // Add views
@@ -3860,6 +3982,8 @@ document.addEventListener('DOMContentLoaded', async function(e) {
       } else if ( cfg('voice-type') === 'microsoft' ) {
         microsoftSpeak( text );
         microsoftSpeak( null );
+      } else if ( cfg('voice-type') === 'minimax' ) {
+        minimaxSpeak( text );
       } else {
         const exclude = excludesProcess(text);
         head.speakText( text, {
@@ -4401,6 +4525,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     d3.select("#voice-google").style("display", (e.attr("data-voice-type") === 'google') ? "flex" : "none" );
     d3.select("#voice-eleven").style("display", (e.attr("data-voice-type") === 'eleven') ? "flex" : "none" );
     d3.select("#voice-microsoft").style("display", (e.attr("data-voice-type") === 'microsoft') ? "flex" : "none" );
+    d3.select("#voice-minimax").style("display", (e.attr("data-voice-type") === 'minimax') ? "flex" : "none" );
     d3.select("#lipsync").style("display", (e.attr("data-voice-type") !== 'microsoft') ? "flex" : "none" );
     d3.select("#excludes").style("display", (e.attr("data-voice-type") === 'google') ? "flex" : "none" );
   });
@@ -4420,6 +4545,12 @@ document.addEventListener('DOMContentLoaded', async function(e) {
   d3.selectAll("[data-voice-microsoft-id]").on('click.command', function(ev) {
     const e = d3.select(this);
     d3.selectAll("[data-voice-microsoft-id]").classed('selected',false);
+    e.classed('selected',true);
+  });
+
+  d3.selectAll("[data-voice-minimax-id]").on('click.command', function(ev) {
+    const e = d3.select(this);
+    d3.selectAll("[data-voice-minimax-id]").classed('selected',false);
     e.classed('selected',true);
   });
 
@@ -6040,6 +6171,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
                 <div class="command selected" data-item="voice-type" data-type="option" data-voice-type="google">Google</div>
                 <div class="command" data-item="voice-type" data-type="option" data-voice-type="microsoft">Microsoft</div>
                 <div class="command" data-item="voice-type" data-type="option" data-voice-type="eleven">ElevenLabs</div>
+                <div class="command" data-item="voice-type" data-type="option" data-voice-type="minimax">MiniMax</div>
               </div>
             </div>
           </div>
@@ -6083,6 +6215,13 @@ document.addEventListener('DOMContentLoaded', async function(e) {
             <div class="text label"></div>
             <div class="column">
               <div id="elevenvoices" class="rowWrap">
+              </div>
+            </div>
+          </div>
+          <div id="voice-minimax" class="row">
+            <div class="text label"></div>
+            <div class="column">
+              <div id="minimaxvoices" class="rowWrap">
               </div>
             </div>
           </div>
@@ -6325,6 +6464,11 @@ document.addEventListener('DOMContentLoaded', async function(e) {
           <div class="row">
             <div class="text label" style="width: 8rem">ElevenLabs</div>
             <input id="apikey-eleven" class="apikey" type="text" placeholder="API key not specified; using proxy/JWT">
+          </div>
+
+          <div class="row">
+            <div class="text label" style="width: 8rem">MiniMax</div>
+            <input id="apikey-minimax" class="apikey" type="text" placeholder="API key for MiniMax TTS">
           </div>
 
         </div>

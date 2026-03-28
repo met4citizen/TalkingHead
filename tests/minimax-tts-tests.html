@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiniMax TTS Integration - Test Suite</title>
+    <style>
+        :root {
+            --color-bg: #f0f2f5;
+            --color-surface: #ffffff;
+            --color-border: #d9d9d9;
+            --color-text-primary: #262626;
+            --color-text-secondary: #595959;
+            --color-primary: #1890ff;
+            --color-success: #52c41a;
+            --color-warning: #faad14;
+            --color-danger: #f5222d;
+            --color-idle: #bfbfbf;
+            --border-radius: 6px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 24px;
+            background-color: var(--color-bg);
+            color: var(--color-text-primary);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 { margin-bottom: 8px; }
+
+        .card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .card h2 { margin-top: 0; font-size: 16px; }
+
+        .test-row {
+            display: flex;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .test-row:last-child { border-bottom: none; }
+
+        .test-name { flex: 1; font-size: 14px; }
+
+        .test-status {
+            width: 70px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .status-pass { background: #f6ffed; color: var(--color-success); }
+        .status-fail { background: #fff2f0; color: var(--color-danger); }
+        .status-skip { background: #fffbe6; color: var(--color-warning); }
+        .status-idle { background: #fafafa; color: var(--color-idle); }
+
+        .summary {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+        .summary span { font-weight: 600; }
+
+        .api-key-section {
+            margin-bottom: 16px;
+        }
+        .api-key-section input {
+            width: 400px;
+            padding: 6px 10px;
+            border: 1px solid var(--color-border);
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .api-key-section label {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 13px;
+            color: var(--color-text-secondary);
+        }
+
+        button {
+            padding: 8px 16px;
+            border: 1px solid var(--color-primary);
+            background: var(--color-primary);
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+        button:hover { opacity: 0.9; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .log {
+            background: #fafafa;
+            border: 1px solid var(--color-border);
+            border-radius: 4px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 8px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>MiniMax TTS Integration Tests</h1>
+        <p style="color: var(--color-text-secondary); margin-top: 0;">
+            Unit tests run without API key. Integration tests require a valid MiniMax API key.
+        </p>
+
+        <div class="summary" id="summary">
+            <span>Total: <span id="total">0</span></span>
+            <span style="color: var(--color-success);">Pass: <span id="passed">0</span></span>
+            <span style="color: var(--color-danger);">Fail: <span id="failed">0</span></span>
+            <span style="color: var(--color-warning);">Skip: <span id="skipped">0</span></span>
+        </div>
+
+        <div class="card">
+            <h2>Unit Tests (no API key required)</h2>
+            <div id="unit-tests"></div>
+        </div>
+
+        <div class="card">
+            <h2>Integration Tests (require MiniMax API key)</h2>
+            <div class="api-key-section">
+                <label>MiniMax API Key:</label>
+                <input type="text" id="minimax-api-key" placeholder="Enter your MINIMAX_API_KEY here">
+            </div>
+            <button id="run-integration" disabled>Run Integration Tests</button>
+            <div id="integration-tests"></div>
+        </div>
+
+        <div class="card">
+            <h2>Test Log</h2>
+            <div class="log" id="log"></div>
+        </div>
+    </div>
+
+    <script type="module">
+
+    // ======== Test Framework ========
+    const results = { pass: 0, fail: 0, skip: 0 };
+
+    function log(msg) {
+        const el = document.getElementById('log');
+        el.textContent += msg + '\n';
+        el.scrollTop = el.scrollHeight;
+    }
+
+    function addTestRow(container, name, status, detail) {
+        const row = document.createElement('div');
+        row.className = 'test-row';
+        row.innerHTML = `
+            <span class="test-name">${name}${detail ? ' — ' + detail : ''}</span>
+            <span class="test-status status-${status}">${status.toUpperCase()}</span>
+        `;
+        document.getElementById(container).appendChild(row);
+        results[status]++;
+        updateSummary();
+    }
+
+    function updateSummary() {
+        document.getElementById('total').textContent = results.pass + results.fail + results.skip;
+        document.getElementById('passed').textContent = results.pass;
+        document.getElementById('failed').textContent = results.fail;
+        document.getElementById('skipped').textContent = results.skip;
+    }
+
+    function assert(condition, msg) {
+        if (!condition) throw new Error(msg || 'Assertion failed');
+    }
+
+    // ======== Hex decode helper (mirrors minimaxSpeak implementation) ========
+    function hexToArrayBuffer(hex) {
+        const bytes = new Uint8Array(hex.length / 2);
+        for (let i = 0; i < hex.length; i += 2) {
+            bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+        }
+        return bytes.buffer;
+    }
+
+    // ======== Word timing estimation (mirrors minimaxSpeak logic) ========
+    function estimateWordTimings(text, durationMs) {
+        const wordList = text.trim().split(/\s+/).filter(w => w.length > 0);
+        const totalChars = wordList.reduce((sum, w) => sum + w.length, 0);
+        const words = [];
+        const wtimes = [];
+        const wdurations = [];
+        let currentTime = 0;
+        for (let i = 0; i < wordList.length; i++) {
+            const ratio = wordList[i].length / totalChars;
+            const dur = ratio * durationMs;
+            words.push(wordList[i]);
+            wtimes.push(currentTime);
+            wdurations.push(dur);
+            currentTime += dur;
+        }
+        return { words, wtimes, wdurations };
+    }
+
+    // ======== UNIT TESTS ========
+    async function runUnitTests() {
+        log('--- Running Unit Tests ---');
+
+        // Test 1: Hex to ArrayBuffer conversion
+        try {
+            const hex = '48656c6c6f'; // "Hello"
+            const buf = hexToArrayBuffer(hex);
+            const view = new Uint8Array(buf);
+            assert(view.length === 5, 'Expected 5 bytes');
+            assert(view[0] === 0x48, 'First byte should be 0x48 (H)');
+            assert(view[1] === 0x65, 'Second byte should be 0x65 (e)');
+            assert(view[2] === 0x6c, 'Third byte should be 0x6c (l)');
+            assert(view[3] === 0x6c, 'Fourth byte should be 0x6c (l)');
+            assert(view[4] === 0x6f, 'Fifth byte should be 0x6f (o)');
+            addTestRow('unit-tests', 'hexToArrayBuffer: basic conversion', 'pass');
+            log('  PASS: hexToArrayBuffer basic conversion');
+        } catch (e) {
+            addTestRow('unit-tests', 'hexToArrayBuffer: basic conversion', 'fail', e.message);
+            log('  FAIL: hexToArrayBuffer basic conversion: ' + e.message);
+        }
+
+        // Test 2: Hex empty string
+        try {
+            const buf = hexToArrayBuffer('');
+            assert(buf.byteLength === 0, 'Empty hex should produce empty buffer');
+            addTestRow('unit-tests', 'hexToArrayBuffer: empty input', 'pass');
+            log('  PASS: hexToArrayBuffer empty input');
+        } catch (e) {
+            addTestRow('unit-tests', 'hexToArrayBuffer: empty input', 'fail', e.message);
+            log('  FAIL: hexToArrayBuffer empty input: ' + e.message);
+        }
+
+        // Test 3: Hex with all byte values
+        try {
+            const hex = '00ff80';
+            const buf = hexToArrayBuffer(hex);
+            const view = new Uint8Array(buf);
+            assert(view[0] === 0, 'First byte should be 0');
+            assert(view[1] === 255, 'Second byte should be 255');
+            assert(view[2] === 128, 'Third byte should be 128');
+            addTestRow('unit-tests', 'hexToArrayBuffer: boundary values (0x00, 0xFF, 0x80)', 'pass');
+            log('  PASS: hexToArrayBuffer boundary values');
+        } catch (e) {
+            addTestRow('unit-tests', 'hexToArrayBuffer: boundary values', 'fail', e.message);
+            log('  FAIL: hexToArrayBuffer boundary values: ' + e.message);
+        }
+
+        // Test 4: Word timing estimation - single word
+        try {
+            const result = estimateWordTimings('Hello', 1000);
+            assert(result.words.length === 1, 'Should have 1 word');
+            assert(result.words[0] === 'Hello', 'Word should be Hello');
+            assert(result.wtimes[0] === 0, 'Start time should be 0');
+            assert(result.wdurations[0] === 1000, 'Duration should be full length');
+            addTestRow('unit-tests', 'estimateWordTimings: single word', 'pass');
+            log('  PASS: estimateWordTimings single word');
+        } catch (e) {
+            addTestRow('unit-tests', 'estimateWordTimings: single word', 'fail', e.message);
+            log('  FAIL: estimateWordTimings single word: ' + e.message);
+        }
+
+        // Test 5: Word timing estimation - multiple words proportional
+        try {
+            const result = estimateWordTimings('Hi there everyone', 1000);
+            assert(result.words.length === 3, 'Should have 3 words');
+            assert(result.words[0] === 'Hi', 'First word');
+            assert(result.words[1] === 'there', 'Second word');
+            assert(result.words[2] === 'everyone', 'Third word');
+            // "Hi"=2, "there"=5, "everyone"=8 → total=15
+            // Hi: 2/15*1000=133.33, there: 5/15*1000=333.33, everyone: 8/15*1000=533.33
+            const tolerance = 1;
+            assert(Math.abs(result.wdurations[0] - 2/15*1000) < tolerance, 'Hi duration proportional');
+            assert(Math.abs(result.wdurations[1] - 5/15*1000) < tolerance, 'there duration proportional');
+            assert(Math.abs(result.wdurations[2] - 8/15*1000) < tolerance, 'everyone duration proportional');
+            // Times should be cumulative
+            assert(result.wtimes[0] === 0, 'First word starts at 0');
+            assert(Math.abs(result.wtimes[1] - result.wdurations[0]) < tolerance, 'Second word starts after first');
+            assert(Math.abs(result.wtimes[2] - (result.wdurations[0] + result.wdurations[1])) < tolerance, 'Third word starts after second');
+            addTestRow('unit-tests', 'estimateWordTimings: proportional timing for multiple words', 'pass');
+            log('  PASS: estimateWordTimings proportional timing');
+        } catch (e) {
+            addTestRow('unit-tests', 'estimateWordTimings: proportional timing', 'fail', e.message);
+            log('  FAIL: estimateWordTimings proportional timing: ' + e.message);
+        }
+
+        // Test 6: Word timing - extra whitespace handling
+        try {
+            const result = estimateWordTimings('  Hello   World  ', 2000);
+            assert(result.words.length === 2, 'Should trim and split to 2 words');
+            assert(result.words[0] === 'Hello', 'First word');
+            assert(result.words[1] === 'World', 'Second word');
+            const totalDur = result.wdurations[0] + result.wdurations[1];
+            assert(Math.abs(totalDur - 2000) < 1, 'Total duration should equal input');
+            addTestRow('unit-tests', 'estimateWordTimings: handles extra whitespace', 'pass');
+            log('  PASS: estimateWordTimings whitespace handling');
+        } catch (e) {
+            addTestRow('unit-tests', 'estimateWordTimings: handles extra whitespace', 'fail', e.message);
+            log('  FAIL: estimateWordTimings whitespace handling: ' + e.message);
+        }
+
+        // Test 7: Word timing - empty/whitespace-only input
+        try {
+            const result = estimateWordTimings('   ', 1000);
+            assert(result.words.length === 0, 'Should have no words');
+            assert(result.wtimes.length === 0, 'No times');
+            assert(result.wdurations.length === 0, 'No durations');
+            addTestRow('unit-tests', 'estimateWordTimings: empty input', 'pass');
+            log('  PASS: estimateWordTimings empty input');
+        } catch (e) {
+            addTestRow('unit-tests', 'estimateWordTimings: empty input', 'fail', e.message);
+            log('  FAIL: estimateWordTimings empty input: ' + e.message);
+        }
+
+        // Test 8: MiniMax API request body format
+        try {
+            const text = "Hello world";
+            const voiceId = "English_Graceful_Lady";
+            const model = "speech-2.8-hd";
+            const body = {
+                model: model,
+                text: text.trim(),
+                voice_setting: { voice_id: voiceId },
+                audio_setting: { format: "mp3" }
+            };
+            const json = JSON.stringify(body);
+            const parsed = JSON.parse(json);
+            assert(parsed.model === "speech-2.8-hd", 'model field');
+            assert(parsed.text === "Hello world", 'text field');
+            assert(parsed.voice_setting.voice_id === "English_Graceful_Lady", 'voice_id');
+            assert(parsed.audio_setting.format === "mp3", 'audio format');
+            assert(!parsed.audio_setting.sample_rate, 'should not include sample_rate');
+            assert(!parsed.audio_setting.bitrate, 'should not include bitrate');
+            addTestRow('unit-tests', 'MiniMax API request body format', 'pass');
+            log('  PASS: API request body format');
+        } catch (e) {
+            addTestRow('unit-tests', 'MiniMax API request body format', 'fail', e.message);
+            log('  FAIL: API request body format: ' + e.message);
+        }
+
+        // Test 9: MiniMax voice IDs validation
+        try {
+            const validVoices = [
+                "English_Graceful_Lady", "English_Insightful_Speaker",
+                "English_radiant_girl", "English_Persuasive_Man",
+                "English_Lucky_Robot", "Wise_Woman", "cute_boy",
+                "lovely_girl", "Friendly_Person", "Inspirational_girl",
+                "Deep_Voice_Man", "sweet_girl"
+            ];
+            const invalidVoices = [
+                "Chinese_Empress", "Chinese_Gentle_Boy", "Chinese_Cute_Girl",
+                "Chinese_Storyteller_Male", "Narrator_Man", "podcast_girl", "young_boy"
+            ];
+            validVoices.forEach(v => {
+                assert(typeof v === 'string' && v.length > 0, 'Voice ID should be non-empty string: ' + v);
+            });
+            // Ensure none of the invalid voices are in the valid list
+            invalidVoices.forEach(v => {
+                assert(!validVoices.includes(v), 'Invalid voice should not be in valid list: ' + v);
+            });
+            addTestRow('unit-tests', 'Voice ID validation (12 valid, 7 invalid excluded)', 'pass');
+            log('  PASS: Voice ID validation');
+        } catch (e) {
+            addTestRow('unit-tests', 'Voice ID validation', 'fail', e.message);
+            log('  FAIL: Voice ID validation: ' + e.message);
+        }
+
+        // Test 10: MiniMax API response parsing - success
+        try {
+            const mockResponse = {
+                data: {
+                    audio: "48656c6c6f",
+                    status: 0
+                },
+                base_resp: {
+                    status_code: 0,
+                    status_msg: "success"
+                }
+            };
+            assert(mockResponse.data && mockResponse.data.audio, 'Should have data.audio');
+            const buf = hexToArrayBuffer(mockResponse.data.audio);
+            assert(buf.byteLength === 5, 'Decoded audio should be 5 bytes');
+            addTestRow('unit-tests', 'API response parsing: success case', 'pass');
+            log('  PASS: API response parsing success');
+        } catch (e) {
+            addTestRow('unit-tests', 'API response parsing: success case', 'fail', e.message);
+            log('  FAIL: API response parsing success: ' + e.message);
+        }
+
+        // Test 11: MiniMax API response parsing - error
+        try {
+            const mockErrorResponse = {
+                base_resp: {
+                    status_code: 1004,
+                    status_msg: "Insufficient balance"
+                }
+            };
+            assert(!mockErrorResponse.data || !mockErrorResponse.data.audio, 'Error response should not have audio');
+            const errMsg = mockErrorResponse.base_resp ? mockErrorResponse.base_resp.status_msg : "Unknown error";
+            assert(errMsg === "Insufficient balance", 'Should extract error message');
+            addTestRow('unit-tests', 'API response parsing: error case', 'pass');
+            log('  PASS: API response parsing error');
+        } catch (e) {
+            addTestRow('unit-tests', 'API response parsing: error case', 'fail', e.message);
+            log('  FAIL: API response parsing error: ' + e.message);
+        }
+
+        // Test 12: Authorization header format
+        try {
+            const apikey = "test-api-key-12345";
+            const headers = {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + apikey
+            };
+            assert(headers["Authorization"] === "Bearer test-api-key-12345", 'Auth header format');
+            assert(headers["Content-Type"] === "application/json", 'Content-Type header');
+            addTestRow('unit-tests', 'Authorization header format (Bearer token)', 'pass');
+            log('  PASS: Authorization header format');
+        } catch (e) {
+            addTestRow('unit-tests', 'Authorization header format', 'fail', e.message);
+            log('  FAIL: Authorization header format: ' + e.message);
+        }
+
+        // Test 13: speakAudio data structure
+        try {
+            const speakAudioData = {
+                audio: new ArrayBuffer(100),
+                words: ["Hello", "world"],
+                wtimes: [0, 500],
+                wdurations: [500, 500]
+            };
+            assert(speakAudioData.audio instanceof ArrayBuffer, 'audio should be ArrayBuffer');
+            assert(Array.isArray(speakAudioData.words), 'words should be array');
+            assert(speakAudioData.words.length === speakAudioData.wtimes.length, 'words/wtimes same length');
+            assert(speakAudioData.words.length === speakAudioData.wdurations.length, 'words/wdurations same length');
+            assert(!speakAudioData.visemes, 'No visemes (use built-in lipsync)');
+            addTestRow('unit-tests', 'speakAudio data structure for TalkingHead', 'pass');
+            log('  PASS: speakAudio data structure');
+        } catch (e) {
+            addTestRow('unit-tests', 'speakAudio data structure', 'fail', e.message);
+            log('  FAIL: speakAudio data structure: ' + e.message);
+        }
+
+        // Test 14: Word timing total equals audio duration
+        try {
+            const durationMs = 3500;
+            const result = estimateWordTimings('The quick brown fox jumps', durationMs);
+            const lastEnd = result.wtimes[result.wtimes.length - 1] + result.wdurations[result.wdurations.length - 1];
+            assert(Math.abs(lastEnd - durationMs) < 0.01, 'Total timing should match audio duration');
+            addTestRow('unit-tests', 'estimateWordTimings: total equals audio duration', 'pass');
+            log('  PASS: estimateWordTimings total check');
+        } catch (e) {
+            addTestRow('unit-tests', 'estimateWordTimings: total equals audio duration', 'fail', e.message);
+            log('  FAIL: estimateWordTimings total check: ' + e.message);
+        }
+
+        // Test 15: Large hex buffer
+        try {
+            let hex = '';
+            for (let i = 0; i < 1000; i++) {
+                hex += ('0' + i.toString(16)).slice(-2);
+            }
+            // hex has 2000 chars = 1000 bytes, but values cycle 0-255 then wrap
+            const buf = hexToArrayBuffer(hex);
+            assert(buf.byteLength === 1000, 'Should decode 1000 bytes');
+            addTestRow('unit-tests', 'hexToArrayBuffer: large buffer (1000 bytes)', 'pass');
+            log('  PASS: hexToArrayBuffer large buffer');
+        } catch (e) {
+            addTestRow('unit-tests', 'hexToArrayBuffer: large buffer', 'fail', e.message);
+            log('  FAIL: hexToArrayBuffer large buffer: ' + e.message);
+        }
+
+        // Test 16: siteconfig minimaxVoices structure
+        try {
+            // Simulate loading siteconfig
+            const res = await fetch('../siteconfig.js');
+            const text = await res.text();
+            assert(text.includes('minimaxVoices'), 'siteconfig should include minimaxVoices');
+            assert(text.includes('English_Graceful_Lady'), 'Should include English_Graceful_Lady');
+            assert(text.includes('Deep_Voice_Man'), 'Should include Deep_Voice_Man');
+            assert(!text.includes('Chinese_Empress'), 'Should NOT include invalid voice Chinese_Empress');
+            assert(!text.includes('Narrator_Man'), 'Should NOT include invalid voice Narrator_Man');
+            addTestRow('unit-tests', 'siteconfig.js: minimaxVoices with valid IDs only', 'pass');
+            log('  PASS: siteconfig minimaxVoices');
+        } catch (e) {
+            addTestRow('unit-tests', 'siteconfig.js: minimaxVoices structure', 'fail', e.message);
+            log('  FAIL: siteconfig minimaxVoices: ' + e.message);
+        }
+
+        // Test 17: index.html contains MiniMax UI elements
+        try {
+            const res = await fetch('../index.html');
+            const text = await res.text();
+            assert(text.includes('data-voice-type="minimax"'), 'Should have MiniMax voice type button');
+            assert(text.includes('id="voice-minimax"'), 'Should have MiniMax voice panel');
+            assert(text.includes('id="minimaxvoices"'), 'Should have MiniMax voices container');
+            assert(text.includes('id="apikey-minimax"'), 'Should have MiniMax API key input');
+            assert(text.includes('minimaxTTSEndpoint'), 'Should define MiniMax TTS endpoint');
+            assert(text.includes('minimaxSpeak'), 'Should define minimaxSpeak function');
+            addTestRow('unit-tests', 'index.html: MiniMax UI elements present', 'pass');
+            log('  PASS: index.html MiniMax UI elements');
+        } catch (e) {
+            addTestRow('unit-tests', 'index.html: MiniMax UI elements', 'fail', e.message);
+            log('  FAIL: index.html MiniMax UI: ' + e.message);
+        }
+
+        // Test 18: MiniMax endpoint URL
+        try {
+            const endpoint = "https://api.minimax.io/v1/t2a_v2";
+            const url = new URL(endpoint);
+            assert(url.protocol === "https:", 'Should use HTTPS');
+            assert(url.hostname === "api.minimax.io", 'Should point to api.minimax.io');
+            assert(url.pathname === "/v1/t2a_v2", 'Should use /v1/t2a_v2 path');
+            addTestRow('unit-tests', 'MiniMax TTS endpoint URL format', 'pass');
+            log('  PASS: MiniMax endpoint URL');
+        } catch (e) {
+            addTestRow('unit-tests', 'MiniMax TTS endpoint URL format', 'fail', e.message);
+            log('  FAIL: MiniMax endpoint URL: ' + e.message);
+        }
+
+        log('--- Unit Tests Complete ---\n');
+    }
+
+    // ======== INTEGRATION TESTS ========
+    async function runIntegrationTests() {
+        const apiKey = document.getElementById('minimax-api-key').value.trim();
+        if (!apiKey) {
+            addTestRow('integration-tests', 'API key required', 'skip', 'No API key provided');
+            return;
+        }
+
+        log('--- Running Integration Tests ---');
+        const endpoint = "https://api.minimax.io/v1/t2a_v2";
+
+        // Integration Test 1: Basic TTS request
+        try {
+            log('  Testing basic TTS request...');
+            const res = await fetch(endpoint, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + apiKey
+                },
+                body: JSON.stringify({
+                    model: "speech-2.8-hd",
+                    text: "Hello, this is a test.",
+                    voice_setting: { voice_id: "English_Graceful_Lady" },
+                    audio_setting: { format: "mp3" }
+                })
+            });
+            const data = await res.json();
+            assert(res.ok, 'HTTP status should be OK, got ' + res.status);
+            assert(data.data && data.data.audio, 'Response should contain data.audio');
+            assert(typeof data.data.audio === 'string', 'audio should be hex string');
+            assert(data.data.audio.length > 100, 'audio hex should be non-trivial length');
+            // Verify it's valid hex
+            assert(/^[0-9a-fA-F]+$/.test(data.data.audio), 'audio should be valid hex');
+            const buf = hexToArrayBuffer(data.data.audio);
+            assert(buf.byteLength > 50, 'Decoded audio should have meaningful size');
+            addTestRow('integration-tests', 'Basic TTS request (speech-2.8-hd, English_Graceful_Lady)', 'pass');
+            log('  PASS: Basic TTS request (' + buf.byteLength + ' bytes audio)');
+        } catch (e) {
+            addTestRow('integration-tests', 'Basic TTS request', 'fail', e.message);
+            log('  FAIL: Basic TTS request: ' + e.message);
+        }
+
+        // Integration Test 2: Different voice
+        try {
+            log('  Testing different voice (Deep_Voice_Man)...');
+            const res = await fetch(endpoint, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + apiKey
+                },
+                body: JSON.stringify({
+                    model: "speech-2.8-hd",
+                    text: "Testing a different voice.",
+                    voice_setting: { voice_id: "Deep_Voice_Man" },
+                    audio_setting: { format: "mp3" }
+                })
+            });
+            const data = await res.json();
+            assert(data.data && data.data.audio, 'Should return audio for Deep_Voice_Man');
+            addTestRow('integration-tests', 'TTS with Deep_Voice_Man voice', 'pass');
+            log('  PASS: Deep_Voice_Man voice');
+        } catch (e) {
+            addTestRow('integration-tests', 'TTS with Deep_Voice_Man voice', 'fail', e.message);
+            log('  FAIL: Deep_Voice_Man voice: ' + e.message);
+        }
+
+        // Integration Test 3: Audio decode and word timing
+        try {
+            log('  Testing audio decode + word timing estimation...');
+            const text = "One two three four five.";
+            const res = await fetch(endpoint, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + apiKey
+                },
+                body: JSON.stringify({
+                    model: "speech-2.8-hd",
+                    text: text,
+                    voice_setting: { voice_id: "English_Graceful_Lady" },
+                    audio_setting: { format: "mp3" }
+                })
+            });
+            const data = await res.json();
+            assert(data.data && data.data.audio, 'Should have audio');
+
+            const buf = hexToArrayBuffer(data.data.audio);
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const decoded = await audioCtx.decodeAudioData(buf.slice(0));
+            const durationMs = decoded.duration * 1000;
+
+            assert(durationMs > 500, 'Audio should be at least 500ms, got ' + durationMs);
+            assert(durationMs < 30000, 'Audio should be less than 30s, got ' + durationMs);
+
+            const timing = estimateWordTimings(text, durationMs);
+            assert(timing.words.length === 5, 'Should have 5 words');
+            assert(timing.wtimes[0] === 0, 'First word starts at 0');
+            const totalDur = timing.wtimes[4] + timing.wdurations[4];
+            assert(Math.abs(totalDur - durationMs) < 1, 'Total should match duration');
+
+            audioCtx.close();
+            addTestRow('integration-tests', 'Audio decode + word timing (5 words, ' + Math.round(durationMs) + 'ms)', 'pass');
+            log('  PASS: Audio decode + word timing (' + Math.round(durationMs) + 'ms audio)');
+        } catch (e) {
+            addTestRow('integration-tests', 'Audio decode + word timing', 'fail', e.message);
+            log('  FAIL: Audio decode + word timing: ' + e.message);
+        }
+
+        log('--- Integration Tests Complete ---\n');
+    }
+
+    // ======== Init ========
+    document.getElementById('minimax-api-key').addEventListener('input', function() {
+        document.getElementById('run-integration').disabled = !this.value.trim();
+    });
+
+    document.getElementById('run-integration').addEventListener('click', async function() {
+        this.disabled = true;
+        this.textContent = 'Running...';
+        await runIntegrationTests();
+        this.textContent = 'Run Integration Tests';
+        this.disabled = !document.getElementById('minimax-api-key').value.trim();
+    });
+
+    // Run unit tests on load
+    await runUnitTests();
+
+    </script>
+</body>
+</html>

@@ -184,6 +184,22 @@ export const site = {
     'Church': { url: './audio/ir-church.m4a', fi: 'Kirkko' }
   },
 
+  // MiniMax voices
+  minimaxVoices: {
+    "Graceful Lady": { id: "English_Graceful_Lady" },
+    "Insightful Speaker": { id: "English_Insightful_Speaker" },
+    "Radiant Girl": { id: "English_radiant_girl" },
+    "Persuasive Man": { id: "English_Persuasive_Man" },
+    "Lucky Robot": { id: "English_Lucky_Robot" },
+    "Wise Woman": { id: "Wise_Woman" },
+    "Cute Boy": { id: "cute_boy" },
+    "Lovely Girl": { id: "lovely_girl" },
+    "Friendly Person": { id: "Friendly_Person" },
+    "Inspirational Girl": { id: "Inspirational_girl" },
+    "Deep Voice Man": { id: "Deep_Voice_Man" },
+    "Sweet Girl": { id: "sweet_girl" }
+  },
+
   // Background ambient sounds/music
   music: {
     'Murmur': { url: './audio/murmur.mp3', fi: 'Puheensorina'}

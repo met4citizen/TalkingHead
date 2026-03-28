@@ -71,6 +71,11 @@ can output viseme IDs or blend shape data directly. For example, by using the
 [Microsoft Azure Speech SDK](https://github.com/microsoft/cognitive-services-speech-sdk-js),
 you can extend TalkingHead's lip-sync support to 100+ languages.
 
+The test app also supports [MiniMax TTS](https://www.minimax.io), a cloud-based
+text-to-speech service with multiple voice presets. MiniMax TTS uses the built-in
+lip-sync modules for viseme generation. To use it, select "MiniMax" as the
+speech provider in the test app and enter your MiniMax API key.
+
 The class uses [ThreeJS](https://github.com/mrdoob/three.js/) / WebGL for 3D
 rendering.
 
@@ -412,7 +417,8 @@ It depends on your use case and budget. If the built-in lip-sync support
 is sufficient for your needs, I would recommend Google TTS, because
 it gives you up to 4 million characters for free each month. If your
 app needs to support multiple languages, I would consider Microsoft
-Speech SDK.
+Speech SDK. [MiniMax TTS](https://www.minimax.io) is another option
+with high-quality neural voices and a simple REST API.
 
 **I would like to have lip-sync support for language X.**
 
@@ -616,6 +622,11 @@ RewriteMap jwtverify "prg:/etc/httpd/jwtverify" apache:apache
   RewriteRule /elevenlabs/[^/]+/(.+) "wss://api.elevenlabs.io/$1" [P]
   RequestHeader set "xi-api-key" "<add-your-elevenlabs-api-key-here>"
 </LocationMatch>
+
+# MiniMax TTS API
+# Note: MiniMax TTS uses a direct API key (entered in the test app UI)
+# and does not require a reverse proxy. The API endpoint is:
+# https://api.minimax.io/v1/t2a_v2
 ```
 
 ---
