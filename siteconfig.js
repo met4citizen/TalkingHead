@@ -95,6 +95,71 @@ export const site = {
         eyeBlinkLeft: 0.05,
         eyeBlinkRight: 0.05
       }
+    },
+
+    'VRoid': {
+      url: './avatars/vroid.glb',
+      body: 'F',
+      avatarMood: 'neutral',
+      baseline: {
+        headRotateX: -0.1,
+        eyeBlinkLeft: 0.05,
+        eyeBlinkRight: 0.05
+      },
+      modelDynamicBones: [
+        {
+          "bone":"J_Sec_L_Bust1",
+          "type":"point",
+          "stiffness":400,
+          "damping":10,
+          "deltaLocal":[0,0.01,0],
+          "deltaWorld":[0,-0.02,0],
+          "limits":[[-0.01,0.01],[-0.01,0.01],[-0.01,0.01],[-0.01,0.01]]
+        },
+        {
+          "bone":"J_Sec_R_Bust1",
+          "type":"point",
+          "stiffness":400,
+          "damping":10,
+          "deltaLocal":[0,0.01,0],
+          "deltaWorld":[0,-0.02,0],
+          "limits":[[-0.01,0.01],[-0.01,0.01],[-0.01,0.01],[-0.01,0.01]]
+        },
+        {"bone":"J_Sec_Hair2_01","type":"mix2","stiffness":100,"damping":4,"limits":[null,null,[null,0.01],null]},
+        {"bone":"J_Sec_Hair3_01","type":"mix2","stiffness":150,"damping":4,"limits":[null,null,[null,0.01],null]},
+        {"bone":"J_Sec_Hair2_02","type":"mix2","stiffness":100,"damping":4,"limits":[null,null,[null,0.01],null]},
+        {"bone":"J_Sec_Hair3_02","type":"mix2","stiffness":150,"damping":4,"limits":[null,null,[null,0.01],null]},
+        {"bone":"J_Sec_Hair2_03","type":"mix2","stiffness":100,"damping":4,"limits":[null,null,[null,0.01],null]},
+        {"bone":"J_Sec_Hair3_03","type":"mix2","stiffness":150,"damping":4,"limits":[null,null,[null,0.01],null]},
+        {"bone":"J_Sec_Hair2_04","type":"mix2","stiffness":100,"damping":4,"limits":[null,null,[null,0.01],null]},
+        {"bone":"J_Sec_Hair3_04","type":"mix2","stiffness":150,"damping":4,"limits":[null,null,[null,0.01],null]},
+        {"bone":"J_Sec_Hair2_05","type":"mix2","stiffness":100,"damping":4,"limits":[null,null,[null,0.01],null]},
+        {"bone":"J_Sec_Hair3_05","type":"mix2","stiffness":150,"damping":4,"limits":[null,null,[null,0.01],null]},
+        {"bone":"J_Sec_Hair2_06","type":"mix2","stiffness":100,"damping":4},
+        {"bone":"J_Sec_Hair3_06","type":"mix2","stiffness":150,"damping":4},
+        {"bone":"J_Sec_Hair3_06_end","type":"mix2","stiffness":200,"damping":4},
+        {"bone":"J_Sec_Hair2_07","type":"mix2","stiffness":100,"damping":4},
+        {"bone":"J_Sec_Hair3_07","type":"mix2","stiffness":150,"damping":4},
+        {"bone":"J_Sec_Hair3_07_end","type":"mix2","stiffness":200,"damping":4},
+        {"bone":"J_Sec_Hair2_08","type":"mix2","stiffness":100,"damping":4},
+        {"bone":"J_Sec_Hair3_08","type":"mix2","stiffness":150,"damping":4},
+        {"bone":"J_Sec_Hair4_08","type":"mix2","stiffness":150,"damping":4},
+        {"bone":"J_Sec_Hair4_08_end","type":"mix2","stiffness":200,"damping":4},
+        {"bone":"J_Sec_Hair2_09","type":"mix2","stiffness":100,"damping":4},
+        {"bone":"J_Sec_Hair3_09","type":"mix2","stiffness":150,"damping":4},
+        {"bone":"J_Sec_Hair4_09","type":"mix2","stiffness":150,"damping":4},
+        {"bone":"J_Sec_Hair4_09_end","type":"mix2","stiffness":200,"damping":4},
+        {"bone":"J_Sec_Hair2_10","type":"mix2","stiffness":100,"damping":4},
+        {"bone":"J_Sec_Hair3_10","type":"mix2","stiffness":150,"damping":4},
+        {"bone":"J_Sec_Hair3_10_end","type":"mix2","stiffness":200,"damping":4},
+        {"bone":"J_Sec_Hair2_11","type":"mix2","stiffness":100,"damping":4},
+        {"bone":"J_Sec_Hair3_11","type":"mix2","stiffness":150,"damping":4},
+        {"bone":"J_Sec_Hair3_11_end","type":"mix2","stiffness":200,"damping":4},
+        {"bone":"J_Sec_Hair2_12","type":"mix2","stiffness":100,"damping":4,"pivot":true},
+        {"bone":"J_Sec_Hair3_12","type":"mix2","stiffness":150,"damping":4},
+        {"bone":"J_Sec_Hair2_13","type":"mix2","stiffness":100,"damping":4,"pivot":true},
+        {"bone":"J_Sec_Hair3_13","type":"mix2","stiffness":150,"damping":4,},
+      ]
     }
 
   },

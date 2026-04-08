@@ -1,9 +1,5 @@
 # Talking Head (3D)
 
-> [!IMPORTANT]
-> [Netflix acquires gaming avatar maker Ready Player Me](https://techcrunch.com/2025/12/19/netflix-acquires-gaming-avatar-maker-ready-player-me/). Following the acquisition, Ready Player Me will be winding down its services on **January 31, 2026**. This includes both of its online avatar creation tools, Ready Player Me and PlayerZero.
-
----
 
 ### Demo Videos
 
@@ -296,9 +292,9 @@ Method | Description
 `playBackgroundAudio(url)` | Play background audio such as ambient sounds/music in a loop.
 `stopBackgroundAudio()` | Stop playing the background audio.
 `setMixerGain(speech, [background=null], [fadeSecs=0])` | The amount of gain for speech and background audio (see Web Audio API / GainNode for more information). Value `null` means no change. Optional `fadeSecs` parameter sets exponential fade in/out time in seconds.
-`playAnimation(url, [onprogress=null], [dur=10], [ndx=0], [scale=0.01])` | Play Mixamo animation file for `dur` seconds, but full rounds and at least once. If the FBX file includes several animations, the parameter `ndx` specifies the index. Since Mixamo rigs have a scale 100 and RPM a scale 1, the `scale` factor can be used to scale the positions.
+`playAnimation(url, [onprogress=null], [dur=10], [ndx=0], [scale=0.01])` | Play Mixamo animation file for `dur` seconds, but full rounds and at least once. If the FBX file includes several animations, the parameter `ndx` specifies the index. Since Mixamo rigs have a scale 100 and TalkingHead a scale 1, the `scale` factor can be used to scale the positions.
 `stopAnimation()` | Stop the current animation started by `playAnimation`.
-`playPose(url, [onprogress=null], [dur=5], [ndx=0], [scale=0.01])` | Play the initial pose of a Mixamo animation file for `dur` seconds. If the FBX file includes several animations, the parameter `ndx` specifies the index. Since Mixamo rigs have a scale 100 and RPM a scale 1, the `scale` factor can be used to scale the positions.
+`playPose(url, [onprogress=null], [dur=5], [ndx=0], [scale=0.01])` | Play the initial pose of a Mixamo animation file for `dur` seconds. If the FBX file includes several animations, the parameter `ndx` specifies the index. Since Mixamo rigs have a scale 100 and TalkingHead a scale 1, the `scale` factor can be used to scale the positions.
 `stopPose()` | Stop the current pose started by `playPose`.
 `playGesture(name, [dur=3], [mirror=false], [ms=1000])` | Play a named hand gesture and/or animated emoji for `dur` seconds with the `ms` transition time. The available hand gestures are `handup`, `index`, `ok`, `thumbup`, `thumbdown`, `side`, `shrug`. By default, hand gestures are done with the left hand. If you want the right handed version, set `mirror` to true. You can also use `playGesture` to play emojis. See Appendix D for more details.
 `stopGesture([ms=1000])` | Stop the gesture with `ms` transition time.
@@ -379,6 +375,7 @@ Licenses, attributions and notes related to the `index.html` web app assets:
 - Example avatar "mpfb.glb" was created using [Blender](https://www.blender.org/) and [MPFB](https://static.makehumancommunity.org/mpfb.html) Blender extension. The avatar is licensed under [CC0](https://creativecommons.org/public-domain/cc0/).
 - Example avatar "avatar.glb" was created at [Avaturn](https://avaturn.me) for non-commercial use.
 - Example avatar "avatarsdk.glb" was created at [AvatarSDK](https://avatarsdk.com) for non-commercial use.
+- Example avatar "vroid.glb" was created using [VRoid Studio](https://vroid.com/en/studio) for non-commercial use.
 - Example animation `walking.fbx` and the pose `dance.fbx` are from Mixamo, a subsidiary of Adobe Inc. [Mixamo](https://www.mixamo.com) service is free and its animations/poses (>2000) can be used royalty free for personal, commercial, and non-profit projects. Raw animation files can't be distributed outside the project team and can't be used to train ML models.
 - Background view examples are from [Virtual Backgrounds](https://virtualbackgrounds.site)
 - Impulse response (IR) files for reverb effects:
@@ -513,6 +510,7 @@ Service | Description
 ---|---
 <img src="images/mpfb.jpg" width="200"/> | [MPFB](https://static.makehumancommunity.org/mpfb.html) a free and open source human character extension for Blender. It uses 3D assets from the MakeHuman ecosystem (licensed CC0/CC-BY) and provides parametric control over character's age, gender, body shape, etc. Read instructions for how to install and use [MPFB with TalkingHead](https://github.com/met4citizen/TalkingHead/blob/main/blender/MPFB/MPFB.md).
 <img src="images/avaturn.jpg" width="200"/> | [Avaturn](https://avaturn.me) is a web-based avatar creator focused on generating realistic 3D avatars from photos. It is free for non-commercial use. For commercial use, you must notify the company, and some additional terms apply. Avaturn Type-2 (T2) avatars are fully TalkingHead-compatible. For a small shoulder/neck bone adjustment, see the [example config](https://github.com/met4citizen/TalkingHead/blob/main/siteconfig.js).
+<img src="images/vroidstudio.jpg" width="200"/> | [VRoid Studio](https://vroid.com/en/studio) is a free tool for creating anime-style 3D characters. The licensing model is not CC0, but very permissive. Read instructions on how to use Blender to convert [VRoid/VRM format to TalkingHead compatible avatars](https://github.com/met4citizen/TalkingHead/blob/main/blender/VRoid/VROID.md).
 <img src="images/avatarsdk.jpg" width="200"/> | [Avatar SDK / MetaPerson Creator](https://avatarsdk.com) is a commercial service for generating personalized 3D avatars from photos. Blender scripts: [build-avatarsdk-eyes.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/build-avatarsdk-eyes.py) [rename-avatarsdk-shapekeys.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/rename-avatarsdk-shapekeys.py) + [example config](https://github.com/met4citizen/TalkingHead/blob/main/siteconfig.js)
 <img src="images/rocketbox.jpg" width="200"/> $$\color{transparent}{\rule{200px}{0px}}$$ | [Microsoft RocketBox](https://github.com/microsoft/Microsoft-Rocketbox) provides a library of ready-made 3D human characters. The models are MIT Licensed and include ARKit+Oculus, but they need to be re-rigged, for example, in Mixamo. Blender script (with instructions): [rename-rocketbox-shapekeys.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/rename-rocketbox-shapekeys.py)
 
@@ -871,8 +869,8 @@ head.speakAudio({
 ```
 
 See a full code example using Azure blendshape
-output [here](./examples/azure-blendshapes.html). - **Note**: Azure's output
-relies solely on ARKit blendshapes and is not optimized for RPM avatars.
+output [here](./examples/azure-blendshapes.html). **Note**: Azure's output
+relies solely on ARKit blendshapes and is not optimized for TalkingHead avatars.
 As a result, the quality of lip-sync may be less natural compared
 to using Oculus visemes and the TalkingHead's internal lip-sync language
 module. For example, the mouth may open too widely, or the lips may fail to touch
