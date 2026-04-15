@@ -1,5 +1,28 @@
 # Talking Head (3D)
 
+[![License](https://img.shields.io/github/license/met4citizen/TalkingHead)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/met4citizen/TalkingHead)](https://github.com/met4citizen/TalkingHead/releases)
+[![Stars](https://img.shields.io/github/stars/met4citizen/TalkingHead?style=social)](https://github.com/met4citizen/TalkingHead)
+
+### Table of Contents
+
+- [Demo Videos](#demo-videos)
+- [Use Case Examples](#use-case-examples)
+- [Introduction](#introduction)
+- [Add-on Modules](#add-on-modules)
+- [TalkingHead Class](#talkinghead-class)
+- [Test App](#the-indexhtml-test-app)
+- [FAQ](#faq)
+- [References](#references)
+- [Appendix A: Create Your Own 3D Avatar](#appendix-a-create-your-own-3d-avatar)
+- [Appendix B: JWT Single Sign-On](#appendix-b-create-api-proxies-with-json-web-token-jwt-single-sign-on-sso)
+- [Appendix C: Custom Lip-sync Module](#appendix-c-create-a-new-lip-sync-module)
+- [Appendix D: Custom Poses & Gestures](#appendix-d-adding-custom-poses-moods-gestures-and-emojis-advanced)
+- [Appendix E: Dynamic Bones](#appendix-e-dynamic-bones-advanced)
+- [Appendix F: Blendshape Control](#appendix-f-controlling-blendshapes-directly-advanced)
+- [Appendix G: Streaming Audio & Lip-sync](#appendix-g-streaming-audio-and-lip-sync-advanced)
+- [Appendix H: Avatar-Only Mode](#appendix-h-avatar-only-mode-advanced)
+
 
 ### Demo Videos
 
@@ -8,10 +31,10 @@ the TalkingHead test web app without any post-processing.*
 
 Video | Description
 ---|---
-[<img src="images/dynamicbones.jpg" width="200"/>](https://youtu.be/YUbDIWkskuw)<br>[<img src="images/dynamicbones2.jpg" width="200"/>](https://youtu.be/4Y9NFnENH5s) | Having a good hair day! – A two-part introduction to the TalkingHead's dynamic bones feature 🦴🦴 and built-in physics engine. Using custom models with rigged hair and two different hairstyles. See Appendix E for more details.
+[<img src="images/dynamicbones.jpg" width="200"/>](https://youtu.be/YUbDIWkskuw)<br>[<img src="images/dynamicbones2.jpg" width="200"/>](https://youtu.be/4Y9NFnENH5s) | Having a good hair day! â A two-part introduction to the TalkingHead's dynamic bones feature ð¦´ð¦´ and built-in physics engine. Using custom models with rigged hair and two different hairstyles. See Appendix E for more details.
 [<img src="images/screenshot4.jpg" width="200"/>](https://youtu.be/OA6LBZjkzJI) | I chat with Jenny and Harri. The close-up view allows you to evaluate the accuracy of lip-sync in both English and Finnish. Using GPT-3.5 and Microsoft text-to-speech.
 [<img src="images/screenshot5.jpg" width="200"/>](https://youtu.be/fJrYGaGCAGo) | A short demo of how AI can control the avatar's movements. Using OpenAI's function calling and Google TTS with the TalkingHead's built-in viseme generation.
-[<img src="images/screenshot6.jpg" width="200"/>](https://youtu.be/6XRxALY1Iwg) | Michael lip-syncs to two MP3 audio tracks using OpenAI's Whisper and TalkingHead's `speakAudio` method. He kicks things off with some casual talk, but then goes all out by trying to tackle an old Meat Loaf classic. 🤘 Keep rockin', Michael! 🎤😂
+[<img src="images/screenshot6.jpg" width="200"/>](https://youtu.be/6XRxALY1Iwg) | Michael lip-syncs to two MP3 audio tracks using OpenAI's Whisper and TalkingHead's `speakAudio` method. He kicks things off with some casual talk, but then goes all out by trying to tackle an old Meat Loaf classic. ð¤ Keep rockin', Michael! ð¤ð
 [<img src="images/screenshot3.jpg" width="200"/>](https://youtu.be/SfnqRnWKT40) $$\color{transparent}{\rule{200px}{0px}}$$ | Julia and I showcase some of the features of the TalkingHead class and the test app including the settings, some poses and animations.
 
 ---
@@ -22,14 +45,14 @@ Video | Description
 
 Video/App | Use Case
 ---|---
-[<img src="images/dialoglab.jpg" width="200"/>](https://www.youtube.com/watch?v=U2Ag_Ktobzw) | **Human-AI group conversations**. Researchers from UVA, Google, Northeastern, Google DeepMind, and Google Research developed [DialogLab](https://github.com/ecruhue/DialogLab), a toolkit to author, simulate and test human-AI group conversations. 🤖🤖🤖
+[<img src="images/dialoglab.jpg" width="200"/>](https://www.youtube.com/watch?v=U2Ag_Ktobzw) | **Human-AI group conversations**. Researchers from UVA, Google, Northeastern, Google DeepMind, and Google Research developed [DialogLab](https://github.com/ecruhue/DialogLab), a toolkit to author, simulate and test human-AI group conversations. ð¤ð¤ð¤
 [<img src="images/openai.jpg" width="200"/>](https://met4citizen.github.io/HeadAudio/openai.html) | **Low-latency AI speech over WebRTC**. Speech-to-speech in realtime over WebRTC using OpenAI Realtime API. Learn more about the audio-driven lip-sync module at [HeadAudio](https://github.com/met4citizen/HeadAudio).<br>**Note**: Realtime speech-to-speech usage is much more expensive than standard AI text tokens, so please check OpenAI pricing for `gpt-realtime-mini` before use.
-[<img src="images/olivia.jpg" width="200"/>](https://youtu.be/9GeXwjuslnQ) | **Video conferencing**. A video conferencing solution with real-time transcription, contextual AI responses, and voice lip-sync. The app and demo, featuring Olivia, by [namnm](https://github.com/namnm) 👍
-[<img src="images/edgespeaker.png" width="200"/>](https://www.edgespeaker.com/) | **Fully in-browser AI you can talk to**. Uses TalkingHead, [HeadTTS (with Kokoro)](https://github.com/met4citizen/HeadTTS), [whisper-web](https://github.com/xenova/whisper-web), and [WebLLM (with Llama 3.2)](https://github.com/mlc-ai/web-llm). No APIs, no accounts. For best performance and WebGPU support, use a desktop version of Chrome or Edge: 👉 [EdgeSpeaker.com](https://www.edgespeaker.com/)
+[<img src="images/olivia.jpg" width="200"/>](https://youtu.be/9GeXwjuslnQ) | **Video conferencing**. A video conferencing solution with real-time transcription, contextual AI responses, and voice lip-sync. The app and demo, featuring Olivia, by [namnm](https://github.com/namnm) ð
+[<img src="images/edgespeaker.png" width="200"/>](https://www.edgespeaker.com/) | **Fully in-browser AI you can talk to**. Uses TalkingHead, [HeadTTS (with Kokoro)](https://github.com/met4citizen/HeadTTS), [whisper-web](https://github.com/xenova/whisper-web), and [WebLLM (with Llama 3.2)](https://github.com/mlc-ai/web-llm). No APIs, no accounts. For best performance and WebGPU support, use a desktop version of Chrome or Edge: ð [EdgeSpeaker.com](https://www.edgespeaker.com/)
 [<img src="images/geminicompetition.jpg" width="200"/>](https://www.youtube.com/watch?v=Dl2o9kRvbLQ) | **Recycling Advisor 3D**. Snap a photo and get local recycling advice from a talking avatar. My entry for the [Gemini API Developer Competition 2024](https://ai.google.dev/competition/projects/recycling-advisor-3d).
-[<img src="images/evertrail.jpg" width="200"/>](https://www.youtube.com/watch?v=OG1vwOit_Yk) | **Live Twitch adventure**. [Evertrail](https://evertrail.app) is an infinite, real-time generated world where all of your choices shape the outcome. Video clip and the app by [JPhilipp](https://github.com/JPhilipp) 👏👏<br>**NEWS**: Featured at the AI Film Awards during the 2025 Cannes Film Festival!
+[<img src="images/evertrail.jpg" width="200"/>](https://www.youtube.com/watch?v=OG1vwOit_Yk) | **Live Twitch adventure**. [Evertrail](https://evertrail.app) is an infinite, real-time generated world where all of your choices shape the outcome. Video clip and the app by [JPhilipp](https://github.com/JPhilipp) ðð<br>**NEWS**: Featured at the AI Film Awards during the 2025 Cannes Film Festival!
 [<img src="images/cliquevm.jpg" width="200"/>](https://www.youtube.com/watch?v=vNJ9Ifv-as8) | **Quantum physics using a blackboard**. David introduces us to the CHSH game and explores the mystery of quantum entanglement. For more information about the research project, see [CliqueVM](https://github.com/met4citizen/CliqueVM).
-[<img src="images/datingprofile.jpg" width="200"/>](https://www.youtube.com/watch?v=Hv-ItCZ0qc4) $$\color{transparent}{\rule{200px}{0px}}$$ | **Interactive Dating Profiles**. ❤️ Researchers from the MIT Media Lab and Harvard used the TalkingHead class and data-driven AI to create digital twins that potential dating partners could interact with. Their paper (Baradari et al., 2025) was presented at [CHI 2025](https://programs.sigchi.org/chi/2025/program/content/194739) in Japan.
+[<img src="images/datingprofile.jpg" width="200"/>](https://www.youtube.com/watch?v=Hv-ItCZ0qc4) $$\color{transparent}{\rule{200px}{0px}}$$ | **Interactive Dating Profiles**. â¤ï¸ Researchers from the MIT Media Lab and Harvard used the TalkingHead class and data-driven AI to create digital twins that potential dating partners could interact with. Their paper (Baradari et al., 2025) was presented at [CHI 2025](https://programs.sigchi.org/chi/2025/program/content/194739) in Japan.
 
 *More projects, sites and research using TalkingHead:*
 
@@ -37,7 +60,7 @@ Link | Description
 ---|---
 [Cancer Clinical Trial Participation](https://dl.acm.org/doi/full/10.1145/3717511.3747063) | Researchers at the University of Florida explored how multiple virtual agents can help overcome barriers to joining cancer clinical trials.
 [TalkMateAI](https://github.com/kiranbaby14/TalkMateAI) | Real-time Voice-Controlled 3D Avatar with Multimodal AI.
-[Riverts](https://github.com/sensein/riverst) | A platform for building, running, and analyzing interactive user-avatar conversations.
+[Riverts](https://github.com/sensein/riverst) |Â A platform for building, running, and analyzing interactive user-avatar conversations.
 [Interactive Avatar](https://interactiveavatar.co.uk) | Interactive avatars as a service - an easy way to add an AI-driven avatar on your website.
 [Alter egos alter engagement](https://www.frontiersin.org/journals/digital-health/articles/10.3389/fdgth.2025.1655860/full) | Researchers at the University of Florida used TalkingHead to explore how embodied AI chatbots can support mental well-being.
 
@@ -76,7 +99,7 @@ rendering.
 
 Modules compatible with the Talking Head (3D) project:
 
-Module | Description
+Module |Â Description
 --- | ---
 [<img src="images/headtts.jpg" width="200"/>](https://github.com/met4citizen/HeadTTS) | [HeadTTS](https://github.com/met4citizen/HeadTTS) is a free and open-source English TTS with Kokoro neural voices, viseme IDs, and accurate phoneme-level timestamps. It can run entirely in a browser using WebGPU.
 [<img src="images/headaudio.jpg" width="200"/>](https://github.com/met4citizen/HeadAudio) | [HeadAudio](https://github.com/met4citizen/HeadAudio) in an audio worklet node/processor for audio-driven, real-time viseme detection and lip-sync. No text transcription or timestamps needed. Fast and fully in-browser.
@@ -226,13 +249,13 @@ try {
 <details>
   <summary>Click here to see AVATAR-LEVEL OPTIONS for showAvatar.</summary>
 
-Option | Description | Example
+Option | Description |Â Example
 ---|---|---
-`url` | URL of the GLB file. **MANDATORY** | `"./avatars/brunette.glb"`
+`url` |Â URL of the GLB file. **MANDATORY** | `"./avatars/brunette.glb"`
 `avatarMood` | The initial mood of the avatar. | `"neutral"`
 `body` | Either `"M"` (male) or `"F"` (male) body form. | `"F"`
 `baseline` | Object containing blend shape baseline values. Note: In some cases, this is the value to which the blend shape automatically returns when no other value is applied. In other cases, it is an offset or factor that corrects the dynamically calculated value. | `{ headRotateX: -0.04 }`
-`retarget` | Object for skeleton adjustments. Properties are bone names with corrections for position (in meters) and/or rotation (Euler)  `{ x, y, z, rx, ry, rz }`. Special keywords are `scaleToHipsLevel` and `scaleToEyesLevel` for scaling factors and `origin` for adjusting the root position `{ x, y, z }` | See `./siteconfig.js`
+`retarget` | Object for skeleton adjustments. Properties are bone names with corrections for position (in meters) and/or rotation (Euler)  `{ x, y, z, rx, ry, rz }`. Special keywords are `scaleToHipsLevel` and `scaleToEyesLevel` for scaling factors and `origin` for adjusting the root position `{ x, y, z }` |Â See `./siteconfig.js`
 `modelDynamicBones` | Array defining dynamic bones. | See Appendix E
 `lipsyncLang` | Lip-sync language. | `"en"`
 `ttsLang` | Google text-to-speech language. | `"fi-FI"`
@@ -326,7 +349,7 @@ how to integrate the TalkingHead class with [ElevenLabs WebSocket API](https://e
 
 You can try out the test app online [here on GitHub](https://met4citizen.github.io/TalkingHead/).
 By default, the text-to-speech and AI features will not work, but you
-can activate them by navigating to the settings menu (☰) and pasting
+can activate them by navigating to the settings menu (â°) and pasting
 your own API key in the relevant field(s). Your API keys will not be stored,
 so you will need to re-enter them each time you reload the page.
 
@@ -509,10 +532,10 @@ use with the TalkingHead class:
 Service | Description
 ---|---
 <img src="images/mpfb.jpg" width="200"/> | [MPFB](https://static.makehumancommunity.org/mpfb.html) a free and open source human character extension for Blender. It uses 3D assets from the MakeHuman ecosystem (licensed CC0/CC-BY) and provides parametric control over character's age, gender, body shape, etc. Read instructions for how to install and use [MPFB with TalkingHead](https://github.com/met4citizen/TalkingHead/blob/main/blender/MPFB/MPFB.md).
-<img src="images/avaturn.jpg" width="200"/> | [Avaturn](https://avaturn.me) is a web-based avatar creator focused on generating realistic 3D avatars from photos. It is free for non-commercial use. For commercial use, you must notify the company, and some additional terms apply. Avaturn Type-2 (T2) avatars are fully TalkingHead-compatible. For a small shoulder/neck bone adjustment, see the [example config](https://github.com/met4citizen/TalkingHead/blob/main/siteconfig.js).
-<img src="images/vroidstudio.jpg" width="200"/> | [VRoid Studio](https://vroid.com/en/studio) is a free tool for creating anime-style 3D characters. The licensing model is not CC0, but very permissive. Read instructions on how to use Blender to convert [VRoid/VRM format to TalkingHead compatible avatars](https://github.com/met4citizen/TalkingHead/blob/main/blender/VRoid/VROID.md).
-<img src="images/avatarsdk.jpg" width="200"/> | [Avatar SDK / MetaPerson Creator](https://avatarsdk.com) is a commercial service for generating personalized 3D avatars from photos. Blender scripts: [build-avatarsdk-eyes.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/build-avatarsdk-eyes.py) [rename-avatarsdk-shapekeys.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/rename-avatarsdk-shapekeys.py) + [example config](https://github.com/met4citizen/TalkingHead/blob/main/siteconfig.js)
-<img src="images/rocketbox.jpg" width="200"/> $$\color{transparent}{\rule{200px}{0px}}$$ | [Microsoft RocketBox](https://github.com/microsoft/Microsoft-Rocketbox) provides a library of ready-made 3D human characters. The models are MIT Licensed and include ARKit+Oculus, but they need to be re-rigged, for example, in Mixamo. Blender script (with instructions): [rename-rocketbox-shapekeys.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/rename-rocketbox-shapekeys.py)
+<img src="images/avaturn.jpg" width="200"/> |Â [Avaturn](https://avaturn.me) is a web-based avatar creator focused on generating realistic 3D avatars from photos. It is free for non-commercial use. For commercial use, you must notify the company, and some additional terms apply. Avaturn Type-2 (T2) avatars are fully TalkingHead-compatible. For a small shoulder/neck bone adjustment, see the [example config](https://github.com/met4citizen/TalkingHead/blob/main/siteconfig.js).
+<img src="images/vroidstudio.jpg" width="200"/> |Â [VRoid Studio](https://vroid.com/en/studio) is a free tool for creating anime-style 3D characters. The licensing model is not CC0, but very permissive. Read instructions on how to use Blender to convert [VRoid/VRM format to TalkingHead compatible avatars](https://github.com/met4citizen/TalkingHead/blob/main/blender/VRoid/VROID.md).
+<img src="images/avatarsdk.jpg" width="200"/> |Â [Avatar SDK / MetaPerson Creator](https://avatarsdk.com) is a commercial service for generating personalized 3D avatars from photos. Blender scripts: [build-avatarsdk-eyes.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/build-avatarsdk-eyes.py) [rename-avatarsdk-shapekeys.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/rename-avatarsdk-shapekeys.py) + [example config](https://github.com/met4citizen/TalkingHead/blob/main/siteconfig.js)
+<img src="images/rocketbox.jpg" width="200"/> $$\color{transparent}{\rule{200px}{0px}}$$ |Â [Microsoft RocketBox](https://github.com/microsoft/Microsoft-Rocketbox) provides a library of ready-made 3D human characters. The models are MIT Licensed and include ARKit+Oculus, but they need to be re-rigged, for example, in Mixamo. Blender script (with instructions): [rename-rocketbox-shapekeys.py](https://github.com/met4citizen/TalkingHead/blob/main/blender/rename-rocketbox-shapekeys.py)
 
 
 > [!IMPORTANT]
@@ -731,11 +754,11 @@ combine a hand gesture and a facial expression by giving the gesture and
 the emoji the same name.
 
 ```javascript
-head.animEmojis["🫤"] = { dt: [300,2000], vs: {
+head.animEmojis["ð«¤"] = { dt: [300,2000], vs: {
     browInnerUp: [0.5], eyeWideLeft: [0.5], eyeWideRight: [0.5], mouthLeft: [0.5], mouthPressLeft: [0.8], mouthPressRight: [0.2], mouthRollLower: [0.5], mouthStretchLeft: [0.7],   mouthStretchRight: [0.7]
   }
 };
-head.playGesture("🫤",3);
+head.playGesture("ð«¤",3);
 ```
 
 ---
@@ -805,7 +828,7 @@ Property | Description | Example
 `deltaLocal` | Local position translation [dx,dy,dz] in meters [m]. OPTIONAL, default `null` | `[0,0.01,0]`
 `deltaWorld` | World position translation [dx,dy,dz] in meters [m]. OPTIONAL, default `null` | `[0,-0.02,0]`
 `pivot` | If `true`, the bone becomes a free-hanging bone along the Y-axis. This means that the parent's X/Z rotations are automatically compensated. Use with caution, as this requires additional computational effort, and the `limits` do not apply as usual. OPTIONAL, default `false` | `true`
-`excludes` | Sets one or more spherical excluded zones that act as invisible force fields, limiting the movement of the bone. An array of objects in the format `{ bone, deltaLocal, radius}` in which `bone` specifies the center bone name, `deltaLocal` (optional) offset [x,y,z] relative to center bone, and `radius` in meters. OPTIONAL, default `null` | `[ { bone: "Head", deltaLocal: [0,0.05,0.02], radius: 0.13 } ]`
+`excludes` | Sets one or more spherical excluded zones that act as invisible force fields, limiting the movement of the bone. An array of objects in the format `{ bone, deltaLocal, radius}` in which `bone` specifies the center bone name, `deltaLocal` (optional) offset [x,y,z] relative to center bone, and `radius` in meters. OPTIONAL, default `null` |Â `[ { bone: "Head", deltaLocal: [0,0.05,0.02], radius: 0.13 } ]`
 `helper` | If `true`, add a helper object to the scene to assist with visualizing the bone during testing. If the dynamic bone type is "point", displays only a square, otherwise also the line from parent to the bone. OPTIONAL, default `false` | `true`
 
 </details>
@@ -902,18 +925,18 @@ Once a streaming session is started with `streamStart()`, the session remains ac
 
 Enters streaming mode using an `AudioWorklet` for low-latency playback. Parameters:
 
-- `opt` *(object, optional)* – Settings controlling streaming behavior:  
-  - `sampleRate` – A number in the range \[8000, 96000\].  
-  - `gain` – Sets the playback gain (volume) for the streaming audio.  
-  - `lipsyncLang` – Specifies lip-sync language if you want viseme generation using words. Defaults to avatar `lipsyncLang`, or to options `lipsyncLang` value. 
-  - `lipsyncType` – Specifies lip-sync data type. Can take one of the values `visemes` (default), `blendshapes`, and `words`.
-  - `waitForAudioChunks` – Boolean (default: `true`). If `false`, lip-sync will play immediately without waiting for audio chunks. This can be used to play lip-sync without audio.
-  - `mood` – Sets avatar mood upon starting the stream.  
-  - `metrics` – Used for in development performance monitoring: `{enabled: true, intervalHz: 2}`. Enables queue depth and underrun tracking in the audio worklet. Do not set in production.
-- `onAudioStart` *(function, optional)* – Callback invoked the moment audio playback starts.  
-- `onAudioEnd` *(function, optional)* – Callback invoked automatically once audio playback concludes.  
-- `onSubtitles` *(function, optional)* – Callback to handle showing subtitle text.
-- `onMetrics` *(function, optional)* – Callback receiving performance monitoring data: queue depth, underruns, playback state.
+- `opt` *(object, optional)* â Settings controlling streaming behavior:  
+  - `sampleRate` â A number in the range \[8000, 96000\].  
+  - `gain` â Sets the playback gain (volume) for the streaming audio.  
+  - `lipsyncLang` â Specifies lip-sync language if you want viseme generation using words. Defaults to avatar `lipsyncLang`, or to options `lipsyncLang` value. 
+  - `lipsyncType` â Specifies lip-sync data type. Can take one of the values `visemes` (default), `blendshapes`, and `words`.
+  - `waitForAudioChunks` â Boolean (default: `true`). If `false`, lip-sync will play immediately without waiting for audio chunks. This can be used to play lip-sync without audio.
+  - `mood` â Sets avatar mood upon starting the stream.  
+  - `metrics` â Used for in development performance monitoring: `{enabled: true, intervalHz: 2}`. Enables queue depth and underrun tracking in the audio worklet. Do not set in production.
+- `onAudioStart` *(function, optional)* â Callback invoked the moment audio playback starts.  
+- `onAudioEnd` *(function, optional)* â Callback invoked automatically once audio playback concludes.  
+- `onSubtitles` *(function, optional)* â Callback to handle showing subtitle text.
+- `onMetrics` *(function, optional)* â Callback receiving performance monitoring data: queue depth, underruns, playback state.
 
 Upon calling `streamStart`, all queued speech (`speakText`, `speakAudio`) is stopped, the engine enters streaming mode, and the avatar prepares for real-time lip-sync. You can then feed audio via `streamAudio()`. The session remains active until `streamStop()` is called.
 
@@ -921,10 +944,10 @@ Upon calling `streamStart`, all queued speech (`speakText`, `speakAudio`) is sto
 
 Sends one chunk of PCM audio data (16-bit little-endian) plus lip-sync data. Parameters:
 
-- `r.audio` – An `ArrayBuffer` or typed array of **16-bit LE PCM** samples. These are played immediately.  
-- `r.visemes`, `r.vtimes`, `r.vdurations` *(optional)* – Directly schedule lip-sync visemes at specific times with specific durations. This is the default type of lip-sync data.
-- `r.words`, `r.wtimes`, `r.wdurations` *(optional)* – Per-word timings and durations (e.g. TTS), allowing the library to create subtitles and/or calculate visemes if the `lipsyncType` option is set to `words`.
-- `r.anims` *(optional)* – An array of blendshape animations that play in sync with the audio. Requires setting `lipsyncType` option to `blendshapes`.   
+- `r.audio` â An `ArrayBuffer` or typed array of **16-bit LE PCM** samples. These are played immediately.  
+- `r.visemes`, `r.vtimes`, `r.vdurations` *(optional)* â Directly schedule lip-sync visemes at specific times with specific durations. This is the default type of lip-sync data.
+- `r.words`, `r.wtimes`, `r.wdurations` *(optional)* â Per-word timings and durations (e.g. TTS), allowing the library to create subtitles and/or calculate visemes if the `lipsyncType` option is set to `words`.
+- `r.anims` *(optional)* â An array of blendshape animations that play in sync with the audio. Requires setting `lipsyncType` option to `blendshapes`.   
 
 Each call to `streamAudio()` schedules an immediate chunk for playback and any included lip-sync or subtitle data on the animation timeline. Include only lip-sync data as specified in the `lipsyncType` option via the `streamStart` call. You can include any number of visemes, anims, or words which are not necessarily associated with the included audio chunk. You need to buffer the lip-sync data in the application and send it alongside the audio chunks.
 
