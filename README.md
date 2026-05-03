@@ -31,15 +31,15 @@ Video/App | Use Case
 [<img src="images/cliquevm.jpg" width="200"/>](https://www.youtube.com/watch?v=vNJ9Ifv-as8) | **Quantum physics using a blackboard**. David introduces us to the CHSH game and explores the mystery of quantum entanglement. For more information about the research project, see [CliqueVM](https://github.com/met4citizen/CliqueVM).
 [<img src="images/datingprofile.jpg" width="200"/>](https://www.youtube.com/watch?v=Hv-ItCZ0qc4) $$\color{transparent}{\rule{200px}{0px}}$$ | **Interactive Dating Profiles**. ❤️ Researchers from the MIT Media Lab and Harvard used the TalkingHead class and data-driven AI to create digital twins that potential dating partners could interact with. Their paper (Baradari et al., 2025) was presented at [CHI 2025](https://programs.sigchi.org/chi/2025/program/content/194739) in Japan.
 
-*More projects, sites and research using TalkingHead:*
+*Links to more projects, apps, and research using TalkingHead:*
 
-Link | Description
----|---
-[Cancer Clinical Trial Participation](https://dl.acm.org/doi/full/10.1145/3717511.3747063) | Researchers at the University of Florida explored how multiple virtual agents can help overcome barriers to joining cancer clinical trials.
-[TalkMateAI](https://github.com/kiranbaby14/TalkMateAI) | Real-time Voice-Controlled 3D Avatar with Multimodal AI.
-[Riverts](https://github.com/sensein/riverst) | A platform for building, running, and analyzing interactive user-avatar conversations.
-[Interactive Avatar](https://interactiveavatar.co.uk) | Interactive avatars as a service - an easy way to add an AI-driven avatar on your website.
-[Alter egos alter engagement](https://www.frontiersin.org/journals/digital-health/articles/10.3389/fdgth.2025.1655860/full) | Researchers at the University of Florida used TalkingHead to explore how embodied AI chatbots can support mental well-being.
+- [KidsChat](https://github.com/rwightman/kidschat) - A kid friendly AI chat.
+- [Partyhost.app](https://www.partyhost.app) – A game show with its own host.
+- [Cancer Clinical Trial Participation](https://dl.acm.org/doi/full/10.1145/3717511.3747063) – Researchers at the University of Florida explored how multiple virtual agents can help overcome barriers to joining cancer clinical trials.
+- [TalkMateAI](https://github.com/kiranbaby14/TalkMateAI) – Real-time Voice-Controlled 3D Avatar with Multimodal AI.
+- [Riverts](https://github.com/sensein/riverst) – A platform for building, running, and analyzing interactive user-avatar conversations.
+- [Interactive Avatar](https://interactiveavatar.co.uk) – Interactive avatars as a service - an easy way to add an AI-driven avatar on your website.
+- [Alter egos alter engagement](https://www.frontiersin.org/journals/digital-health/articles/10.3389/fdgth.2025.1655860/full) – Researchers at the University of Florida used TalkingHead to explore how embodied AI chatbots can support mental well-being.
 
 
 ---
@@ -885,9 +885,8 @@ See also the next Appendix G for how to stream audio with lip-sync.
 
 This low-level streaming interface is designed for real-time scenarios, such as speech-to-speech or live TTS integrations where latency must be minimized. Use this interface if you require direct, chunked audio playback and on-the-fly lip-sync updates. You can, for instance, integrate a real-time TTS pipeline (like Azure Speech SDK or another live audio source) that continuously streams audio and word/viseme data into TalkingHead.
 
-**Important:** The calling application must handle all aspects of managing and synchronizing the data streams (e.g., facial expressions, eye contact, hand gestures), as well as preventing concurrency issues and buffering multiple sources. The system is designed to handle one stream at a time.
-
-#### Stream Session Reusability
+> [!IMPORTANT]
+> The calling application must handle all aspects of managing and synchronizing the data streams (e.g., facial expressions, eye contact, hand gestures), as well as preventing concurrency issues and buffering multiple sources. The system is designed to handle one stream at a time.
 
 Once a streaming session is started with `streamStart()`, the session remains active and reusable until explicitly ended with `streamStop()`. You can:
 
@@ -896,11 +895,11 @@ Once a streaming session is started with `streamStart()`, the session remains ac
 - **Reconfiguration**: Call `streamStart()` again at any time to reconfigure the session with new options.
 - **Session termination**: Call `streamStop()` to completely end the streaming session.
 
-#### API Overview
+API Overview:
 
-##### 1. `streamStart(opt={}, onAudioStart, onAudioEnd, onSubtitles, onMetrics)`
+1. `streamStart(opt={}, onAudioStart, onAudioEnd, onSubtitles, onMetrics)`
 
-Enters streaming mode using an `AudioWorklet` for low-latency playback. Parameters:
+<ul>Enters streaming mode using an `AudioWorklet` for low-latency playback. Parameters:
 
 - `opt` *(object, optional)* – Settings controlling streaming behavior:  
   - `sampleRate` – A number in the range \[8000, 96000\].  
@@ -915,34 +914,32 @@ Enters streaming mode using an `AudioWorklet` for low-latency playback. Paramete
 - `onSubtitles` *(function, optional)* – Callback to handle showing subtitle text.
 - `onMetrics` *(function, optional)* – Callback receiving performance monitoring data: queue depth, underruns, playback state.
 
-Upon calling `streamStart`, all queued speech (`speakText`, `speakAudio`) is stopped, the engine enters streaming mode, and the avatar prepares for real-time lip-sync. You can then feed audio via `streamAudio()`. The session remains active until `streamStop()` is called.
+Upon calling `streamStart`, all queued speech (`speakText`, `speakAudio`) is stopped, the engine enters streaming mode, and the avatar prepares for real-time lip-sync. You can then feed audio via `streamAudio()`. The session remains active until `streamStop()` is called.</ul>
 
-##### 2. `streamAudio(r)`
+2. `streamAudio(r)`
 
-Sends one chunk of PCM audio data (16-bit little-endian) plus lip-sync data. Parameters:
+<ul>Sends one chunk of PCM audio data (16-bit little-endian) plus lip-sync data. Parameters:
 
 - `r.audio` – An `ArrayBuffer` or typed array of **16-bit LE PCM** samples. These are played immediately.  
 - `r.visemes`, `r.vtimes`, `r.vdurations` *(optional)* – Directly schedule lip-sync visemes at specific times with specific durations. This is the default type of lip-sync data.
 - `r.words`, `r.wtimes`, `r.wdurations` *(optional)* – Per-word timings and durations (e.g. TTS), allowing the library to create subtitles and/or calculate visemes if the `lipsyncType` option is set to `words`.
 - `r.anims` *(optional)* – An array of blendshape animations that play in sync with the audio. Requires setting `lipsyncType` option to `blendshapes`.   
 
-Each call to `streamAudio()` schedules an immediate chunk for playback and any included lip-sync or subtitle data on the animation timeline. Include only lip-sync data as specified in the `lipsyncType` option via the `streamStart` call. You can include any number of visemes, anims, or words which are not necessarily associated with the included audio chunk. You need to buffer the lip-sync data in the application and send it alongside the audio chunks.
+Each call to `streamAudio()` schedules an immediate chunk for playback and any included lip-sync or subtitle data on the animation timeline. Include only lip-sync data as specified in the `lipsyncType` option via the `streamStart` call. You can include any number of visemes, anims, or words which are not necessarily associated with the included audio chunk. You need to buffer the lip-sync data in the application and send it alongside the audio chunks.</ul>
 
-##### 3. `streamNotifyEnd()`
+3. `streamNotifyEnd()`
 
-Signals that no more chunks are expected for the current streaming utterance. Playback stops automatically once queued audio finishes. This is useful for gracefully concluding real-time TTS streams when your pipeline has no additional data to send. The streaming session remains active and can be reused by calling `streamAudio()` again. After the call, wait untill the playback has ended to have effect. If `streamAudio()` is called after `streamNotifyEnd()` and before the playback has ended, the notification end is canceled.
+<ul>Signals that no more chunks are expected for the current streaming utterance. Playback stops automatically once queued audio finishes. This is useful for gracefully concluding real-time TTS streams when your pipeline has no additional data to send. The streaming session remains active and can be reused by calling `streamAudio()` again. After the call, wait untill the playback has ended to have effect. If `streamAudio()` is called after `streamNotifyEnd()` and before the playback has ended, the notification end is canceled.</ul>
 
-##### 4. `streamInterrupt()`
+4. `streamInterrupt()`
 
-Immediately interrupts any ongoing audio playback and lip-sync animations in the streaming session. This method stops the current utterance but keeps the streaming session active for reuse. You can continue using the session by calling `streamAudio()` again after interruption.
+<ul>Immediately interrupts any ongoing audio playback and lip-sync animations in the streaming session. This method stops the current utterance but keeps the streaming session active for reuse. You can continue using the session by calling `streamAudio()` again after interruption.</ul>
 
-##### 5. `streamStop()`
+5. `streamStop()`
 
-Forces an immediate end to the streaming session. All queued audio and lip-sync animations are cleared, the avatar reverts to its idle state, and the audio worklet is disconnected and cleaned up. To start streaming again after calling `streamStop()`, you must call `streamStart()` to create a new session.
+<ul>Forces an immediate end to the streaming session. All queued audio and lip-sync animations are cleared, the avatar reverts to its idle state, and the audio worklet is disconnected and cleaned up. To start streaming again after calling `streamStop()`, you must call `streamStart()` to create a new session.</ul>
 
-#### Example Usage
-
-Refer to the example provided in the repository `azure-audio-streaming.html` on how to integrate this interface with Azure TTS streamed audio.
+Note: Refer to the example provided in the repository `azure-audio-streaming.html` on how to integrate this interface with Azure TTS streamed audio.
 
 ---
 
