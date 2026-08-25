@@ -16,4 +16,5 @@ for r in bpy.context.scene.objects:
     for o in traverse(r):
         if hasBones(o):
             for b in o.data.bones:
+                b.name = b.name.replace( 'mixamorig1:', '')
                 b.name = b.name.replace( 'mixamorig:', '')

@@ -939,9 +939,9 @@ class TalkingHead {
       } else {
         this.audioCtx = new AudioContext();
       }
-      
+
     }
-    
+
     // Create audio nodes
     this.audioSpeechSource = this.audioCtx.createBufferSource();
     this.audioBackgroundSource = this.audioCtx.createBufferSource();
@@ -954,21 +954,21 @@ class TalkingHead {
     this.audioAnalyzerNode.minDecibels = -70;
     this.audioAnalyzerNode.maxDecibels = -10;
     this.audioReverbNode = this.audioCtx.createConvolver();
-    
+
     // Connect nodes
     this.audioBackgroundGainNode.connect(this.audioReverbNode);
     this.audioAnalyzerNode.connect(this.audioSpeechGainNode);
     this.audioSpeechGainNode.connect(this.audioReverbNode);
     this.audioStreamGainNode.connect(this.audioReverbNode);
     this.audioReverbNode.connect(this.audioCtx.destination);
-    
+
     // Apply reverb and mixer settings
     this.setReverb(this.currentReverb || null);
     this.setMixerGain(
-      this.opt.mixerGainSpeech, 
+      this.opt.mixerGainSpeech,
       this.opt.mixerGainBackground
     );
-    
+
     // Delete the stream audio worklet if initialised
     this.workletLoaded = false;
     if (this.streamWorkletNode) {
@@ -976,9 +976,9 @@ class TalkingHead {
         this.streamWorkletNode.port.postMessage({type: 'stop'});
         this.streamWorkletNode.disconnect();
         this.isStreaming = false;
-      } catch(e) { 
+      } catch(e) {
         console.error('Error disconnecting streamWorkletNode:', e);
-        /* ignore */ 
+        /* ignore */
       }
       this.streamWorkletNode = null;
     }
@@ -1136,19 +1136,19 @@ class TalkingHead {
   /**
   * Adds a new mixed morph target based on the given sources.
   * Note: This assumes that morphTargetsRelative === true (default for GLTF)
-  * 
+  *
   * @param {Object[]} meshes Meshes to process
   * @param {string} name New of the new morph target (a.k.a. shape key)
   * @param {Object} sources Object of existing morph target values, e.g. { mouthOpen: 1.0 }
   * @param {boolean} [override=false] If true, override existing morph target
   */
   addMixedMorphTarget(meshes, name, sources, override=false ) {
-  
+
     meshes.forEach( x => {
 
       // Skip, we already have a morph target with the same name and we do not override
       if ( !override && x.morphTargetDictionary.hasOwnProperty(name) ) return;
-      
+
       // Check if this mesh has any sources to add to the mix
       const g = x.geometry;
       let mixPos = null;
@@ -1204,7 +1204,7 @@ class TalkingHead {
 
   /**
   * Retarget current armature.
-  * 
+  *
   * @param {Object} transforms
   *   @param {Object} [transforms.boneName] Position and rotation deltas for a specific bone ({x, y, z, rx, ry, rz}).
   *   @param {boolean} [transforms.ScaleHips] Whether to scale the rig's hips to a target height.
@@ -1251,6 +1251,7 @@ class TalkingHead {
     // Remove mixamorix prefix
     gltf.scene.traverse( x => {
       if (x.isBone) {
+        x.name = x.name.replaceAll('mixamorig1','');
         x.name = x.name.replaceAll('mixamorig','');
       }
     });
@@ -3544,7 +3545,7 @@ class TalkingHead {
     this.onMetrics = onMetrics;
 
     if (opt.sampleRate !== undefined) {
-      const sr = opt.sampleRate;    
+      const sr = opt.sampleRate;
       if (
         typeof sr === 'number' &&
         sr >= 8000 &&
@@ -3559,14 +3560,14 @@ class TalkingHead {
         );
       }
     }
-    
+
     if (opt.gain !== undefined) {
       this.audioStreamGainNode.gain.value = opt.gain;
     }
 
     // Check if we need to create or recreate the worklet
-    const needsWorkletSetup = !this.streamWorkletNode || 
-                              !this.streamWorkletNode.port || 
+    const needsWorkletSetup = !this.streamWorkletNode ||
+                              !this.streamWorkletNode.port ||
                               this.streamWorkletNode.numberOfOutputs === 0 ||
                               this.streamWorkletNode.context !== this.audioCtx;
 
@@ -3584,7 +3585,7 @@ class TalkingHead {
       if (!this.workletLoaded) {
         try {
           const loadPromise = this.audioCtx.audioWorklet.addModule(workletUrl.href);
-          const timeoutPromise = new Promise((_, reject) => 
+          const timeoutPromise = new Promise((_, reject) =>
             setTimeout(() => reject(new Error("Worklet loading timed out")), 5000)
           );
           await Promise.race([loadPromise, timeoutPromise]);
@@ -3697,10 +3698,10 @@ class TalkingHead {
     }
     this.isStreaming = false;
   }
-  
+
 
   /**
-   * Internal function to pause the speaking state after a speech utterance. 
+   * Internal function to pause the speaking state after a speech utterance.
    * This is called when the audio stream ends or is interrupted.
    * @param {boolean} interrupt_lipsync - If true, interrupts the lipsync
    * @private
@@ -3744,7 +3745,7 @@ class TalkingHead {
   _processLipsyncData(r, audioStart) {
     // Early return if streaming has been stopped
     if (!this.isStreaming) return;
-    
+
     // Process visemes
     if (r.visemes && this.streamLipsyncType == 'visemes') {
       for (let i = 0; i < r.visemes.length; i++) {
@@ -3842,12 +3843,12 @@ class TalkingHead {
       if (r.audio instanceof ArrayBuffer) {
         message.data = r.audio;
         this.streamWorkletNode.port.postMessage(message, [message.data]);
-      } 
+      }
       else if (r.audio instanceof Int16Array || r.audio instanceof Uint8Array) {
         const bufferCopy = r.audio.buffer.slice(r.audio.byteOffset, r.audio.byteOffset + r.audio.byteLength);
         message.data = bufferCopy;
         this.streamWorkletNode.port.postMessage(message, [message.data]);
-      } 
+      }
       else if (r.audio instanceof Float32Array) {
         // Convert Float32 -> Int16 PCM
         const int16Buffer = new Int16Array(r.audio.length);
@@ -3857,7 +3858,7 @@ class TalkingHead {
         }
         message.data = int16Buffer.buffer;
         this.streamWorkletNode.port.postMessage(message, [message.data]);
-      } 
+      }
       else {
           console.error("r.audio is not a supported type. Must be ArrayBuffer, Int16Array, Uint8Array, or Float32Array:", r.audio);
       }
@@ -3955,7 +3956,7 @@ class TalkingHead {
         target.set( this.speakTo.x, this.speakTo.y, this.speakTo.z );
       }
     }
-    
+
     // If we don't have a target, look ahead or to the screen
     if ( !target ) {
       if ( this.avatar.hasOwnProperty('avatarIgnoreCamera') ) {
@@ -4409,6 +4410,7 @@ class TalkingHead {
         // Rename and scale Mixamo tracks, create a pose
         const props = {};
         anim.tracks.forEach( t => {
+          t.name = t.name.replaceAll('mixamorig1','');
           t.name = t.name.replaceAll('mixamorig','');
           const ids = t.name.split('.');
           if ( ids[1] === 'position' ) {
@@ -4543,6 +4545,7 @@ class TalkingHead {
         anim.tracks.forEach( t => {
 
           // Rename and scale Mixamo tracks
+          t.name = t.name.replaceAll('mixamorig1','');
           t.name = t.name.replaceAll('mixamorig','');
           const ids = t.name.split('.');
           if ( ids[1] === 'position' ) {
@@ -4820,7 +4823,7 @@ class TalkingHead {
   * Dispose the instance.
   */
   dispose() {
-    
+
     // Stop animation, clear speech queue, stop stream
     try { this.stop(); } catch(error) {};
     try { this.stopSpeaking(); } catch(error) {};

@@ -464,8 +464,8 @@ scene as the fallback root.
 
 Use `./avatars/brunette.glb` (A-pose) or `./avatars/brunette-t.glb` (T-pose)
 as reference models when specifying bone axes and rolls. The common
-"mixamorig" prefix in bone names is allowed, but it is automatically
-removed by the class. 
+"mixamorig", "mixamorig1" prefixes in bone names are allowed, but they are automatically
+removed by the class.
 
 The skeleton may include additional bones, such as hair bones,
 which can be used as dynamic bones.
@@ -901,16 +901,16 @@ API Overview:
 
 <ul>Enters streaming mode using an `AudioWorklet` for low-latency playback. Parameters:
 
-- `opt` *(object, optional)* – Settings controlling streaming behavior:  
-  - `sampleRate` – A number in the range \[8000, 96000\].  
-  - `gain` – Sets the playback gain (volume) for the streaming audio.  
-  - `lipsyncLang` – Specifies lip-sync language if you want viseme generation using words. Defaults to avatar `lipsyncLang`, or to options `lipsyncLang` value. 
+- `opt` *(object, optional)* – Settings controlling streaming behavior:
+  - `sampleRate` – A number in the range \[8000, 96000\].
+  - `gain` – Sets the playback gain (volume) for the streaming audio.
+  - `lipsyncLang` – Specifies lip-sync language if you want viseme generation using words. Defaults to avatar `lipsyncLang`, or to options `lipsyncLang` value.
   - `lipsyncType` – Specifies lip-sync data type. Can take one of the values `visemes` (default), `blendshapes`, and `words`.
   - `waitForAudioChunks` – Boolean (default: `true`). If `false`, lip-sync will play immediately without waiting for audio chunks. This can be used to play lip-sync without audio.
-  - `mood` – Sets avatar mood upon starting the stream.  
+  - `mood` – Sets avatar mood upon starting the stream.
   - `metrics` – Used for in development performance monitoring: `{enabled: true, intervalHz: 2}`. Enables queue depth and underrun tracking in the audio worklet. Do not set in production.
-- `onAudioStart` *(function, optional)* – Callback invoked the moment audio playback starts.  
-- `onAudioEnd` *(function, optional)* – Callback invoked automatically once audio playback concludes.  
+- `onAudioStart` *(function, optional)* – Callback invoked the moment audio playback starts.
+- `onAudioEnd` *(function, optional)* – Callback invoked automatically once audio playback concludes.
 - `onSubtitles` *(function, optional)* – Callback to handle showing subtitle text.
 - `onMetrics` *(function, optional)* – Callback receiving performance monitoring data: queue depth, underruns, playback state.
 
@@ -920,10 +920,10 @@ Upon calling `streamStart`, all queued speech (`speakText`, `speakAudio`) is sto
 
 <ul>Sends one chunk of PCM audio data (16-bit little-endian) plus lip-sync data. Parameters:
 
-- `r.audio` – An `ArrayBuffer` or typed array of **16-bit LE PCM** samples. These are played immediately.  
+- `r.audio` – An `ArrayBuffer` or typed array of **16-bit LE PCM** samples. These are played immediately.
 - `r.visemes`, `r.vtimes`, `r.vdurations` *(optional)* – Directly schedule lip-sync visemes at specific times with specific durations. This is the default type of lip-sync data.
 - `r.words`, `r.wtimes`, `r.wdurations` *(optional)* – Per-word timings and durations (e.g. TTS), allowing the library to create subtitles and/or calculate visemes if the `lipsyncType` option is set to `words`.
-- `r.anims` *(optional)* – An array of blendshape animations that play in sync with the audio. Requires setting `lipsyncType` option to `blendshapes`.   
+- `r.anims` *(optional)* – An array of blendshape animations that play in sync with the audio. Requires setting `lipsyncType` option to `blendshapes`.
 
 Each call to `streamAudio()` schedules an immediate chunk for playback and any included lip-sync or subtitle data on the animation timeline. Include only lip-sync data as specified in the `lipsyncType` option via the `streamStart` call. You can include any number of visemes, anims, or words which are not necessarily associated with the included audio chunk. You need to buffer the lip-sync data in the application and send it alongside the audio chunks.</ul>
 
