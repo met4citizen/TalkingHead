@@ -175,6 +175,8 @@ export const site = {
     "fr-M": { id: "fr-FR-Standard-B" },
     "de-F": { id: "de-DE-Standard-G" },
     "de-M": { id: "de-DE-Standard-H" },
+    "pt-F": { id: "pt-BR-Standard-A" },
+    "pt-M": { id: "pt-BR-Standard-B" },
   },
 
   // ElevenLab voices
@@ -201,6 +203,8 @@ export const site = {
     "fr-Lucien": { lang: "fr-FR", id: "fr-FR-LucienMultilingualNeural" },
     "de-Seraphina": { lang: "de-DE", id: "de-DE-SeraphinaMultilingualNeural" },
     "de-Florian": { lang: "de-DE", id: "de-DE-FlorianMultilingualNeural" },
+    "pt-Francisca": { lang: "pt-BR", id: "pt-BR-FranciscaNeural" },
+    "pt-Antonio": { lang: "pt-BR", id: "pt-BR-AntonioNeural" },
   },
 
   // Preset views
