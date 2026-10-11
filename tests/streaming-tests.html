@@ -1587,7 +1587,7 @@ Frames Proc.  : ${data.framesProcessed ?? 'N/A'}`;
                     });
 
                     await head.showAvatar(
-                        { url: 'https://models.readyplayer.me/64bfa15f0e72c63d7c3934a6.glb?morphTargets=ARKit,Oculus+Visemes,mouthOpen,mouthSmile,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png', body: 'F', lipsyncLang: 'en' },
+                        { url: '../avatars/brunette.glb', body: 'F', lipsyncLang: 'en' },
                         (ev) => {
                             if (ev.lengthComputable) {
                                 const percent = Math.round((ev.loaded / ev.total) * 100);
