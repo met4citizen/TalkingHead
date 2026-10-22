@@ -9,13 +9,13 @@
     "LICENSE",
     "modules/talkinghead.mjs",
     "modules/dynamicbones.mjs",
-    "modules/playback-worklet.mjs",
+    "modules/playback-worklet.js",
     "modules/retargeter.mjs",
-    "modules/lipsync-en.msj",
-    "modules/lipsync-fi.msj",
-    "modules/lipsync-fr.msj",
-    "modules/lipsync-lt.msj",
-    "modules/lipsync-pt_br.msj"
+    "modules/lipsync-en.mjs",
+    "modules/lipsync-fi.mjs",
+    "modules/lipsync-fr.mjs",
+    "modules/lipsync-lt.mjs",
+    "modules/lipsync-pt_br.mjs"
   ],
   "dependencies": {
     "three": "^0.186"
