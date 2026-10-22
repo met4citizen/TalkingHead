@@ -1,4 +1,4 @@
-# Talking Head (3D)
+# TalkingHead (3D)
 
 
 ### Demo Videos
@@ -25,7 +25,6 @@ Video/App | Use Case
 [<img src="images/dialoglab.jpg" width="200"/>](https://www.youtube.com/watch?v=U2Ag_Ktobzw) | **Human-AI group conversations**. Researchers from UVA, Google, Northeastern, Google DeepMind, and Google Research developed [DialogLab](https://github.com/ecruhue/DialogLab), a toolkit to author, simulate and test human-AI group conversations. 🤖🤖🤖
 [<img src="images/openai.jpg" width="200"/>](https://met4citizen.github.io/HeadAudio/openai.html) | **Low-latency AI speech over WebRTC**. Speech-to-speech in realtime over WebRTC using OpenAI Realtime API. Learn more about the audio-driven lip-sync module at [HeadAudio](https://github.com/met4citizen/HeadAudio).<br>**Note**: Realtime speech-to-speech usage is much more expensive than standard AI text tokens, so please check OpenAI pricing for `gpt-realtime-mini` before use.
 [<img src="images/olivia.jpg" width="200"/>](https://youtu.be/9GeXwjuslnQ) | **Video conferencing**. A video conferencing solution with real-time transcription, contextual AI responses, and voice lip-sync. The app and demo, featuring Olivia, by [namnm](https://github.com/namnm) 👍
-[<img src="images/edgespeaker.png" width="200"/>](https://www.edgespeaker.com/) | **Fully in-browser AI you can talk to**. Uses TalkingHead, [HeadTTS (with Kokoro)](https://github.com/met4citizen/HeadTTS), [whisper-web](https://github.com/xenova/whisper-web), and [WebLLM (with Llama 3.2)](https://github.com/mlc-ai/web-llm). No APIs, no accounts. For best performance and WebGPU support, use a desktop version of Chrome or Edge: 👉 [EdgeSpeaker.com](https://www.edgespeaker.com/)
 [<img src="images/geminicompetition.jpg" width="200"/>](https://www.youtube.com/watch?v=Dl2o9kRvbLQ) | **Recycling Advisor 3D**. Snap a photo and get local recycling advice from a talking avatar. My entry for the [Gemini API Developer Competition 2024](https://ai.google.dev/competition/projects/recycling-advisor-3d).
 [<img src="images/evertrail.jpg" width="200"/>](https://www.youtube.com/watch?v=OG1vwOit_Yk) | **Live Twitch adventure**. [Evertrail](https://evertrail.app) is an infinite, real-time generated world where all of your choices shape the outcome. Video clip and the app by [JPhilipp](https://github.com/JPhilipp) 👏👏<br>**NEWS**: Featured at the AI Film Awards during the 2025 Cannes Film Festival!
 [<img src="images/cliquevm.jpg" width="200"/>](https://www.youtube.com/watch?v=vNJ9Ifv-as8) | **Quantum physics using a blackboard**. David introduces us to the CHSH game and explores the mystery of quantum entanglement. For more information about the research project, see [CliqueVM](https://github.com/met4citizen/CliqueVM).
@@ -38,7 +37,6 @@ Video/App | Use Case
 - [Cancer Clinical Trial Participation](https://dl.acm.org/doi/full/10.1145/3717511.3747063) – Researchers at the University of Florida explored how multiple virtual agents can help overcome barriers to joining cancer clinical trials.
 - [TalkMateAI](https://github.com/kiranbaby14/TalkMateAI) – Real-time Voice-Controlled 3D Avatar with Multimodal AI.
 - [Riverts](https://github.com/sensein/riverst) – A platform for building, running, and analyzing interactive user-avatar conversations.
-- [Interactive Avatar](https://interactiveavatar.co.uk) – Interactive avatars as a service - an easy way to add an AI-driven avatar on your website.
 - [Alter egos alter engagement](https://www.frontiersin.org/journals/digital-health/articles/10.3389/fdgth.2025.1655860/full) – Researchers at the University of Florida used TalkingHead to explore how embodied AI chatbots can support mental well-being.
 
 
@@ -96,9 +94,9 @@ or import all the needed modules from a CDN:
 <script type="importmap">
 { "imports":
   {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js/+esm",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/",
-    "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.7/modules/talkinghead.mjs"
+    "three": "https://cdn.jsdelivr.net/npm/three@0.186/build/three.module.js/+esm",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186/examples/jsm/",
+    "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.8/modules/talkinghead.mjs"
   }
 }
 </script>
