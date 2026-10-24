@@ -26,15 +26,18 @@ class LipsyncBn {
   */
   constructor() {
 
-    // Bengali consonants to Oculus visemes
+    // Bengali consonants to Oculus visemes. ঙ (and ং) is a velar nasal, so kk.
+    // ফ is aspirated p in Bangla, so PP. স is usually "sh" (CH), but "s"
+    // (SS) in clusters such as স্কুল, স্টেশন, ব্যস্ত. হ has no mouth shape
+    // of its own (null): the following vowel's shape covers it.
     this.consonants = {
-      'ক': 'kk', 'খ': 'kk', 'গ': 'kk', 'ঘ': 'kk', 'ঙ': 'nn',
+      'ক': 'kk', 'খ': 'kk', 'গ': 'kk', 'ঘ': 'kk', 'ঙ': 'kk',
       'চ': 'CH', 'ছ': 'CH', 'জ': 'CH', 'ঝ': 'CH', 'ঞ': 'nn',
       'ট': 'DD', 'ঠ': 'DD', 'ড': 'DD', 'ঢ': 'DD', 'ণ': 'nn',
       'ত': 'DD', 'থ': 'DD', 'দ': 'DD', 'ধ': 'DD', 'ন': 'nn',
-      'প': 'PP', 'ফ': 'FF', 'ব': 'PP', 'ভ': 'PP', 'ম': 'PP',
+      'প': 'PP', 'ফ': 'PP', 'ব': 'PP', 'ভ': 'PP', 'ম': 'PP',
       'য': 'CH', 'র': 'RR', 'ল': 'nn',
-      'শ': 'CH', 'ষ': 'CH', 'স': 'SS', 'হ': 'kk',
+      'শ': 'CH', 'ষ': 'CH', 'স': 'CH', 'হ': null,
       'ড়': 'RR', 'ঢ়': 'RR', 'য়': 'I', 'ৎ': 'DD',
       'ক্ষ': 'kk', 'জ্ঞ': 'kk', 'র‍্য': 'RR' // Conjuncts treated as one unit
     };
@@ -192,6 +195,7 @@ class LipsyncBn {
 
     // Add a viseme, extending the duration if the viseme repeats
     const push = (viseme) => {
+      if ( !viseme ) { t += 0.9; return; } // No shape of its own (হ)
       if ( o.visemes.length && o.visemes[ o.visemes.length-1 ] === viseme ) {
         const d = 0.7 * (this.visemeDurations[viseme] || 1);
         o.durations[ o.durations.length-1 ] += d;
@@ -255,7 +259,7 @@ class LipsyncBn {
         const afterHasant = isUnit || chars[i-1] === this.hasant || chars[i-1] === 'ঃ'; // Conjunct, or visarga gemination (দুঃখ)
         const prevVowel = !startOfWord && o.visemes.length > 0 &&
           ['aa','E','I','O','U'].includes( o.visemes[o.visemes.length-1] );
-        const viseme = this.consonants[c];
+        const viseme = ( c === 'স' && c1 === this.hasant && c2 !== 'য' && c2 !== 'ব' ) ? 'SS' : this.consonants[c];
 
         // র‍্য is /ræ/ (র‍্যাব), and জ্ঞ before আ-kar is /gæ/ (জ্ঞান, বিজ্ঞান)
         if ( c === 'র‍্য' || ( c === 'জ্ঞ' && c1 === 'া' ) ) {
@@ -323,7 +327,7 @@ class LipsyncBn {
       }
 
       // Anusvara, visarga, chandrabindu
-      if ( c === 'ং' ) { push('nn'); i++; continue; }
+      if ( c === 'ং' ) { push('kk'); i++; continue; } // Velar nasal, like ঙ
       if ( c === 'ঃ' || c === 'ঁ' || c === this.hasant ) { i++; continue; }
 
       // Stray vowel sign (e.g. after a digit or Latin letter)
