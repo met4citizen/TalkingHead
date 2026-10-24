@@ -471,7 +471,7 @@ const i18n = {
     'lt': 'Liettua', 'test-sentence': "Kirjoita tähän testilause.", 'Mid': 'Keskiosa',
     'Gesture': 'Ele', 'PoseMovement': 'Liike', 'Visible': 'Näytä',
     'Helper': 'Apuri', 'Edit': 'Muokkaa', 'Script': 'Skripti', 'fr': "Ranska",
-    'de': "Saksa", 'pt_br': "Brasilia"
+    'de': "Saksa", 'pt_br': "Brasilia", 'bn': "Bengali"
   },
 
   'en': {
@@ -485,7 +485,7 @@ const i18n = {
     'LightDirect': 'Direct', 'LightSpot': 'Spot', 'theme-full': "Fullscreen",
     'lt': 'Lithuanian', 'test-sentence': "Write your test sentence.",
     'PoseMovement': 'Movement', 'fr': "French", 'de': "German",
-    'pt_br': "Brazilian Portuguese"
+    'pt_br': "Brazilian Portuguese", 'bn': "Bengali"
   }
 
 }
@@ -3753,7 +3753,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
     cameraPanEnable: true,
     cameraView: 'full',
     avatarMood: 'neutral',
-    lipsyncModules: ["en", "fi", "lt", "fr", "de", "pt_br"],
+    lipsyncModules: ["en", "fi", "lt", "fr", "de", "pt_br", "bn"],
     // Stats display that can be used when testing performance
     statsNode: document.body,
     statsStyle: "position: fixed; bottom: 0px; left: 0px; cursor: pointer; opacity: 0.9; z-index: 10000;"
@@ -6086,6 +6086,7 @@ document.addEventListener('DOMContentLoaded', async function(e) {
                 <div class="command" data-i18n-text="fr" data-item="voice-lipsync-lang" data-type="option" data-voice-lipsync-lang="fr"></div>
                 <div class="command" data-i18n-text="lt" data-item="voice-lipsync-lang" data-type="option" data-voice-lipsync-lang="lt"></div>
                 <div class="command" data-i18n-text="pt_br" data-item="voice-lipsync-lang" data-type="option" data-voice-lipsync-lang="pt_br"></div>
+                <div class="command" data-i18n-text="bn" data-item="voice-lipsync-lang" data-type="option" data-voice-lipsync-lang="bn"></div>
               </div>
             </div>
           </div>
