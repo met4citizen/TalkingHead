@@ -15,7 +15,8 @@
     "modules/lipsync-fi.mjs",
     "modules/lipsync-fr.mjs",
     "modules/lipsync-lt.mjs",
-    "modules/lipsync-pt_br.mjs"
+    "modules/lipsync-pt_br.mjs",
+    "modules/lipsync-bn.mjs"
   ],
   "dependencies": {
     "three": "^0.186"

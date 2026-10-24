@@ -54,7 +54,7 @@ Oculus viseme blend shapes. See Appendix A for details on creating your own avat
 
 By default, the class uses
 [Google Cloud TTS](https://cloud.google.com/text-to-speech) for text-to-speech
-and has a built-in lip-sync support for English, German, French, Brazilian Portuguese, Finnish, and Lithuanian.
+and has a built-in lip-sync support for English, German, French, Brazilian Portuguese, Finnish, Lithuanian, and Bengali.
 New lip-sync languages can be added by creating new lip-sync language modules.
 
 It is also possible to integrate the TalkingHead class with any external
