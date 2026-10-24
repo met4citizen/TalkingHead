@@ -1,6 +1,6 @@
 {
   "name": "@met4citizen/talkinghead",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "description": "TalkingHead (3D): A JavaScript class for real-time lip-sync using full-body 3D avatars.",
   "type": "module",
   "main": "modules/talkinghead.mjs",
