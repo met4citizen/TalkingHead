@@ -177,6 +177,8 @@ export const site = {
     "de-M": { id: "de-DE-Standard-H" },
     "pt-F": { id: "pt-BR-Standard-A" },
     "pt-M": { id: "pt-BR-Standard-B" },
+    "bn-F": { id: "bn-IN-Standard-A" },
+    "bn-M": { id: "bn-IN-Standard-B" },
   },
 
   // ElevenLab voices
@@ -205,6 +207,8 @@ export const site = {
     "de-Florian": { lang: "de-DE", id: "de-DE-FlorianMultilingualNeural" },
     "pt-Francisca": { lang: "pt-BR", id: "pt-BR-FranciscaNeural" },
     "pt-Antonio": { lang: "pt-BR", id: "pt-BR-AntonioNeural" },
+    "bn-Nabanita": { lang: "bn-BD", id: "bn-BD-NabanitaNeural" },
+    "bn-Pradeep": { lang: "bn-BD", id: "bn-BD-PradeepNeural" },
   },
 
   // Preset views
