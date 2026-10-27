@@ -2857,9 +2857,9 @@ class TalkingHead {
     opt = opt || {};
 
     // Classifiers
-    const dividersSentence = /[!\.\?\n\p{Extended_Pictographic}]/ug;
+    const dividersSentence = /[!\.\?।॥\n\p{Extended_Pictographic}]/ug;
     const dividersWord = /[ ]/ug;
-    const speakables = /[\p{L}\p{N},\.\p{Quotation_Mark}!€\$\+\p{Dash_Punctuation}%&\?]/ug;
+    const speakables = /[\p{L}\p{N},\.\p{Quotation_Mark}!€\$\+৳।॥\p{Dash_Punctuation}%&\?]/ug;
     const emojis = /[\p{Extended_Pictographic}]/ug;
     const lipsyncLang = opt.lipsyncLang || this.avatar.lipsyncLang || this.opt.lipsyncLang;
 
