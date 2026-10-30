@@ -145,8 +145,6 @@ gltf-transform optimize avatar.glb avatar-compressed.glb \
   --texture-compress webp
 ```
 
-Note: Currently only the development version of TalkingHead supports meshopt compression.
-
 ---
 
 ### Troubleshooting
@@ -159,6 +157,8 @@ Remember to apply all transforms.
 - Eyelashes extend too far when blinking: Either modify
 the shape key directly or replace it with a combined mix
 that provides an optimal extent.
+- Teeth do not open enough on some visemes:
+See [#171](https://github.com/met4citizen/TalkingHead/issues/171).
 
 This document does not (and cannot) cover all details or possible
 situations. If you encounter difficulties, please consult the
